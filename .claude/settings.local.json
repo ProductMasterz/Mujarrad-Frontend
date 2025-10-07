@@ -20,7 +20,12 @@
       "Bash(xargs kill:*)",
       "Bash(npm run start:*)",
       "Bash(pkill:*)",
-      "Bash(specify init:*)"
+      "Bash(specify init:*)",
+      "Read(//Users/mac/Developer/Software-Projects/**)",
+      "Bash(test:*)",
+      "Bash(find:*)",
+      "Bash(.specify/scripts/bash/create-new-feature.sh:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
