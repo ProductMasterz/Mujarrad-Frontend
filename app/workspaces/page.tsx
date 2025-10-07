@@ -1,18 +1,41 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuthStore } from '@/stores';
-import { useLogout, useWorkspaces } from '@/hooks/api';
+import { useLogout } from '@/hooks/api';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { CreateWorkspaceDialog } from '@/components/workspaces/CreateWorkspaceDialog';
 import { WorkspaceCard } from '@/components/workspaces/WorkspaceCard';
+import { workspaceService } from '@/services/api';
+import type { Workspace } from '@/types/backend-dtos';
 
 export default function WorkspacesPage() {
   const user = useAuthStore((state) => state.user);
   const router = useRouter();
   const { mutate: logout } = useLogout();
-  const { data: workspacesData, isLoading } = useWorkspaces();
+
+  // Direct API call instead of React Query
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    console.log('[WorkspacesPage] useEffect running, fetching workspaces...');
+    workspaceService.getWorkspaces()
+      .then((data) => {
+        console.log('[WorkspacesPage] Workspaces fetched:', data);
+        // Backend returns plain array, not PaginatedResponse
+        setWorkspaces(Array.isArray(data) ? data : []);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error('[WorkspacesPage] Error fetching workspaces:', err);
+        setError(err);
+        setIsLoading(false);
+      });
+  }, []);
 
   const handleLogout = () => {
     logout(undefined, {
@@ -21,8 +44,6 @@ export default function WorkspacesPage() {
       },
     });
   };
-
-  const workspaces = workspacesData?.data || [];
 
   return (
     <ProtectedRoute>
@@ -59,6 +80,28 @@ export default function WorkspacesPage() {
             {isLoading ? (
               <div className="flex items-center justify-center p-12">
                 <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : error ? (
+              <div className="border-2 border-red-300 rounded-lg p-12 text-center bg-red-50">
+                <div className="text-red-400">
+                  <svg
+                    className="mx-auto h-12 w-12 mb-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <p className="text-lg font-medium text-red-900 mb-2">Error loading workspaces</p>
+                  <p className="text-sm text-red-600">
+                    {error.message || 'An unknown error occurred'}
+                  </p>
+                </div>
               </div>
             ) : workspaces.length === 0 ? (
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">

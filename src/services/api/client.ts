@@ -5,17 +5,18 @@ import { ProblemDetail } from '@/types/errors';
 import { ApiError } from '@/lib/errors';
 
 /**
- * Base API URL from environment variables
- * Defaults to localhost:8080 for development
+ * Base API URL - using relative URLs to leverage Next.js rewrites
+ * Next.js will proxy /api/* requests to the backend
  */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = '/api';
 
 /**
  * Axios instance with base configuration
  * Configured for Spring Boot API communication with JWT authentication
+ * Uses relative URLs that are proxied by Next.js rewrites
  */
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: API_BASE_URL,
   timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
@@ -32,8 +33,18 @@ apiClient.interceptors.request.use(
     // Get token from localStorage (only in browser context)
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
 
+    console.log('[Request Interceptor]', {
+      url: config.url,
+      method: config.method,
+      hasToken: !!token,
+      tokenPreview: token ? token.substring(0, 20) + '...' : 'none'
+    });
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('[Request Interceptor] Authorization header added');
+    } else {
+      console.warn('[Request Interceptor] No auth token found in localStorage');
     }
 
     return config;
@@ -72,6 +83,16 @@ apiClient.interceptors.response.use(
           // Redirect to login page
           window.location.href = '/login';
         }
+      }
+
+      // Handle 403 Forbidden - log details
+      if (status === 403) {
+        console.error('403 Forbidden - Access denied:', {
+          url: error.config?.url,
+          method: error.config?.method,
+          hasAuthHeader: !!error.config?.headers?.Authorization,
+          data
+        });
       }
 
       // Check if response is RFC 7807 Problem Detail

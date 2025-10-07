@@ -1,27 +1,33 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores';
-import { useCurrentUser } from '@/hooks/api';
+import { getAuthToken } from '@/services/api/client';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isChecking, setIsChecking] = useState(true);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const { isPending } = useCurrentUser();
 
   useEffect(() => {
-    if (!isPending && !isAuthenticated) {
-      // Save current path for redirect after login
+    // Check if token exists
+    const token = getAuthToken();
+
+    if (!token) {
+      // No token, redirect to login
       if (pathname !== '/login') {
         localStorage.setItem('redirect_after_login', pathname);
       }
       router.push('/login');
+    } else {
+      // Token exists, allow access
+      setIsChecking(false);
     }
-  }, [isPending, isAuthenticated, router, pathname]);
+  }, [router, pathname]);
 
-  if (isPending) {
+  if (isChecking) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -30,10 +36,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null;
   }
 
   return <>{children}</>;

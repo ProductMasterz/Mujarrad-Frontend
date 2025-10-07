@@ -12,6 +12,12 @@ export function useCurrentUser() {
     queryKey: ['auth', 'currentUser'],
     queryFn: authService.getCurrentUser,
     retry: false,
+    onSuccess: (user) => {
+      setUser(user);
+    },
+    onError: () => {
+      setUser(null);
+    },
   });
 }
 

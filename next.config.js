@@ -3,10 +3,14 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   async rewrites() {
+    // Proxy all /api requests to the backend server
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+    console.log('Next.js rewrites configured to proxy /api/* to:', backendUrl);
+
     return [
       {
         source: '/api/:path*',
-        destination: process.env.NEXT_PUBLIC_API_BASE_URL + '/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },
