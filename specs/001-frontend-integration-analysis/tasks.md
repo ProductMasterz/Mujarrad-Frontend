@@ -7,7 +7,7 @@
 ```
 1. Load plan.md from feature directory
    → ✓ Found: Tech stack, libraries, structure defined
-   → Extract: TypeScript, React 18, Vite, React Flow, Zustand, React Query
+   → Extract: TypeScript, React 18, Next.js 14 (App Router), React Flow, Zustand, React Query
 2. Load optional design documents:
    → research.md: Extract decisions → setup tasks ✓
    → data-model.md: Not present (documented in plan.md)
@@ -38,35 +38,35 @@
 - Include exact file paths in descriptions
 
 ## Path Conventions
-- **Web app**: `src/` at repository root
-- Paths shown below use repository root structure
+- **Next.js 14 App Router**: `app/` for pages/layouts, `src/` for reusable code
+- Paths shown below use Next.js App Router structure
 
 ---
 
 ## Phase 3.1: Setup & Project Initialization
 
-- [ ] T001 Initialize Vite + React + TypeScript project at repository root with strict mode
-- [ ] T002 Install core dependencies: react@18, react-dom@18, typescript@5, vite@5
-- [ ] T003 Install routing: react-router-dom@6
-- [ ] T004 Install state management: zustand@4, @tanstack/react-query@5
-- [ ] T005 Install graph visualization: reactflow@11
-- [ ] T006 Install HTTP client: axios@1
-- [ ] T007 Install form handling: react-hook-form@7, @hookform/resolvers@3, zod@3
-- [ ] T008 Install styling: tailwindcss@3, @radix-ui/react-*
-- [ ] T009 Install utilities: dompurify@3, @types/dompurify
-- [ ] T010 Install dev tools: vitest@1, @testing-library/react@14, @testing-library/jest-dom@6
-- [ ] T011 Install E2E testing: @playwright/test@1
-- [ ] T012 Install linting: eslint@8, @typescript-eslint/*, prettier@3
-- [ ] T013 [P] Configure tsconfig.json with strict mode and path aliases
-- [ ] T014 [P] Configure vite.config.ts with plugins and build optimization
-- [ ] T015 [P] Configure tailwind.config.ts with custom theme
-- [ ] T016 [P] Configure vitest.config.ts for unit/integration tests
+- [ ] T001 Initialize Next.js 14 project with TypeScript and App Router using create-next-app
+- [ ] T002 Install core dependencies: react@18, react-dom@18, typescript@5, next@14
+- [ ] T003 Install state management: zustand@4, @tanstack/react-query@5
+- [ ] T004 Install graph visualization: reactflow@11
+- [ ] T005 Install HTTP client: axios@1
+- [ ] T006 Install form handling: react-hook-form@7, @hookform/resolvers@3, zod@3
+- [ ] T007 Install styling: tailwindcss@3, @radix-ui/react-*
+- [ ] T008 Install utilities: dompurify@3, @types/dompurify
+- [ ] T009 Install dev tools: jest@29, @testing-library/react@14, @testing-library/jest-dom@6
+- [ ] T010 Install E2E testing: @playwright/test@1
+- [ ] T011 Install linting: eslint@8, @typescript-eslint/*, prettier@3
+- [ ] T012 Install bundle analyzer: @next/bundle-analyzer
+- [ ] T013 [P] Configure tsconfig.json with strict mode and path aliases (@/src, @/app)
+- [ ] T014 [P] Configure next.config.js for client-side SPA mode, bundle optimization, and API proxy
+- [ ] T015 [P] Configure tailwind.config.ts with custom theme and app/ directory content paths
+- [ ] T016 [P] Configure jest.config.ts for unit/integration tests with Next.js preset
 - [ ] T017 [P] Configure playwright.config.ts for E2E tests
-- [ ] T018 [P] Configure ESLint with TypeScript rules in .eslintrc.js
+- [ ] T018 [P] Configure ESLint with Next.js and TypeScript rules (extends next/core-web-vitals)
 - [ ] T019 [P] Configure Prettier in .prettierrc
 - [ ] T020 [P] Setup Husky + lint-staged for pre-commit hooks
-- [ ] T021 [P] Create .env.example with API_BASE_URL and other env vars
-- [ ] T022 Create src/styles/globals.css with Tailwind directives
+- [ ] T021 [P] Create .env.example with NEXT_PUBLIC_API_BASE_URL and other env vars
+- [ ] T022 Create app/globals.css with Tailwind directives and custom styles
 
 ## Phase 3.2: Type Definitions & Data Model
 
@@ -178,75 +178,78 @@
 - [ ] T086 Create src/components/search/SearchResults.tsx with highlighted matches
 - [ ] T087 Create src/components/search/SearchFilters.tsx for node type, date range filtering
 
-## Phase 3.17: Routing & Pages
+## Phase 3.17: Next.js App Router Pages & Layouts
 
-- [ ] T088 Create src/app/routes/root.tsx with RootLayout and auth check
-- [ ] T089 Create src/app/routes/login.tsx page with LoginForm
-- [ ] T090 Create src/app/routes/register.tsx page with RegisterForm
-- [ ] T091 Create src/app/routes/workspaces.tsx page with WorkspaceList
-- [ ] T092 Create src/app/routes/workspace/$slug.tsx with WorkspaceLayout
-- [ ] T093 Create src/app/routes/workspace/nodes.tsx with NodeList view
-- [ ] T094 Create src/app/routes/workspace/graph.tsx with GraphVisualization
-- [ ] T095 Create src/app/routes/workspace/node/$id.tsx with NodeDetail and version history
-- [ ] T096 Create src/app/main.tsx with React Router setup, QueryClientProvider, Zustand stores
+- [ ] T088 Create app/layout.tsx with root layout, QueryClientProvider, Zustand providers, metadata
+- [ ] T089 Create app/page.tsx redirecting to /workspaces for authenticated users
+- [ ] T090 Create app/login/page.tsx with LoginForm marked as 'use client'
+- [ ] T091 Create app/register/page.tsx with RegisterForm marked as 'use client'
+- [ ] T092 Create app/workspaces/page.tsx with WorkspaceList marked as 'use client'
+- [ ] T093 Create app/workspaces/[slug]/layout.tsx with WorkspaceLayout and auth check
+- [ ] T094 Create app/workspaces/[slug]/page.tsx as workspace home with overview
+- [ ] T095 Create app/workspaces/[slug]/nodes/page.tsx with NodeList view marked as 'use client'
+- [ ] T096 Create app/workspaces/[slug]/graph/page.tsx with GraphVisualization marked as 'use client'
+- [ ] T097 Create app/workspaces/[slug]/node/[id]/page.tsx with NodeDetail and version history marked as 'use client'
+- [ ] T098 Create app/providers.tsx wrapper for QueryClient and Zustand providers
 
 ## Phase 3.18: Error Handling & Boundaries
 
-- [ ] T097 [P] Create src/components/ErrorBoundary.tsx catching React errors
-- [ ] T098 [P] Create src/components/NotFound.tsx for 404 page
+- [ ] T099 [P] Create app/error.tsx for Next.js error boundary
+- [ ] T100 [P] Create app/not-found.tsx for 404 page
+- [ ] T101 [P] Create app/workspaces/[slug]/error.tsx for workspace-specific errors
 
 ## Phase 3.19: Testing - Unit Tests
 
-- [ ] T099 [P] Create tests/unit/services/AuthService.spec.ts with MSW mocks
-- [ ] T100 [P] Create tests/unit/services/NodeService.spec.ts with MSW mocks
-- [ ] T101 [P] Create tests/unit/services/AttributeService.spec.ts with MSW mocks
-- [ ] T102 [P] Create tests/unit/hooks/useDebounce.spec.ts
-- [ ] T103 [P] Create tests/unit/schemas/node.schema.spec.ts validating Zod schemas
+- [ ] T102 [P] Create tests/unit/services/AuthService.spec.ts with MSW mocks
+- [ ] T103 [P] Create tests/unit/services/NodeService.spec.ts with MSW mocks
+- [ ] T104 [P] Create tests/unit/services/AttributeService.spec.ts with MSW mocks
+- [ ] T105 [P] Create tests/unit/hooks/useDebounce.spec.ts
+- [ ] T106 [P] Create tests/unit/schemas/node.schema.spec.ts validating Zod schemas
 
 ## Phase 3.20: Testing - Integration Tests
 
-- [ ] T104 [P] Create tests/integration/components/LoginForm.spec.tsx with user interactions
-- [ ] T105 [P] Create tests/integration/components/NodeForm.spec.tsx with form validation
-- [ ] T106 [P] Create tests/integration/components/GraphVisualization.spec.tsx with node/edge rendering
+- [ ] T107 [P] Create tests/integration/components/LoginForm.spec.tsx with user interactions
+- [ ] T108 [P] Create tests/integration/components/NodeForm.spec.tsx with form validation
+- [ ] T109 [P] Create tests/integration/components/GraphVisualization.spec.tsx with node/edge rendering
 
 ## Phase 3.21: Testing - E2E Tests
 
-- [ ] T107 [P] Create tests/e2e/auth.spec.ts testing registration and login flow
-- [ ] T108 [P] Create tests/e2e/workspace.spec.ts testing workspace CRUD
-- [ ] T109 [P] Create tests/e2e/nodes.spec.ts testing node CRUD and version history
-- [ ] T110 [P] Create tests/e2e/graph.spec.ts testing graph visualization and navigation
+- [ ] T110 [P] Create tests/e2e/auth.spec.ts testing registration and login flow
+- [ ] T111 [P] Create tests/e2e/workspace.spec.ts testing workspace CRUD
+- [ ] T112 [P] Create tests/e2e/nodes.spec.ts testing node CRUD and version history
+- [ ] T113 [P] Create tests/e2e/graph.spec.ts testing graph visualization and navigation
 
 ## Phase 3.22: Polish - Performance
 
-- [ ] T111 Add React.lazy() code splitting to src/app/main.tsx for routes
-- [ ] T112 Add React.lazy() for large components (GraphVisualization, NodeVersionHistory)
-- [ ] T113 Configure React Query stale times and cache times in src/app/main.tsx
-- [ ] T114 Add bundle size check to package.json scripts with vite-plugin-bundle-analyzer
-- [ ] T115 Run Lighthouse audit and fix performance issues to achieve >90 score
+- [ ] T114 Add dynamic imports for large components (GraphVisualization, NodeVersionHistory) with 'use client'
+- [ ] T115 Configure React Query stale times and cache times in app/providers.tsx
+- [ ] T116 Add bundle size check to package.json scripts with @next/bundle-analyzer
+- [ ] T117 Optimize next.config.js for production builds (SWC minification, compression)
+- [ ] T118 Run Lighthouse audit and fix performance issues to achieve >90 score
 
 ## Phase 3.23: Polish - Accessibility
 
-- [ ] T116 [P] Add ARIA labels to all interactive elements in graph components
-- [ ] T117 [P] Add keyboard navigation support to GraphVisualization.tsx
-- [ ] T118 [P] Verify color contrast ratios meet WCAG AA standards (4.5:1)
-- [ ] T119 [P] Add focus management to Dialog components (trap focus, restore on close)
-- [ ] T120 Run accessibility audit with axe-core and fix violations
+- [ ] T119 [P] Add ARIA labels to all interactive elements in graph components
+- [ ] T120 [P] Add keyboard navigation support to GraphVisualization.tsx
+- [ ] T121 [P] Verify color contrast ratios meet WCAG AA standards (4.5:1)
+- [ ] T122 [P] Add focus management to Dialog components (trap focus, restore on close)
+- [ ] T123 Run accessibility audit with axe-core and fix violations
 
 ## Phase 3.24: Polish - Documentation
 
-- [ ] T121 [P] Create README.md with setup instructions, tech stack, architecture
-- [ ] T122 [P] Create docs/ARCHITECTURE.md documenting Clean Architecture layers
-- [ ] T123 [P] Create docs/API.md with endpoint documentation and usage examples
-- [ ] T124 [P] Add JSDoc comments to all exported functions and components
+- [ ] T124 [P] Create README.md with setup instructions, Next.js commands, tech stack, architecture
+- [ ] T125 [P] Create docs/ARCHITECTURE.md documenting Clean Architecture layers and App Router structure
+- [ ] T126 [P] Create docs/API.md with endpoint documentation and usage examples
+- [ ] T127 [P] Add JSDoc comments to all exported functions and components
 
 ## Phase 3.25: Validation & Deployment
 
-- [ ] T125 Run all tests (unit, integration, E2E) and ensure >80% coverage for services
-- [ ] T126 Run ESLint and Prettier, fix all errors and warnings
-- [ ] T127 Build production bundle and verify size <200KB gzipped for main chunk
-- [ ] T128 Test application against backend API (localhost:8080)
-- [ ] T129 Create Dockerfile for containerized deployment (optional)
-- [ ] T130 Set up CI/CD pipeline with GitHub Actions (build, test, deploy)
+- [ ] T128 Run all tests (unit, integration, E2E) and ensure >80% coverage for services
+- [ ] T129 Run ESLint and Prettier, fix all errors and warnings
+- [ ] T130 Build production bundle with 'next build' and verify size <200KB gzipped for main chunk
+- [ ] T131 Test application against backend API (localhost:8080)
+- [ ] T132 Create Dockerfile for containerized Next.js deployment
+- [ ] T133 Set up CI/CD pipeline with GitHub Actions (build, test, deploy)
 
 ---
 
@@ -268,10 +271,11 @@
 - All components depend on hooks and stores
 
 ### Component Dependencies
-- T063-T064 (Layouts) → T088-T096 (Routes)
-- T065-T067 (Auth) → T089-T090 (Auth Pages)
-- T071-T076 (Node Components) → T093, T095 (Node Pages)
-- T079-T084 (Graph) → T094 (Graph Page)
+- T056-T062 (UI Components) → All feature components
+- T065-T067 (Auth Components) → T090-T091 (Auth Pages)
+- T071-T076 (Node Components) → T095, T097 (Node Pages)
+- T079-T084 (Graph Components) → T096 (Graph Page)
+- T088 (Root Layout) → All page routes
 
 ---
 
@@ -401,8 +405,17 @@ Task: "Create tests/e2e/auth.spec.ts testing registration and login"
 
 ---
 
-**Total Tasks**: 130
+**Total Tasks**: 133
 **Estimated Parallel Batches**: 15-20 (depending on dependencies)
-**Estimated Sequential Tasks**: 40-50 (setup, routing, integration)
+**Estimated Sequential Tasks**: 40-50 (setup, Next.js pages, integration)
 
-**Ready for execution**. Start with T001 (project initialization).
+**Technology**: Next.js 14 with App Router (client-side SPA mode)
+**Key Changes from Original Plan**:
+- Next.js App Router replaces React Router (built-in file-based routing)
+- Jest replaces Vitest (Next.js recommended testing framework)
+- next.config.js replaces vite.config.ts
+- app/ directory for pages/layouts, src/ for reusable code
+- 'use client' directive for interactive components
+- Dynamic imports with next/dynamic for code splitting
+
+**Ready for execution**. Start with T001 (Next.js project initialization).

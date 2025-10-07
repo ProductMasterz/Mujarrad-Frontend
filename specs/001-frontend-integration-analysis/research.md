@@ -7,6 +7,8 @@
 
 This document consolidates technical research and decisions for implementing the Mujarrad frontend. Since the constitution (v1.1.0) already mandates the core technology stack, this research focuses on implementation patterns, best practices, and specific library choices within the approved technologies.
 
+**MAJOR UPDATE (2025-10-07)**: Migrated from Vite + React Router to **Next.js 14 with App Router** for improved developer experience, automatic code splitting, and built-in routing.
+
 ## Technology Decisions
 
 ### 1. Graph Visualization: React Flow
@@ -178,20 +180,72 @@ axios.interceptors.response.use(
 - Debounced layout recalculation
 - WebWorker for layout computation (large graphs)
 
-### 7. Bundle Optimization
+### 7. Build Tool & Framework: Next.js 14 with App Router
 
-**Decision**: Vite code splitting + lazy loading
+**Decision**: Use Next.js 14 with App Router (replacing Vite + React Router)
 
-**Route-based Splitting**:
-```typescript
-const GraphView = lazy(() => import('./routes/workspace/graph'));
-const NodeDetail = lazy(() => import('./routes/workspace/node/$id'));
+**Rationale**:
+- **Built-in Routing**: File-based routing eliminates need for React Router
+- **Automatic Code Splitting**: Each route is automatically split into separate chunks
+- **SWC Compiler**: Faster builds and transpilation compared to Babel
+- **Developer Experience**: Hot Module Replacement (HMR), better error messages
+- **Production Ready**: Optimizations built-in (image optimization, font optimization, etc.)
+- **Client-Side SPA Mode**: Can be configured for pure client-side rendering (no SSR needed)
+
+**Configuration for SPA Mode**:
+```javascript
+// next.config.js - Client-side SPA configuration
+module.exports = {
+  reactStrictMode: true,
+  swcMinify: true,
+  // Proxy API requests to Spring Boot backend
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: process.env.NEXT_PUBLIC_API_BASE_URL + '/api/:path*',
+      },
+    ];
+  },
+};
 ```
 
-**Component-level Splitting**:
-- GraphVisualization component (large dependency: React Flow)
-- VersionHistory component (markdown diff library)
-- MarkdownEditor component (CodeMirror)
+**Key Patterns**:
+- Use `'use client'` directive for interactive components
+- Server Components for static layouts (minimal JS sent to client)
+- Dynamic imports with `next/dynamic` for large components:
+```typescript
+import dynamic from 'next/dynamic';
+
+const GraphView = dynamic(() => import('@/components/graph/GraphVisualization'), {
+  loading: () => <Spinner />,
+  ssr: false, // Client-side only
+});
+```
+
+**Alternatives Considered**:
+- **Vite + React Router**: More manual setup, no built-in routing
+- **Create React App**: Deprecated, slower builds
+- **Remix**: More opinionated, requires SSR mindset
+
+### 8. Bundle Optimization
+
+**Decision**: Next.js 14 automatic optimizations + manual splitting
+
+**Automatic Optimizations**:
+- App Router automatically splits each route
+- SWC minification (faster than Terser)
+- Automatic tree shaking with ES modules
+- Font optimization (next/font)
+- Image optimization (next/image)
+
+**Manual Splitting**:
+```typescript
+// Dynamic imports for large components
+const GraphVisualization = dynamic(() => import('@/components/graph/GraphVisualization'), { ssr: false });
+const VersionHistory = dynamic(() => import('@/components/nodes/NodeVersionHistory'), { ssr: false });
+const MarkdownEditor = dynamic(() => import('@/components/ui/MarkdownEditor'), { ssr: false });
+```
 
 **Tree Shaking**:
 - Import only used Radix UI components
@@ -204,14 +258,14 @@ const NodeDetail = lazy(() => import('./routes/workspace/node/$id'));
 - Largest chunk: <300KB
 
 **Monitoring**:
-- vite-plugin-bundle-analyzer for visualization
+- @next/bundle-analyzer for visualization
 - CI check fails if bundle exceeds limits
 
-### 8. Testing Strategy
+### 9. Testing Strategy
 
 **Decision**: 3-tier testing pyramid
 
-**Unit Tests (Vitest)**:
+**Unit Tests (Jest)**:
 - Services (80% coverage target)
 - Hooks (80% coverage target)
 - Utilities (90% coverage target)
@@ -336,6 +390,65 @@ const queryClient = new QueryClient({
 - Focus trap in modals
 - Restore focus after modal close
 
+## Why Next.js 14 for This Project
+
+### Benefits for Mujarrad Knowledge Graph Frontend
+
+1. **File-Based Routing Matches Domain Model**
+   - Workspace routing: `app/workspaces/[slug]/page.tsx`
+   - Node detail: `app/workspaces/[slug]/node/[id]/page.tsx`
+   - Graph view: `app/workspaces/[slug]/graph/page.tsx`
+   - Natural mapping to backend API structure
+
+2. **Performance Optimization Out-of-the-Box**
+   - Automatic code splitting per route (critical for large graph visualizations)
+   - SWC compiler for faster development builds
+   - Built-in image and font optimization
+   - Reduced bundle size with automatic tree shaking
+
+3. **Developer Experience**
+   - TypeScript support built-in
+   - Fast Refresh for instant feedback
+   - Better error messages and debugging
+   - Less boilerplate compared to Vite + React Router
+
+4. **Integration with Spring Boot Backend**
+   - API proxy via `rewrites()` in next.config.js
+   - CORS handled by Next.js proxy
+   - Easy environment variable management (NEXT_PUBLIC_ prefix)
+   - No additional backend configuration needed
+
+5. **Client-Side SPA Mode**
+   - No SSR overhead (not needed for authenticated app)
+   - All data fetching via React Query from backend API
+   - Can still use Server Components for layouts (reduced JS bundle)
+   - Flexible: Can add SSR later if needed (e.g., for SEO)
+
+6. **Production Deployment**
+   - Optimized production builds with SWC minification
+   - Static export option for CDN deployment
+   - Docker-friendly (official Next.js Dockerfile template)
+   - Vercel deployment option for easy prototyping
+
+### Trade-offs Accepted
+
+- **Learning Curve**: Team needs to learn App Router concepts ('use client', Server Components)
+- **Framework Lock-in**: More coupled to Next.js than vanilla React
+- **Bundle Size**: Next.js runtime adds ~80KB (acceptable for our use case)
+
+### Migration from Vite
+
+| Aspect | Vite + React Router | Next.js 14 App Router |
+|--------|---------------------|----------------------|
+| **Routing** | Manual React Router setup | File-based, automatic |
+| **Code Splitting** | Manual `React.lazy()` | Automatic per route |
+| **Build Tool** | vite.config.ts | next.config.js |
+| **Dev Server** | `vite dev` | `next dev` |
+| **Production** | `vite build` | `next build` |
+| **Testing** | Vitest | Jest (Next.js recommended) |
+| **HMR Speed** | Very fast | Very fast (SWC) |
+| **Bundle Size** | Smaller base | +80KB runtime |
+
 ## Next Steps
 
 With research complete, proceed to Phase 1:
@@ -343,7 +456,7 @@ With research complete, proceed to Phase 1:
 2. Generate Zod schemas in `contracts/` directory
 3. Write contract tests (should fail initially)
 4. Document manual test scenarios in `quickstart.md`
-5. Update `CLAUDE.md` with new technology context
+5. Update `CLAUDE.md` with new technology context (Next.js 14 App Router)
 
 ---
-*Research complete. Ready for Phase 1: Design & Contracts.*
+*Research complete. Technology decision: **Next.js 14 App Router**. Ready for Phase 1: Design & Contracts.*

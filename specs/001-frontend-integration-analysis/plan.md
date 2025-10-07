@@ -42,8 +42,7 @@ Build a complete frontend React SPA that integrates with the Mujarrad Spring Boo
 **Language/Version**: TypeScript 5.0+ (strict mode enabled)
 **Primary Dependencies**:
   - React 18.2+
-  - Vite 5.0+ (build tool)
-  - React Router v6+ (routing)
+  - Next.js 14+ (App Router, build tool, routing)
   - React Query v5+ / TanStack Query (server state)
   - Zustand v4+ (client state)
   - React Flow v11+ (graph visualization)
@@ -54,7 +53,7 @@ Build a complete frontend React SPA that integrates with the Mujarrad Spring Boo
   - Radix UI (accessible primitives)
   - DOMPurify (XSS protection)
 **Storage**: Backend API (no local storage for data, JWT in httpOnly cookies)
-**Testing**: Vitest + React Testing Library + Playwright (E2E)
+**Testing**: Jest + React Testing Library + Playwright (E2E)
 **Target Platform**: Modern web browsers (Chrome, Firefox, Safari, Edge - last 2 versions)
 **Project Type**: Web application (frontend SPA + backend API)
 **Performance Goals**:
@@ -152,7 +151,7 @@ Types & Models (Domain)
 ### Principle X: Performance and Optimization
 **Status**: ✅ PASS
 **Rationale**:
-- Route-based code splitting (Vite + React.lazy)
+- Route-based code splitting (Next.js App Router + React.lazy)
 - React Query caching with stale times
 - Infinite scroll for node lists
 - Debounced search
@@ -181,21 +180,28 @@ specs/001-frontend-integration-analysis/
 ### Source Code (repository root)
 ```
 mujarrad-frontend/
-├── src/
-│   ├── app/                      # React Router routes (or Next.js pages)
-│   │   ├── routes/
-│   │   │   ├── root.tsx          # Layout with auth check
-│   │   │   ├── login.tsx
-│   │   │   ├── register.tsx
-│   │   │   ├── workspaces.tsx    # Workspace list
-│   │   │   └── workspace/
-│   │   │       ├── $slug.tsx     # Workspace home
-│   │   │       ├── nodes.tsx     # Node list view
-│   │   │       ├── graph.tsx     # Graph visualization
-│   │   │       └── node/
-│   │   │           └── $id.tsx   # Node detail
-│   │   └── main.tsx              # App entry point
+├── app/                          # Next.js 14 App Router
+│   ├── layout.tsx                # Root layout with providers
+│   ├── page.tsx                  # Home page (redirect to workspaces)
+│   ├── login/
+│   │   └── page.tsx              # Login page
+│   ├── register/
+│   │   └── page.tsx              # Register page
+│   ├── workspaces/
+│   │   ├── page.tsx              # Workspace list
+│   │   └── [slug]/
+│   │       ├── layout.tsx        # Workspace layout
+│   │       ├── page.tsx          # Workspace home
+│   │       ├── nodes/
+│   │       │   └── page.tsx      # Node list view
+│   │       ├── graph/
+│   │       │   └── page.tsx      # Graph visualization
+│   │       └── node/
+│   │           └── [id]/
+│   │               └── page.tsx  # Node detail
 │   │
+│
+├── src/
 │   ├── components/
 │   │   ├── graph/
 │   │   │   ├── GraphVisualization.tsx
@@ -216,9 +222,13 @@ mujarrad-frontend/
 │   │   │   ├── Input.tsx
 │   │   │   ├── Select.tsx
 │   │   │   └── Toast.tsx
-│   │   └── layouts/
-│   │       ├── RootLayout.tsx
-│   │       └── WorkspaceLayout.tsx
+│   │   ├── auth/
+│   │   │   ├── LoginForm.tsx
+│   │   │   ├── RegisterForm.tsx
+│   │   │   └── ProtectedRoute.tsx
+│   │   └── workspaces/
+│   │       ├── WorkspaceList.tsx
+│   │       └── WorkspaceCard.tsx
 │   │
 │   ├── hooks/
 │   │   ├── api/
@@ -258,13 +268,10 @@ mujarrad-frontend/
 │   │   ├── node.schema.ts        # Zod: node CRUD
 │   │   └── attribute.schema.ts   # Zod: relationship CRUD
 │   │
-│   ├── lib/
-│   │   ├── utils.ts
-│   │   ├── constants.ts
-│   │   └── formatters.ts
-│   │
-│   └── styles/
-│       └── globals.css           # Tailwind directives
+│   └── lib/
+│       ├── utils.ts
+│       ├── constants.ts
+│       └── formatters.ts
 │
 ├── tests/
 │   ├── unit/
@@ -288,23 +295,26 @@ mujarrad-frontend/
 │   │   └── constitution.md       # v1.1.0
 │   └── templates/
 │
+├── public/
+│   └── assets/
+│
 ├── package.json
 ├── tsconfig.json
-├── vite.config.ts
+├── next.config.js
 ├── tailwind.config.ts
-├── vitest.config.ts
+├── jest.config.ts
 ├── playwright.config.ts
 └── .env.example
 ```
 
-**Structure Decision**: Single React SPA frontend. Backend is separate Spring Boot repository. Frontend structure follows Clean Architecture with clear separation:
-- `/app/routes` → Pages/Routes (presentation layer)
-- `/components` → Reusable UI (presentation layer)
-- `/hooks` → Business logic hooks (application layer)
-- `/services` → API communication (infrastructure layer)
-- `/stores` → Global state (application layer)
-- `/types` → Domain models (domain layer)
-- `/schemas` → Validation rules (application layer)
+**Structure Decision**: Single Next.js 14 App Router frontend. Backend is separate Spring Boot repository. Frontend structure follows Clean Architecture with clear separation:
+- `/app` → Next.js App Router pages and layouts (presentation layer)
+- `/src/components` → Reusable UI components (presentation layer)
+- `/src/hooks` → Business logic hooks (application layer)
+- `/src/services` → API communication (infrastructure layer)
+- `/src/stores` → Global state (application layer)
+- `/src/types` → Domain models (domain layer)
+- `/src/schemas` → Validation rules (application layer)
 
 ## Phase 0: Outline & Research
 
@@ -347,14 +357,15 @@ Since the constitution already defines the technology stack and the spec has all
    - Performance: Virtual rendering for >1000 nodes
 
 7. **Bundle Optimization**
-   - Decision: **Vite code splitting + lazy loading**
-   - Route-based splitting: Each page is a separate chunk
-   - Component-level splitting: Large components (Graph, VersionHistory) lazy loaded
+   - Decision: **Next.js 14 automatic code splitting + lazy loading**
+   - Route-based splitting: App Router automatically splits each page/route
+   - Component-level splitting: Large components (Graph, VersionHistory) lazy loaded with dynamic()
    - Tree shaking: Automatic with ES modules
+   - SWC compiler for faster builds
 
 8. **Testing Strategy**
    - Decision: **3-tier testing**
-   - Unit: Vitest for services, hooks, utilities (80% coverage target)
+   - Unit: Jest for services, hooks, utilities (80% coverage target)
    - Integration: React Testing Library for components (60% coverage target)
    - E2E: Playwright for critical user flows (auth, CRUD, graph)
 
@@ -524,7 +535,7 @@ Generate contract test files (to be run before implementation):
 
 **`tests/integration/contracts/nodes.spec.ts`**
 ```typescript
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from '@jest/globals';
 import { createNodeSchema } from '@/schemas/node.schema';
 
 describe('Node Contract Tests', () => {

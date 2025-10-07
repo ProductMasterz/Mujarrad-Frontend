@@ -1,17 +1,23 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.0.0 → 1.1.0
+Version change: 1.1.0 → 1.2.0
 Modified principles:
-  - Principle II: Added explicit edge-to-attribute mapping clarification
+  - Technology Stack Requirements: Locked frontend stack to Next.js 14+ (FROZEN STACK POLICY)
+  - Replaced Vite + React Router with Next.js 14 App Router
+  - Updated testing stack from Vitest to Jest
+  - Added explicit rationale for Next.js selection
 Added sections:
-  - Special Provisions: Data Migration and Sample Data
+  - LOCKED STACK POLICY: Prevents future framework migrations
+  - Rationale for Next.js: 8 key benefits documented
 Removed sections: None
 Templates requiring updates:
-  ✅ .specify/templates/plan-template.md - No changes needed (generic enough)
+  ✅ .specify/templates/plan-template.md - Updated for Next.js patterns
   ✅ .specify/templates/spec-template.md - No changes needed (generic enough)
   ✅ .specify/templates/tasks-template.md - No changes needed (generic enough)
-Follow-up TODOs: None
+Follow-up TODOs:
+  - All spec files (spec.md, plan.md, tasks.md, research.md) updated to Next.js
+  - Implementation ready to proceed with Next.js 14 foundation
 -->
 
 # Mujarrad Frontend Constitution
@@ -219,30 +225,44 @@ knowledge graphs. Optimization ensures scalability.
 
 ## Technology Stack Requirements
 
-### Core Technologies
-- **Framework:** React 18+ with TypeScript
-- **Build Tool:** Vite (fast HMR, optimized builds)
-- **State Management:** Zustand (global) + React Query (server state)
-- **Routing:** React Router v6+
-- **Styling:** Tailwind CSS + CSS Modules for scoped styles
-- **Form Handling:** React Hook Form + Zod validation
-- **API Client:** Axios with interceptors
-- **Graph Visualization:** React Flow or D3.js
-- **UI Components:** Radix UI primitives + custom components
+**LOCKED STACK POLICY**: The frontend technology stack is **FROZEN** for this project. No changes to core framework, build tools, or routing solutions are permitted without explicit project owner approval and constitutional amendment. This stability ensures consistent development patterns and prevents disruptive migrations.
 
-### Development Tools
-- **Linting:** ESLint with TypeScript plugin
+### Core Technologies (LOCKED)
+- **Framework:** Next.js 14+ with App Router (LOCKED - SSR/SPA hybrid with file-based routing)
+- **React Version:** React 18+ with TypeScript (LOCKED)
+- **State Management:** Zustand (global) + TanStack Query / React Query (server state) (LOCKED)
+- **Routing:** Next.js App Router (built-in file-based routing) (LOCKED)
+- **Styling:** Tailwind CSS + CSS Modules for scoped styles (LOCKED)
+- **Form Handling:** React Hook Form + Zod validation (LOCKED)
+- **API Client:** Axios with interceptors (LOCKED)
+- **Graph Visualization:** React Flow (LOCKED - chosen for React integration and performance)
+- **UI Components:** Radix UI primitives + custom components (LOCKED)
+
+### Development Tools (LOCKED)
+- **Linting:** ESLint with TypeScript plugin (next/core-web-vitals preset)
 - **Formatting:** Prettier
 - **Type Checking:** TypeScript strict mode
-- **Testing:** Vitest + React Testing Library + Playwright (E2E)
+- **Testing:** Jest + React Testing Library + Playwright (E2E)
 - **Git Hooks:** Husky + lint-staged
 - **API Mocking:** MSW (Mock Service Worker) for testing
 
 ### Build and Deployment
-- **Environment Management:** .env files with validation
+- **Build Tool:** Next.js built-in (SWC compiler)
+- **Environment Management:** .env files with NEXT_PUBLIC_ prefix for client vars
 - **CI/CD:** GitHub Actions (build, test, deploy)
-- **Hosting:** Vercel or Netlify (with preview deployments)
+- **Hosting:** Vercel (recommended for Next.js) or Netlify
 - **Monitoring:** Sentry for error tracking
+
+### Rationale for Next.js
+Next.js 14 was chosen for:
+1. **File-based routing** eliminates manual route configuration (React Router not needed)
+2. **Automatic code splitting** per route optimizes bundle sizes
+3. **SWC compiler** provides faster builds than traditional bundlers
+4. **App Router** enables modern React patterns (Server Components, streaming)
+5. **Built-in optimizations** for images, fonts, and scripts
+6. **SPA mode capability** when not using SSR (matches backend-driven architecture)
+7. **Industry standard** with extensive ecosystem and long-term support
+8. **Developer experience** with Fast Refresh, TypeScript integration, and error overlay
 
 ## Quality Standards
 
@@ -385,4 +405,5 @@ When migrating legacy data or loading sample data for demonstration:
 - Verify version control and relationship management
 - Provide initial content for user onboarding and testing
 
-**Version**: 1.1.0 | **Ratified**: 2025-10-07 | **Last Amended**: 2025-10-07
+**Version**: 1.2.0 | **Ratified**: 2025-10-07 | **Last Amended**: 2025-10-07
+**Amendment**: Technology stack locked to Next.js 14+ (FROZEN STACK POLICY)
