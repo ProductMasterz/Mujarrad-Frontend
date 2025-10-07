@@ -19,9 +19,15 @@ export interface Workspace {
   name: string;
   slug: string;
   description?: string;
-  ownerId: number;
+  ownerId: string; // UUID (matches User.id)
   createdAt: string;
   updatedAt: string;
+  // Optional aggregated counts (populated by backend when needed)
+  nodeCount?: number;
+  relationshipCount?: number;
+  versionCount?: number;
+  // Optional populated collaborators (when fetched with details)
+  collaborators?: WorkspaceCollaborator[];
 }
 
 /**

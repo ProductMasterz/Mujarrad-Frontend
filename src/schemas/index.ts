@@ -11,8 +11,10 @@ export {
 export {
   createWorkspaceSchema,
   updateWorkspaceSchema,
+  inviteCollaboratorSchema,
   type CreateWorkspaceFormData,
   type UpdateWorkspaceFormData,
+  type InviteCollaboratorFormData,
 } from './workspace.schema';
 
 export {
