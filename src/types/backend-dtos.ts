@@ -4,7 +4,7 @@
  * User entity from backend
  */
 export interface User {
-  id: number;
+  id: string; // UUID
   username: string;
   email: string;
   createdAt: string; // ISO 8601 timestamp
