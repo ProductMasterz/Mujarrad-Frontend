@@ -18,7 +18,7 @@ export default function WorkspaceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
-  const [activeTab, setActiveTab] = useState<'list' | 'hierarchy' | 'graph'>('hierarchy');
+  const [activeTab, setActiveTab] = useState<'list' | 'hierarchy' | 'graph'>('list');
 
   const { data: workspace, isLoading, error } = useWorkspace(slug);
   const { setWorkspace, selectedNodeId } = useNavigationStore();
