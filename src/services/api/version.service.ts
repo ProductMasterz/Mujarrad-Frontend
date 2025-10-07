@@ -30,6 +30,7 @@ export const versionService = {
 
   /**
    * Restore node to a previous version
+   * Creates a new version with the historical content
    */
   async restoreVersion(
     workspaceSlug: string,
@@ -40,5 +41,18 @@ export const versionService = {
       `/workspaces/${workspaceSlug}/nodes/${nodeId}/versions/${versionId}/restore`
     );
     return response.data;
+  },
+
+  /**
+   * Delete a specific version from history
+   */
+  async deleteVersion(
+    workspaceSlug: string,
+    nodeId: number,
+    versionId: number
+  ): Promise<void> {
+    await apiClient.delete(
+      `/workspaces/${workspaceSlug}/nodes/${nodeId}/versions/${versionId}`
+    );
   },
 };

@@ -145,3 +145,23 @@ export interface CreateAttributeRequest {
   attributeValue?: string;
   metadata?: Record<string, unknown>;
 }
+
+/**
+ * Workspace collaborator entity from backend
+ */
+export interface WorkspaceCollaborator {
+  id: string; // UUID
+  workspaceId: number;
+  userId: string; // UUID
+  role: 'owner' | 'editor';
+  invitedBy: string; // UUID
+  createdAt: string;
+}
+
+/**
+ * Request DTO for inviting a collaborator
+ */
+export interface InviteCollaboratorRequest {
+  email?: string;
+  username?: string;
+}

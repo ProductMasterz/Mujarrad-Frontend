@@ -43,3 +43,24 @@ export const updateWorkspaceSchema = z.object({
 });
 
 export type UpdateWorkspaceFormData = z.infer<typeof updateWorkspaceSchema>;
+
+/**
+ * Invite collaborator form schema
+ * Requires either email or username
+ */
+export const inviteCollaboratorSchema = z.object({
+  email: z
+    .string()
+    .email('Valid email required')
+    .optional(),
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(50, 'Username must not exceed 50 characters')
+    .optional(),
+}).refine(data => data.email || data.username, {
+  message: 'Either email or username is required',
+  path: ['email'], // Show error on email field
+});
+
+export type InviteCollaboratorFormData = z.infer<typeof inviteCollaboratorSchema>;

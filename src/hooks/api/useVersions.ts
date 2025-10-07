@@ -26,6 +26,7 @@ export function useRestoreVersion(workspaceSlug: string, nodeId: number) {
     mutationFn: (versionId: number) =>
       versionService.restoreVersion(workspaceSlug, nodeId, versionId),
     onSuccess: () => {
+      // Invalidate node data and versions list after restoration
       queryClient.invalidateQueries({
         queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId]
       });
@@ -34,6 +35,21 @@ export function useRestoreVersion(workspaceSlug: string, nodeId: number) {
       });
       queryClient.invalidateQueries({
         queryKey: ['workspaces', workspaceSlug, 'graph']
+      });
+    },
+  });
+}
+
+export function useDeleteVersion(workspaceSlug: string, nodeId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (versionId: number) =>
+      versionService.deleteVersion(workspaceSlug, nodeId, versionId),
+    onSuccess: () => {
+      // Invalidate versions list after deletion
+      queryClient.invalidateQueries({
+        queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'versions']
       });
     },
   });

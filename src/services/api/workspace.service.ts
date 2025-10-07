@@ -5,6 +5,8 @@ import type {
   Workspace,
   CreateWorkspaceRequest,
   UpdateWorkspaceRequest,
+  WorkspaceCollaborator,
+  InviteCollaboratorRequest,
 } from '@/types/backend-dtos';
 import type { PaginatedResponse, PaginationParams } from '@/types/api';
 
@@ -56,5 +58,36 @@ export const workspaceService = {
    */
   async deleteWorkspace(id: number): Promise<void> {
     await apiClient.delete(`/workspaces/${id}`);
+  },
+
+  /**
+   * Get collaborators for a workspace
+   */
+  async getCollaborators(workspaceId: number): Promise<WorkspaceCollaborator[]> {
+    const response = await apiClient.get<WorkspaceCollaborator[]>(
+      `/workspaces/${workspaceId}/collaborators`
+    );
+    return response.data;
+  },
+
+  /**
+   * Invite a collaborator to a workspace
+   */
+  async inviteCollaborator(
+    workspaceId: number,
+    data: InviteCollaboratorRequest
+  ): Promise<WorkspaceCollaborator> {
+    const response = await apiClient.post<WorkspaceCollaborator>(
+      `/workspaces/${workspaceId}/collaborators`,
+      data
+    );
+    return response.data;
+  },
+
+  /**
+   * Remove a collaborator from a workspace
+   */
+  async removeCollaborator(workspaceId: number, userId: string): Promise<void> {
+    await apiClient.delete(`/workspaces/${workspaceId}/collaborators/${userId}`);
   },
 };
