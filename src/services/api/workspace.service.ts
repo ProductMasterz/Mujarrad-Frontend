@@ -34,10 +34,17 @@ export const workspaceService = {
 
   /**
    * Get workspace by slug
+   * Note: Backend doesn't support get-by-slug, so we fetch all and find by slug
    */
   async getWorkspaceBySlug(slug: string): Promise<Workspace> {
-    const response = await apiClient.get<Workspace>(`/workspaces/${slug}`);
-    return response.data;
+    const workspaces = await this.getWorkspaces();
+    const workspace = workspaces.find((w) => w.slug === slug);
+
+    if (!workspace) {
+      throw new Error(`Workspace with slug "${slug}" not found`);
+    }
+
+    return workspace;
   },
 
   /**
