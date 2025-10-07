@@ -1,18 +1,18 @@
 // src/types/graph.ts
 
 import { Node as ReactFlowNode, Edge as ReactFlowEdge } from 'reactflow';
-import { Node, Attribute, NodeType, AttributeKey } from './backend-dtos';
+import type { Node, Attribute, AttributeType } from './backend-dtos';
 
 /**
  * Extended ReactFlow node with our domain data
  */
 export interface GraphNode extends ReactFlowNode {
   id: string; // ReactFlow requires string IDs
-  type: 'custom'; // Our custom node renderer
+  type: 'context' | 'regular'; // Custom node types for CONTEXT/REGULAR
   data: {
     node: Node; // Backend node entity
     label: string; // Display label
-    nodeType: NodeType;
+    isSelected: boolean;
   };
   position: { x: number; y: number };
 }
@@ -22,22 +22,22 @@ export interface GraphNode extends ReactFlowNode {
  */
 export interface GraphEdgeData {
   attribute: Attribute; // Backend attribute entity
-  attributeKey: AttributeKey;
+  isBidirectional: boolean; // True if A→B and B→A both exist
   label?: string;
 }
 
 /**
  * Extended ReactFlow edge with our domain data
  */
-export type GraphEdge = ReactFlowEdge<GraphEdgeData> & {
+export interface GraphEdge extends ReactFlowEdge {
   id: string;
   source: string; // Node ID
   target: string; // Node ID
-  type?: 'custom'; // Our custom edge renderer
-  data?: GraphEdgeData;
+  type: 'default' | 'bidirectional' | 'contains'; // Edge types
+  data: GraphEdgeData;
   animated?: boolean;
   style?: React.CSSProperties;
-};
+}
 
 /**
  * Full graph data structure
@@ -45,6 +45,16 @@ export type GraphEdge = ReactFlowEdge<GraphEdgeData> & {
 export interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
+}
+
+/**
+ * Graph view mode for filtering nodes/edges
+ */
+export interface GraphViewMode {
+  showContext: boolean;    // Show CONTEXT nodes
+  showRegular: boolean;    // Show REGULAR nodes
+  showContains: boolean;   // Show hierarchy edges
+  showReferences: boolean; // Show wiki-link edges
 }
 
 /**
@@ -59,4 +69,14 @@ export interface GraphViewport {
   x: number;
   y: number;
   zoom: number;
+}
+
+/**
+ * Parameters for building graph data
+ */
+export interface BuildGraphDataParams {
+  nodes: Node[];
+  attributes: Attribute[];
+  viewMode: GraphViewMode;
+  selectedNodeId?: string | null;
 }

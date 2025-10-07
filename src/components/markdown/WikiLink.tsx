@@ -1,0 +1,62 @@
+/**
+ * WikiLink component
+ * Renders clickable wiki-links with navigation
+ */
+
+import React from 'react';
+import Link from 'next/link';
+
+interface WikiLinkProps {
+  targetTitle: string;
+  displayText?: string;
+  targetNodeId?: string | null;
+  workspaceSlug: string;
+  onClick?: (targetTitle: string) => void;
+}
+
+/**
+ * WikiLink component
+ * Displays a clickable link to another node
+ * Shows placeholder styling if target doesn't exist
+ */
+export function WikiLink({
+  targetTitle,
+  displayText,
+  targetNodeId,
+  workspaceSlug,
+  onClick,
+}: WikiLinkProps) {
+  const text = displayText || targetTitle;
+  const isPlaceholder = !targetNodeId;
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      e.preventDefault();
+      onClick(targetTitle);
+    }
+  };
+
+  // If target exists, link to it
+  if (targetNodeId) {
+    return (
+      <Link
+        href={`/workspace/${workspaceSlug}/node/${targetNodeId}`}
+        className="text-blue-600 hover:text-blue-800 underline"
+        onClick={handleClick}
+      >
+        {text}
+      </Link>
+    );
+  }
+
+  // If target doesn't exist (placeholder), show as unresolved
+  return (
+    <span
+      className="text-red-500 cursor-pointer underline decoration-dotted"
+      onClick={handleClick}
+      title={`"${targetTitle}" does not exist (click to create)`}
+    >
+      {text}
+    </span>
+  );
+}

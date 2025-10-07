@@ -43,21 +43,21 @@
 
 ## Phase 3.1: Setup & Configuration
 
-- [ ] **T001** [P] Install dependencies: react-markdown, remark-gfm, @types/mdast, unist-util-visit in package.json
-- [ ] **T002** [P] Configure MSW (Mock Service Worker) for API mocking in tests/mocks/server.ts and tests/setup.ts
-- [ ] **T003** [P] Add TypeScript strict mode configuration and path aliases (@/components, @/services, @/lib) in tsconfig.json
+- [X] **T001** [P] Install dependencies: react-markdown, remark-gfm, @types/mdast, unist-util-visit in package.json
+- [X] **T002** [P] Configure MSW (Mock Service Worker) for API mocking in tests/mocks/server.ts and tests/setup.ts
+- [X] **T003** [P] Add TypeScript strict mode configuration and path aliases (@/components, @/services, @/lib) in tsconfig.json
 
 ---
 
 ## Phase 3.2: Type Definitions (Foundation)
 
-**Prerequisites**: T001-T003 complete
+**Prerequisites**: T001-T003 complete ✅
 
-- [ ] **T004** [P] Define core entity types (Node, Attribute, Workspace) in src/types/entities.ts
-- [ ] **T005** [P] Define hierarchy types (TreeNode, HierarchyTree) in src/types/hierarchy.ts
-- [ ] **T006** [P] Define wiki-link types (WikiLink, WikiLinkResolution) in src/types/wikilink.ts
-- [ ] **T007** [P] Define graph types (GraphNode, GraphEdge, GraphViewMode) in src/types/graph.ts
-- [ ] **T008** [P] Define service payloads (CreateNodePayload, UpdateNodePayload, CreateAttributePayload) in src/types/api.ts
+- [X] **T004** [P] Define core entity types (Node, Attribute, Workspace) in src/types/entities.ts
+- [X] **T005** [P] Define hierarchy types (TreeNode, HierarchyTree) in src/types/hierarchy.ts
+- [X] **T006** [P] Define wiki-link types (WikiLink, WikiLinkResolution) in src/types/wikilink.ts
+- [X] **T007** [P] Define graph types (GraphNode, GraphEdge, GraphViewMode) in src/types/graph.ts
+- [X] **T008** [P] Define service payloads (CreateNodePayload, UpdateNodePayload, CreateAttributePayload) in src/types/api.ts
 
 ---
 

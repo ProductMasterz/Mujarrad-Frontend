@@ -9,9 +9,19 @@ import type {
 } from '@/types/backend-dtos';
 
 export function useWorkspaces() {
+  console.log('[useWorkspaces] Hook called');
+
   return useQuery({
     queryKey: ['workspaces'],
-    queryFn: () => workspaceService.getWorkspaces(),
+    queryFn: async () => {
+      console.log('[useWorkspaces] Query function executing');
+      const result = await workspaceService.getWorkspaces();
+      console.log('[useWorkspaces] Query result:', result);
+      return result;
+    },
+    staleTime: 0, // Force fresh data
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 }
 

@@ -41,7 +41,16 @@
       "Bash(done)",
       "Bash(npm run type-check:*)",
       "Bash(npm run:*)",
-      "Bash(PORT=3001 npm run dev)"
+      "Bash(PORT=3001 npm run dev)",
+      "Bash(curl:*)",
+      "Bash(./gradlew:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(open debug-browser-state.html)",
+      "Bash(chmod:*)",
+      "Bash(./test-authorization-bug.sh:*)",
+      "Bash(./test-complete-flow.sh:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

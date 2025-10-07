@@ -121,7 +121,7 @@ export default function WorkspacesPage() {
                   </svg>
                   <p className="text-lg font-medium text-gray-900 mb-2">No workspaces yet</p>
                   <p className="text-sm text-gray-500">
-                    Get started by clicking the "Create Workspace" button above
+                    Get started by clicking the &quot;Create Workspace&quot; button above
                   </p>
                 </div>
               </div>
