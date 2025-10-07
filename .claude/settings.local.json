@@ -15,7 +15,12 @@
       "Bash(cat:*)",
       "Bash(mv:*)",
       "Bash(npm run build:*)",
-      "Bash(yarn install)"
+      "Bash(yarn install)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(npm run start:*)",
+      "Bash(pkill:*)",
+      "Bash(specify init:*)"
     ],
     "deny": [],
     "ask": []
