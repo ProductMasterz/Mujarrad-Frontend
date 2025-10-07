@@ -40,7 +40,8 @@
       "Bash(for file in *.ts __tests__/*.ts __tests__/*.tsx)",
       "Bash(done)",
       "Bash(npm run type-check:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(PORT=3001 npm run dev)"
     ],
     "deny": [],
     "ask": []

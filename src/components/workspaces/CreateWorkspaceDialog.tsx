@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { createWorkspaceSchema, type CreateWorkspaceFormData } from '@/schemas';
 import { useCreateWorkspace } from '@/hooks/api';
 import {
@@ -22,6 +23,7 @@ import { isApiError } from '@/lib/errors';
 
 export function CreateWorkspaceDialog() {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const { mutate: createWorkspace, isPending } = useCreateWorkspace();
 
   const {
@@ -35,14 +37,21 @@ export function CreateWorkspaceDialog() {
   });
 
   const onSubmit = (data: CreateWorkspaceFormData) => {
+    console.log('Creating workspace with data:', data);
     createWorkspace(data, {
-      onSuccess: () => {
+      onSuccess: (workspace) => {
+        console.log('Workspace created successfully:', workspace);
         setOpen(false);
         reset();
+        // Navigate to the newly created workspace
+        router.push(`/workspaces/${workspace.slug}`);
       },
       onError: (error) => {
+        console.error('Failed to create workspace:', error);
         if (isApiError(error)) {
           setError('root', { message: error.getUserMessage() });
+        } else {
+          setError('root', { message: 'Failed to create workspace. Please try again.' });
         }
       },
     });

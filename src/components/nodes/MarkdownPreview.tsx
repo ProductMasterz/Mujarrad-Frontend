@@ -2,8 +2,6 @@
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import DOMPurify from 'isomorphic-dompurify';
-import { useMemo } from 'react';
 
 interface MarkdownPreviewProps {
   content: string;
@@ -11,22 +9,7 @@ interface MarkdownPreviewProps {
 }
 
 export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProps) {
-  // Sanitize markdown content to prevent XSS
-  const sanitizedContent = useMemo(() => {
-    return DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: [
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'p', 'br', 'strong', 'em', 'u', 's', 'code', 'pre',
-        'ul', 'ol', 'li', 'blockquote', 'hr',
-        'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
-        'input', 'del', 'ins', 'mark', 'sub', 'sup'
-      ],
-      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'type', 'checked', 'disabled', 'class', 'id'],
-      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|ftp):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
-    });
-  }, [content]);
-
-  if (!sanitizedContent || sanitizedContent.trim() === '') {
+  if (!content || content.trim() === '') {
     return (
       <div className={`text-muted-foreground text-sm italic p-4 ${className}`}>
         No content to preview
@@ -39,24 +22,59 @@ export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProp
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Customize link rendering to open in new tab
-          a: ({ node, ...props }) => (
-            <a
-              {...props}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            />
+          // Sanitize and customize link rendering - security: prevent javascript: URLs
+          a: ({ node, href, ...props }) => {
+            // Block dangerous protocols
+            const safeHref = href && !href.match(/^(javascript|data|vbscript):/i) ? href : '#';
+            return (
+              <a
+                {...props}
+                href={safeHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              />
+            );
+          },
+          // Sanitize image sources
+          img: ({ node, src, alt, ...props }) => {
+            // Only allow http(s) images
+            const safeSrc = src && src.match(/^https?:\/\//i) ? src : '';
+            if (!safeSrc) return null;
+            return (
+              <img
+                {...props}
+                src={safeSrc}
+                alt={alt || ''}
+                className="max-w-full h-auto rounded"
+                loading="lazy"
+              />
+            );
+          },
+          // Style code blocks
+          code: ({ node, className, children, ...props }) => {
+            // Check if it's inline code by checking if it has a parent <pre> tag
+            const isInline = !className?.includes('language-');
+            if (isInline) {
+              return (
+                <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <code className="block bg-muted p-4 rounded-lg overflow-x-auto font-mono text-sm" {...props}>
+                {children}
+              </code>
+            );
+          },
+          // Pre block wrapper
+          pre: ({ node, children, ...props }) => (
+            <pre className="overflow-x-auto" {...props}>
+              {children}
+            </pre>
           ),
-          // Add custom styling for code blocks
-          code: ({ node, inline, ...props }) => (
-            inline ? (
-              <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
-            ) : (
-              <code className="block bg-muted p-4 rounded-lg overflow-x-auto font-mono text-sm" {...props} />
-            )
-          ),
-          // Customize task lists
+          // Task list items
           input: ({ node, ...props }) => (
             <input
               {...props}
@@ -66,7 +84,7 @@ export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProp
           ),
         }}
       >
-        {sanitizedContent}
+        {content}
       </ReactMarkdown>
     </div>
   );
