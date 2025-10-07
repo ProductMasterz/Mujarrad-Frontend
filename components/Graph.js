@@ -100,7 +100,7 @@ function Graph({graph}) {
                                 var node = evt.target;
                                 let nodeData = node.data();
                                 if (typeof nodeData.id === 'string') {
-                                    const path = '/note/' + node.data().id
+                                    const path = '/node/' + node.data().id
                                     router.push(path)
                                 }
                             });

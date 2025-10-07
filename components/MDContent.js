@@ -5,8 +5,8 @@ import {useRouter} from 'next/router'
 
 function BackLinks({linkList}) {
 
-    return (<div className="note-footer">
-            <h3 className="backlink-heading">Link to this note</h3>
+    return (<div className="node-footer">
+            <h3 className="backlink-heading">Link to this node</h3>
         {(linkList != null && linkList.length > 0)
             ?
             <>
