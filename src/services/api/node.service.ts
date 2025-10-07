@@ -16,11 +16,18 @@ export const nodeService = {
     workspaceSlug: string,
     params?: PaginationParams
   ): Promise<PaginatedResponse<Node>> {
-    const response = await apiClient.get<PaginatedResponse<Node>>(
+    const response = await apiClient.get<Node[]>(
       `/workspaces/${workspaceSlug}/nodes`,
       { params }
     );
-    return response.data;
+    // Backend returns array, wrap in paginated response format
+    return {
+      content: response.data,
+      totalElements: response.data.length,
+      totalPages: 1,
+      size: response.data.length,
+      number: 0,
+    };
   },
 
   /**
