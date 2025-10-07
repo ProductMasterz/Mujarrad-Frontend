@@ -46,9 +46,9 @@ export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: Ed
   });
 
   // Watch markdown content for live preview
-  const markdownContent = useWatch({
+  const content = useWatch({
     control,
-    name: 'markdownContent',
+    name: 'content',
     defaultValue: '',
   });
 
@@ -56,7 +56,7 @@ export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: Ed
     if (node) {
       setValue('title', node.title);
       setValue('nodeType', node.nodeType);
-      setValue('markdownContent', node.markdownContent);
+      setValue('content', node.content);
       setValue('version', node.version);
     }
   }, [node, setValue]);
@@ -118,22 +118,22 @@ export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: Ed
           {/* Split view: Editor | Preview */}
           <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
             <div className="space-y-2 flex flex-col">
-              <Label htmlFor="markdownContent">Content (Markdown)</Label>
+              <Label htmlFor="content">Content (Markdown)</Label>
               <Textarea
-                id="markdownContent"
+                id="content"
                 placeholder="# Content here...&#10;&#10;Edit your markdown content. The preview will update as you type."
                 className="flex-1 resize-none font-mono text-sm"
-                {...register('markdownContent')}
+                {...register('content')}
               />
-              {errors.markdownContent && (
-                <p className="text-sm text-destructive">{errors.markdownContent.message}</p>
+              {errors.content && (
+                <p className="text-sm text-destructive">{errors.content.message}</p>
               )}
             </div>
 
             <div className="space-y-2 flex flex-col">
               <Label>Preview</Label>
               <div className="flex-1 overflow-y-auto border rounded-md p-4 bg-muted/30">
-                <MarkdownPreview content={markdownContent || ''} />
+                <MarkdownPreview content={content || ''} />
               </div>
             </div>
           </div>

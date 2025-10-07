@@ -47,7 +47,7 @@ export interface Node {
   workspaceId: number;
   title: string;
   nodeType: NodeType;
-  markdownContent: string;
+  content: string;
   nodeDetails?: Record<string, unknown>; // JSON field
   version: number; // For optimistic locking
   createdAt: string;
@@ -93,7 +93,7 @@ export interface NodeVersion {
   version: number;
   title: string;
   nodeType: NodeType;
-  markdownContent: string;
+  content: string;
   nodeDetails?: Record<string, unknown>;
   createdAt: string;
   createdBy?: number;
@@ -133,14 +133,14 @@ export interface UpdateWorkspaceRequest {
 export interface CreateNodeRequest {
   title: string;
   nodeType: NodeType;
-  markdownContent: string;
+  content: string;
   nodeDetails?: Record<string, unknown>;
 }
 
 export interface UpdateNodeRequest {
   title?: string;
   nodeType?: NodeType;
-  markdownContent?: string;
+  content?: string;
   nodeDetails?: Record<string, unknown>;
   version: number; // Required for optimistic locking
 }

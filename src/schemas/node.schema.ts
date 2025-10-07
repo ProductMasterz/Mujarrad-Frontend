@@ -15,7 +15,7 @@ export const createNodeSchema = z.object({
   nodeType: z.nativeEnum(NodeType, {
     errorMap: () => ({ message: 'Invalid node type' }),
   }),
-  markdownContent: z
+  content: z
     .string()
     .max(50000, 'Content must not exceed 50,000 characters')
     .default(''),
@@ -37,7 +37,7 @@ export const updateNodeSchema = z.object({
     .trim()
     .optional(),
   nodeType: z.nativeEnum(NodeType).optional(),
-  markdownContent: z
+  content: z
     .string()
     .max(50000, 'Content must not exceed 50,000 characters')
     .optional(),

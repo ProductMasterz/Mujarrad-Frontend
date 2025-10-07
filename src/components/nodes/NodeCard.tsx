@@ -27,7 +27,7 @@ export function NodeCard({ node, workspaceSlug }: NodeCardProps) {
             <Badge className={nodeTypeColors[node.nodeType]}>{node.nodeType}</Badge>
           </div>
           <CardDescription>
-            {truncate(node.markdownContent, 100) || 'No content'}
+            {truncate(node.content, 100) || 'No content'}
           </CardDescription>
           <div className="text-xs text-muted-foreground pt-2">
             Updated {formatRelativeTime(node.updatedAt)}
