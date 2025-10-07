@@ -15,11 +15,11 @@
    → Data: Workspaces (spaces), Nodes, Attributes (relationships), Node Versions
    → Priority: Workspace creation is critical (currently missing)
 3. For each unclear aspect:
-   → [NEEDS CLARIFICATION: Should users be able to delete workspaces? What happens to nodes?]
-   → [NEEDS CLARIFICATION: Can users edit/delete node versions or are they immutable?]
-   → [NEEDS CLARIFICATION: What permissions do users have? Can any user modify any workspace?]
-   → [NEEDS CLARIFICATION: Should there be bulk operations (multi-select delete)?]
-   → [NEEDS CLARIFICATION: What validation rules apply to workspace slugs?]
+   → ✅ Workspaces can be deleted with cascade deletion of all nodes/relationships
+   → ✅ Versions are restorable (creates new version) and deletable
+   → ✅ Workspace owners can invite specific users as collaborators with edit permissions
+   → Bulk operations deferred to future iteration
+   → Slug validation: lowercase alphanumeric + hyphens, must start with letter
 4. Fill User Scenarios & Testing section
    → Primary flow: Create workspace → Add nodes → Manage relationships
 5. Generate Functional Requirements
@@ -103,10 +103,10 @@ As an authenticated user, I need to manage my knowledge graph workspaces and the
 - **FR-001**: System MUST provide a clearly visible button/action to create a new workspace from the workspaces list page
 - **FR-002**: Users MUST be able to view a list of all their workspaces with name, slug, description, and creation date
 - **FR-003**: Users MUST be able to edit workspace name and description
-- **FR-004**: System MUST validate workspace slugs to ensure uniqueness and valid format [NEEDS CLARIFICATION: What is valid format? alphanumeric-with-dashes?]
+- **FR-004**: System MUST validate workspace slugs to ensure uniqueness and valid format (lowercase alphanumeric characters with hyphens, must start with a letter, 3-50 characters)
 - **FR-005**: Users MUST be able to delete workspaces with cascade deletion of all contained nodes, relationships, and version history
 - **FR-006**: System MUST prevent creation of duplicate workspace slugs with clear error messaging
-- **FR-007**: Users MUST be able to search/filter their workspaces by name [NEEDS CLARIFICATION: Required or optional?]
+- **FR-007**: Users SHOULD be able to search/filter their workspaces by name (optional enhancement, deferred to Phase 2 if time permits)
 
 #### Node CRUD
 - **FR-008**: System MUST allow users to create nodes within a workspace with title, type, and markdown content
@@ -125,7 +125,7 @@ As an authenticated user, I need to manage my knowledge graph workspaces and the
 - **FR-019**: System MUST allow optional metadata on relationships
 - **FR-020**: System MUST validate that target nodes exist before creating relationships
 - **FR-021**: System MUST allow circular relationships without validation restrictions
-- **FR-022**: System MUST [NEEDS CLARIFICATION: Can a relationship have an optional attributeValue? What is its purpose?]
+- **FR-022**: System MUST support optional attributeValue on relationships for storing metadata (e.g., weight, confidence, or custom annotations as defined in backend schema)
 
 #### Version History
 - **FR-023**: System MUST automatically create a version history entry whenever a node is updated
@@ -141,7 +141,7 @@ As an authenticated user, I need to manage my knowledge graph workspaces and the
 - **FR-030**: System MUST display success confirmations for create/update/delete operations
 - **FR-031**: System MUST display clear error messages when operations fail with actionable guidance
 - **FR-032**: System MUST require confirmation before destructive actions (delete operations)
-- **FR-033**: System MUST [NEEDS CLARIFICATION: Should there be undo/redo functionality?]
+- **FR-033**: System SHOULD provide undo/redo functionality (optional enhancement, deferred to Phase 2 - version history provides manual restore capability)
 - **FR-034**: System MUST enforce workspace ownership permissions where only the owner and invited collaborators can view/edit/delete workspace content
 - **FR-036**: System MUST allow workspace owners to invite specific users as collaborators with edit permissions
 - **FR-037**: System MUST allow workspace owners to revoke collaborator access

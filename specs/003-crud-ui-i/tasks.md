@@ -25,11 +25,11 @@
    → Different files = [P] parallel
    → Same file = sequential
    → TDD: Tests before implementation
-5. Number tasks sequentially (T001-T045) ✓
+5. Number tasks sequentially (T001-T048) ✓
 6. Generate dependency graph ✓
 7. Create parallel execution examples ✓
 8. Validate task completeness ✓
-9. Return: SUCCESS (45 tasks ready for execution)
+9. Return: SUCCESS (48 tasks ready for execution)
 ```
 
 ## Format: `[ID] [P?] Description`
@@ -72,6 +72,18 @@ export interface InviteCollaboratorRequest {
 
 ---
 
+### T001b: [P] Audit User ID type references (number → UUID string)
+**Files**: `src/services/api/*.ts`, `src/hooks/api/*.ts`, `src/types/*.ts`
+**Description**: Search codebase for User ID references that may still use `number` type and update to `string` (UUID)
+```bash
+# Search for patterns: userId: number, user_id: number, User.id references
+# Update to: userId: string, user_id: string
+```
+**Acceptance**: All User ID references use string type, no type mismatches in collaborator-related code
+**Priority**: High (data type consistency)
+
+---
+
 ### T002: [P] Enhance workspace schema with collaborator validation
 **File**: `src/schemas/workspace.schema.ts`
 **Description**: Add Zod schema for inviting collaborators
@@ -95,6 +107,30 @@ npm install react-markdown remark-gfm
 npm install --save-dev @types/react-markdown
 ```
 **Acceptance**: Dependencies installed, TypeScript types available
+
+---
+
+### T003a: [P] Add input length validation constraints to schemas
+**File**: `src/schemas/workspace.schema.ts`, `src/schemas/node.schema.ts`
+**Description**: Document and enforce maximum length constraints for text inputs
+```typescript
+// workspace.schema.ts: name (100 chars), slug (50 chars), description (500 chars)
+// node.schema.ts: title (200 chars), content (50000 chars for markdown)
+```
+**Acceptance**: Schemas updated with max length constraints, validation error messages clear
+**Priority**: Medium (data quality)
+
+---
+
+### T003b: [P] Add empty state handling for list components
+**File**: `src/components/EmptyState.tsx` (new)
+**Description**: Create reusable EmptyState component for displaying when lists are empty
+```typescript
+// Props: title, description, actionLabel?, onAction?
+// Used in: WorkspacesList, NodesList, CollaboratorsList, VersionHistoryList
+```
+**Acceptance**: Component displays helpful messaging, optional call-to-action button
+**Priority**: Medium (UX improvement)
 
 ---
 
@@ -620,11 +656,11 @@ const edgeStyles = {
 - **Version Components** [T022, T023, T024] → Can run in parallel
 - **Unit Tests** [T031-T038] → Can run in parallel (after implementation)
 - **Integration Tests** [T039-T041] → Can run in parallel (after unit tests)
-- **E2E Tests** [T042-T045] → Can run in parallel (after integration tests)
+- **E2E Tests** [T042-T048] → Can run in parallel (after integration tests)
 
 ### Dependency Graph
 ```
-T001,T002,T003 (Foundation)
+T001,T001b,T002,T003,T003a,T003b (Foundation)
     ↓
 T004,T005 (Services)
     ↓
@@ -650,7 +686,7 @@ T031-T038 (Unit tests)
     ↓
 T039-T041 (Integration tests)
     ↓
-T042-T045 (E2E tests)
+T042-T048 (E2E tests)
 ```
 
 ---
@@ -659,10 +695,13 @@ T042-T045 (E2E tests)
 
 ### Example 1: Foundation Tasks (Start of Project)
 ```bash
-# Run T001-T003 in parallel (different files):
+# Run T001, T001b, T002, T003, T003a, T003b in parallel (different files):
 Task: "Add Collaborator types to src/types/backend-dtos.ts"
+Task: "Audit User ID type references across codebase"
 Task: "Enhance workspace schema in src/schemas/workspace.schema.ts"
 Task: "Add markdown library to package.json"
+Task: "Add input length validation constraints to schemas"
+Task: "Create EmptyState component"
 ```
 
 ### Example 2: Service Layer

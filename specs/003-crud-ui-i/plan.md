@@ -101,7 +101,7 @@
 - ✅ Backend DTOs typed in `src/types/backend-dtos.ts`
 - ✅ Zod schemas for validation in `src/schemas/`
 - ✅ No `any` types detected in existing codebase
-- ⚠️ Need to verify User ID type (changed from number to UUID string)
+- ✅ User ID type migration (number → UUID string) verified in T001b audit task
 
 **VII. Graph Visualization First**
 - ✅ React Flow integrated (`src/components/graph/GraphCanvas.tsx`)
