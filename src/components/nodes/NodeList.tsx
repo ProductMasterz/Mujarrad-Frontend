@@ -27,7 +27,9 @@ export function NodeList({ workspaceSlug }: NodeListProps) {
     );
   }
 
-  if (!data?.content.length) {
+  const nodes = data?.content || [];
+
+  if (nodes.length === 0) {
     return (
       <div className="text-center py-12 border-2 border-dashed rounded-lg">
         <p className="text-muted-foreground">No nodes yet</p>
@@ -38,7 +40,7 @@ export function NodeList({ workspaceSlug }: NodeListProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {data.content.map((node) => (
+      {nodes.map((node) => (
         <NodeCard key={node.id} node={node} workspaceSlug={workspaceSlug} />
       ))}
     </div>
