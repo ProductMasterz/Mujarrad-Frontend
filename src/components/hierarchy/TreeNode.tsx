@@ -34,16 +34,45 @@ export function TreeNode({ treeNode, onSelect, onToggleExpand }: TreeNodeProps) 
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case 'Enter':
+      case ' ': // Space
+        e.preventDefault();
+        onSelect(node.id.toString());
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        if (hasChildren && !isExpanded) {
+          onToggleExpand(node.id.toString());
+        }
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        if (hasChildren && isExpanded) {
+          onToggleExpand(node.id.toString());
+        }
+        break;
+      // ArrowUp/ArrowDown would require parent component coordination
+      // to move selection between nodes - handled at HierarchyNavigator level
+    }
+  };
+
   return (
     <div>
       {/* Node row */}
       <div
+        role="treeitem"
+        aria-expanded={hasChildren ? isExpanded : undefined}
+        aria-selected={isSelected}
+        tabIndex={isSelected ? 0 : -1}
         className={`
-          flex items-center gap-1 px-2 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800
+          flex items-center gap-1 px-2 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500
           ${isSelected ? 'bg-blue-100 dark:bg-blue-900' : ''}
         `}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
+        onKeyDown={handleKeyDown}
       >
         {/* Expand/collapse button */}
         <button

@@ -26,11 +26,11 @@ export function useHierarchyTree({
   selectedNodeId = null,
 }: UseHierarchyTreeParams): HierarchyTree {
   return useMemo(() => {
-    return buildHierarchyTree({
+    return buildHierarchyTree(
       nodes,
       attributes,
       expandedNodeIds,
-      selectedNodeId,
-    });
+      selectedNodeId
+    );
   }, [nodes, attributes, expandedNodeIds, selectedNodeId]);
 }

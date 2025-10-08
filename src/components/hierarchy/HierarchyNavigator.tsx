@@ -8,7 +8,7 @@
 import React from 'react';
 import type { Node, Attribute } from '@/types/backend-dtos';
 import { useHierarchyTree } from '@/hooks/useHierarchyTree';
-import { useNavigationStore } from '@/stores/navigationStore';
+import { useHierarchyStore } from '@/stores/hierarchyStore';
 import { TreeNode } from './TreeNode';
 
 interface HierarchyNavigatorProps {
@@ -26,8 +26,10 @@ export function HierarchyNavigator({
   attributes,
   onNodeSelect,
 }: HierarchyNavigatorProps) {
-  const { expandedNodeIds, selectedNodeId, toggleNodeExpanded, setSelectedNode } =
-    useNavigationStore();
+  const expandedNodeIds = useHierarchyStore(state => state.expandedNodeIds);
+  const selectedNodeId = useHierarchyStore(state => state.selectedNodeId);
+  const toggleExpanded = useHierarchyStore(state => state.toggleExpanded);
+  const setSelectedNode = useHierarchyStore(state => state.setSelectedNode);
 
   const hierarchyTree = useHierarchyTree({
     nodes,
@@ -44,7 +46,7 @@ export function HierarchyNavigator({
   };
 
   const handleToggleExpand = (nodeId: string) => {
-    toggleNodeExpanded(nodeId);
+    toggleExpanded(nodeId);
   };
 
   if (hierarchyTree.rootNodes.length === 0) {
@@ -57,7 +59,7 @@ export function HierarchyNavigator({
 
   return (
     <div className="overflow-auto h-full">
-      <div className="py-2">
+      <div role="tree" className="py-2">
         {hierarchyTree.rootNodes.map(rootNode => (
           <TreeNode
             key={rootNode.node.id}
