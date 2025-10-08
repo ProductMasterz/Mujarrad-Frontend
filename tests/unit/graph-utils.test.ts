@@ -1,6 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { detectBidirectionalEdges, buildGraphData } from '@/lib/graph-utils';
 import type { Node, Attribute } from '@/types/entities';
+import { AttributeKey } from '@/types/backend-dtos';
 import type { GraphViewMode } from '@/types/graph';
 
 describe('Graph Utilities Unit Tests', () => {
@@ -310,8 +311,7 @@ describe('Graph Utilities Unit Tests', () => {
         id: 'attr-contains',
         sourceNodeId: 'context-1',
         targetNodeId: 'regular-1',
-        attributeType: 'contains',
-        attributeKey: 'hierarchy',
+        attributeKey: AttributeKey.CONTAINS,
         attributeValue: null,
         metadata: {},
         createdBy: 'user-1',
@@ -322,8 +322,7 @@ describe('Graph Utilities Unit Tests', () => {
         id: 'attr-ref',
         sourceNodeId: 'regular-1',
         targetNodeId: 'regular-2',
-        attributeType: 'references',
-        attributeKey: 'wiki-link',
+        attributeKey: AttributeKey.REFERENCES,
         attributeValue: null,
         metadata: {},
         createdBy: 'user-1',
@@ -391,7 +390,7 @@ describe('Graph Utilities Unit Tests', () => {
       const graphData = buildGraphData(mockNodes, mockAttributes, viewMode);
 
       expect(graphData.edges).toHaveLength(1);
-      expect(graphData.edges[0].data.attribute.attributeType).toBe('references');
+      expect(graphData.edges[0].data.attribute.attributeKey).toBe('references');
     });
 
     it('should filter out references edges when showReferences is false', () => {
@@ -405,7 +404,7 @@ describe('Graph Utilities Unit Tests', () => {
       const graphData = buildGraphData(mockNodes, mockAttributes, viewMode);
 
       expect(graphData.edges).toHaveLength(1);
-      expect(graphData.edges[0].data.attribute.attributeType).toBe('contains');
+      expect(graphData.edges[0].data.attribute.attributeKey).toBe('contains');
     });
 
     it('should return empty graph when all node filters disabled', () => {
