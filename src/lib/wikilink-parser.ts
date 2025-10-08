@@ -79,20 +79,21 @@ export function resolveWikiLinks(
 }
 
 /**
- * Resolve a single wiki-link target to a node ID
+ * Resolve a single wiki-link target to a node
+ * Case-insensitive title matching with whitespace trimming
  * @param targetTitle - The target title to resolve
  * @param existingNodes - Available nodes in workspace
- * @returns Node ID if found, null otherwise
+ * @returns Matching Node if found, null otherwise
  */
 export function resolveWikiLinkTarget(
   targetTitle: string,
   existingNodes: Node[]
-): string | null {
-  const normalizedTarget = targetTitle.toLowerCase();
+): Node | null {
+  const normalizedTarget = targetTitle.trim().toLowerCase();
   const node = existingNodes.find(
     n => n.title.toLowerCase() === normalizedTarget
   );
-  return node ? node.id : null;
+  return node || null;
 }
 
 /**

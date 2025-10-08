@@ -1,55 +1,42 @@
-// src/hooks/api/useAttributes.ts
+/**
+ * useAttributes Hook (React Query)
+ *
+ * Fetches attributes (relationships) for a node with caching
+ */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { attributeService } from '@/services/api';
-import type { CreateAttributeRequest } from '@/types/backend-dtos';
+import { useQuery } from '@tanstack/react-query';
+import { attributeService } from '@/services/api/attribute.service';
 
-export function useNodeAttributes(workspaceSlug: string, nodeId: number) {
+export const useAttributes = (
+  nodeId: string | null,
+  params?: { attributeType?: string }
+) => {
   return useQuery({
-    queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'attributes'],
-    queryFn: () => attributeService.getNodeAttributes(workspaceSlug, nodeId),
-    enabled: !!workspaceSlug && !!nodeId,
-  });
-}
-
-export function useCreateAttribute(workspaceSlug: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ sourceNodeId, data }: { sourceNodeId: number; data: CreateAttributeRequest }) =>
-      attributeService.createAttribute(workspaceSlug, sourceNodeId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['workspaces', workspaceSlug, 'nodes']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspaces', workspaceSlug, 'graph']
-      });
+    queryKey: ['nodeAttributes', nodeId, params],
+    queryFn: async () => {
+      if (!nodeId) throw new Error('Node ID is required');
+      return await attributeService.getNodeAttributes(nodeId, params);
     },
+    enabled: !!nodeId, // Only fetch if nodeId is provided
+    staleTime: 3 * 60 * 1000, // Consider data fresh for 3 minutes
+    gcTime: 10 * 60 * 1000, // Cache for 10 minutes
   });
-}
+};
 
-export function useDeleteAttribute(workspaceSlug: string, nodeId: number) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (attributeId: number) =>
-      attributeService.deleteAttribute(workspaceSlug, nodeId, attributeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'attributes']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['workspaces', workspaceSlug, 'graph']
-      });
-    },
-  });
-}
-
-export function useWorkspaceAttributes(workspaceSlug: string) {
+/**
+ * useWorkspaceAttributes Hook
+ *
+ * Fetches all attributes in a workspace (for graph visualization)
+ */
+export const useWorkspaceAttributes = (workspaceId: string | null) => {
   return useQuery({
-    queryKey: ['workspaces', workspaceSlug, 'attributes'],
-    queryFn: () => attributeService.getWorkspaceAttributes(workspaceSlug),
-    enabled: !!workspaceSlug,
+    queryKey: ['workspaceAttributes', workspaceId],
+    queryFn: async () => {
+      if (!workspaceId) throw new Error('Workspace ID is required');
+      return await attributeService.getWorkspaceAttributes(workspaceId);
+    },
+    enabled: !!workspaceId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
-}
+};

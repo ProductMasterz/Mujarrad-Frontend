@@ -13,6 +13,7 @@ export class ApiError extends Error {
   public readonly detail?: string;
   public readonly problemDetail?: ProblemDetail;
   public readonly timestamp: string;
+  public readonly response?: { data: ProblemDetail | any; status: number };
 
   constructor(
     message: string,
@@ -26,6 +27,14 @@ export class ApiError extends Error {
     this.detail = detail;
     this.problemDetail = problemDetail;
     this.timestamp = new Date().toISOString();
+
+    // Preserve response.data format for contract test compatibility
+    if (problemDetail) {
+      this.response = {
+        data: problemDetail,
+        status: statusCode,
+      };
+    }
 
     // Maintains proper stack trace for where error was thrown
     if (Error.captureStackTrace) {

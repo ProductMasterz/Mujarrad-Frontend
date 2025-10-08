@@ -15,28 +15,35 @@ import {
 /**
  * Detect bidirectional edges (A→B and B→A both exist)
  * @param attributes - All attributes to analyze
- * @returns Set of edge pairs that are bidirectional (uses sorted IDs)
+ * @returns Set of attribute IDs that are part of bidirectional pairs
  */
 export function detectBidirectionalEdges(attributes: Attribute[]): Set<string> {
-  const edgeMap = new Map<string, Set<string>>(); // sourceId -> Set<targetId>
+  const edgeMap = new Map<string, Attribute[]>(); // sourceId -> Attributes[]
   const bidirectional = new Set<string>();
 
   // Build edge map
   for (const attr of attributes) {
-    if (!edgeMap.has(attr.sourceNodeId)) {
-      edgeMap.set(attr.sourceNodeId, new Set());
+    const key = attr.sourceNodeId.toString();
+    if (!edgeMap.has(key)) {
+      edgeMap.set(key, []);
     }
-    edgeMap.get(attr.sourceNodeId)!.add(attr.targetNodeId);
+    edgeMap.get(key)!.push(attr);
   }
 
-  // Check for bidirectional pairs
+  // Check for bidirectional pairs (must have matching attribute types)
   for (const attr of attributes) {
-    const { sourceNodeId, targetNodeId } = attr;
-    // Check if reverse edge exists
-    if (edgeMap.get(targetNodeId)?.has(sourceNodeId)) {
-      // Create a consistent key (sorted IDs)
-      const key = [sourceNodeId, targetNodeId].sort().join('->');
-      bidirectional.add(key);
+    const { id, sourceNodeId, targetNodeId, attributeType } = attr;
+    // Check if reverse edge exists with matching type
+    const reverseEdges = edgeMap.get(targetNodeId.toString());
+    if (reverseEdges) {
+      const hasReverse = reverseEdges.some(
+        reverseAttr =>
+          reverseAttr.targetNodeId.toString() === sourceNodeId.toString() &&
+          reverseAttr.attributeType.toString().toLowerCase() === attributeType.toString().toLowerCase()
+      );
+      if (hasReverse) {
+        bidirectional.add(id.toString());
+      }
     }
   }
 
@@ -46,11 +53,18 @@ export function detectBidirectionalEdges(attributes: Attribute[]): Set<string> {
 /**
  * Build graph data from nodes and attributes
  * Filters based on view mode and transforms to ReactFlow format
- * @param params - Build parameters with nodes, attributes, view mode, and selected node
+ * @param nodes - Array of nodes
+ * @param attributes - Array of attributes (relationships)
+ * @param viewMode - Graph view mode configuration
+ * @param selectedNodeId - Currently selected node ID (optional)
  * @returns Graph data with nodes and edges for ReactFlow
  */
-export function buildGraphData(params: BuildGraphDataParams): GraphData {
-  const { nodes, attributes, viewMode, selectedNodeId = null } = params;
+export function buildGraphData(
+  nodes: Node[],
+  attributes: Attribute[],
+  viewMode: GraphViewMode,
+  selectedNodeId: string | null = null
+): GraphData {
 
   // Filter nodes based on view mode
   const filteredNodes = nodes.filter(node => {
@@ -94,8 +108,7 @@ export function buildGraphData(params: BuildGraphDataParams): GraphData {
 
   // Transform attributes to GraphEdges
   const graphEdges: GraphEdge[] = filteredAttributes.map(attr => {
-    const key = [attr.sourceNodeId, attr.targetNodeId].sort().join('->');
-    const isBidirectional = bidirectionalSet.has(key);
+    const isBidirectional = bidirectionalSet.has(attr.id.toString());
 
     return {
       id: attr.id.toString(),

@@ -50,7 +50,14 @@
       "Bash(chmod:*)",
       "Bash(./test-authorization-bug.sh:*)",
       "Bash(./test-complete-flow.sh:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(java:*)",
+      "Bash(PGPASSWORD='Pr0ductM@sterz' psql -h aws-1-eu-north-1.pooler.supabase.com -p 6543 -U postgres.elsheztyigvjkzmwwusw -d postgres -c \"\\d+ audit_log\")",
+      "Bash(PGPASSWORD='Pr0ductM@sterz' psql -h aws-1-eu-north-1.pooler.supabase.com -p 6543 -U postgres.elsheztyigvjkzmwwusw -d postgres -c \"SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = ''audit_log_entity_type_check'';\")",
+      "Bash(kill:*)",
+      "Bash(specify --version)",
+      "WebSearch",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

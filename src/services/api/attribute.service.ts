@@ -6,24 +6,30 @@ import type { Attribute, CreateAttributeRequest } from '@/types/backend-dtos';
 export const attributeService = {
   /**
    * Get all attributes (edges) for a node
+   * API Contract: GET /api/nodes/{id}/attributes
+   * Supports optional query parameters for filtering (e.g., attributeType)
    */
-  async getNodeAttributes(workspaceSlug: string, nodeId: number): Promise<Attribute[]> {
+  async getNodeAttributes(
+    nodeId: string,
+    params?: { attributeType?: string }
+  ): Promise<Attribute[]> {
     const response = await apiClient.get<Attribute[]>(
-      `/workspaces/${workspaceSlug}/nodes/${nodeId}/attributes`
+      `/nodes/${nodeId}/attributes`,
+      { params }
     );
     return response.data;
   },
 
   /**
    * Create new attribute (edge/relationship)
+   * API Contract: POST /api/nodes/{id}/attributes
    */
   async createAttribute(
-    workspaceSlug: string,
-    nodeId: number,
+    nodeId: string,
     data: CreateAttributeRequest
   ): Promise<Attribute> {
     const response = await apiClient.post<Attribute>(
-      `/workspaces/${workspaceSlug}/nodes/${nodeId}/attributes`,
+      `/nodes/${nodeId}/attributes`,
       data
     );
     return response.data;
@@ -31,23 +37,24 @@ export const attributeService = {
 
   /**
    * Delete attribute (edge/relationship)
+   * API Contract: DELETE /api/nodes/{nodeId}/attributes/{attrId}
    */
   async deleteAttribute(
-    workspaceSlug: string,
-    nodeId: number,
-    attributeId: number
+    nodeId: string,
+    attributeId: string
   ): Promise<void> {
     await apiClient.delete(
-      `/workspaces/${workspaceSlug}/nodes/${nodeId}/attributes/${attributeId}`
+      `/nodes/${nodeId}/attributes/${attributeId}`
     );
   },
 
   /**
    * Get all edges for entire workspace graph
+   * API Contract: GET /api/workspaces/{id}/attributes
    */
-  async getWorkspaceAttributes(workspaceSlug: string): Promise<Attribute[]> {
+  async getWorkspaceAttributes(workspaceId: string): Promise<Attribute[]> {
     const response = await apiClient.get<Attribute[]>(
-      `/workspaces/${workspaceSlug}/attributes`
+      `/workspaces/${workspaceId}/attributes`
     );
     return response.data;
   },

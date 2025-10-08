@@ -62,6 +62,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "msw": "^2.11.3",
     "prettier": "^3.2.4",
+    "undici": "^7.16.0",
     "unist-util-visit": "^5.0.0"
   }
 }

@@ -1,12 +1,5 @@
 import '@testing-library/jest-dom';
-import { server } from './tests/mocks/server';
 
-// Establish API mocking before all tests
-beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }));
-
-// Reset any request handlers that we may add during the tests,
-// so they don't affect other tests
-afterEach(() => server.resetHandlers());
-
-// Clean up after the tests are finished
-afterAll(() => server.close());
+// MSW setup moved to individual test files to allow isolated server instances
+// Contract tests: Create own server with `setupServer()`
+// Integration tests: Import and use `server` from './tests/mocks/server'

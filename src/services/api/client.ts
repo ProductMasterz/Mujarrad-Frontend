@@ -7,8 +7,11 @@ import { ApiError } from '@/lib/errors';
 /**
  * Base API URL - using relative URLs to leverage Next.js rewrites
  * Next.js will proxy /api/* requests to the backend
+ * In test environment, use localhost for MSW interception
  */
-const API_BASE_URL = '/api';
+const API_BASE_URL = process.env.NODE_ENV === 'test'
+  ? 'http://localhost:3000/api'
+  : '/api';
 
 /**
  * Axios instance with base configuration

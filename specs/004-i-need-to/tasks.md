@@ -67,13 +67,13 @@
 
 **Prerequisites**: T002, T004-T008 complete
 
-- [ ] **T009** [P] Contract test: GET /api/nodes/:id returns valid Node schema in tests/contracts/node.contract.test.ts
-- [ ] **T010** [P] Contract test: GET /api/workspaces/:id/nodes returns Node[] in tests/contracts/node.contract.test.ts
-- [ ] **T011** [P] Contract test: POST /api/nodes creates node and returns 201 in tests/contracts/node.contract.test.ts
-- [ ] **T012** [P] Contract test: PUT /api/nodes/:id updates node with version check in tests/contracts/node.contract.test.ts
-- [ ] **T013** [P] Contract test: GET /api/nodes/:id/attributes returns Attribute[] in tests/contracts/attribute.contract.test.ts
-- [ ] **T014** [P] Contract test: POST /api/nodes/:id/attributes creates relationship in tests/contracts/attribute.contract.test.ts
-- [ ] **T015** [P] Contract test: Error responses follow RFC 7807 (404, 400, 409) in tests/contracts/error.contract.test.ts
+- [X] **T009** [P] Contract test: GET /api/nodes/:id returns valid Node schema in tests/contracts/node.contract.test.ts
+- [X] **T010** [P] Contract test: GET /api/workspaces/:id/nodes returns Node[] in tests/contracts/node.contract.test.ts
+- [X] **T011** [P] Contract test: POST /api/nodes creates node and returns 201 in tests/contracts/node.contract.test.ts
+- [X] **T012** [P] Contract test: PUT /api/nodes/:id updates node with version check in tests/contracts/node.contract.test.ts
+- [X] **T013** [P] Contract test: GET /api/nodes/:id/attributes returns Attribute[] in tests/contracts/attribute.contract.test.ts
+- [X] **T014** [P] Contract test: POST /api/nodes/:id/attributes creates relationship in tests/contracts/attribute.contract.test.ts
+- [X] **T015** [P] Contract test: Error responses follow RFC 7807 (404, 400, 409) in tests/contracts/error.contract.test.ts
 
 ---
 
@@ -81,14 +81,14 @@
 
 **Prerequisites**: T005-T007 complete
 
-- [ ] **T016** [P] Unit test: parseWikiLinks extracts [[Target]] patterns in tests/unit/wikilink-parser.test.ts
-- [ ] **T017** [P] Unit test: parseWikiLinks handles [[Display|Target]] aliases in tests/unit/wikilink-parser.test.ts
-- [ ] **T018** [P] Unit test: parseWikiLinks edge cases (empty, escaped, multiple) in tests/unit/wikilink-parser.test.ts
-- [ ] **T019** [P] Unit test: buildHierarchyTree constructs tree from nodes + attributes in tests/unit/hierarchy-tree.test.ts
-- [ ] **T020** [P] Unit test: buildHierarchyTree handles root nodes (no parents) in tests/unit/hierarchy-tree.test.ts
-- [ ] **T021** [P] Unit test: detectBidirectionalEdges identifies A↔B pairs in tests/unit/graph-utils.test.ts
-- [ ] **T022** [P] Unit test: buildGraphData filters nodes by GraphViewMode in tests/unit/graph-utils.test.ts
-- [ ] **T023** [P] Unit test: resolveWikiLinkTarget matches title case-insensitively in tests/unit/wikilink-parser.test.ts
+- [X] **T016** [P] Unit test: parseWikiLinks extracts [[Target]] patterns in tests/unit/wikilink-parser.test.ts
+- [X] **T017** [P] Unit test: parseWikiLinks handles [[Display|Target]] aliases in tests/unit/wikilink-parser.test.ts
+- [X] **T018** [P] Unit test: parseWikiLinks edge cases (empty, escaped, multiple) in tests/unit/wikilink-parser.test.ts
+- [X] **T019** [P] Unit test: buildHierarchyTree constructs tree from nodes + attributes in tests/unit/hierarchy-tree.test.ts
+- [X] **T020** [P] Unit test: buildHierarchyTree handles root nodes (no parents) in tests/unit/hierarchy-tree.test.ts
+- [X] **T021** [P] Unit test: detectBidirectionalEdges identifies A↔B pairs in tests/unit/graph-utils.test.ts
+- [X] **T022** [P] Unit test: buildGraphData filters nodes by GraphViewMode in tests/unit/graph-utils.test.ts
+- [X] **T023** [P] Unit test: resolveWikiLinkTarget matches title case-insensitively in tests/unit/wikilink-parser.test.ts
 
 ---
 
@@ -134,16 +134,16 @@
 
 **Prerequisites**: T005, T007, T032
 
-- [ ] **T039** [P] Integration test: HierarchyNavigator renders tree structure in tests/integration/hierarchy-navigation.test.tsx
-- [ ] **T040** [P] Integration test: TreeNode expand/collapse toggles children in tests/integration/hierarchy-navigation.test.tsx
-- [ ] **T041** [P] Integration test: TreeNode selection updates store in tests/integration/hierarchy-navigation.test.tsx
-- [ ] **T042** [P] Integration test: TreeNode keyboard navigation (arrows, Enter) in tests/integration/hierarchy-navigation.test.tsx
-- [ ] **T043** [P] Integration test: MarkdownRenderer displays formatted content in tests/integration/markdown-rendering.test.tsx
-- [ ] **T044** [P] Integration test: WikiLink component navigates on click in tests/integration/markdown-rendering.test.tsx
-- [ ] **T045** [P] Integration test: WikiLink alias display vs target in tests/integration/markdown-rendering.test.tsx
-- [ ] **T046** [P] Integration test: GraphVisualization renders nodes and edges in tests/integration/graph-visualization.test.tsx
-- [ ] **T047** [P] Integration test: GraphControls toggle filters update graph in tests/integration/graph-visualization.test.tsx
-- [ ] **T048** [P] Integration test: BidirectionalEdge displays double-headed arrow in tests/integration/graph-visualization.test.tsx
+- [X] **T039** [P] Integration test: HierarchyNavigator renders tree structure in tests/integration/hierarchy-navigation.test.tsx
+- [X] **T040** [P] Integration test: TreeNode expand/collapse toggles children in tests/integration/hierarchy-navigation.test.tsx
+- [X] **T041** [P] Integration test: TreeNode selection updates store in tests/integration/hierarchy-navigation.test.tsx
+- [X] **T042** [P] Integration test: TreeNode keyboard navigation (arrows, Enter) in tests/integration/hierarchy-navigation.test.tsx
+- [X] **T043** [P] Integration test: MarkdownRenderer displays formatted content in tests/integration/markdown-rendering.test.tsx
+- [X] **T044** [P] Integration test: WikiLink component navigates on click in tests/integration/markdown-rendering.test.tsx
+- [X] **T045** [P] Integration test: WikiLink alias display vs target in tests/integration/markdown-rendering.test.tsx
+- [X] **T046** [P] Integration test: GraphVisualization renders nodes and edges in tests/integration/graph-visualization.test.tsx
+- [X] **T047** [P] Integration test: GraphControls toggle filters update graph in tests/integration/graph-visualization.test.tsx
+- [X] **T048** [P] Integration test: BidirectionalEdge displays double-headed arrow in tests/integration/graph-visualization.test.tsx
 
 ---
 
@@ -229,12 +229,12 @@
 
 **Prerequisites**: All implementation tasks (T049-T078) complete
 
-- [ ] **T079** [P] E2E test: Login → workspace → browse hierarchy → navigate to page in tests/e2e/scenario-1-hierarchy.spec.ts
-- [ ] **T080** [P] E2E test: View markdown → click wiki-link → navigate in tests/e2e/scenario-2-wiki-links.spec.ts
-- [ ] **T081** [P] E2E test: Edit page → add wiki-link → placeholder created → relationship in graph in tests/e2e/scenario-3-placeholder.spec.ts
-- [ ] **T082** [P] E2E test: Graph view → toggle filters → verify nodes shown/hidden in tests/e2e/scenario-4-graph.spec.ts
-- [ ] **T083** [P] E2E test: Remove wiki-link from markdown → relationship preserved in tests/e2e/scenario-5-preservation.spec.ts
-- [ ] **T084** [P] E2E test: Network error → retry → validation error → circular dependency in tests/e2e/scenario-6-errors.spec.ts
+- [X] **T079** [P] E2E test: Login → workspace → browse hierarchy → navigate to page in tests/e2e/scenario-1-hierarchy.spec.ts
+- [X] **T080** [P] E2E test: View markdown → click wiki-link → navigate in tests/e2e/scenario-2-wiki-links.spec.ts
+- [X] **T081** [P] E2E test: Edit page → add wiki-link → placeholder created → relationship in graph in tests/e2e/scenario-3-placeholder.spec.ts
+- [X] **T082** [P] E2E test: Graph view → toggle filters → verify nodes shown/hidden in tests/e2e/scenario-4-graph.spec.ts
+- [X] **T083** [P] E2E test: Remove wiki-link from markdown → relationship preserved in tests/e2e/scenario-5-preservation.spec.ts
+- [X] **T084** [P] E2E test: Network error → retry → validation error → circular dependency in tests/e2e/scenario-6-errors.spec.ts
 
 ---
 

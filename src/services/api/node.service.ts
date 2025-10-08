@@ -11,13 +11,14 @@ import type { PaginatedResponse, PaginationParams, SearchParams } from '@/types/
 export const nodeService = {
   /**
    * Get all nodes in workspace
+   * API Contract: GET /api/workspaces/{id}/nodes
    */
   async getNodes(
-    workspaceSlug: string,
+    workspaceId: string,
     params?: PaginationParams
   ): Promise<PaginatedResponse<Node>> {
     const response = await apiClient.get<Node[]>(
-      `/workspaces/${workspaceSlug}/nodes`,
+      `/workspaces/${workspaceId}/nodes`,
       { params }
     );
     // Backend returns array, wrap in paginated response format
@@ -31,31 +32,45 @@ export const nodeService = {
   },
 
   /**
-   * Get node by ID
+   * Get all nodes in workspace (returns array directly)
+   * Alias for contract tests - returns unwrapped array
+   * API Contract: GET /api/workspaces/{id}/nodes
    */
-  async getNode(workspaceSlug: string, nodeId: number): Promise<Node> {
-    const response = await apiClient.get<Node>(`/workspaces/${workspaceSlug}/nodes/${nodeId}`);
+  async getWorkspaceNodes(workspaceId: string): Promise<Node[]> {
+    const response = await apiClient.get<Node[]>(
+      `/workspaces/${workspaceId}/nodes`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get node by ID
+   * API Contract: GET /api/nodes/{id}
+   */
+  async getNode(nodeId: string): Promise<Node> {
+    const response = await apiClient.get<Node>(`/nodes/${nodeId}`);
     return response.data;
   },
 
   /**
    * Create new node
+   * API Contract: POST /api/nodes
    */
-  async createNode(workspaceSlug: string, data: CreateNodeRequest): Promise<Node> {
-    const response = await apiClient.post<Node>(`/workspaces/${workspaceSlug}/nodes`, data);
+  async createNode(data: CreateNodeRequest): Promise<Node> {
+    const response = await apiClient.post<Node>(`/nodes`, data);
     return response.data;
   },
 
   /**
    * Update node
+   * API Contract: PUT /api/nodes/{id}
    */
   async updateNode(
-    workspaceSlug: string,
-    nodeId: number,
+    nodeId: string,
     data: UpdateNodeRequest
   ): Promise<Node> {
     const response = await apiClient.put<Node>(
-      `/workspaces/${workspaceSlug}/nodes/${nodeId}`,
+      `/nodes/${nodeId}`,
       data
     );
     return response.data;
@@ -63,20 +78,22 @@ export const nodeService = {
 
   /**
    * Delete node
+   * API Contract: DELETE /api/nodes/{id}
    */
-  async deleteNode(workspaceSlug: string, nodeId: number): Promise<void> {
-    await apiClient.delete(`/workspaces/${workspaceSlug}/nodes/${nodeId}`);
+  async deleteNode(nodeId: string): Promise<void> {
+    await apiClient.delete(`/nodes/${nodeId}`);
   },
 
   /**
    * Search nodes in workspace
+   * API Contract: GET /api/workspaces/{id}/search
    */
   async searchNodes(
-    workspaceSlug: string,
+    workspaceId: string,
     params: SearchParams
   ): Promise<PaginatedResponse<Node>> {
     const response = await apiClient.get<PaginatedResponse<Node>>(
-      `/workspaces/${workspaceSlug}/nodes/search`,
+      `/workspaces/${workspaceId}/search`,
       { params }
     );
     return response.data;

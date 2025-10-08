@@ -9,11 +9,18 @@ import { TreeNode, HierarchyTree, BuildHierarchyTreeParams } from '@/types/hiera
 /**
  * Build hierarchical tree from flat nodes and attributes
  * Uses 'contains' relationships to establish parent-child connections
- * @param params - Build parameters with nodes, attributes, and UI state
+ * @param nodes - Array of nodes
+ * @param attributes - Array of attributes (relationships)
+ * @param expandedNodeIds - Set of expanded node IDs (optional)
+ * @param selectedNodeId - Currently selected node ID (optional)
  * @returns Hierarchical tree structure with root nodes and lookup map
  */
-export function buildHierarchyTree(params: BuildHierarchyTreeParams): HierarchyTree {
-  const { nodes, attributes, expandedNodeIds = new Set(), selectedNodeId = null } = params;
+export function buildHierarchyTree(
+  nodes: Node[],
+  attributes: Attribute[],
+  expandedNodeIds: Set<string> = new Set(),
+  selectedNodeId: string | null = null
+): HierarchyTree {
 
   // Build parent-child relationship map using 'contains' attributes
   const childrenMap = new Map<string, string[]>(); // parentId -> childIds[]
@@ -58,10 +65,12 @@ export function buildHierarchyTree(params: BuildHierarchyTreeParams): HierarchyT
     };
   };
 
-  // Find root nodes (nodes without parents)
+  // Find root nodes (nodes without parents OR nodes whose parents don't exist in the nodes list)
   const rootNodes: TreeNode[] = [];
   for (const node of nodes) {
-    if (!parentMap.has(node.id.toString())) {
+    const parentId = parentMap.get(node.id.toString());
+    // Node is a root if: no parent OR parent doesn't exist in nodes
+    if (!parentId || !nodeMap.has(parentId)) {
       rootNodes.push(buildTreeNode(node, 0));
     }
   }

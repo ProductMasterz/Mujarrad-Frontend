@@ -1,65 +1,26 @@
-// src/hooks/api/useNodes.ts
+/**
+ * useNodes Hook (React Query)
+ *
+ * Fetches all nodes in a workspace with caching and auto-refetch
+ */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { nodeService } from '@/services/api';
-import type { CreateNodeRequest, UpdateNodeRequest } from '@/types/backend-dtos';
+import { useQuery } from '@tanstack/react-query';
+import { nodeService } from '@/services/api/node.service';
+import type { Node } from '@/types/backend-dtos';
+import type { PaginationParams } from '@/types/api';
 
-export function useNodes(workspaceSlug: string) {
+export const useNodes = (
+  workspaceId: string,
+  params?: PaginationParams
+) => {
   return useQuery({
-    queryKey: ['workspaces', workspaceSlug, 'nodes'],
-    queryFn: () => nodeService.getNodes(workspaceSlug),
-    enabled: !!workspaceSlug,
-  });
-}
-
-export function useNode(workspaceSlug: string, nodeId: number) {
-  return useQuery({
-    queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId],
-    queryFn: () => nodeService.getNode(workspaceSlug, nodeId),
-    enabled: !!workspaceSlug && !!nodeId,
-  });
-}
-
-export function useCreateNode(workspaceSlug: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateNodeRequest) => nodeService.createNode(workspaceSlug, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'nodes'] });
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'graph'] });
+    queryKey: ['nodes', workspaceId, params],
+    queryFn: async () => {
+      const response = await nodeService.getNodes(workspaceId, params);
+      return response.content; // Return array of nodes
     },
+    enabled: !!workspaceId, // Only fetch if workspaceId is provided
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Cache for 10 minutes (formerly cacheTime)
   });
-}
-
-export function useUpdateNode(workspaceSlug: string, nodeId: number) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: UpdateNodeRequest) => nodeService.updateNode(workspaceSlug, nodeId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'nodes'] });
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'graph'] });
-    },
-  });
-}
-
-export function useDeleteNode(workspaceSlug: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (nodeId: number) => nodeService.deleteNode(workspaceSlug, nodeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'nodes'] });
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'graph'] });
-    },
-  });
-}
-
-export function useSearchNodes(workspaceSlug: string, query: string) {
-  return useQuery({
-    queryKey: ['workspaces', workspaceSlug, 'nodes', 'search', query],
-    queryFn: () => nodeService.searchNodes(workspaceSlug, { query }),
-    enabled: !!workspaceSlug && query.length > 0,
-  });
-}
+};
