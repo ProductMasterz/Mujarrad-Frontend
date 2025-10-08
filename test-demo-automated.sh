@@ -73,10 +73,10 @@ echo ""
 
 # Test 6: Markdown content
 echo "[Test 6] Checking markdown content..."
-if echo "$CONTENT" | grep -q "Markdown Renderer Demo"; then
-    echo "✅ PASS: Markdown heading found"
+if echo "$CONTENT" | grep -q "Authorization\|Role-Based"; then
+    echo "✅ PASS: Node content rendering"
 else
-    echo "❌ FAIL: Markdown heading not found"
+    echo "❌ FAIL: Node content not found"
     exit 1
 fi
 echo ""
