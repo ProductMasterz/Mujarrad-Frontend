@@ -34,7 +34,7 @@ export function CreateRelationshipDialog({
 }: CreateRelationshipDialogProps) {
   const [open, setOpen] = useState(false);
   const { data: nodesData } = useNodes(workspaceSlug);
-  const { mutate: createAttribute, isPending: isLoading } = useCreateAttribute(workspaceSlug);
+  const { mutate: createAttribute, isPending: isLoading } = useCreateAttribute();
 
   const {
     register,

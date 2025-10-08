@@ -67,7 +67,7 @@ export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: Ed
 
   const onSubmit = async (data: UpdateNodeFormData) => {
     // First, update the node
-    updateNode(data, {
+    updateNode({ nodeId: nodeId.toString(), data }, {
       onSuccess: async (updatedNode) => {
         // Process wiki-links after successful update
         if (data.content) {

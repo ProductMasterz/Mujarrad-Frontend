@@ -27,7 +27,7 @@ export function NodeList({ workspaceSlug }: NodeListProps) {
     );
   }
 
-  const nodes = data?.content || [];
+  const nodes = data || [];
 
   if (nodes.length === 0) {
     return (
