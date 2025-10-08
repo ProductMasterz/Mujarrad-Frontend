@@ -37,10 +37,8 @@ export function CreateWorkspaceDialog() {
   });
 
   const onSubmit = (data: CreateWorkspaceFormData) => {
-    console.log('Creating workspace with data:', data);
     createWorkspace(data, {
       onSuccess: (workspace) => {
-        console.log('Workspace created successfully:', workspace);
         setOpen(false);
         reset();
         // Navigate to the newly created workspace

@@ -14,8 +14,9 @@ interface NodeIconProps {
 /**
  * NodeIcon component
  * Shows folder icon for CONTEXT, document icon for REGULAR
+ * Memoized for performance in tree rendering (T085)
  */
-export function NodeIcon({ nodeType, className = 'w-4 h-4' }: NodeIconProps) {
+export const NodeIcon = React.memo(function NodeIcon({ nodeType, className = 'w-4 h-4' }: NodeIconProps) {
   const nodeTypeStr = nodeType.toString().toUpperCase();
   if (nodeTypeStr === 'CONTEXT') {
     return (
@@ -52,4 +53,4 @@ export function NodeIcon({ nodeType, className = 'w-4 h-4' }: NodeIconProps) {
       />
     </svg>
   );
-}
+});

@@ -18,8 +18,9 @@ interface TreeNodeProps {
 /**
  * TreeNode component
  * Displays a single tree node with children
+ * Memoized for performance with large trees (T085)
  */
-export function TreeNode({ treeNode, onSelect, onToggleExpand }: TreeNodeProps) {
+export const TreeNode = React.memo(function TreeNode({ treeNode, onSelect, onToggleExpand }: TreeNodeProps) {
   const { node, children, level, isExpanded, isSelected } = treeNode;
   const hasChildren = children.length > 0;
 
@@ -124,4 +125,4 @@ export function TreeNode({ treeNode, onSelect, onToggleExpand }: TreeNodeProps) 
       )}
     </div>
   );
-}
+});

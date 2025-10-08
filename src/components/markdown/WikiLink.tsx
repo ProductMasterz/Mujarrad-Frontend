@@ -18,8 +18,9 @@ interface WikiLinkProps {
  * WikiLink component
  * Displays a clickable link to another node
  * Shows placeholder styling if target doesn't exist
+ * Memoized for performance in markdown with many links (T085)
  */
-export function WikiLink({
+export const WikiLink = React.memo(function WikiLink({
   targetTitle,
   displayText,
   targetNodeId,
@@ -59,4 +60,4 @@ export function WikiLink({
       {text}
     </span>
   );
-}
+});

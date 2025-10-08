@@ -16,20 +16,10 @@ export const workspaceService = {
    * Note: Backend returns a plain array, not a PaginatedResponse
    */
   async getWorkspaces(params?: PaginationParams): Promise<Workspace[]> {
-    console.log('workspaceService.getWorkspaces() called with params:', params);
-    console.log('Auth token:', typeof window !== 'undefined' ? localStorage.getItem('auth_token')?.substring(0, 20) + '...' : 'N/A');
-    try {
-      const response = await apiClient.get<Workspace[]>('/workspaces', {
-        params,
-      });
-      console.log('workspaceService.getWorkspaces() response:', response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error('workspaceService.getWorkspaces() error:', error);
-      console.error('Error status:', error?.response?.status);
-      console.error('Error data:', error?.response?.data);
-      throw error;
-    }
+    const response = await apiClient.get<Workspace[]>('/workspaces', {
+      params,
+    });
+    return response.data;
   },
 
   /**
