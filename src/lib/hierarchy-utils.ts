@@ -108,7 +108,7 @@ export function findAncestors(nodeId: string, attributes: Attribute[]): string[]
 
   let currentId: string | undefined = nodeId;
   while (currentId && parentMap.has(currentId)) {
-    const parentId = parentMap.get(currentId)!;
+    const parentId: string = parentMap.get(currentId)!;
     ancestors.push(parentId);
     currentId = parentId;
   }

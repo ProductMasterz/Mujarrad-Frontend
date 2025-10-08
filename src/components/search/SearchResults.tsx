@@ -28,7 +28,7 @@ export function SearchResults({ workspaceSlug, query }: SearchResultsProps) {
     );
   }
 
-  if (!data?.content.length) {
+  if (!data?.content || data.content.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">No results found for &quot;{query}&quot;</p>
@@ -39,7 +39,7 @@ export function SearchResults({ workspaceSlug, query }: SearchResultsProps) {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-4">
-        Found {data.page.totalElements} result{data.page.totalElements !== 1 ? 's' : ''}
+        Found {data.page?.totalElements ?? data.content.length} result{(data.page?.totalElements ?? data.content.length) !== 1 ? 's' : ''}
       </p>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {data.content.map((node) => (

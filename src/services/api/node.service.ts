@@ -24,10 +24,17 @@ export const nodeService = {
     // Backend returns array, wrap in paginated response format
     return {
       content: response.data,
-      totalElements: response.data.length,
-      totalPages: 1,
-      size: response.data.length,
-      number: 0,
+      page: {
+        size: response.data.length,
+        number: 0,
+        totalElements: response.data.length,
+        totalPages: 1,
+      },
+      sort: {
+        sorted: false,
+        unsorted: true,
+        empty: true,
+      },
     };
   },
 

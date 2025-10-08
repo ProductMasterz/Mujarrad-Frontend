@@ -1,7 +1,7 @@
 // src/types/graph.ts
 
 import { Node as ReactFlowNode, Edge as ReactFlowEdge } from 'reactflow';
-import type { Node, Attribute, AttributeType } from './backend-dtos';
+import type { Node, Attribute } from './backend-dtos';
 
 /**
  * Extended ReactFlow node with our domain data
@@ -29,7 +29,7 @@ export interface GraphEdgeData {
 /**
  * Extended ReactFlow edge with our domain data
  */
-export interface GraphEdge extends ReactFlowEdge {
+export interface GraphEdge {
   id: string;
   source: string; // Node ID
   target: string; // Node ID

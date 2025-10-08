@@ -70,7 +70,7 @@ export function resolveWikiLinks(
 
     resolutions.push({
       link,
-      targetNodeId: targetNode ? targetNode.id : null,
+      targetNodeId: targetNode ? targetNode.id.toString() : null,
       needsPlaceholder: !targetNode,
     });
   }

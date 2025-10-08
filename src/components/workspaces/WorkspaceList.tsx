@@ -23,7 +23,7 @@ export function WorkspaceList() {
     );
   }
 
-  if (!data?.content.length) {
+  if (!data || data.length === 0) {
     return (
       <div className="text-center py-12 border-2 border-dashed rounded-lg">
         <p className="text-muted-foreground">No workspaces yet</p>
@@ -34,7 +34,7 @@ export function WorkspaceList() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {data.content.map((workspace) => (
+      {data.map((workspace) => (
         <WorkspaceCard key={workspace.id} workspace={workspace} />
       ))}
     </div>

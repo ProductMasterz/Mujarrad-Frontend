@@ -17,12 +17,12 @@ export function RelationshipList({ workspaceSlug, nodeId }: RelationshipListProp
 
   const { data: attributes, isLoading } = useQuery({
     queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'attributes'],
-    queryFn: () => attributeService.getNodeAttributes(workspaceSlug, nodeId),
+    queryFn: () => attributeService.getNodeAttributes(nodeId.toString()),
   });
 
   const { mutate: deleteAttribute } = useMutation({
     mutationFn: (attributeId: number) =>
-      attributeService.deleteAttribute(workspaceSlug, nodeId, attributeId),
+      attributeService.deleteAttribute(nodeId.toString(), attributeId.toString()),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'attributes']

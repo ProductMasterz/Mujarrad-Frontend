@@ -1,5 +1,6 @@
 // src/hooks/api/useAuth.ts
 
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authService } from '@/services/api';
 import { useAuthStore } from '@/stores';
@@ -8,17 +9,23 @@ import type { LoginRequest, CreateUserRequest } from '@/types/backend-dtos';
 export function useCurrentUser() {
   const setUser = useAuthStore((state) => state.setUser);
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['auth', 'currentUser'],
     queryFn: authService.getCurrentUser,
     retry: false,
-    onSuccess: (user) => {
-      setUser(user);
-    },
-    onError: () => {
-      setUser(null);
-    },
   });
+
+  // Handle success/error side effects
+  useEffect(() => {
+    if (query.isSuccess && query.data) {
+      setUser(query.data);
+    }
+    if (query.isError) {
+      setUser(null);
+    }
+  }, [query.isSuccess, query.isError, query.data, setUser]);
+
+  return query;
 }
 
 export function useLogin() {

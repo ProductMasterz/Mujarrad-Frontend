@@ -3,6 +3,7 @@
 import { parseWikiLinks, resolveWikiLinkTarget } from '@/lib/wikilink-parser';
 import { nodeService } from './node.service';
 import { attributeService } from './attribute.service';
+import { NodeType, AttributeKey } from '@/types/backend-dtos';
 import type { Node, CreateNodeRequest, CreateAttributeRequest } from '@/types/backend-dtos';
 
 /**
@@ -128,10 +129,9 @@ export const wikiLinkService = {
     for (const link of unresolvedLinks) {
       try {
         const createRequest: CreateNodeRequest = {
-          workspaceId,
           title: link.targetTitle,
-          nodeType: 'REGULAR',
-          markdownContent: `# ${link.targetTitle}\n\n*This page was automatically created from a wiki-link.*`,
+          nodeType: NodeType.REGULAR,
+          content: `# ${link.targetTitle}\n\n*This page was automatically created from a wiki-link.*`,
           nodeDetails: {
             isPlaceholder: true,
             createdFrom: 'wiki-link',
@@ -195,11 +195,9 @@ export const wikiLinkService = {
 
         // Create attribute relationship
         const createRequest: CreateAttributeRequest = {
-          sourceNodeId,
-          targetNodeId: targetNode.id.toString(),
-          attributeType: 'references',
-          attributeKey: 'wiki-link',
-          attributeValue: null,
+          targetNodeId: targetNode.id,
+          attributeKey: AttributeKey.REFERENCES,
+          attributeValue: resolution.displayText,
           metadata: {
             displayText: resolution.displayText,
             targetTitle: resolution.targetTitle,

@@ -19,26 +19,31 @@ export function useGraphData(workspaceSlug: string) {
 
       const nodes: GraphNode[] = nodesResponse.content.map((node, index) => ({
         id: String(node.id),
-        type: 'custom',
+        type: node.nodeType.toLowerCase() as 'context' | 'regular',
         position: { x: index * 200, y: index * 100 }, // TODO: Calculate proper layout
         data: {
           node,
           label: node.title,
-          nodeType: node.nodeType,
+          isSelected: false,
         },
       }));
 
-      const edges: GraphEdge[] = attributes.map((attr) => ({
-        id: String(attr.id),
-        source: String(attr.sourceNodeId),
-        target: String(attr.targetNodeId),
-        type: 'custom',
-        data: {
-          attribute: attr,
-          attributeKey: attr.attributeKey,
-          label: attr.attributeValue,
-        },
-      }));
+      const edges: GraphEdge[] = attributes.map((attr) => {
+        // Determine edge type based on attribute key
+        const edgeType = attr.attributeKey === 'contains' ? 'contains' : 'default';
+
+        return {
+          id: String(attr.id),
+          source: String(attr.sourceNodeId),
+          target: String(attr.targetNodeId),
+          type: edgeType,
+          data: {
+            attribute: attr,
+            isBidirectional: false, // TODO: Detect bidirectional relationships
+            label: attr.attributeValue,
+          },
+        };
+      });
 
       return { nodes, edges };
     },
@@ -50,8 +55,8 @@ export function useCreateEdge(workspaceSlug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ sourceNodeId, data }: { sourceNodeId: number; data: CreateAttributeRequest }) =>
-      attributeService.createAttribute(workspaceSlug, sourceNodeId, data),
+    mutationFn: ({ sourceNodeId, data }: { sourceNodeId: string; data: CreateAttributeRequest }) =>
+      attributeService.createAttribute(sourceNodeId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'graph'] });
     },
@@ -62,8 +67,8 @@ export function useDeleteEdge(workspaceSlug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ sourceNodeId, attributeId }: { sourceNodeId: number; attributeId: number }) =>
-      attributeService.deleteAttribute(workspaceSlug, sourceNodeId, attributeId),
+    mutationFn: ({ sourceNodeId, attributeId }: { sourceNodeId: string; attributeId: string }) =>
+      attributeService.deleteAttribute(sourceNodeId, attributeId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'graph'] });
     },

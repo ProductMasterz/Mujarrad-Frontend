@@ -114,13 +114,13 @@ export function buildGraphData(
       id: attr.id.toString(),
       source: attr.sourceNodeId.toString(),
       target: attr.targetNodeId.toString(),
-      type: isBidirectional ? 'bidirectional' : attr.attributeKey.toLowerCase() === 'contains' ? 'contains' : 'default',
+      type: isBidirectional ? 'bidirectional' : attr.attributeKey === 'contains' ? 'contains' : 'default',
       data: {
         attribute: attr,
         isBidirectional,
-        label: attr.attributeKey || attr.attributeKey.toLowerCase(),
+        label: attr.attributeValue || attr.attributeKey,
       },
-      animated: attr.attributeKey.toLowerCase() === 'references',
+      animated: attr.attributeKey === 'references',
     };
   });
 
@@ -169,11 +169,11 @@ export function getConnectedNodes(nodeId: string, attributes: Attribute[]): Set<
   const connected = new Set<string>();
 
   for (const attr of attributes) {
-    if (attr.sourceNodeId === nodeId) {
-      connected.add(attr.targetNodeId);
+    if (attr.sourceNodeId.toString() === nodeId) {
+      connected.add(attr.targetNodeId.toString());
     }
-    if (attr.targetNodeId === nodeId) {
-      connected.add(attr.sourceNodeId);
+    if (attr.targetNodeId.toString() === nodeId) {
+      connected.add(attr.sourceNodeId.toString());
     }
   }
 

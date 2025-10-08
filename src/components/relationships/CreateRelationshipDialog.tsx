@@ -52,7 +52,7 @@ export function CreateRelationshipDialog({
 
   const onSubmit = (data: CreateAttributeFormData) => {
     createAttribute(
-      { sourceNodeId, data },
+      { sourceNodeId: sourceNodeId.toString(), data },
       {
         onSuccess: () => {
           setOpen(false);
@@ -73,7 +73,7 @@ export function CreateRelationshipDialog({
     );
   };
 
-  const availableNodes = nodesData?.content.filter(node => node.id !== sourceNodeId) || [];
+  const availableNodes = nodesData?.filter(node => node.id !== sourceNodeId) || [];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
