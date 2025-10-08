@@ -30,16 +30,16 @@ export function detectBidirectionalEdges(attributes: Attribute[]): Set<string> {
     edgeMap.get(key)!.push(attr);
   }
 
-  // Check for bidirectional pairs (must have matching attribute types)
+  // Check for bidirectional pairs (must have matching attribute keys)
   for (const attr of attributes) {
-    const { id, sourceNodeId, targetNodeId, attributeType } = attr;
+    const { id, sourceNodeId, targetNodeId, attributeKey } = attr;
     // Check if reverse edge exists with matching type
     const reverseEdges = edgeMap.get(targetNodeId.toString());
     if (reverseEdges) {
       const hasReverse = reverseEdges.some(
         reverseAttr =>
           reverseAttr.targetNodeId.toString() === sourceNodeId.toString() &&
-          reverseAttr.attributeType.toString().toLowerCase() === attributeType.toString().toLowerCase()
+          reverseAttr.attributeKey === attributeKey
       );
       if (hasReverse) {
         bidirectional.add(id.toString());
@@ -84,7 +84,7 @@ export function buildGraphData(
     if (!visibleNodeIds.has(attr.targetNodeId.toString())) return false;
 
     // Filter by edge type
-    const attrTypeStr = attr.attributeType.toString().toLowerCase();
+    const attrTypeStr = attr.attributeKey.toString().toLowerCase();
     if (attrTypeStr === 'contains' && !viewMode.showContains) return false;
     if (attrTypeStr === 'references' && !viewMode.showReferences) return false;
 
@@ -114,13 +114,13 @@ export function buildGraphData(
       id: attr.id.toString(),
       source: attr.sourceNodeId.toString(),
       target: attr.targetNodeId.toString(),
-      type: isBidirectional ? 'bidirectional' : attr.attributeType.toLowerCase() === 'contains' ? 'contains' : 'default',
+      type: isBidirectional ? 'bidirectional' : attr.attributeKey.toLowerCase() === 'contains' ? 'contains' : 'default',
       data: {
         attribute: attr,
         isBidirectional,
-        label: attr.attributeKey || attr.attributeType.toLowerCase(),
+        label: attr.attributeKey || attr.attributeKey.toLowerCase(),
       },
-      animated: attr.attributeType.toLowerCase() === 'references',
+      animated: attr.attributeKey.toLowerCase() === 'references',
     };
   });
 

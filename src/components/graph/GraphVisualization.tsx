@@ -19,7 +19,7 @@ import 'reactflow/dist/style.css';
 
 import type { Node, Attribute } from '@/types/backend-dtos';
 import { buildGraphData } from '@/lib/graph-utils';
-import { useNavigationStore } from '@/stores/navigationStore';
+import { useGraphStore } from '@/stores/graphStore';
 import { GraphControls } from './GraphControls';
 
 interface GraphVisualizationProps {
@@ -37,18 +37,19 @@ export function GraphVisualization({
   attributes,
   onNodeClick,
 }: GraphVisualizationProps) {
-  const { graphViewMode, setGraphViewMode, selectedNodeId, setSelectedNode } =
-    useNavigationStore();
+  const viewMode = useGraphStore(state => state.viewMode);
+  const selectedNodeId = useGraphStore(state => state.selectedNodeId);
+  const setSelectedNode = useGraphStore(state => state.setSelectedNode);
 
   // Build graph data based on view mode
   const graphData = useMemo(() => {
-    return buildGraphData({
+    return buildGraphData(
       nodes,
       attributes,
-      viewMode: graphViewMode,
-      selectedNodeId,
-    });
-  }, [nodes, attributes, graphViewMode, selectedNodeId]);
+      viewMode,
+      selectedNodeId
+    );
+  }, [nodes, attributes, viewMode, selectedNodeId]);
 
   // Convert to ReactFlow format
   const [flowNodes, setFlowNodes, onNodesChange] = useNodesState(
@@ -101,12 +102,12 @@ export function GraphVisualization({
     [onNodeClick, setSelectedNode]
   );
 
-  const handleViewModeChange = useCallback(
-    (mode: Partial<typeof graphViewMode>) => {
-      setGraphViewMode(mode);
-    },
-    [setGraphViewMode]
-  );
+  // View mode change handler for GraphControls
+  const handleViewModeChange = useCallback((mode: Partial<typeof viewMode>) => {
+    useGraphStore.setState(state => ({
+      viewMode: { ...state.viewMode, ...mode }
+    }));
+  }, []);
 
   if (nodes.length === 0) {
     return (
@@ -118,7 +119,7 @@ export function GraphVisualization({
 
   return (
     <div className="h-full flex flex-col">
-      <GraphControls viewMode={graphViewMode} onViewModeChange={handleViewModeChange} />
+      <GraphControls viewMode={viewMode} onViewModeChange={handleViewModeChange} />
 
       <div className="flex-1">
         <ReactFlow
