@@ -31,7 +31,7 @@ export function CreateNodeDialog({ workspaceSlug }: CreateNodeDialogProps) {
   const [open, setOpen] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
 
-  const { mutate: createNode, isPending } = useCreateNode(workspaceSlug);
+  const { mutate: createNode, isPending } = useCreateNode();
   const { mutate: createAttribute } = useCreateAttribute();
 
   // Fetch all workspace nodes for parent selection

@@ -58,7 +58,8 @@
       "Bash(specify --version)",
       "WebSearch",
       "Bash(node:*)",
-      "Bash(/Users/mac/Developer/Software-Projects/PMZ Projects/Mujarrad/Mujarrad-Frontend/test-demo-automated.sh:*)"
+      "Bash(/Users/mac/Developer/Software-Projects/PMZ Projects/Mujarrad/Mujarrad-Frontend/test-demo-automated.sh:*)",
+      "Bash(npx shadcn@latest add:*)"
     ],
     "deny": [],
     "ask": []

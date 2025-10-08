@@ -122,7 +122,7 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
               <GraphVisualization
                 nodes={nodes}
                 attributes={attributes}
-                onNodeDoubleClick={handleNodeSelect}
+                onNodeClick={handleNodeSelect}
               />
             </TabsContent>
 

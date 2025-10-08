@@ -25,10 +25,10 @@ export function DeleteNodeDialog({ workspaceSlug, nodeId, nodeName }: DeleteNode
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { mutate: deleteNode, isPending: isLoading } = useDeleteNode(workspaceSlug);
+  const { mutate: deleteNode, isPending: isLoading } = useDeleteNode();
 
   const handleDelete = () => {
-    deleteNode(nodeId, {
+    deleteNode(nodeId.toString(), {
       onSuccess: () => {
         setOpen(false);
         router.push(`/workspaces/${workspaceSlug}/nodes`);

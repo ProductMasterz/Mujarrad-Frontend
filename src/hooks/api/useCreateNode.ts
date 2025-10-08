@@ -30,14 +30,13 @@ export const useCreateNode = () => {
         (old) => {
           if (!old) return old;
           const tempNode: Node = {
-            id: 'temp-' + Date.now(),
-            workspaceId: newNode.workspaceId,
+            id: Date.now(),
+            workspaceId: typeof newNode.workspaceId === 'string' ? parseInt(newNode.workspaceId) : newNode.workspaceId,
             title: newNode.title,
-            slug: newNode.title.toLowerCase().replace(/\s+/g, '-'),
             nodeType: newNode.nodeType,
-            markdownContent: newNode.markdownContent || '',
+            content: newNode.markdownContent || '',
             nodeDetails: newNode.nodeDetails || {},
-            createdBy: 'current-user',
+            createdBy: 1,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             version: 1,

@@ -25,8 +25,8 @@ export default function NodeDetailPage() {
 
   // Fetch the current node
   const { data: node, isLoading: nodeLoading } = useQuery({
-    queryKey: ['node', slug, nodeId],
-    queryFn: () => nodeService.getNode(slug, parseInt(nodeId, 10)),
+    queryKey: ['node', nodeId],
+    queryFn: () => nodeService.getNode(nodeId),
     enabled: !!workspace,
   });
 
@@ -165,9 +165,9 @@ export default function NodeDetailPage() {
               {activeView === 'content' && (
                 <div className="max-w-4xl mx-auto p-8">
                   <div className="bg-white rounded-lg shadow-sm p-8">
-                    {node.markdownContent ? (
+                    {node.content ? (
                       <MarkdownRenderer
-                        content={node.markdownContent}
+                        content={node.content}
                         workspaceSlug={slug}
                         availableNodes={nodes}
                         onWikiLinkClick={targetTitle => {

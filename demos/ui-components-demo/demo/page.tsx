@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { HierarchyNavigator } from '@/components/hierarchy/HierarchyNavigator';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import type { Node, Attribute } from '@/types/backend-dtos';
-import { AttributeKey } from '@/types/backend-dtos';
+import { AttributeKey, NodeType } from '@/types/backend-dtos';
 
 export default function DemoPage() {
   // State to track selected node
@@ -16,9 +16,8 @@ export default function DemoPage() {
       id: 1,
       workspaceId: 1,
       title: 'Product Requirements',
-      slug: 'product-requirements',
-      nodeType: 'CONTEXT',
-      content: null,
+      nodeType: NodeType.CONTEXT,
+      content: '',
       nodeDetails: {},
       createdBy: 1,
       createdAt: '2025-01-01T00:00:00Z',
@@ -29,8 +28,7 @@ export default function DemoPage() {
       id: 2,
       workspaceId: 1,
       title: 'User Authentication',
-      slug: 'user-authentication',
-      nodeType: 'REGULAR',
+      nodeType: NodeType.REGULAR,
       content: `# User Authentication
 
 ## Overview
@@ -88,8 +86,7 @@ See also: [[Authorization]] and [[Security Best Practices]]
       id: 3,
       workspaceId: 1,
       title: 'Authorization',
-      slug: 'authorization',
-      nodeType: 'REGULAR',
+      nodeType: NodeType.REGULAR,
       content: `# Authorization
 
 ## Role-Based Access Control (RBAC)
@@ -161,9 +158,8 @@ Connected to [[User Authentication]] for identity verification.
       id: 4,
       workspaceId: 1,
       title: 'Technical Specs',
-      slug: 'technical-specs',
-      nodeType: 'CONTEXT',
-      content: null,
+      nodeType: NodeType.CONTEXT,
+      content: '',
       nodeDetails: {},
       createdBy: 1,
       createdAt: '2025-01-01T00:00:00Z',
@@ -174,8 +170,7 @@ Connected to [[User Authentication]] for identity verification.
       id: 5,
       workspaceId: 1,
       title: 'Database Schema',
-      slug: 'database-schema',
-      nodeType: 'REGULAR',
+      nodeType: NodeType.REGULAR,
       content: `# Database Schema
 
 ## PostgreSQL Database Design
@@ -279,8 +274,7 @@ Steps for schema updates:
       id: 6,
       workspaceId: 1,
       title: 'API Design',
-      slug: 'api-design',
-      nodeType: 'REGULAR',
+      nodeType: NodeType.REGULAR,
       content: `# API Design
 
 ## RESTful API Architecture

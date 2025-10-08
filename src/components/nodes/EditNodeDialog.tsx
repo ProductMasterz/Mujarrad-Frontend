@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { updateNodeSchema, type UpdateNodeFormData } from '@/schemas';
 import { useUpdateNode, useNode } from '@/hooks/api';
 import { NodeType } from '@/types/backend-dtos';
-import { WikiLinkService } from '@/services/api/wikilink.service';
+import { wikiLinkService } from '@/services/api/wikilink.service';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -33,8 +33,8 @@ interface EditNodeDialogProps {
 
 export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: EditNodeDialogProps) {
   const queryClient = useQueryClient();
-  const { data: node } = useNode(workspaceSlug, nodeId);
-  const { mutate: updateNode, isPending: isLoading } = useUpdateNode(workspaceSlug, nodeId);
+  const { data: node } = useNode(nodeId.toString());
+  const { mutate: updateNode, isPending: isLoading } = useUpdateNode();
   const [isProcessingWikiLinks, setIsProcessingWikiLinks] = useState(false);
 
   const {
@@ -73,11 +73,10 @@ export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: Ed
         if (data.content) {
           setIsProcessingWikiLinks(true);
           try {
-            const wikiLinkService = new WikiLinkService();
-            await wikiLinkService.parseAndResolveWikiLinks(
-              workspaceSlug,
+            await wikiLinkService.processWikiLinks(
+              data.content,
               updatedNode.id.toString(),
-              data.content
+              workspaceSlug
             );
 
             // T067: Invalidate React Query cache to refresh UI

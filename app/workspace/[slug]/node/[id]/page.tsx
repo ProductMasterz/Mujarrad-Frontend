@@ -22,7 +22,7 @@ export default function NodeDetailPage({ params }: NodeDetailPageProps) {
   const router = useRouter();
 
   // Fetch node data
-  const { data: node, isLoading, error } = useNode(slug, parseInt(id));
+  const { data: node, isLoading, error } = useNode(id);
 
   // Fetch all workspace nodes for wiki-link resolution
   const { data: availableNodes = [] } = useWorkspaceNodes(slug);
@@ -62,7 +62,7 @@ export default function NodeDetailPage({ params }: NodeDetailPageProps) {
             Node Not Found
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            The node you're looking for doesn't exist or has been deleted.
+            The node you&apos;re looking for doesn&apos;t exist or has been deleted.
           </p>
           <Button onClick={handleBack}>
             <ArrowLeft className="w-4 h-4 mr-2" />
