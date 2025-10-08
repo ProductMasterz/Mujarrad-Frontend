@@ -4,8 +4,9 @@
  * Fetches attributes (relationships) for a node with caching
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { attributeService } from '@/services/api/attribute.service';
+import type { CreateAttributeRequest } from '@/types/backend-dtos';
 
 export const useAttributes = (
   nodeId: string | null,
@@ -38,5 +39,32 @@ export const useWorkspaceAttributes = (workspaceId: string | null) => {
     enabled: !!workspaceId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+  });
+};
+
+/**
+ * useCreateAttribute Hook
+ *
+ * Creates a new attribute (relationship/edge) between nodes with optimistic updates
+ */
+export const useCreateAttribute = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      sourceNodeId,
+      data,
+    }: {
+      sourceNodeId: string;
+      data: CreateAttributeRequest;
+    }) => {
+      return await attributeService.createAttribute(sourceNodeId, data);
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate and refetch relevant queries
+      queryClient.invalidateQueries({ queryKey: ['nodeAttributes', variables.sourceNodeId] });
+      queryClient.invalidateQueries({ queryKey: ['nodeAttributes', variables.data.targetNodeId.toString()] });
+      queryClient.invalidateQueries({ queryKey: ['workspaceAttributes'] });
+    },
   });
 };
