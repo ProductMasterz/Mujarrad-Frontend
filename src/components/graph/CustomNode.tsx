@@ -14,11 +14,19 @@ const nodeTypeStyles: Record<NodeType, string> = {
 export const CustomNode = memo(({ data }: NodeProps) => {
   const { label, nodeType } = data as { label: string; nodeType: NodeType };
 
+  // T077: ARIA labels for graph nodes
+  const nodeTypeLabel = nodeType === NodeType.CONTEXT ? 'folder' : nodeType === NodeType.ASSUMPTION ? 'assumption' : 'document';
+
   return (
-    <div className={cn('px-4 py-2 shadow-md rounded-md border-2 min-w-[150px]', nodeTypeStyles[nodeType])}>
-      <Handle type="target" position={Position.Top} className="w-2 h-2" />
+    <div
+      className={cn('px-4 py-2 shadow-md rounded-md border-2 min-w-[150px]', nodeTypeStyles[nodeType])}
+      role="button"
+      aria-label={`${label} (${nodeTypeLabel})`}
+      tabIndex={0}
+    >
+      <Handle type="target" position={Position.Top} className="w-2 h-2" aria-hidden="true" />
       <div className="text-sm font-medium">{label}</div>
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
+      <Handle type="source" position={Position.Bottom} className="w-2 h-2" aria-hidden="true" />
     </div>
   );
 });

@@ -79,7 +79,14 @@ export function CreateNodeDialog({ workspaceSlug }: CreateNodeDialogProps) {
             },
             onError: (error) => {
               if (isApiError(error)) {
-                setError('root', { message: `Node created but failed to add to parent: ${error.getUserMessage()}` });
+                // T075: Handle circular dependency errors
+                if (error.statusCode === 400 && error.message.toLowerCase().includes('circular')) {
+                  setError('root', {
+                    message: `Cannot create this relationship: it would create a circular dependency. ${error.detail || ''}`
+                  });
+                } else {
+                  setError('root', { message: `Node created but failed to add to parent: ${error.getUserMessage()}` });
+                }
               }
             },
           });

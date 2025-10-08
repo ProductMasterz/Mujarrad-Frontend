@@ -34,4 +34,25 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* T078: Focus indicators for keyboard navigation */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Enhanced focus for interactive elements */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible,
+  [role="treeitem"]:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+
+  /* Focus for tree navigation */
+  [role="treeitem"]:focus-visible {
+    @apply bg-accent/50;
+  }
 }

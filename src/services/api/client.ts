@@ -5,6 +5,33 @@ import { ProblemDetail } from '@/types/errors';
 import { ApiError } from '@/lib/errors';
 
 /**
+ * Retry configuration for network requests
+ * T072: Implements 3-attempt retry logic for transient failures
+ */
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000; // 1 second
+
+/**
+ * Determine if an error should be retried
+ * Retry on network errors and 5xx server errors, but not 4xx client errors
+ */
+function shouldRetry(error: AxiosError): boolean {
+  // Network errors (no response)
+  if (!error.response) {
+    return true;
+  }
+
+  // Server errors (5xx)
+  const status = error.response.status;
+  if (status >= 500 && status < 600) {
+    return true;
+  }
+
+  // Don't retry client errors (4xx) or authentication errors
+  return false;
+}
+
+/**
  * Base API URL - using relative URLs to leverage Next.js rewrites
  * Next.js will proxy /api/* requests to the backend
  * In test environment, use localhost for MSW interception
@@ -58,15 +85,38 @@ apiClient.interceptors.request.use(
 );
 
 /**
- * Response interceptor: Parse RFC 7807 errors and handle 401 unauthorized
+ * Response interceptor: Parse RFC 7807 errors, handle 401 unauthorized, and retry logic
  * Converts Axios errors to ApiError instances with proper error details
+ * T072: Implements automatic retry for network and server errors
  */
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     // Success response - return as is
     return response;
   },
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    const config = error.config as InternalAxiosRequestConfig & { _retryCount?: number };
+
+    // Check if we should retry
+    if (config && shouldRetry(error)) {
+      config._retryCount = config._retryCount || 0;
+
+      if (config._retryCount < MAX_RETRIES) {
+        config._retryCount++;
+        console.log(`[Retry] Attempt ${config._retryCount}/${MAX_RETRIES} for ${config.url}`);
+
+        // Wait before retrying (exponential backoff)
+        const delay = RETRY_DELAY_MS * Math.pow(2, config._retryCount - 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        // Retry the request
+        return apiClient(config);
+      } else {
+        console.error(`[Retry] Max retries (${MAX_RETRIES}) reached for ${config.url}`);
+      }
+    }
+
+    // Handle errors (no more retries or non-retryable error)
     if (error.response) {
       // Server responded with error status
       const { status, data } = error.response;
