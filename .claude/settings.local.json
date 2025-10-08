@@ -57,7 +57,8 @@
       "Bash(kill:*)",
       "Bash(specify --version)",
       "WebSearch",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(/Users/mac/Developer/Software-Projects/PMZ Projects/Mujarrad/Mujarrad-Frontend/test-demo-automated.sh:*)"
     ],
     "deny": [],
     "ask": []

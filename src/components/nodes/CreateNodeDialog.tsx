@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createNodeSchema, type CreateNodeFormData } from '@/schemas';
-import { useCreateNode } from '@/hooks/api';
-import { NodeType } from '@/types/backend-dtos';
+import { useCreateNode, useWorkspaceNodes, useCreateAttribute } from '@/hooks/api';
+import { NodeType, AttributeKey } from '@/types/backend-dtos';
 import {
   Dialog,
   DialogContent,
@@ -29,7 +29,13 @@ interface CreateNodeDialogProps {
 
 export function CreateNodeDialog({ workspaceSlug }: CreateNodeDialogProps) {
   const [open, setOpen] = useState(false);
+  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
+
   const { mutate: createNode, isPending } = useCreateNode(workspaceSlug);
+  const { mutate: createAttribute } = useCreateAttribute();
+
+  // Fetch all workspace nodes for parent selection
+  const { data: nodes = [] } = useWorkspaceNodes(workspaceSlug, { type: NodeType.CONTEXT });
 
   const {
     register,
@@ -56,9 +62,32 @@ export function CreateNodeDialog({ workspaceSlug }: CreateNodeDialogProps) {
 
   const onSubmit = (data: CreateNodeFormData) => {
     createNode(data, {
-      onSuccess: () => {
-        setOpen(false);
-        reset();
+      onSuccess: (newNode) => {
+        // If a parent was selected, create the CONTAINS relationship
+        if (selectedParentId) {
+          createAttribute({
+            sourceNodeId: selectedParentId,
+            data: {
+              targetNodeId: newNode.id,
+              attributeKey: AttributeKey.CONTAINS,
+            },
+          }, {
+            onSuccess: () => {
+              setOpen(false);
+              reset();
+              setSelectedParentId(null);
+            },
+            onError: (error) => {
+              if (isApiError(error)) {
+                setError('root', { message: `Node created but failed to add to parent: ${error.getUserMessage()}` });
+              }
+            },
+          });
+        } else {
+          setOpen(false);
+          reset();
+          setSelectedParentId(null);
+        }
       },
       onError: (error) => {
         if (isApiError(error)) {
@@ -104,6 +133,27 @@ export function CreateNodeDialog({ workspaceSlug }: CreateNodeDialogProps) {
                 </Select>
                 {errors.nodeType && <p className="text-sm text-destructive">{errors.nodeType.message}</p>}
               </div>
+            </div>
+
+            {/* Parent node selection */}
+            <div className="space-y-2">
+              <Label htmlFor="parentNode">Parent Node (Optional)</Label>
+              <Select value={selectedParentId || ''} onValueChange={(value) => setSelectedParentId(value || null)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="No parent (root level)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No parent (root level)</SelectItem>
+                  {nodes.map((node) => (
+                    <SelectItem key={node.id} value={node.id.toString()}>
+                      📁 {node.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Select a CONTEXT node to nest this node under it in the hierarchy
+              </p>
             </div>
           </div>
 
