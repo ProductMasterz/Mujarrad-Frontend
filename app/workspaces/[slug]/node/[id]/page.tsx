@@ -12,6 +12,7 @@ import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { HierarchyNavigator } from '@/components/hierarchy/HierarchyNavigator';
 import { GraphVisualization } from '@/components/graph/GraphVisualization';
 import { useNavigationStore } from '@/stores/navigationStore';
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 
 export default function NodeDetailPage() {
   const params = useParams();
@@ -85,32 +86,30 @@ export default function NodeDetailPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <Breadcrumbs
+              segments={[
+                { label: workspace?.name || slug, href: `/workspaces/${slug}`, isCurrent: false },
+                { label: node.title, href: `/workspaces/${slug}/node/${nodeId}`, isCurrent: true }
+              ]}
+              className="mb-4"
+            />
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push(`/workspaces/${slug}`)}
-                  className="text-gray-600"
-                >
-                  ← Back to Workspace
-                </Button>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-gray-900">{node.title}</h1>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded ${
-                        node.nodeType === 'CONTEXT'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}
-                    >
-                      {node.nodeType}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Last updated: {new Date(node.updatedAt).toLocaleDateString()}
-                  </p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold text-gray-900">{node.title}</h1>
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded ${
+                      node.nodeType === 'CONTEXT'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-blue-100 text-blue-700'
+                    }`}
+                  >
+                    {node.nodeType}
+                  </span>
                 </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Last updated: {new Date(node.updatedAt).toLocaleDateString()}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" onClick={() => alert('Edit functionality coming soon')}>
