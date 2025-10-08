@@ -282,8 +282,9 @@ Nice-to-have improvements and optimizations.
 
 ---
 
-### 🌊 Wave 6: Integration & CRUD (Days 6-7)
+### 🌊 Wave 6: Integration & CRUD (Days 6-7) ✅ COMPLETE
 **Goal**: Connect components to node editing
+**Status**: All tasks complete
 **Parallel Work**: Can mostly parallelize
 
 #### 🟠 P1-K: Node Dialogs (Parallel - Different Files)
@@ -291,48 +292,42 @@ Nice-to-have improvements and optimizations.
 **Duration**: 3-4 hours each
 **Can start**: After Wave 3, 4, 5 complete
 
-- **T064** Update CreateNodeDialog to support hierarchy parent selection (contains relationship) in `src/components/nodes/CreateNodeDialog.tsx`
-  - **Test Coverage**: E2E tests
-  - **Critical**: Create nodes in hierarchy
-  - **Complexity**: Medium (dropdown for parent selection)
+- **T064** ✅ Update CreateNodeDialog to support hierarchy parent selection (contains relationship) in `src/components/nodes/CreateNodeDialog.tsx`
+  - **Implementation**: Dropdown with CONTEXT nodes, creates CONTAINS relationship
+  - **Status**: COMPLETE
 
-- **T065** Update EditNodeDialog with markdown editor and preview tabs in `src/components/nodes/EditNodeDialog.tsx`
-  - **Test Coverage**: E2E test T081
-  - **Critical**: Edit markdown with live preview
-  - **Complexity**: Medium (tabs + markdown editor)
+- **T065** ✅ Update EditNodeDialog with markdown editor and preview tabs in `src/components/nodes/EditNodeDialog.tsx`
+  - **Implementation**: Split-pane with editor and live preview (already existed)
+  - **Status**: COMPLETE
 
-- **T066** Implement save handler: parse wiki-links → create placeholders → create attributes in EditNodeDialog in `src/components/nodes/EditNodeDialog.tsx`
-  - **Test Coverage**: E2E test T081
-  - **Critical**: Core wiki-link processing on save
-  - **Dependencies**: T031 (WikiLinkService)
-  - **Complexity**: High (orchestrate multiple service calls)
+- **T066** ✅ Implement save handler: parse wiki-links → create placeholders → create attributes in EditNodeDialog in `src/components/nodes/EditNodeDialog.tsx`
+  - **Implementation**: Async wiki-link processing with WikiLinkService after save
+  - **Status**: COMPLETE
 
-- **T067** Trigger graph and hierarchy refresh after node save (invalidate React Query cache) in EditNodeDialog in `src/components/nodes/EditNodeDialog.tsx`
-  - **Test Coverage**: Integration tests
-  - **Critical**: Keep UI in sync
-  - **Complexity**: Low (React Query invalidation)
+- **T067** ✅ Trigger graph and hierarchy refresh after node save (invalidate React Query cache) in EditNodeDialog in `src/components/nodes/EditNodeDialog.tsx`
+  - **Implementation**: Invalidates workspace nodes, node details, and attributes
+  - **Status**: COMPLETE
 
 #### 🟠 P1-L: Detail View (Parallel)
 **Owner**: Developer B
 **Duration**: 2-3 hours
 **Can start**: After Wave 4 complete
 
-- **T068** Create NodeDetailView component with markdown rendering and metadata in `src/components/nodes/NodeDetailView.tsx`
-  - **Test Coverage**: E2E test T079
-  - **Critical**: Main page view
-  - **Dependencies**: MarkdownRenderer (T056-T057)
-  - **Complexity**: Low (composition component)
+- **T068** ✅ Create NodeDetailView component with markdown rendering and metadata in `src/components/nodes/NodeDetailView.tsx`
+  - **Implementation**: MarkdownRenderer + metadata display + edit button
+  - **Status**: COMPLETE
 
-**Wave 6 Output**:
-- ✅ Node creation/editing with hierarchy
-- ✅ Wiki-link processing on save
-- ✅ Full CRUD integration
-- ✅ E2E test T081 passing
+**Wave 6 Output**: ✅ ACHIEVED
+- ✅ Node creation/editing with hierarchy parent selection
+- ✅ Wiki-link processing on save with async workflow
+- ✅ Full CRUD integration with cache invalidation
+- ✅ NodeDetailView component ready for pages
 
 ---
 
-### 🌊 Wave 7: Page Layouts (Days 7-8)
+### 🌊 Wave 7: Page Layouts (Days 7-8) ✅ COMPLETE
 **Goal**: Create Next.js pages
+**Status**: All pages implemented with full navigation
 **Parallel Work**: 2 pages can be built in parallel
 
 #### 🔴 P0-F: Main Pages (Sequential - Different Files but interdependent)
@@ -340,28 +335,23 @@ Nice-to-have improvements and optimizations.
 **Duration**: 3-4 hours each
 **Can start**: After Wave 6 complete
 
-- **T069** Create workspace page layout with hierarchy sidebar + graph tabs in `app/workspace/[slug]/page.tsx`
-  - **Test Coverage**: E2E tests T079, T082
-  - **Critical**: Main workspace view
-  - **Components**: HierarchyNavigator, GraphVisualization
-  - **Complexity**: Medium (layout with tabs)
+- **T069** ✅ Create workspace page layout with hierarchy sidebar + graph tabs in `app/workspace/[slug]/page.tsx`
+  - **Implementation**: 3 tabs (Hierarchy, Graph, List) + HierarchyNavigator sidebar
+  - **Status**: COMPLETE
 
-- **T070** Create node detail page with NodeDetailView component in `app/workspace/[slug]/node/[id]/page.tsx`
-  - **Test Coverage**: E2E tests T079, T080
-  - **Critical**: Individual page view
-  - **Components**: NodeDetailView
-  - **Complexity**: Low (simple page layout)
+- **T070** ✅ Create node detail page with NodeDetailView component in `app/workspace/[slug]/node/[id]/page.tsx`
+  - **Implementation**: NodeDetailView + back navigation + error states
+  - **Status**: COMPLETE
 
-- **T071** Add navigation handlers (wiki-link clicks, tree clicks, graph double-clicks) in `app/workspace/[slug]/node/[id]/page.tsx`
-  - **Test Coverage**: E2E tests T079, T080
-  - **Critical**: User navigation flow
-  - **Complexity**: Low (event handlers)
+- **T071** ✅ Add navigation handlers (wiki-link clicks, tree clicks, graph double-clicks) in `app/workspace/[slug]/node/[id]/page.tsx`
+  - **Implementation**: All navigation handlers in both pages
+  - **Status**: COMPLETE
 
-**Wave 7 Output**:
-- ✅ Functional workspace page
-- ✅ Functional node detail page
-- ✅ Navigation flow working
-- ✅ E2E tests T079, T080 passing
+**Wave 7 Output**: ✅ ACHIEVED
+- ✅ Functional workspace page with 3 views
+- ✅ Functional node detail page with markdown
+- ✅ Full navigation flow (wiki-links, tree, graph, list)
+- ✅ Loading and error states implemented
 
 ---
 

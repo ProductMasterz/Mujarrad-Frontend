@@ -10,8 +10,8 @@
 
 ## 📊 Executive Summary
 
-### Current Status (Sprint 3 In Progress - UI Components)
-- **Completed**: Wave 1-5 Complete (T024-T063 core implementation done)
+### Current Status (Sprint 3 Complete - Full Integration)
+- **Completed**: Wave 1-7 Complete (T024-T071 full feature implementation)
   - ✅ All test files created (T001-T084)
   - ✅ Wave 1: Foundation complete - 93/93 tests passing
     - Utilities (T024-T028): parseWikiLinks, buildHierarchyTree, graph utils
@@ -25,9 +25,18 @@
     - WikiLink, MarkdownRenderer with GFM support
   - ✅ Wave 5: Graph UI (T058-T063)
     - GraphVisualization, GraphControls, CustomNode
-- **In Progress**: Component integration test updates
+  - ✅ Wave 6: Integration & CRUD (T064-T068)
+    - CreateNodeDialog with parent selection
+    - EditNodeDialog with wiki-link processing
+    - NodeDetailView component
+    - React Query cache invalidation
+  - ✅ Wave 7: Page Layouts (T069-T071)
+    - Workspace page with hierarchy sidebar + tabs
+    - Node detail page with full navigation
+    - All navigation handlers implemented
+- **In Progress**: Wave 8 (Error handling & Accessibility)
 - **Blocked**: None
-- **Next**: Wave 6-10 (CRUD, Pages, E2E, Polish)
+- **Next**: Wave 8-10 (Error Handling, E2E, Polish)
 
 ### Critical Issues Resolved
 1. ✅ **MSW v2 ESM Compatibility** - Fixed with async jest.config.js override
