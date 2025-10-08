@@ -2,9 +2,9 @@
 ## Feature: 004-i-need-to (Obsidian-like Page Hierarchy and Graph Navigation)
 
 **Generated**: 2025-10-08
-**Last Updated**: 2025-10-08 (Sprint 2 Complete)
-**Status**: Sprint 2 Complete - 93/93 tests passing ✅
-**Current Phase**: Ready for Sprint 3 - Component Development
+**Last Updated**: 2025-10-08 (Wave 8.5 Complete - Navigation Polish)
+**Status**: Wave 1-8.5 Complete - Production-ready with P0 navigation improvements ✅
+**Current Phase**: Ready for Wave 9 (E2E Testing) - Pending backend deployment
 
 ---
 
@@ -410,6 +410,63 @@ Nice-to-have improvements and optimizations.
 - ✅ WCAG AA accessibility compliance
 - ✅ Circular dependency prevention
 - ✅ ErrorBoundary for graceful error handling
+
+---
+
+### 🌊 Wave 8.5: P0 Navigation Improvements (Day 8.5) ✅ COMPLETE
+**Goal**: Critical navigation UX improvements identified in SITEMAP.md audit
+**Status**: All P0 navigation tasks complete
+**Parallel Work**: 4 independent improvements completed
+
+#### 🔴 P0-G: Global Navigation & Search (Parallel) ✅ COMPLETE
+**Owner**: All Developers
+**Duration**: 6-8 hours total (actual)
+**Completed**: All navigation improvements
+
+- **NAV-001** ✅ Create global Navbar component with branding in `src/components/layout/Navbar.tsx`
+  - **Implementation**: Logo, workspace links, search button, user dropdown
+  - **Features**: Active route highlighting, ⌘K keyboard shortcut trigger
+  - **Status**: COMPLETE
+
+- **NAV-002** ✅ Create Breadcrumbs component in `src/components/layout/Breadcrumbs.tsx`
+  - **Implementation**: Auto-generates from pathname, supports manual segments
+  - **Features**: Home icon, clickable navigation, current page indicator
+  - **Status**: COMPLETE
+
+- **NAV-003** ✅ Create CommandPalette search in `src/components/search/CommandPalette.tsx`
+  - **Implementation**: cmdk library, workspace switcher, node search
+  - **Features**: ⌘K/Ctrl+K shortcut, real-time results, type badges
+  - **Status**: COMPLETE
+
+- **NAV-004** ✅ Deprecate duplicate /workspace routes
+  - **Implementation**: Renamed app/workspace → app/workspace.deprecated
+  - **Impact**: Standardized on /workspaces (plural) throughout app
+  - **Status**: COMPLETE
+
+- **NAV-005** ✅ Create dropdown-menu UI component
+  - **Implementation**: Radix UI dropdown with full accessibility
+  - **Dependencies**: @radix-ui/react-dropdown-menu, @radix-ui/react-dialog, cmdk
+  - **Status**: COMPLETE
+
+**Wave 8.5 Output**: ✅ ACHIEVED
+- ✅ Professional-grade global navigation
+- ✅ Breadcrumb wayfinding on all pages
+- ✅ Fast command palette search (⌘K)
+- ✅ Route consistency (no duplicate paths)
+- ✅ Production build successful
+- ✅ Expected UX score increase: 5.5/10 → 7.5/10
+
+**Components Created**:
+- `src/components/layout/Navbar.tsx` (118 lines)
+- `src/components/layout/Breadcrumbs.tsx` (162 lines)
+- `src/components/search/CommandPalette.tsx` (156 lines)
+- `src/components/ui/dropdown-menu.tsx` (208 lines)
+
+**Dependencies Added**:
+- `@radix-ui/react-dropdown-menu`
+- `cmdk` (Command palette library)
+
+**Impact**: Addresses SCRUM Product Owner and UX Designer feedback for improved navigation context and user orientation.
 
 ---
 

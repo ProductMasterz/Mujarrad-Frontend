@@ -10,8 +10,8 @@
 
 ## 📊 Executive Summary
 
-### Current Status (Sprint 3 Complete - Full Integration)
-- **Completed**: Wave 1-8 Complete (T024-T078 full feature implementation)
+### Current Status (Sprint 3 Complete - Full Integration + Navigation Polish)
+- **Completed**: Wave 1-8 Complete + P0 Navigation Improvements (T024-T078 + Navigation)
   - ✅ All test files created (T001-T084)
   - ✅ Wave 1: Foundation complete - 93/93 tests passing
     - Utilities (T024-T028): parseWikiLinks, buildHierarchyTree, graph utils
@@ -40,6 +40,12 @@
     - Circular dependency error detection
     - ARIA labels on all interactive elements
     - WCAG AA compliant focus indicators
+  - ✅ **Wave 8.5: P0 Navigation Improvements (NEW - 2025-10-08)**
+    - Global Navbar component with branding, navigation, search trigger
+    - Breadcrumb navigation (auto-generated + manual override)
+    - Command Palette search (⌘K/Ctrl+K) with workspace switcher
+    - Route cleanup (deprecated /workspace → /workspaces standard)
+    - Dropdown menu UI component (Radix UI)
 - **In Progress**: None
 - **Blocked**: None
 - **Next**: Wave 9-10 (E2E Testing, Performance & Polish)
@@ -445,6 +451,7 @@ Wave 5 (Graph UI)         ██████████████████
 Wave 6 (CRUD Integration) ████████████████████ 100% ✅
 Wave 7 (Pages & Routing)  ████████████████████ 100% ✅
 Wave 8 (Error & A11y)     ████████████████████ 100% ✅
+Wave 8.5 (Navigation UX)  ████████████████████ 100% ✅ (NEW - P0 improvements)
 Wave 9 (E2E Validation)   ████████████████░░░░  75% ⚠️ (Tests written, pending backend)
 Wave 10 (Performance)     █████████████░░░░░░░  60% 🟡 (Core optimizations complete)
 ```
