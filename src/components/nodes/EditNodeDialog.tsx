@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { updateNodeSchema, type UpdateNodeFormData } from '@/schemas';
 import { useUpdateNode, useNode } from '@/hooks/api';
 import { NodeType } from '@/types/backend-dtos';
+import { WikiLinkService } from '@/services/api/wikilink.service';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -30,8 +32,10 @@ interface EditNodeDialogProps {
 }
 
 export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: EditNodeDialogProps) {
+  const queryClient = useQueryClient();
   const { data: node } = useNode(workspaceSlug, nodeId);
   const { mutate: updateNode, isPending: isLoading } = useUpdateNode(workspaceSlug, nodeId);
+  const [isProcessingWikiLinks, setIsProcessingWikiLinks] = useState(false);
 
   const {
     register,
@@ -61,10 +65,40 @@ export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: Ed
     }
   }, [node, setValue]);
 
-  const onSubmit = (data: UpdateNodeFormData) => {
+  const onSubmit = async (data: UpdateNodeFormData) => {
+    // First, update the node
     updateNode(data, {
-      onSuccess: () => {
-        onOpenChange(false);
+      onSuccess: async (updatedNode) => {
+        // Process wiki-links after successful update
+        if (data.content) {
+          setIsProcessingWikiLinks(true);
+          try {
+            const wikiLinkService = new WikiLinkService();
+            await wikiLinkService.parseAndResolveWikiLinks(
+              workspaceSlug,
+              updatedNode.id.toString(),
+              data.content
+            );
+
+            // T067: Invalidate React Query cache to refresh UI
+            queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'nodes'] });
+            queryClient.invalidateQueries({ queryKey: ['nodes', updatedNode.id] });
+            queryClient.invalidateQueries({ queryKey: ['nodes', updatedNode.id, 'attributes'] });
+
+            onOpenChange(false);
+          } catch (error) {
+            if (isApiError(error)) {
+              setError('root', { message: `Node saved but wiki-link processing failed: ${error.getUserMessage()}` });
+            }
+          } finally {
+            setIsProcessingWikiLinks(false);
+          }
+        } else {
+          // No content, just close
+          queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'nodes'] });
+          queryClient.invalidateQueries({ queryKey: ['nodes', updatedNode.id] });
+          onOpenChange(false);
+        }
       },
       onError: (error) => {
         if (isApiError(error)) {
@@ -141,11 +175,11 @@ export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: Ed
           {errors.root && <p className="text-sm text-destructive pt-2">{errors.root.message}</p>}
 
           <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading || isProcessingWikiLinks}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : 'Save Changes'}
+            <Button type="submit" disabled={isLoading || isProcessingWikiLinks}>
+              {isLoading ? 'Saving...' : isProcessingWikiLinks ? 'Processing wiki-links...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </form>
