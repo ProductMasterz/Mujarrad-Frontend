@@ -28,7 +28,7 @@ export function buildHierarchyTree(
 
   // Filter for 'contains' relationships only
   const containsRelations = attributes.filter(
-    attr => attr.attributeType.toString().toLowerCase() === 'contains'
+    attr => attr.attributeKey.toString().toLowerCase() === 'contains'
   );
 
   for (const attr of containsRelations) {
@@ -101,7 +101,7 @@ export function findAncestors(nodeId: string, attributes: Attribute[]): string[]
 
   // Build parent map from contains relationships
   attributes
-    .filter(attr => attr.attributeType.toString().toLowerCase() === 'contains')
+    .filter(attr => attr.attributeKey.toString().toLowerCase() === 'contains')
     .forEach(attr => {
       parentMap.set(attr.targetNodeId.toString(), attr.sourceNodeId.toString());
     });
