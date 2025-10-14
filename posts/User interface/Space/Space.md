@@ -1,4 +1,4 @@
-The workspace in [[Obsidian]] contains the follow components:
+The space in [[Obsidian]] contains the follow components:
 
 - [[Title bar]]
 - [[Sidebar|Sidebars]]

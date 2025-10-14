@@ -44,9 +44,9 @@ If there are panes that you only need to look at from time to time, having them 
 
 #### Toggle editor and preview in sidebar
 
-The hotkey to toggle between editor and preview only works in the main workspace. In the sidebar, you'll need to right click on the tab icon and select "Preview" or "Edit" to toggle between two modes.
+The hotkey to toggle between editor and preview only works in the main space. In the sidebar, you'll need to right click on the tab icon and select "Preview" or "Edit" to toggle between two modes.
 
 ### Save and load pane layouts
 
-The [[Workspaces]] plugin makes it easy to come back to a particular pane layout. Give it a try!
+The [[Spaces]] plugin makes it easy to come back to a particular pane layout. Give it a try!
 
