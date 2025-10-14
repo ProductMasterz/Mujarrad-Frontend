@@ -16,13 +16,13 @@
    → Constraints: Maintain backward compatibility where possible
 3. For each unclear aspect:
    → ✅ RESOLVED: Authentication endpoints support both /api/auth/* and /api/users/* (no breaking changes)
-   → ✅ RESOLVED: No old workspace endpoints exist on backend - full migration to spaces required
+   → ✅ RESOLVED: No old space endpoints exist on backend - full migration to spaces required
 4. Fill User Scenarios & Testing section
    → User scenarios defined for API migration
 5. Generate Functional Requirements
    → Each requirement is testable via API contract tests
 6. Identify Key Entities (if data involved)
-   → Entities: Space (replacing Workspace concept), Node, Attribute
+   → Entities: Space (replacing Space concept), Node, Attribute
 7. Run Review Checklist
    → Spec has uncertainties marked for clarification
 8. Return: SUCCESS (spec ready for planning)
@@ -40,7 +40,7 @@
 ## User Scenarios & Testing
 
 ### Primary User Story
-As a frontend application, I need to successfully communicate with the backend API using the correct endpoint paths and data structures, so that users can authenticate, manage spaces (formerly workspaces), create nodes, and establish relationships (attributes) between nodes without encountering API errors.
+As a frontend application, I need to successfully communicate with the backend API using the correct endpoint paths and data structures, so that users can authenticate, manage spaces (formerly spaces), create nodes, and establish relationships (attributes) between nodes without encountering API errors.
 
 ### Acceptance Scenarios
 
@@ -48,7 +48,7 @@ As a frontend application, I need to successfully communicate with the backend A
 
 2. **Given** a user attempts to log in, **When** credentials are provided, **Then** the system must authenticate and return a valid JWT token using the correct endpoint
 
-3. **Given** an authenticated user wants to view their spaces, **When** they request the spaces list, **Then** the system must return all spaces using the space-based endpoint (not workspace)
+3. **Given** an authenticated user wants to view their spaces, **When** they request the spaces list, **Then** the system must return all spaces using the space-based endpoint (not space)
 
 4. **Given** a user wants to create a node in a space, **When** they submit node creation data with a space slug, **Then** the system must create the node using the space-scoped endpoint
 
@@ -57,10 +57,10 @@ As a frontend application, I need to successfully communicate with the backend A
 6. **Given** a user wants to manage node attributes, **When** they create/read/delete attributes, **Then** the system must use the correct node-scoped attribute endpoints
 
 ### Edge Cases
-- What happens when the frontend uses old workspace-based endpoints that no longer exist?
+- What happens when the frontend uses old space-based endpoints that no longer exist?
 - How does the system handle requests to space endpoints with invalid slugs?
 - What happens if authentication endpoints change their response structure?
-- How are existing stored workspace IDs migrated to space slugs?
+- How are existing stored space IDs migrated to space slugs?
 
 ## Requirements
 
@@ -74,17 +74,17 @@ As a frontend application, I need to successfully communicate with the backend A
 - **FR-005**: System MUST continue supporting current user profile via `/api/auth/me` endpoint ✅
 - **FR-006**: Backend also supports `/api/users/me` (both are valid, frontend uses /api/auth/* - no change needed) ✅
 
-**Space Management (BREAKING CHANGE - Workspace → Space Migration):**
-- **FR-007**: System MUST migrate from `/api/workspaces/*` to `/api/spaces/*` in all API calls ⚠️ BREAKING
+**Space Management (BREAKING CHANGE - Space → Space Migration):**
+- **FR-007**: System MUST migrate from `/api/spaces/*` to `/api/spaces/*` in all API calls ⚠️ BREAKING
 - **FR-008**: System MUST fetch spaces via `GET /api/spaces` endpoint (returns array of SpaceResponse)
 - **FR-009**: System MUST create new spaces via `POST /api/spaces` with name (required) and optional slug
 - **FR-010**: System MUST support fetching space details via `GET /api/spaces/{id}` using UUID
 - **FR-011**: System MUST support fetching space details via `GET /api/spaces/slug/{slug}` using slug
 - **FR-012**: System MUST migrate frontend logic to use space slugs for node operations (backend requires slugs, not IDs)
 
-**Node Management (BREAKING CHANGE - Space-scoped, not Workspace-scoped):**
-- **FR-013**: System MUST create nodes via `POST /api/spaces/{spaceSlug}/nodes` ⚠️ BREAKING (was `/api/workspaces/{id}/nodes`)
-- **FR-014**: System MUST fetch all nodes via `GET /api/spaces/{spaceSlug}/nodes` ⚠️ BREAKING (was `/api/workspaces/{id}/nodes`)
+**Node Management (BREAKING CHANGE - Space-scoped, not Space-scoped):**
+- **FR-013**: System MUST create nodes via `POST /api/spaces/{spaceSlug}/nodes` ⚠️ BREAKING (was `/api/spaces/{id}/nodes`)
+- **FR-014**: System MUST fetch all nodes via `GET /api/spaces/{spaceSlug}/nodes` ⚠️ BREAKING (was `/api/spaces/{id}/nodes`)
 - **FR-015**: System MUST fetch individual nodes via `GET /api/spaces/{spaceSlug}/nodes/{nodeId}` ⚠️ BREAKING (was `/api/nodes/{id}`)
 - **FR-016**: System MUST update nodes via `PUT /api/spaces/{spaceSlug}/nodes/{nodeId}` ⚠️ BREAKING (was `/api/nodes/{id}`)
 - **FR-017**: System MUST delete nodes via `DELETE /api/spaces/{spaceSlug}/nodes/{nodeId}` with optional `force` query param ⚠️ BREAKING (was `/api/nodes/{id}`)
@@ -104,10 +104,10 @@ As a frontend application, I need to successfully communicate with the backend A
 - **FR-027**: System MAY integrate health check endpoints: `GET /api/health` and `GET /api/health/database` 🆕
 
 **Data Migration and Frontend Updates:**
-- **FR-028**: System MUST rename all internal references from "workspace" to "space" in service files
-- **FR-029**: System MUST update workspace.service.ts to space.service.ts with new endpoint paths
+- **FR-028**: System MUST rename all internal references from "space" to "space" in service files
+- **FR-029**: System MUST update space.service.ts to space.service.ts with new endpoint paths
 - **FR-030**: System MUST update node.service.ts to use space-scoped endpoints with slugs
-- **FR-031**: System MUST update TypeScript types/interfaces from Workspace to Space where appropriate
+- **FR-031**: System MUST update TypeScript types/interfaces from Space to Space where appropriate
 - **FR-032**: System MUST handle space slug retrieval/storage for routing and API calls
 
 **Testing and Validation:**
@@ -117,7 +117,7 @@ As a frontend application, I need to successfully communicate with the backend A
 
 ### Key Entities
 
-- **Space (formerly Workspace)**: Represents a container for organizing nodes. Has a name, slug (URL-friendly identifier), and ID. Accessed via slug in most API operations.
+- **Space (formerly Space)**: Represents a container for organizing nodes. Has a name, slug (URL-friendly identifier), and ID. Accessed via slug in most API operations.
 
 - **Node**: Represents a concept, entity, or piece of information within a space. Has title, type, content, and belongs to a specific space. Created and managed within space scope.
 
@@ -159,9 +159,9 @@ As a frontend application, I need to successfully communicate with the backend A
 ## Summary of Breaking Changes
 
 ### Critical Changes Required:
-1. **Workspace → Space terminology** throughout codebase
-2. **Endpoint path changes**: `/api/workspaces/*` → `/api/spaces/*`
-3. **Identifier change**: Workspace ID (number) → Space slug (string)
+1. **Space → Space terminology** throughout codebase
+2. **Endpoint path changes**: `/api/spaces/*` → `/api/spaces/*`
+3. **Identifier change**: Space ID (number) → Space slug (string)
 4. **Node endpoints now space-scoped**: All node operations require spaceSlug parameter
 
 ### No Changes Required:

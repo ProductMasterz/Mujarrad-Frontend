@@ -22,9 +22,9 @@ Date: 2025-10-13
 
 ## Key Changes from Previous Version
 
-### Workspace → Space Migration
-- Endpoint path change: `/api/workspaces/*` → `/api/spaces/*`
-- Parameter change: `workspaceId: number` → `spaceSlug: string`
+### Space → Space Migration
+- Endpoint path change: `/api/spaces/*` → `/api/spaces/*`
+- Parameter change: `spaceId: number` → `spaceSlug: string`
 
 ### Node Endpoints Now Space-Scoped
 - Old: `/api/nodes/{nodeId}`

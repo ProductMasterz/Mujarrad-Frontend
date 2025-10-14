@@ -7,12 +7,12 @@
 
 ## Execution Summary
 
-This document contains 33 ordered tasks to synchronize the frontend with backend API changes (workspace → space migration). Tasks follow TDD approach: tests first, then implementation, then validation.
+This document contains 33 ordered tasks to synchronize the frontend with backend API changes (space → space migration). Tasks follow TDD approach: tests first, then implementation, then validation.
 
 **Key Changes**:
-- Rename workspace.service.ts → space.service.ts
+- Rename space.service.ts → space.service.ts
 - Update node.service.ts for space-scoped endpoints
-- Migrate TypeScript types (Workspace → Space)
+- Migrate TypeScript types (Space → Space)
 - Update hooks, components, and tests
 - ✅ Auth endpoints unchanged (verify only)
 - ✅ Attribute endpoints unchanged (verify only)
@@ -30,7 +30,7 @@ This document contains 33 ordered tasks to synchronize the frontend with backend
   - Add `POST /api/spaces` handler
   - Add `GET /api/spaces/{id}` handler
   - Add `GET /api/spaces/slug/{slug}` handler
-  - Update `GET /api/spaces/{spaceSlug}/nodes` (change from workspaces path)
+  - Update `GET /api/spaces/{spaceSlug}/nodes` (change from spaces path)
   - Update `POST /api/spaces/{spaceSlug}/nodes`
   - Update `GET /api/spaces/{spaceSlug}/nodes/{nodeId}`
   - Update `PUT /api/spaces/{spaceSlug}/nodes/{nodeId}`
@@ -88,17 +88,17 @@ This document contains 33 ordered tasks to synchronize the frontend with backend
 
 ## Phase 3.3: Type Definitions (ONLY after tests are failing)
 
-- [x] **T008** [P] Add Space types and deprecate Workspace in `src/types/backend-dtos.ts`
+- [x] **T008** [P] Add Space types and deprecate Space in `src/types/backend-dtos.ts`
   - Add `Space` interface with id, name, slug, ownerId, createdAt, updatedAt
   - Add `CreateSpaceRequest` interface with name, slug?
   - Add `UpdateSpaceRequest` interface with name?, slug?
-  - Add deprecated alias: `type Workspace = Space // @deprecated Use Space`
+  - Add deprecated alias: `type Space = Space // @deprecated Use Space`
   - Add deprecated aliases for request types
   - Export all new types
 
 - [x] **T009** [P] Update Node types for space scoping in `src/types/backend-dtos.ts`
   - Verify `Node` interface has `spaceId: string` (should already exist)
-  - Update JSDoc comments to reference space instead of workspace
+  - Update JSDoc comments to reference space instead of space
   - Ensure NodeType enum exported correctly
   - No breaking changes (Node structure unchanged)
 
@@ -139,10 +139,10 @@ This document contains 33 ordered tasks to synchronize the frontend with backend
 ### Node Service
 
 - [x] **T014** Update node.service.ts methods for space-scoped endpoints in `src/services/api/node.service.ts`
-  - Update `getNodes(workspaceId, params)` → `getNodes(spaceSlug, params)`
-    - Change endpoint: `/workspaces/${workspaceId}/nodes` → `/spaces/${spaceSlug}/nodes`
-    - Change parameter type: `workspaceId: string` → `spaceSlug: string`
-  - Remove `getWorkspaceNodes(workspaceId)` method (no longer needed)
+  - Update `getNodes(spaceId, params)` → `getNodes(spaceSlug, params)`
+    - Change endpoint: `/spaces/${spaceId}/nodes` → `/spaces/${spaceSlug}/nodes`
+    - Change parameter type: `spaceId: string` → `spaceSlug: string`
+  - Remove `getSpaceNodes(spaceId)` method (no longer needed)
   - Update `getNode(nodeId)` → `getNode(spaceSlug, nodeId)`
     - Change endpoint: `/nodes/${nodeId}` → `/spaces/${spaceSlug}/nodes/${nodeId}`
     - Add spaceSlug parameter first
@@ -154,8 +154,8 @@ This document contains 33 ordered tasks to synchronize the frontend with backend
   - Update `deleteNode(nodeId)` → `deleteNode(spaceSlug, nodeId, force?)`
     - Change endpoint: `/nodes/${nodeId}` → `/spaces/${spaceSlug}/nodes/${nodeId}`
     - Add optional `force` query parameter
-  - Update `searchNodes(workspaceId, params)` → `searchNodes(spaceSlug, params)`
-    - Change endpoint: `/workspaces/${workspaceId}/search` → `/spaces/${spaceSlug}/search`
+  - Update `searchNodes(spaceId, params)` → `searchNodes(spaceSlug, params)`
+    - Change endpoint: `/spaces/${spaceId}/search` → `/spaces/${spaceSlug}/search`
   - Update JSDoc comments for all methods
 
 - [x] **T015** Run node contract tests and verify they PASS
@@ -190,9 +190,9 @@ This document contains 33 ordered tasks to synchronize the frontend with backend
 ### Node Hooks
 
 - [ ] **T019** Update useNodes hook in `src/hooks/useNodes.ts`
-  - Change signature: `useNodes(workspaceId)` → `useNodes(spaceSlug)`
-  - Update query key: `['nodes', 'list', workspaceId]` → `['nodes', 'list', spaceSlug]`
-  - Call nodeService.getNodes(spaceSlug) instead of getNodes(workspaceId)
+  - Change signature: `useNodes(spaceId)` → `useNodes(spaceSlug)`
+  - Update query key: `['nodes', 'list', spaceId]` → `['nodes', 'list', spaceSlug]`
+  - Call nodeService.getNodes(spaceSlug) instead of getNodes(spaceId)
   - Update TypeScript types
 
 - [ ] **T020** Update useNode hook in `src/hooks/useNode.ts` (if exists)
@@ -216,22 +216,22 @@ This document contains 33 ordered tasks to synchronize the frontend with backend
 
 ### Component Imports and Type Updates [P] (Parallel - Different Components)
 
-- [ ] **T023** [P] Update space list components in `src/components/spaces/` (if directory exists, rename from workspaces/)
-  - Find and replace import: `useWorkspaces` → `useSpaces`
-  - Find and replace type: `Workspace` → `Space`
-  - Update component props that accept workspace → accept space
+- [ ] **T023** [P] Update space list components in `src/components/spaces/` (if directory exists, rename from spaces/)
+  - Find and replace import: `useSpaces` → `useSpaces`
+  - Find and replace type: `Space` → `Space`
+  - Update component props that accept space → accept space
   - Verify TypeScript compilation passes
   - Test rendering with new hooks
 
 - [ ] **T024** [P] Update space detail/view components
-  - Find components using `useWorkspace(id)` → update to `useSpace(slug)`
+  - Find components using `useSpace(id)` → update to `useSpace(slug)`
   - Change parameter from ID to slug in component props
   - Update URL parsing to extract slug instead of ID
   - Update navigation links to use slugs
 
 - [ ] **T025** [P] Update node list/grid components
-  - Find components calling `useNodes(workspaceId)` → update to `useNodes(spaceSlug)`
-  - Update component props to accept spaceSlug instead of workspaceId
+  - Find components calling `useNodes(spaceId)` → update to `useNodes(spaceSlug)`
+  - Update component props to accept spaceSlug instead of spaceId
   - Verify node rendering still works
 
 - [ ] **T026** [P] Update node detail/edit components
@@ -240,8 +240,8 @@ This document contains 33 ordered tasks to synchronize the frontend with backend
   - Verify CRUD operations work
 
 - [ ] **T027** [P] Update navigation/breadcrumb components
-  - Update breadcrumb labels: "Workspace" → "Space"
-  - Update navigation links to use `/space/{slug}/` instead of `/workspace/{id}/`
+  - Update breadcrumb labels: "Space" → "Space"
+  - Update navigation links to use `/space/{slug}/` instead of `/space/{id}/`
   - Update active link detection
 
 ---
@@ -257,7 +257,7 @@ This document contains 33 ordered tasks to synchronize the frontend with backend
 
 - [ ] **T029** [P] Update node service integration tests in `tests/integration/services.integration.test.ts`
   - Test node CRUD with spaceSlug parameter
-  - Test that old workspace-based calls fail (404)
+  - Test that old space-based calls fail (404)
   - Test force delete parameter
   - Verify space scoping (nodes isolated by space)
 
@@ -283,10 +283,10 @@ This document contains 33 ordered tasks to synchronize the frontend with backend
 
 ## Phase 3.9: Polish & Cleanup
 
-- [ ] **T032** Remove old workspace service file
-  - Delete `src/services/api/workspace.service.ts` (if exists)
+- [ ] **T032** Remove old space service file
+  - Delete `src/services/api/space.service.ts` (if exists)
   - Ensure no imports still reference it (TypeScript should catch)
-  - Remove workspace-related hooks if they exist
+  - Remove space-related hooks if they exist
 
 - [ ] **T033** Run full test suite and manual quickstart verification
   - `npm test` - All unit, contract, integration tests
@@ -381,7 +381,7 @@ wait
 - [ ] Manual quickstart.md verification completed
 - [ ] No console errors in browser during testing
 - [ ] Network tab shows correct endpoint paths (/api/spaces/*)
-- [ ] Old workspace endpoints removed from codebase
+- [ ] Old space endpoints removed from codebase
 - [ ] Space CRUD operations work end-to-end
 - [ ] Node CRUD operations work with space slugs
 - [ ] Authentication still works (unchanged)

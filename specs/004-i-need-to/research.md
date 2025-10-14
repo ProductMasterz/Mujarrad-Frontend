@@ -183,19 +183,19 @@ const wikiLinkPattern = /\[\[([^\]|]+)(\|([^\]]+))?\]\]/g;
 - Constitution-locked: Zustand for global, React Query for server
 - React Query handles caching, refetching, optimistic updates
 - Zustand for:
-  - Current workspace context
+  - Current space context
   - Selected node ID
   - Graph view mode (CONTEXT-only, nodes-only, combined) - clarification #3
   - Navigation history
 - React Query for:
   - Nodes data (with relationships)
-  - Workspace metadata
+  - Space metadata
   - User permissions
 
 **Store Structure:**
 ```typescript
 interface NavigationStore {
-  workspaceId: string;
+  spaceId: string;
   selectedNodeId: string | null;
   graphViewMode: 'context' | 'nodes' | 'combined';
   navigationHistory: string[];
@@ -212,7 +212,7 @@ interface NavigationStore {
 ### Decision: Virtual scrolling for tree + incremental graph rendering
 
 **Rationale:**
-- Large workspaces (100+ nodes) must remain responsive
+- Large spaces (100+ nodes) must remain responsive
 - Constitution requirement: Lighthouse score > 90
 
 **Strategies:**
@@ -276,7 +276,7 @@ describe('parseWikiLinks', () => {
 
 // E2E test
 test('navigate hierarchy and edit page', async ({ page }) => {
-  await page.goto('/workspace/my-workspace');
+  await page.goto('/space/my-space');
   await page.click('text=My Folder');
   await page.click('text=My Page');
   await page.click('button:has-text("Edit")');

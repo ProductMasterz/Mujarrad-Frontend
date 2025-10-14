@@ -88,9 +88,9 @@
       "Bash(then)",
       "Bash(echo \"Updated: $file\")",
       "Bash(fi)",
-      "Bash(if [ -d \"./posts/User interface/Workspace\" ])",
-      "Bash(if [ -f \"./posts/Plugins/Workspaces.md\" ])",
-      "Bash(if [ -f \"./posts/User interface/Space/Workspace.md\" ])"
+      "Bash(if [ -d \"./posts/User interface/Space\" ])",
+      "Bash(if [ -f \"./posts/Plugins/Spaces.md\" ])",
+      "Bash(if [ -f \"./posts/User interface/Space/Space.md\" ])"
     ],
     "deny": [],
     "ask": []

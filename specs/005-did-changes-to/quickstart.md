@@ -70,13 +70,13 @@
 - ✅ Space creation succeeds
 - ✅ New space appears immediately (cache updated)
 - ✅ Navigation to space uses slug in URL
-- ✅ Network requests show `/api/spaces` paths (NOT `/api/workspaces`)
+- ✅ Network requests show `/api/spaces` paths (NOT `/api/spaces`)
 - ✅ No 404 errors
 
 **Fail Criteria**:
-- ❌ 404 on `/api/spaces` (means workspace service not updated)
+- ❌ 404 on `/api/spaces` (means space service not updated)
 - ❌ 404 on space creation
-- ❌ Console errors about missing workspaceId parameter
+- ❌ Console errors about missing spaceId parameter
 - ❌ TypeScript errors in console
 
 ---
@@ -120,7 +120,7 @@
 - ❌ 404 on any node endpoint (means node service not updated)
 - ❌ 400 error about missing spaceSlug
 - ❌ Request uses `/api/nodes/{id}` (old pattern)
-- ❌ Request uses `/api/workspaces/{id}/nodes` (old pattern)
+- ❌ Request uses `/api/spaces/{id}/nodes` (old pattern)
 
 ---
 
@@ -217,11 +217,11 @@ All sections must pass:
 **Cause**: Node service still using old endpoints
 **Fix**: Verify `node.service.ts` updated to use space-scoped endpoints
 
-### Issue: TypeScript error: "Property 'workspaceId' does not exist"
+### Issue: TypeScript error: "Property 'spaceId' does not exist"
 **Cause**: Component not updated to use space slug
-**Fix**: Update component to use `spaceSlug` instead of `workspaceId`
+**Fix**: Update component to use `spaceSlug` instead of `spaceId`
 
-### Issue: "Cannot find module '@/services/api/workspace.service'"
+### Issue: "Cannot find module '@/services/api/space.service'"
 **Cause**: Import not updated after service rename
 **Fix**: Update import to use `space.service` instead
 

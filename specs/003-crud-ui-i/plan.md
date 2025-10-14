@@ -31,14 +31,14 @@
 
 ## Summary
 
-**Feature**: Complete CRUD UI for all schema entities (Workspaces, Nodes, Attributes, NodeVersions)
+**Feature**: Complete CRUD UI for all schema entities (Spaces, Nodes, Attributes, NodeVersions)
 
-**Critical Gap**: Workspace creation UI is currently missing, blocking the primary user workflow. Many dialog components exist but are incomplete or untested.
+**Critical Gap**: Space creation UI is currently missing, blocking the primary user workflow. Many dialog components exist but are incomplete or untested.
 
 **Technical Approach**:
 - Enhance existing component structure in `src/components/`
 - Complete CRUD operations for all 4 entities with proper form validation (Zod schemas)
-- Implement workspace permissions and collaborator management
+- Implement space permissions and collaborator management
 - Add markdown preview for node content editing
 - Build version comparison and restoration UI
 - Integrate with existing Spring Boot backend APIs via Axios services
@@ -62,7 +62,7 @@
 ### ✅ Core Principles Compliance
 
 **I. Node Supremacy**
-- ✅ All entities (Workspace, Node, Attribute, NodeVersion) represented as database entities via backend
+- ✅ All entities (Space, Node, Attribute, NodeVersion) represented as database entities via backend
 - ✅ No hard-coded structures - organizational hierarchy via `contains` relationships
 - ✅ Frontend respects backend's node-centric architecture
 
@@ -109,11 +109,11 @@
 - ⚠️ Need to implement edge styling based on `attribute_key`
 - ⚠️ Need to add cycle visualization for containment relationships
 
-**VIII. Workspace Isolation**
-- ✅ All API calls scoped to workspaces
-- ✅ URL pattern: `/workspaces/{slug}/...` (App Router pages)
-- ✅ Workspace context via Zustand store
-- ✅ Backend enforces workspace isolation with Spring Security
+**VIII. Space Isolation**
+- ✅ All API calls scoped to spaces
+- ✅ URL pattern: `/spaces/{slug}/...` (App Router pages)
+- ✅ Space context via Zustand store
+- ✅ Backend enforces space isolation with Spring Security
 
 **IX. Version Awareness**
 - ✅ Version service exists (`src/services/api/version.service.ts`)
@@ -156,7 +156,7 @@ specs/003-crud-ui-i/
 ├── data-model.md              # Phase 1 output (entity relationships)
 ├── quickstart.md              # Phase 1 output (manual testing guide)
 ├── contracts/                 # Phase 1 output (API contracts)
-│   ├── workspace-api.yaml     # Workspace CRUD endpoints
+│   ├── space-api.yaml     # Space CRUD endpoints
 │   ├── node-api.yaml          # Node CRUD endpoints
 │   ├── attribute-api.yaml     # Relationship CRUD endpoints
 │   └── version-api.yaml       # Version history endpoints
@@ -168,14 +168,14 @@ specs/003-crud-ui-i/
 Mujarrad-Frontend/
 ├── app/                                 # Next.js App Router
 │   ├── layout.tsx                       # Root layout
-│   ├── page.tsx                         # Home/landing (redirects to /workspaces)
+│   ├── page.tsx                         # Home/landing (redirects to /spaces)
 │   ├── login/page.tsx                   # Login page
 │   ├── register/page.tsx                # Registration page
-│   ├── workspaces/
-│   │   ├── page.tsx                     # Workspace list page
+│   ├── spaces/
+│   │   ├── page.tsx                     # Space list page
 │   │   └── [slug]/
-│   │       ├── page.tsx                 # Workspace detail (node list + graph)
-│   │       ├── settings/page.tsx        # Workspace settings (edit, collaborators)
+│   │       ├── page.tsx                 # Space detail (node list + graph)
+│   │       ├── settings/page.tsx        # Space settings (edit, collaborators)
 │   │       └── nodes/[id]/
 │   │           ├── page.tsx             # Node detail view
 │   │           ├── edit/page.tsx        # Node edit page
@@ -197,13 +197,13 @@ Mujarrad-Frontend/
 │   │   │   ├── LoginForm.tsx
 │   │   │   ├── RegisterForm.tsx
 │   │   │   └── ProtectedRoute.tsx
-│   │   ├── workspaces/                  # Workspace CRUD components
-│   │   │   ├── WorkspaceList.tsx        # ✅ Exists (needs enhancement)
-│   │   │   ├── WorkspaceCard.tsx        # ✅ Exists
-│   │   │   ├── CreateWorkspaceDialog.tsx # ✅ Exists (PRIMARY GAP - needs completion)
-│   │   │   ├── EditWorkspaceDialog.tsx  # ✅ Exists (needs completion)
-│   │   │   ├── DeleteWorkspaceDialog.tsx # ✅ Exists (needs completion)
-│   │   │   ├── WorkspaceSettings.tsx    # ❌ NEW - collaborator management
+│   │   ├── spaces/                  # Space CRUD components
+│   │   │   ├── SpaceList.tsx        # ✅ Exists (needs enhancement)
+│   │   │   ├── SpaceCard.tsx        # ✅ Exists
+│   │   │   ├── CreateSpaceDialog.tsx # ✅ Exists (PRIMARY GAP - needs completion)
+│   │   │   ├── EditSpaceDialog.tsx  # ✅ Exists (needs completion)
+│   │   │   ├── DeleteSpaceDialog.tsx # ✅ Exists (needs completion)
+│   │   │   ├── SpaceSettings.tsx    # ❌ NEW - collaborator management
 │   │   │   ├── CollaboratorList.tsx     # ❌ NEW - list/remove collaborators
 │   │   │   └── InviteCollaboratorDialog.tsx # ❌ NEW - invite users
 │   │   ├── nodes/                       # Node CRUD components
@@ -232,7 +232,7 @@ Mujarrad-Frontend/
 │   ├── hooks/                           # Custom React hooks (logic)
 │   │   ├── api/                         # TanStack Query hooks
 │   │   │   ├── useAuth.ts               # ✅ Exists
-│   │   │   ├── useWorkspaces.ts         # ✅ Exists (needs collaborator hooks)
+│   │   │   ├── useSpaces.ts         # ✅ Exists (needs collaborator hooks)
 │   │   │   ├── useNodes.ts              # ✅ Exists
 │   │   │   ├── useAttributes.ts         # ✅ Exists
 │   │   │   ├── useVersions.ts           # ✅ Exists (needs restore/delete hooks)
@@ -243,7 +243,7 @@ Mujarrad-Frontend/
 │   │   └── api/
 │   │       ├── client.ts                # ✅ Axios instance with interceptors
 │   │       ├── auth.service.ts          # ✅ Exists
-│   │       ├── workspace.service.ts     # ✅ Exists (needs collaborator endpoints)
+│   │       ├── space.service.ts     # ✅ Exists (needs collaborator endpoints)
 │   │       ├── node.service.ts          # ✅ Exists
 │   │       ├── attribute.service.ts     # ✅ Exists
 │   │       ├── version.service.ts       # ✅ Exists (needs restore/delete)
@@ -263,7 +263,7 @@ Mujarrad-Frontend/
 │   │
 │   ├── schemas/                         # Zod validation schemas
 │   │   ├── auth.schema.ts               # ✅ Exists
-│   │   ├── workspace.schema.ts          # ✅ Exists (needs collaborator validation)
+│   │   ├── space.schema.ts          # ✅ Exists (needs collaborator validation)
 │   │   ├── node.schema.ts               # ✅ Exists
 │   │   ├── attribute.schema.ts          # ✅ Exists
 │   │   ├── version.schema.ts            # ✅ Exists
@@ -281,7 +281,7 @@ Mujarrad-Frontend/
     ├── integration/                     # Jest integration tests
     │   └── api/                         # API integration tests
     └── e2e/                             # Playwright E2E tests
-        ├── workspaces.spec.ts           # ✅ Exists
+        ├── spaces.spec.ts           # ✅ Exists
         ├── nodes.spec.ts                # ✅ Exists
         ├── graph.spec.ts                # ✅ Exists
         └── auth.spec.ts                 # ✅ Exists
@@ -294,8 +294,8 @@ Mujarrad-Frontend/
 ### Research Findings
 
 #### 1. Deferred Clarifications (Low Priority)
-- **FR-004**: Workspace slug format → **Decision**: Use URL-safe slug pattern `^[a-z0-9]+(?:-[a-z0-9]+)*$` (lowercase alphanumeric with hyphens)
-- **FR-007**: Search/filter workspaces → **Decision**: Make it optional (nice-to-have), not blocking MVP
+- **FR-004**: Space slug format → **Decision**: Use URL-safe slug pattern `^[a-z0-9]+(?:-[a-z0-9]+)*$` (lowercase alphanumeric with hyphens)
+- **FR-007**: Search/filter spaces → **Decision**: Make it optional (nice-to-have), not blocking MVP
 - **FR-022**: Attribute `attributeValue` field → **Decision**: Backend schema includes it as optional string, UI should support it but not require it
 - **FR-033**: Undo/redo functionality → **Decision**: Defer to future iteration, not critical for MVP
 
@@ -303,7 +303,7 @@ Mujarrad-Frontend/
 
 #### 2. Cascade Delete Strategy
 From spec clarifications:
-- Workspace deletion → **Cascade delete** all nodes, relationships, and versions
+- Space deletion → **Cascade delete** all nodes, relationships, and versions
 - Node deletion → **Cascade delete** all relationships (incoming + outgoing)
 
 **Implementation**: Backend handles cascade via database constraints. Frontend must:
@@ -313,10 +313,10 @@ From spec clarifications:
 
 #### 3. Permissions & Collaborators
 From spec clarifications:
-- **Model**: Shared workspaces with owner + invited collaborators
+- **Model**: Shared spaces with owner + invited collaborators
 - **Backend Support**: Assumed to exist (verify in contracts phase)
 - **UI Requirements**:
-  - Workspace settings page with collaborator list
+  - Space settings page with collaborator list
   - Invite dialog (by email or username)
   - Revoke access button per collaborator
   - Permission checks before edit/delete operations
@@ -361,7 +361,7 @@ const edgeStyles = {
 #### 7. Form Validation Patterns
 Existing Zod schemas follow pattern:
 ```typescript
-export const createWorkspaceSchema = z.object({
+export const createSpaceSchema = z.object({
   name: z.string().min(1, 'Name required').max(100),
   slug: z.string().regex(/^[a-z0-9-]+$/, 'Invalid slug format'),
   description: z.string().max(500).optional()
@@ -408,7 +408,7 @@ All findings documented inline above. No external research.md needed since all c
        │ owns/collaborates
        ▼
 ┌─────────────┐
-│  Workspace  │──────┐ contains (via Attribute)
+│  Space  │──────┐ contains (via Attribute)
 │  - id       │      │
 │  - name     │      │
 │  - slug     │      ▼
@@ -447,7 +447,7 @@ All findings documented inline above. No external research.md needed since all c
 ```
 
 **Key Validation Rules**:
-- Workspace `slug`: Unique, lowercase alphanumeric with hyphens, 3-50 chars
+- Space `slug`: Unique, lowercase alphanumeric with hyphens, 3-50 chars
 - Node `title`: Required, 1-200 chars
 - Node `content`: Markdown, max 50,000 chars
 - Attribute `key`: Enum of 6 types (contains, depends_on, references, triggers, next, calls)
@@ -455,22 +455,22 @@ All findings documented inline above. No external research.md needed since all c
 
 ### 2. API Contracts (see contracts/ directory)
 
-**Workspace API** (`contracts/workspace-api.yaml`):
+**Space API** (`contracts/space-api.yaml`):
 ```yaml
-GET    /api/workspaces              # List user's workspaces
-POST   /api/workspaces              # Create workspace
-GET    /api/workspaces/{id}         # Get workspace details
-PUT    /api/workspaces/{id}         # Update workspace
-DELETE /api/workspaces/{id}         # Delete workspace (cascade)
-GET    /api/workspaces/{id}/collaborators # List collaborators (NEW)
-POST   /api/workspaces/{id}/collaborators # Invite collaborator (NEW)
-DELETE /api/workspaces/{id}/collaborators/{userId} # Remove collaborator (NEW)
+GET    /api/spaces              # List user's spaces
+POST   /api/spaces              # Create space
+GET    /api/spaces/{id}         # Get space details
+PUT    /api/spaces/{id}         # Update space
+DELETE /api/spaces/{id}         # Delete space (cascade)
+GET    /api/spaces/{id}/collaborators # List collaborators (NEW)
+POST   /api/spaces/{id}/collaborators # Invite collaborator (NEW)
+DELETE /api/spaces/{id}/collaborators/{userId} # Remove collaborator (NEW)
 ```
 
 **Node API** (`contracts/node-api.yaml`):
 ```yaml
-GET    /api/workspaces/{wsId}/nodes           # List nodes in workspace
-POST   /api/workspaces/{wsId}/nodes           # Create node
+GET    /api/spaces/{wsId}/nodes           # List nodes in space
+POST   /api/spaces/{wsId}/nodes           # Create node
 GET    /api/nodes/{id}                        # Get node details
 PUT    /api/nodes/{id}                        # Update node (creates version)
 DELETE /api/nodes/{id}                        # Delete node (cascade relationships)
@@ -481,7 +481,7 @@ DELETE /api/nodes/{id}                        # Delete node (cascade relationshi
 GET    /api/nodes/{nodeId}/attributes         # Get all relationships for node
 POST   /api/nodes/{nodeId}/attributes         # Create relationship
 DELETE /api/nodes/{nodeId}/attributes/{attrId} # Delete relationship
-GET    /api/workspaces/{wsId}/graph           # Get full graph data
+GET    /api/spaces/{wsId}/graph           # Get full graph data
 ```
 
 **Version API** (`contracts/version-api.yaml`):
@@ -496,9 +496,9 @@ DELETE /api/nodes/{nodeId}/versions/{versionNum} # Delete version (NEW)
 
 **Dialog Pattern** (all CRUD operations):
 ```tsx
-export function CreateWorkspaceDialog({ open, onOpenChange, onSuccess }) {
-  const { mutate, isPending } = useCreateWorkspace();
-  const form = useForm({ resolver: zodResolver(workspaceSchema) });
+export function CreateSpaceDialog({ open, onOpenChange, onSuccess }) {
+  const { mutate, isPending } = useCreateSpace();
+  const form = useForm({ resolver: zodResolver(spaceSchema) });
 
   const onSubmit = (data) => {
     mutate(data, {
@@ -523,7 +523,7 @@ export function CreateWorkspaceDialog({ open, onOpenChange, onSuccess }) {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           {/* Form fields */}
           <Button type="submit" disabled={isPending}>
-            {isPending ? 'Creating...' : 'Create Workspace'}
+            {isPending ? 'Creating...' : 'Create Space'}
           </Button>
         </form>
       </DialogContent>
@@ -534,8 +534,8 @@ export function CreateWorkspaceDialog({ open, onOpenChange, onSuccess }) {
 
 **List Pattern** (with pagination/infinite scroll):
 ```tsx
-export function NodeList({ workspaceId }) {
-  const { data, fetchNextPage, hasNextPage, isLoading } = useNodesInfinite(workspaceId);
+export function NodeList({ spaceId }) {
+  const { data, fetchNextPage, hasNextPage, isLoading } = useNodesInfinite(spaceId);
 
   return (
     <div>
@@ -555,14 +555,14 @@ export function NodeList({ workspaceId }) {
 2. Axios interceptor adds `Authorization: Bearer {token}` to all requests
 3. 401 responses redirect to login page
 
-**Workspace Context**:
-1. User selects workspace → Zustand store updates current workspace
-2. All node/attribute/version queries scoped to workspace ID
-3. URL reflects workspace: `/workspaces/{slug}/...`
+**Space Context**:
+1. User selects space → Zustand store updates current space
+2. All node/attribute/version queries scoped to space ID
+3. URL reflects space: `/spaces/{slug}/...`
 
 **Graph Sync**:
 1. CRUD operations trigger TanStack Query cache invalidation
-2. Graph canvas re-fetches via `useGraph(workspaceId)` hook
+2. Graph canvas re-fetches via `useGraph(spaceId)` hook
 3. React Flow handles re-rendering with new node/edge data
 
 ### 5. Testing Strategy
@@ -578,7 +578,7 @@ export function NodeList({ workspaceId }) {
 - Dialog open/close state management
 
 **E2E Tests** (Playwright):
-- User journey: Create workspace → Add nodes → Create relationships → View graph
+- User journey: Create space → Add nodes → Create relationships → View graph
 - Version history: Edit node → View versions → Compare → Restore
 - Permissions: Invite collaborator → Collaborator edits → Owner removes access
 
@@ -606,7 +606,7 @@ Now I'll create the individual artifact files as specified in the execution flow
 **V. Clean Architecture**: ✅ Components/hooks/services/stores separation maintained
 **VI. Type Safety**: ✅ Zod schemas + TypeScript interfaces for all entities
 **VII. Graph Visualization**: ✅ React Flow with custom edge styling planned
-**VIII. Workspace Isolation**: ✅ All operations scoped to workspace
+**VIII. Space Isolation**: ✅ All operations scoped to space
 **IX. Version Awareness**: ✅ Version comparison/restore/delete UI planned
 **X. Performance**: ✅ Infinite scroll, caching, debouncing planned
 
@@ -629,7 +629,7 @@ Now I'll create the individual artifact files as specified in the execution flow
 1. **Foundation** [P] - Type definitions, schemas (parallel)
 2. **Services** [P] - API service methods (parallel per entity)
 3. **Hooks** [P] - TanStack Query custom hooks (parallel per entity)
-4. **Components: Workspaces** - CRUD dialogs, collaborator management
+4. **Components: Spaces** - CRUD dialogs, collaborator management
 5. **Components: Nodes** - CRUD dialogs, markdown preview
 6. **Components: Relationships** - Create/delete dialogs
 7. **Components: Versions** - Comparison, restore, delete
@@ -641,7 +641,7 @@ Now I'll create the individual artifact files as specified in the execution flow
 - **TDD**: Contract tests before implementation
 - **Dependencies**: Types → Services → Hooks → Components
 - **Parallel**: Mark [P] for independent tasks (different files)
-- **Critical Path**: Workspace creation (blocking workflow) prioritized
+- **Critical Path**: Space creation (blocking workflow) prioritized
 
 **Estimated Output**:
 - ~8-10 foundation tasks (types, schemas, contracts)

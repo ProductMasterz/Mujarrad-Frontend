@@ -5,11 +5,11 @@
 
 ## Overview
 
-This document defines the TypeScript interfaces and data structures required for synchronizing the frontend with the backend's workspace-to-space migration. All types match the backend OpenAPI specification.
+This document defines the TypeScript interfaces and data structures required for synchronizing the frontend with the backend's space-to-space migration. All types match the backend OpenAPI specification.
 
 ## Core Entities
 
-### Space (formerly Workspace)
+### Space (formerly Space)
 
 ```typescript
 /**
@@ -36,8 +36,8 @@ export interface Space {
   updatedAt: string;
 }
 
-/** @deprecated Use Space. Workspace renamed to Space in backend v2. */
-export type Workspace = Space;
+/** @deprecated Use Space. Space renamed to Space in backend v2. */
+export type Space = Space;
 ```
 
 ### Space Request/Response Types
@@ -292,7 +292,7 @@ export interface UpdateAttributeRequest {
 
 ## Service Method Signatures
 
-### SpaceService (renamed from WorkspaceService)
+### SpaceService (renamed from SpaceService)
 
 ```typescript
 export interface SpaceService {
@@ -353,8 +353,8 @@ export interface AttributeService {
   /** Delete attribute */
   deleteAttribute(nodeId: string, attributeId: string): Promise<void>;
 
-  /** Get all attributes in a workspace (DEPRECATED: may be removed) */
-  getWorkspaceAttributes(workspaceId: string): Promise<Attribute[]>;
+  /** Get all attributes in a space (DEPRECATED: may be removed) */
+  getSpaceAttributes(spaceId: string): Promise<Attribute[]>;
 }
 ```
 
@@ -366,19 +366,19 @@ export interface AttributeService {
 
 | Old Type | New Type | Notes |
 |----------|----------|-------|
-| `Workspace` | `Space` | Alias provided for backward compatibility |
-| `WorkspaceService` | `SpaceService` | Service renamed |
-| `useWorkspaces()` | `useSpaces()` | Hook renamed |
-| `useWorkspace(id)` | `useSpace(slug)` | Changed parameter from ID to slug |
-| `workspaceId: number` | `spaceSlug: string` | Type change for node operations |
+| `Space` | `Space` | Alias provided for backward compatibility |
+| `SpaceService` | `SpaceService` | Service renamed |
+| `useSpaces()` | `useSpaces()` | Hook renamed |
+| `useSpace(id)` | `useSpace(slug)` | Changed parameter from ID to slug |
+| `spaceId: number` | `spaceSlug: string` | Type change for node operations |
 
 ### Deprecated Types (Temporary Compatibility)
 
 ```typescript
 // Provide aliases during migration period
-export type Workspace = Space;
-export type CreateWorkspaceRequest = CreateSpaceRequest;
-export type UpdateWorkspaceRequest = UpdateSpaceRequest;
+export type Space = Space;
+export type CreateSpaceRequest = CreateSpaceRequest;
+export type UpdateSpaceRequest = UpdateSpaceRequest;
 ```
 
 ---
@@ -461,16 +461,16 @@ export const nodeKeys = {
 ## Summary
 
 ### Key Changes
-1. ✅ **Space replaces Workspace**: New primary entity
+1. ✅ **Space replaces Space**: New primary entity
 2. ✅ **Slug-based operations**: Node operations require space slug, not ID
 3. ⚠️ **No attribute changes**: Attribute endpoints and types unchanged
 4. ⚠️ **Auth unchanged**: User/authentication types unchanged
 
 ### Files to Update
-- `src/types/backend-dtos.ts` - Add Space types, deprecate Workspace
-- `src/services/api/workspace.service.ts` → `space.service.ts` - Rename and update endpoints
+- `src/types/backend-dtos.ts` - Add Space types, deprecate Space
+- `src/services/api/space.service.ts` → `space.service.ts` - Rename and update endpoints
 - `src/services/api/node.service.ts` - Update all methods to require `spaceSlug`
-- `src/hooks/useWorkspaces.ts` → `useSpaces.ts` - Rename hook
+- `src/hooks/useSpaces.ts` → `useSpaces.ts` - Rename hook
 - `src/hooks/useNodes.ts` - Update to accept `spaceSlug` parameter
 
 **Status**: ✅ Data Model Complete

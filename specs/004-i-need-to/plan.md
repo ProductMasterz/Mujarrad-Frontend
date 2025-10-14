@@ -29,7 +29,7 @@
 
 ## Summary
 
-Implement Obsidian-like features in Mujarrad frontend: hierarchical page navigation with expandable tree, markdown rendering with wiki-link support, automatic placeholder page creation, and enhanced graph visualization with bidirectional edge detection and node-type filtering. All features integrate with existing backend APIs (no API changes needed), use existing authentication and workspace isolation, and follow constitutional Clean Architecture principles with Next.js 14, Zustand, React Query, and React Flow.
+Implement Obsidian-like features in Mujarrad frontend: hierarchical page navigation with expandable tree, markdown rendering with wiki-link support, automatic placeholder page creation, and enhanced graph visualization with bidirectional edge detection and node-type filtering. All features integrate with existing backend APIs (no API changes needed), use existing authentication and space isolation, and follow constitutional Clean Architecture principles with Next.js 14, Zustand, React Query, and React Flow.
 
 **Technical Approach** (from research.md):
 - **Markdown**: react-markdown + custom remark plugin for `[[wiki-links]]`
@@ -64,7 +64,7 @@ Implement Obsidian-like features in Mujarrad frontend: hierarchical page navigat
   - WCAG AA accessibility
   - Bundle size < 500KB initial load
 **Scale/Scope**:
-  - 100-150 nodes per workspace
+  - 100-150 nodes per space
   - 5-10 hierarchy levels deep
   - 10-20 wiki-links per page
   - Support 100+ concurrent users
@@ -91,7 +91,7 @@ Implement Obsidian-like features in Mujarrad frontend: hierarchical page navigat
 
 **IV. Backend Architecture Alignment** ✅
 - PASS: Uses documented REST endpoints
-- PASS: DTOs match backend contracts (Node, Attribute, Workspace)
+- PASS: DTOs match backend contracts (Node, Attribute, Space)
 - PASS: JWT Bearer authentication
 - PASS: RFC 7807 error handling planned
 - PASS: No pagination issues (large size param for full dataset)
@@ -116,10 +116,10 @@ Implement Obsidian-like features in Mujarrad frontend: hierarchical page navigat
 - PASS: Cycle-aware layout algorithms
 - PASS: Edges retrieved from attributes API
 
-**VIII. Workspace Isolation** ✅
-- PASS: All operations scoped to workspace
-- PASS: URLs follow `/workspace/{slug}/node/{id}` pattern
-- PASS: Search workspace-scoped
+**VIII. Space Isolation** ✅
+- PASS: All operations scoped to space
+- PASS: URLs follow `/space/{slug}/node/{id}` pattern
+- PASS: Search space-scoped
 
 **IX. Version Awareness** ✅
 - PASS: Node updates create versions (backend handles)
@@ -187,9 +187,9 @@ specs/004-i-need-to/
 ```
 # Frontend (Next.js 14 App Router)
 app/
-├── workspace/
+├── space/
 │   └── [slug]/
-│       ├── page.tsx                    # Workspace page with hierarchy + graph
+│       ├── page.tsx                    # Space page with hierarchy + graph
 │       ├── node/
 │       │   └── [id]/
 │       │       └── page.tsx            # Node detail page
@@ -226,7 +226,7 @@ src/
 │   └── navigationStore.ts              # NEW - Zustand store for UI state
 ├── hooks/
 │   ├── api/
-│   │   ├── useWorkspaceNodes.ts        # React Query hook
+│   │   ├── useSpaceNodes.ts        # React Query hook
 │   │   ├── useNode.ts                  # React Query hook
 │   │   └── useCreateWikiLinks.ts       # Mutation hook
 │   └── useHierarchyTree.ts             # Transform nodes to tree
@@ -254,7 +254,7 @@ tests/
     └── obsidian-features.spec.ts       # Playwright end-to-end tests
 ```
 
-**Structure Decision**: Web application with Next.js 14 App Router. Frontend repo only (backend separate). File-based routing with nested dynamic routes for workspace and node navigation. Component library follows atomic design (components → services → stores → types). Test organization mirrors source structure (unit → integration → contracts → e2e).
+**Structure Decision**: Web application with Next.js 14 App Router. Frontend repo only (backend separate). File-based routing with nested dynamic routes for space and node navigation. Component library follows atomic design (components → services → stores → types). Test organization mirrors source structure (unit → integration → contracts → e2e).
 
 ---
 
@@ -286,7 +286,7 @@ tests/
 ### Completed Outputs
 
 1. **data-model.md** ✅
-   - Entity interfaces (Node, Attribute, Workspace)
+   - Entity interfaces (Node, Attribute, Space)
    - Frontend models (TreeNode, WikiLink, GraphNode, GraphEdge)
    - State management (Zustand store, React Query hooks)
    - Validation schemas (Zod)
@@ -323,7 +323,7 @@ tests/
 **Test files to create** (during /tasks phase):
 - `tests/contracts/node.contract.test.ts`
 - `tests/contracts/attribute.contract.test.ts`
-- `tests/contracts/workspace.contract.test.ts`
+- `tests/contracts/space.contract.test.ts`
 
 **Status**: Tests will fail until implementation (expected behavior for TDD)
 
@@ -355,7 +355,7 @@ The /tasks command will load `.specify/templates/tasks-template.md` and generate
 3. **Data Layer** (6-8 tasks)
    - Define TypeScript interfaces (Node, Attribute, etc.) [P]
    - Create Zustand navigation store [P]
-   - Implement React Query hooks (useWorkspaceNodes, useNode, etc.) [P]
+   - Implement React Query hooks (useSpaceNodes, useNode, etc.) [P]
    - Build tree transformation algorithm
    - Build graph transformation algorithm
    - Build bidirectional edge detection

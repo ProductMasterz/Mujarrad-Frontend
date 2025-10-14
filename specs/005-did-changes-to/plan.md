@@ -33,12 +33,12 @@
 
 ## Summary
 
-**Primary Requirement**: Synchronize frontend API services with backend endpoint changes, specifically migrating from workspace-based endpoints to space-based endpoints with slug identifiers.
+**Primary Requirement**: Synchronize frontend API services with backend endpoint changes, specifically migrating from space-based endpoints to space-based endpoints with slug identifiers.
 
 **Technical Approach**:
-1. Rename workspace.service.ts → space.service.ts with updated `/api/spaces/*` endpoints
+1. Rename space.service.ts → space.service.ts with updated `/api/spaces/*` endpoints
 2. Update node.service.ts to use space-scoped endpoints `/api/spaces/{spaceSlug}/nodes/*`
-3. Migrate TypeScript types from Workspace → Space
+3. Migrate TypeScript types from Space → Space
 4. Update all component imports and references
 5. Maintain backward compatibility for authentication and attribute endpoints (no changes needed)
 6. Update contract tests to verify new endpoint paths
@@ -80,16 +80,16 @@
 - ✅ Types updated in `/src/types/backend-dtos.ts`
 
 ✅ **VI. Type Safety and Validation**:
-- ✅ TypeScript interfaces will be updated (Workspace → Space)
+- ✅ TypeScript interfaces will be updated (Space → Space)
 - ✅ Zod schemas for space operations will be updated
 - ✅ Strict mode enabled, no `any` types introduced
 
 ✅ **VII. Graph Visualization First**: N/A - Graph visualization unaffected by endpoint changes
 
-✅ **VIII. Workspace Isolation** → **Space Isolation** (TERMINOLOGY UPDATE):
-- ⚠️ **CRITICAL CHANGE**: Workspace → Space terminology migration
+✅ **VIII. Space Isolation** → **Space Isolation** (TERMINOLOGY UPDATE):
+- ⚠️ **CRITICAL CHANGE**: Space → Space terminology migration
 - ✅ Space scoping will be maintained (all operations scoped to space slug)
-- ✅ URLs will use pattern: `/space/{slug}/nodes/{nodeId}` (from `/workspace/{slug}/...`)
+- ✅ URLs will use pattern: `/space/{slug}/nodes/{nodeId}` (from `/space/{slug}/...`)
 - ✅ Search remains space-scoped
 
 ✅ **IX. Version Awareness**: ✅ New node versioning endpoints available (optional integration)
@@ -125,21 +125,21 @@ specs/005-did-changes-to/
 src/
 ├── services/
 │   └── api/
-│       ├── space.service.ts        # RENAMED from workspace.service.ts
+│       ├── space.service.ts        # RENAMED from space.service.ts
 │       ├── node.service.ts         # UPDATED for space-scoped endpoints
 │       ├── auth.service.ts         # NO CHANGE (already correct)
 │       ├── attribute.service.ts    # NO CHANGE (already correct)
 │       └── client.ts               # NO CHANGE (axios instance)
 ├── types/
-│   └── backend-dtos.ts             # UPDATED: Workspace → Space types
+│   └── backend-dtos.ts             # UPDATED: Space → Space types
 ├── hooks/
-│   ├── useSpaces.ts                # RENAMED from useWorkspaces.ts
+│   ├── useSpaces.ts                # RENAMED from useSpaces.ts
 │   └── useNodes.ts                 # UPDATED for space slug parameter
 ├── components/
-│   ├── spaces/                     # RENAMED from workspaces/
+│   ├── spaces/                     # RENAMED from spaces/
 │   └── nodes/                      # TYPE UPDATES only
 └── app/
-    └── (workspace)/                # ROUTING: Consider renaming to (space)/
+    └── (space)/                # ROUTING: Consider renaming to (space)/
 
 tests/
 ├── contracts/
@@ -151,7 +151,7 @@ tests/
     └── space-workflows.spec.ts     # UPDATED - E2E tests with spaces
 ```
 
-**Structure Decision**: This is a frontend-only repository with Next.js 14 App Router structure. The backend is separate (https://mujarrad.onrender.com). Changes are isolated to the service layer, type definitions, and dependent hooks/components. The routing structure may optionally be renamed from `/workspace/` to `/space/` for consistency.
+**Structure Decision**: This is a frontend-only repository with Next.js 14 App Router structure. The backend is separate (https://mujarrad.onrender.com). Changes are isolated to the service layer, type definitions, and dependent hooks/components. The routing structure may optionally be renamed from `/space/` to `/space/` for consistency.
 
 ## Phase 0: Outline & Research
 
@@ -159,7 +159,7 @@ Since all technical unknowns were resolved during specification phase via OpenAP
 
 ### Research Tasks
 
-1. **Workspace-to-Space Migration Pattern**
+1. **Space-to-Space Migration Pattern**
    - Decision: Rename files and update imports in single atomic PR
    - Rationale: Clean break prevents confusion between old/new concepts
    - Alternatives: Gradual migration with alias → Rejected (complexity, dual paths confusing)
@@ -171,9 +171,9 @@ Since all technical unknowns were resolved during specification phase via OpenAP
    - Alternatives: Continue using IDs → Rejected (backend doesn't support)
 
 3. **Type Migration Strategy**
-   - Decision: Create Space interface, deprecate Workspace with type alias initially
+   - Decision: Create Space interface, deprecate Space with type alias initially
    - Rationale: Allows incremental component updates while maintaining type safety
-   - Pattern: `type Workspace = Space // @deprecated Use Space`
+   - Pattern: `type Space = Space // @deprecated Use Space`
    - Alternatives: Hard cutover → Rejected (breaks too many files simultaneously)
 
 4. **Testing Strategy**
@@ -198,7 +198,7 @@ Since all technical unknowns were resolved during specification phase via OpenAP
 
 #### Entities
 
-**Space (formerly Workspace)**
+**Space (formerly Space)**
 ```typescript
 interface Space {
   id: string;           // UUID
@@ -247,10 +247,10 @@ interface Attribute {
 ```
 
 #### Type Transitions
-- `Workspace` → `Space` (rename)
-- `WorkspaceService` → `SpaceService` (rename)
-- `useWorkspace` → `useSpace` (rename)
-- All workspace IDs → space slugs in API calls
+- `Space` → `Space` (rename)
+- `SpaceService` → `SpaceService` (rename)
+- `useSpace` → `useSpace` (rename)
+- All space IDs → space slugs in API calls
 
 ### 2. API Contracts (`contracts/space-api.yml`, `contracts/node-api.yml`)
 
@@ -480,7 +480,7 @@ describe('Node API Contract (Space-Scoped)', () => {
 Will execute: `.specify/scripts/bash/update-agent-context.sh claude`
 
 This will add to CLAUDE.md:
-- Technology: API Endpoint Migration (Workspace → Space)
+- Technology: API Endpoint Migration (Space → Space)
 - Recent Change: 005-did-changes-to - Backend API synchronization
 
 **Output**: data-model.md, contracts/*.yml, contract tests, quickstart.md, CLAUDE.md updated
@@ -502,27 +502,27 @@ This will add to CLAUDE.md:
 - Verify tests fail (no implementation yet)
 
 **B. Type Definition Tasks**:
-- Update backend-dtos.ts: Add Space interface, deprecate Workspace [P]
+- Update backend-dtos.ts: Add Space interface, deprecate Space [P]
 - Create space-related request/response types [P]
 - Update node types for space scoping
 
 **C. Service Layer Tasks** (core changes):
-- Rename workspace.service.ts → space.service.ts, update all endpoints
+- Rename space.service.ts → space.service.ts, update all endpoints
 - Update node.service.ts for space-scoped endpoints
 - Update service tests to use new endpoints
 
 **D. Hook Tasks**:
-- Rename useWorkspaces.ts → useSpaces.ts
+- Rename useSpaces.ts → useSpaces.ts
 - Update useNodes hook for space slug parameter
 - Update hook tests
 
 **E. Component Tasks**:
 - Update components importing renamed services
-- Update type references (Workspace → Space)
-- Rename workspace components directory → spaces
+- Update type references (Space → Space)
+- Rename space components directory → spaces
 
 **F. Routing Tasks (Optional)**:
-- Consider renaming /workspace/ routes → /space/
+- Consider renaming /space/ routes → /space/
 - Update navigation links
 
 **G. Integration Test Tasks**:
@@ -561,7 +561,7 @@ This will add to CLAUDE.md:
 - Uses existing locked tech stack (no new dependencies)
 
 ### Terminology Note
-The project constitution (v1.2.0) uses "workspace" terminology in Principle VIII ("Workspace Isolation"), while the backend API and this implementation use "space" terminology. These terms are **semantically equivalent** - both refer to the same tenant isolation and scoping concept. The backend team chose "space" as the API term for the production endpoints, and the frontend aligns with this choice to maintain API consistency. No constitutional violation exists; this is purely a naming evolution in the backend API surface.
+The project constitution (v1.2.0) uses "space" terminology in Principle VIII ("Space Isolation"), while the backend API and this implementation use "space" terminology. These terms are **semantically equivalent** - both refer to the same tenant isolation and scoping concept. The backend team chose "space" as the API term for the production endpoints, and the frontend aligns with this choice to maintain API consistency. No constitutional violation exists; this is purely a naming evolution in the backend API surface.
 
 ## Progress Tracking
 *This checklist is updated during execution flow*

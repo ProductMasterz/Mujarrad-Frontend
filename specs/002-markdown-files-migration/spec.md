@@ -58,11 +58,11 @@ A developer needs to demonstrate the fully integrated frontend-backend system by
 5. **Given** markdown files in subdirectories, **When** parsed, **Then** directory structure is preserved for context creation
 
 #### Node Creation via API
-6. **Given** a parsed markdown file, **When** creating node, **Then** API call to POST /api/workspaces/{slug}/nodes succeeds
+6. **Given** a parsed markdown file, **When** creating node, **Then** API call to POST /api/spaces/{slug}/nodes succeeds
 7. **Given** node creation request, **When** submitted, **Then** markdown content is stored in `markdown_content` field
 8. **Given** a directory in `/posts`, **When** creating structure, **Then** CONTEXT type node is created for the directory
 9. **Given** a regular markdown file, **When** creating node, **Then** REGULAR type node is created
-10. **Given** multiple files to migrate, **When** creating nodes, **Then** all nodes are associated with the same workspace
+10. **Given** multiple files to migrate, **When** creating nodes, **Then** all nodes are associated with the same space
 
 #### Relationship Creation (Edge-to-Attribute Mapping)
 11. **Given** a wiki link `[[Target]]` in content, **When** creating relationships, **Then** API call to POST /api/nodes/{id}/attributes creates `references` type attribute
@@ -86,7 +86,7 @@ A developer needs to demonstrate the fully integrated frontend-backend system by
 - How does system handle very large markdown files (>1MB)?
 - What happens when API call fails mid-migration?
 - How does system handle image links in markdown content?
-- What happens if workspace doesn't exist before migration?
+- What happens if space doesn't exist before migration?
 - Should migration be idempotent (can be run multiple times)?
 
 ---
@@ -112,12 +112,12 @@ A developer needs to demonstrate the fully integrated frontend-backend system by
 - **FR-012**: System MUST [NEEDS CLARIFICATION: handle image links `![[Image.png]]`? convert to references?]
 
 #### Node Creation
-- **FR-013**: System MUST create one node per markdown file via POST /api/workspaces/{slug}/nodes
+- **FR-013**: System MUST create one node per markdown file via POST /api/spaces/{slug}/nodes
 - **FR-014**: System MUST store markdown content in the `markdown_content` field of node entity
 - **FR-015**: System MUST set node type to REGULAR for markdown files
 - **FR-016**: System MUST create CONTEXT type nodes for directories
 - **FR-017**: System MUST generate unique slugs for each node based on filename
-- **FR-018**: System MUST associate all migrated nodes with a target workspace
+- **FR-018**: System MUST associate all migrated nodes with a target space
 - **FR-019**: System MUST [NEEDS CLARIFICATION: set creator user? use system user? admin user?]
 
 #### Relationship Creation (Edge-Attribute Mapping)
@@ -155,7 +155,7 @@ A developer needs to demonstrate the fully integrated frontend-backend system by
 
 - **Wiki Link**: A reference in markdown content in format `[[Target Name]]`. Represents a relationship between two pieces of content.
 
-- **Node (Backend Entity)**: The destination for migrated markdown files. Has fields: id, workspace_id, node_type (REGULAR or CONTEXT), title, slug, markdown_content, created_at, created_by.
+- **Node (Backend Entity)**: The destination for migrated markdown files. Has fields: id, space_id, node_type (REGULAR or CONTEXT), title, slug, markdown_content, created_at, created_by.
 
 - **Attribute (Backend Entity)**: The destination for migrated relationships. Has fields: id, from_node_id, to_node_id, attribute_key (edge type), attribute_value, created_at. Maps to frontend "edges".
 
@@ -177,7 +177,7 @@ A developer needs to demonstrate the fully integrated frontend-backend system by
 - [x] Requirements are testable and unambiguous (except clarified ones)
 - [x] Success criteria are measurable
 - [x] Scope is clearly bounded - Migration of /posts to backend
-- [x] Dependencies and assumptions identified - Requires backend API and workspace
+- [x] Dependencies and assumptions identified - Requires backend API and space
 
 **Clarifications Needed**:
 1. Handling of non-existent wiki link targets (FR-014)
@@ -209,12 +209,12 @@ A developer needs to demonstrate the fully integrated frontend-backend system by
 
 ### Dependencies
 - Backend API must be running and accessible
-- Workspace must exist in backend (or be created first)
+- Space must exist in backend (or be created first)
 - Authentication must be configured (user with permissions to create nodes)
 - All backend endpoints must be functional:
-  - POST /api/workspaces/{slug}/nodes
+  - POST /api/spaces/{slug}/nodes
   - POST /api/nodes/{id}/attributes
-  - GET /api/workspaces/{slug}/nodes (for validation)
+  - GET /api/spaces/{slug}/nodes (for validation)
 - Frontend must be able to read local filesystem (Node.js script or similar)
 
 ### Assumptions
@@ -225,7 +225,7 @@ A developer needs to demonstrate the fully integrated frontend-backend system by
 - Backend supports storing markdown content in dedicated field
 - Migration is a one-time operation (not continuous sync)
 - Migrated data serves demonstration and testing purposes
-- User has permission to create nodes in target workspace
+- User has permission to create nodes in target space
 - Backend handles slug generation for duplicate titles
 
 ### Constraints

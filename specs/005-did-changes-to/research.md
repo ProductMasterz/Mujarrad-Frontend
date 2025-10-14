@@ -6,17 +6,17 @@
 
 ## Research Overview
 
-All technical unknowns were resolved during the specification phase via direct analysis of the backend OpenAPI specification. This document consolidates key migration decisions and patterns for the workspace-to-space endpoint migration.
+All technical unknowns were resolved during the specification phase via direct analysis of the backend OpenAPI specification. This document consolidates key migration decisions and patterns for the space-to-space endpoint migration.
 
-## 1. Workspace-to-Space Migration Pattern
+## 1. Space-to-Space Migration Pattern
 
 ### Decision
-Rename all workspace-related files and update imports in a single atomic changeset.
+Rename all space-related files and update imports in a single atomic changeset.
 
 ### Rationale
-- **Clean conceptual break**: Eliminates confusion between old workspace and new space terminology
+- **Clean conceptual break**: Eliminates confusion between old space and new space terminology
 - **Easier code review**: All changes visible in one PR, relationships clear
-- **Prevents dual-path complexity**: No need to maintain both workspace and space concepts simultaneously
+- **Prevents dual-path complexity**: No need to maintain both space and space concepts simultaneously
 - **Simplifies testing**: Test the new pattern once, not gradual migration steps
 
 ###  Alternatives Considered
@@ -24,8 +24,8 @@ Rename all workspace-related files and update imports in a single atomic changes
 **Alternative 1: Gradual migration with type aliases**
 ```typescript
 // Create aliases to maintain backward compatibility
-type Workspace = Space;
-const workspaceService = spaceService;
+type Space = Space;
+const spaceService = spaceService;
 ```
 - ❌ **Rejected**: Creates confusion - developers unsure which name to use
 - ❌ **Rejected**: Dual paths increase maintenance burden
@@ -33,7 +33,7 @@ const workspaceService = spaceService;
 
 **Alternative 2: Feature flag with conditional logic**
 ```typescript
-const service = useFeatureFlag('spaces') ? spaceService : workspaceService;
+const service = useFeatureFlag('spaces') ? spaceService : spaceService;
 ```
 - ❌ **Rejected**: Adds runtime complexity for zero benefit
 - ❌ **Rejected**: Backend has already migrated - no conditional needed
@@ -42,8 +42,8 @@ const service = useFeatureFlag('spaces') ? spaceService : workspaceService;
 ### Implementation Pattern
 ```typescript
 // Before
-import { workspaceService } from '@/services/api/workspace.service';
-const workspaces = await workspaceService.getWorkspaces();
+import { spaceService } from '@/services/api/space.service';
+const spaces = await spaceService.getSpaces();
 
 // After
 import { spaceService } from '@/services/api/space.service';
@@ -65,9 +65,9 @@ Use space slugs for all node-related operations as required by the backend API.
 
 ### Migration Pattern
 ```typescript
-// OLD: Workspace ID-based
-async getNodes(workspaceId: number): Promise<Node[]> {
-  return apiClient.get(`/workspaces/${workspaceId}/nodes`);
+// OLD: Space ID-based
+async getNodes(spaceId: number): Promise<Node[]> {
+  return apiClient.get(`/spaces/${spaceId}/nodes`);
 }
 
 // NEW: Space slug-based
@@ -95,7 +95,7 @@ const { data: nodes } = useNodes(space.slug);
 
 ### Alternatives Considered
 
-**Alternative: Continue using workspace IDs**
+**Alternative: Continue using space IDs**
 - ❌ **Rejected**: Backend endpoints don't support IDs in these paths
 - ❌ **Rejected**: Would require backend changes (out of scope)
 
@@ -104,7 +104,7 @@ const { data: nodes } = useNodes(space.slug);
 ## 3. Type Migration Strategy
 
 ### Decision
-Create new `Space` interface, add deprecated type alias for `Workspace` to enable incremental component updates.
+Create new `Space` interface, add deprecated type alias for `Space` to enable incremental component updates.
 
 ### Rationale
 - **Type safety maintained**: No `any` types introduced during migration
@@ -127,8 +127,8 @@ export interface Space {
   updatedAt: string;
 }
 
-/** @deprecated Use Space instead. Workspace has been renamed to Space in backend API. */
-export type Workspace = Space;
+/** @deprecated Use Space instead. Space has been renamed to Space in backend API. */
+export type Space = Space;
 ```
 
 **Phase 2: Update services to use Space**
@@ -147,7 +147,7 @@ export const spaceService = {
 import type { Space } from '@/types/backend-dtos';
 
 interface Props {
-  spaces: Space[];  // No longer Workspace[]
+  spaces: Space[];  // No longer Space[]
 }
 ```
 
@@ -324,12 +324,12 @@ Maintain existing caching strategy with updated query keys to reflect space term
 ### Query Key Migration
 ```typescript
 // Before
-const workspaceKeys = {
-  all: ['workspaces'] as const,
-  lists: () => [...workspaceKeys.all, 'list'] as const,
-  list: (filters: string) => [...workspaceKeys.lists(), { filters }] as const,
-  details: () => [...workspaceKeys.all, 'detail'] as const,
-  detail: (id: number) => [...workspaceKeys.details(), id] as const,
+const spaceKeys = {
+  all: ['spaces'] as const,
+  lists: () => [...spaceKeys.all, 'list'] as const,
+  list: (filters: string) => [...spaceKeys.lists(), { filters }] as const,
+  details: () => [...spaceKeys.all, 'detail'] as const,
+  detail: (id: number) => [...spaceKeys.details(), id] as const,
 };
 
 // After
@@ -377,7 +377,7 @@ queryClient.invalidateQueries({ queryKey: nodeKeys.listsInSpace(spaceSlug) });
 | Risk | Mitigation |
 |------|------------|
 | Breaking existing UI during rename | TDD approach + comprehensive test coverage |
-| Missing API calls that need updating | Grep for `/workspaces/` + TypeScript compiler |
+| Missing API calls that need updating | Grep for `/spaces/` + TypeScript compiler |
 | Cache key conflicts during migration | Query key refactor with slug-based keys |
 | Performance impact of slug lookups | Slug already in URL params (no extra calls) |
 

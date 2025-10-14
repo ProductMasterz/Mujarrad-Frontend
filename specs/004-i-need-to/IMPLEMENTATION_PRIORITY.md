@@ -70,7 +70,7 @@ Nice-to-have improvements and optimizations.
 **Duration**: 4-5 hours (actual)
 **Completed**: All contract tests passing (25/25)
 
-- **T029** ✅ Implement NodeService with getNode, getWorkspaceNodes, createNode, updateNode, searchNodes in `src/services/api/node.service.ts`
+- **T029** ✅ Implement NodeService with getNode, getSpaceNodes, createNode, updateNode, searchNodes in `src/services/api/node.service.ts`
   - **Test Coverage**: T009, T010, T011, T012 (15 test cases) ✅ PASSING
   - **Implementation**: Aligned with backend API contracts
   - **Status**: COMPLETE
@@ -117,7 +117,7 @@ Nice-to-have improvements and optimizations.
 **Duration**: 3-4 hours (actual)
 **Completed**: All hooks with optimistic updates
 
-- **T034** ✅ Create React Query hook useNodes(workspaceId) in `src/hooks/api/useNodes.ts`
+- **T034** ✅ Create React Query hook useNodes(spaceId) in `src/hooks/api/useNodes.ts`
   - **Implementation**: Pagination support, 5min staleTime
   - **Status**: COMPLETE
 
@@ -134,7 +134,7 @@ Nice-to-have improvements and optimizations.
   - **Status**: COMPLETE
 
 - **T038** ✅ Create React Query hook useAttributes in `src/hooks/api/useAttributes.ts`
-  - **Implementation**: useAttributes and useWorkspaceAttributes hooks
+  - **Implementation**: useAttributes and useSpaceAttributes hooks
   - **Status**: COMPLETE
 
 **Wave 2 Output**: ✅ ACHIEVED
@@ -305,7 +305,7 @@ Nice-to-have improvements and optimizations.
   - **Status**: COMPLETE
 
 - **T067** ✅ Trigger graph and hierarchy refresh after node save (invalidate React Query cache) in EditNodeDialog in `src/components/nodes/EditNodeDialog.tsx`
-  - **Implementation**: Invalidates workspace nodes, node details, and attributes
+  - **Implementation**: Invalidates space nodes, node details, and attributes
   - **Status**: COMPLETE
 
 #### 🟠 P1-L: Detail View (Parallel)
@@ -335,20 +335,20 @@ Nice-to-have improvements and optimizations.
 **Duration**: 3-4 hours each
 **Can start**: After Wave 6 complete
 
-- **T069** ✅ Create workspace page layout with hierarchy sidebar + graph tabs in `app/workspace/[slug]/page.tsx`
+- **T069** ✅ Create space page layout with hierarchy sidebar + graph tabs in `app/space/[slug]/page.tsx`
   - **Implementation**: 3 tabs (Hierarchy, Graph, List) + HierarchyNavigator sidebar
   - **Status**: COMPLETE
 
-- **T070** ✅ Create node detail page with NodeDetailView component in `app/workspace/[slug]/node/[id]/page.tsx`
+- **T070** ✅ Create node detail page with NodeDetailView component in `app/space/[slug]/node/[id]/page.tsx`
   - **Implementation**: NodeDetailView + back navigation + error states
   - **Status**: COMPLETE
 
-- **T071** ✅ Add navigation handlers (wiki-link clicks, tree clicks, graph double-clicks) in `app/workspace/[slug]/node/[id]/page.tsx`
+- **T071** ✅ Add navigation handlers (wiki-link clicks, tree clicks, graph double-clicks) in `app/space/[slug]/node/[id]/page.tsx`
   - **Implementation**: All navigation handlers in both pages
   - **Status**: COMPLETE
 
 **Wave 7 Output**: ✅ ACHIEVED
-- ✅ Functional workspace page with 3 views
+- ✅ Functional space page with 3 views
 - ✅ Functional node detail page with markdown
 - ✅ Full navigation flow (wiki-links, tree, graph, list)
 - ✅ Loading and error states implemented
@@ -424,7 +424,7 @@ Nice-to-have improvements and optimizations.
 **Completed**: All navigation improvements
 
 - **NAV-001** ✅ Create global Navbar component with branding in `src/components/layout/Navbar.tsx`
-  - **Implementation**: Logo, workspace links, search button, user dropdown
+  - **Implementation**: Logo, space links, search button, user dropdown
   - **Features**: Active route highlighting, ⌘K keyboard shortcut trigger
   - **Status**: COMPLETE
 
@@ -434,13 +434,13 @@ Nice-to-have improvements and optimizations.
   - **Status**: COMPLETE
 
 - **NAV-003** ✅ Create CommandPalette search in `src/components/search/CommandPalette.tsx`
-  - **Implementation**: cmdk library, workspace switcher, node search
+  - **Implementation**: cmdk library, space switcher, node search
   - **Features**: ⌘K/Ctrl+K shortcut, real-time results, type badges
   - **Status**: COMPLETE
 
-- **NAV-004** ✅ Deprecate duplicate /workspace routes
-  - **Implementation**: Renamed app/workspace → app/workspace.deprecated
-  - **Impact**: Standardized on /workspaces (plural) throughout app
+- **NAV-004** ✅ Deprecate duplicate /space routes
+  - **Implementation**: Renamed app/space → app/space.deprecated
+  - **Impact**: Standardized on /spaces (plural) throughout app
   - **Status**: COMPLETE
 
 - **NAV-005** ✅ Create dropdown-menu UI component
@@ -491,7 +491,7 @@ Nice-to-have improvements and optimizations.
 **Requirements to Run**:
 - Backend server running on port 3000
 - Test database with seed data
-- Demo workspace with test nodes
+- Demo space with test nodes
 - User authentication (omar.h.shafeek@gmail.com / Om@r1234)
 
 **Wave 9 Output**: ⚠️ PENDING BACKEND
@@ -578,9 +578,9 @@ Nice-to-have improvements and optimizations.
 3. **T027-T028** (graph utils) → T062-T063 (GraphVisualization)
 4. **T029-T030** (services) → T034-T037 (React Query hooks)
 5. **T032-T033** (navigation store) → T050-T053 (hierarchy), T061 (graph controls)
-6. **T050-T053** (hierarchy) → T069 (workspace page)
+6. **T050-T053** (hierarchy) → T069 (space page)
 7. **T054-T057** (markdown) → T068 (detail view) → T070 (detail page)
-8. **T062-T063** (graph) → T069 (workspace page)
+8. **T062-T063** (graph) → T069 (space page)
 9. **T064-T068** (CRUD) → T069-T071 (pages)
 10. **T069-T071** (pages) → T072-T078 (error/a11y) → T079-T084 (E2E) → T085-T094 (polish)
 

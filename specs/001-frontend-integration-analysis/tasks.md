@@ -70,7 +70,7 @@
 
 ## Phase 3.2: Type Definitions & Data Model
 
-- [ ] T023 [P] Create src/types/backend-dtos.ts with User, Workspace, Node, Attribute, NodeVersion interfaces
+- [ ] T023 [P] Create src/types/backend-dtos.ts with User, Space, Node, Attribute, NodeVersion interfaces
 - [ ] T024 [P] Create src/types/api.ts with PaginatedResponse, ApiError wrapper types
 - [ ] T025 [P] Create src/types/graph.ts with ReactFlow node/edge type extensions
 - [ ] T026 [P] Create src/types/errors.ts with RFC 7807 ProblemDetail interface
@@ -78,7 +78,7 @@
 ## Phase 3.3: Zod Schemas & Validation
 
 - [ ] T027 [P] Create src/schemas/auth.schema.ts with registerSchema, loginSchema
-- [ ] T028 [P] Create src/schemas/workspace.schema.ts with createWorkspaceSchema, updateWorkspaceSchema
+- [ ] T028 [P] Create src/schemas/space.schema.ts with createSpaceSchema, updateSpaceSchema
 - [ ] T029 [P] Create src/schemas/node.schema.ts with createNodeSchema, updateNodeSchema
 - [ ] T030 [P] Create src/schemas/attribute.schema.ts with createAttributeSchema
 - [ ] T031 [P] Create src/schemas/version.schema.ts (if needed for restore operations)
@@ -95,8 +95,8 @@
 ## Phase 3.5: Services (API Layer)
 
 - [ ] T038 [P] Create src/services/AuthService.ts with register(), login(), logout() methods
-- [ ] T039 [P] Create src/services/WorkspaceService.ts with CRUD methods (create, getAll, getBySlug, delete)
-- [ ] T040 [P] Create src/services/NodeService.ts with CRUD methods workspace-scoped
+- [ ] T039 [P] Create src/services/SpaceService.ts with CRUD methods (create, getAll, getBySlug, delete)
+- [ ] T040 [P] Create src/services/NodeService.ts with CRUD methods space-scoped
 - [ ] T041 [P] Create src/services/AttributeService.ts with create(), getAll(), delete() for relationships
 - [ ] T042 [P] Create src/services/VersionService.ts with getAll(), restore() methods
 - [ ] T043 [P] Create src/services/SearchService.ts with search() method with query params
@@ -104,13 +104,13 @@
 ## Phase 3.6: Zustand Stores (Client State)
 
 - [ ] T044 [P] Create src/stores/authStore.ts with user, isAuthenticated, login, logout actions
-- [ ] T045 [P] Create src/stores/workspaceStore.ts with currentWorkspace, setWorkspace actions
+- [ ] T045 [P] Create src/stores/spaceStore.ts with currentSpace, setSpace actions
 - [ ] T046 [P] Create src/stores/uiStore.ts with theme, sidebar, preferences state
 
 ## Phase 3.7: React Query Hooks (Server State)
 
 - [ ] T047 [P] Create src/hooks/api/useAuth.ts with useLogin, useRegister mutations
-- [ ] T048 [P] Create src/hooks/api/useWorkspaces.ts with useWorkspaces query, useCreateWorkspace, useDeleteWorkspace mutations
+- [ ] T048 [P] Create src/hooks/api/useSpaces.ts with useSpaces query, useCreateSpace, useDeleteSpace mutations
 - [ ] T049 [P] Create src/hooks/api/useNodes.ts with useNode, useNodes queries, useCreateNode, useUpdateNode, useDeleteNode mutations
 - [ ] T050 [P] Create src/hooks/api/useAttributes.ts with useAttributes query, useCreateAttribute, useDeleteAttribute mutations
 - [ ] T051 [P] Create src/hooks/api/useVersions.ts with useVersions query, useRestoreVersion mutation
@@ -135,7 +135,7 @@
 ## Phase 3.10: Layout Components
 
 - [ ] T063 Create src/components/layouts/RootLayout.tsx with navigation, auth check, React Query provider
-- [ ] T064 Create src/components/layouts/WorkspaceLayout.tsx with workspace header, sidebar
+- [ ] T064 Create src/components/layouts/SpaceLayout.tsx with space header, sidebar
 
 ## Phase 3.11: Authentication Components
 
@@ -143,11 +143,11 @@
 - [ ] T066 Create src/components/auth/RegisterForm.tsx with React Hook Form + registerSchema validation
 - [ ] T067 Create src/components/auth/ProtectedRoute.tsx wrapper checking auth state
 
-## Phase 3.12: Workspace Components
+## Phase 3.12: Space Components
 
-- [ ] T068 Create src/components/workspaces/WorkspaceList.tsx displaying user's workspaces
-- [ ] T069 Create src/components/workspaces/WorkspaceCard.tsx for list item
-- [ ] T070 Create src/components/workspaces/CreateWorkspaceDialog.tsx with form
+- [ ] T068 Create src/components/spaces/SpaceList.tsx displaying user's spaces
+- [ ] T069 Create src/components/spaces/SpaceCard.tsx for list item
+- [ ] T070 Create src/components/spaces/CreateSpaceDialog.tsx with form
 
 ## Phase 3.13: Node Components
 
@@ -181,22 +181,22 @@
 ## Phase 3.17: Next.js App Router Pages & Layouts
 
 - [ ] T088 Create app/layout.tsx with root layout, QueryClientProvider, Zustand providers, metadata
-- [ ] T089 Create app/page.tsx redirecting to /workspaces for authenticated users
+- [ ] T089 Create app/page.tsx redirecting to /spaces for authenticated users
 - [ ] T090 Create app/login/page.tsx with LoginForm marked as 'use client'
 - [ ] T091 Create app/register/page.tsx with RegisterForm marked as 'use client'
-- [ ] T092 Create app/workspaces/page.tsx with WorkspaceList marked as 'use client'
-- [ ] T093 Create app/workspaces/[slug]/layout.tsx with WorkspaceLayout and auth check
-- [ ] T094 Create app/workspaces/[slug]/page.tsx as workspace home with overview
-- [ ] T095 Create app/workspaces/[slug]/nodes/page.tsx with NodeList view marked as 'use client'
-- [ ] T096 Create app/workspaces/[slug]/graph/page.tsx with GraphVisualization marked as 'use client'
-- [ ] T097 Create app/workspaces/[slug]/node/[id]/page.tsx with NodeDetail and version history marked as 'use client'
+- [ ] T092 Create app/spaces/page.tsx with SpaceList marked as 'use client'
+- [ ] T093 Create app/spaces/[slug]/layout.tsx with SpaceLayout and auth check
+- [ ] T094 Create app/spaces/[slug]/page.tsx as space home with overview
+- [ ] T095 Create app/spaces/[slug]/nodes/page.tsx with NodeList view marked as 'use client'
+- [ ] T096 Create app/spaces/[slug]/graph/page.tsx with GraphVisualization marked as 'use client'
+- [ ] T097 Create app/spaces/[slug]/node/[id]/page.tsx with NodeDetail and version history marked as 'use client'
 - [ ] T098 Create app/providers.tsx wrapper for QueryClient and Zustand providers
 
 ## Phase 3.18: Error Handling & Boundaries
 
 - [ ] T099 [P] Create app/error.tsx for Next.js error boundary
 - [ ] T100 [P] Create app/not-found.tsx for 404 page
-- [ ] T101 [P] Create app/workspaces/[slug]/error.tsx for workspace-specific errors
+- [ ] T101 [P] Create app/spaces/[slug]/error.tsx for space-specific errors
 
 ## Phase 3.19: Testing - Unit Tests
 
@@ -215,7 +215,7 @@
 ## Phase 3.21: Testing - E2E Tests
 
 - [ ] T110 [P] Create tests/e2e/auth.spec.ts testing registration and login flow
-- [ ] T111 [P] Create tests/e2e/workspace.spec.ts testing workspace CRUD
+- [ ] T111 [P] Create tests/e2e/space.spec.ts testing space CRUD
 - [ ] T112 [P] Create tests/e2e/nodes.spec.ts testing node CRUD and version history
 - [ ] T113 [P] Create tests/e2e/graph.spec.ts testing graph visualization and navigation
 
@@ -289,7 +289,7 @@
 ### Phase 2: Type Definitions (All Parallel)
 ```bash
 # Launch T023-T026 together:
-Task: "Create src/types/backend-dtos.ts with User, Workspace, Node, Attribute, NodeVersion interfaces"
+Task: "Create src/types/backend-dtos.ts with User, Space, Node, Attribute, NodeVersion interfaces"
 Task: "Create src/types/api.ts with PaginatedResponse, ApiError wrapper types"
 Task: "Create src/types/graph.ts with ReactFlow node/edge type extensions"
 Task: "Create src/types/errors.ts with RFC 7807 ProblemDetail interface"
@@ -299,7 +299,7 @@ Task: "Create src/types/errors.ts with RFC 7807 ProblemDetail interface"
 ```bash
 # Launch T027-T031 together:
 Task: "Create src/schemas/auth.schema.ts with registerSchema, loginSchema"
-Task: "Create src/schemas/workspace.schema.ts with createWorkspaceSchema, updateWorkspaceSchema"
+Task: "Create src/schemas/space.schema.ts with createSpaceSchema, updateSpaceSchema"
 Task: "Create src/schemas/node.schema.ts with createNodeSchema, updateNodeSchema"
 Task: "Create src/schemas/attribute.schema.ts with createAttributeSchema"
 Task: "Create src/schemas/version.schema.ts (if needed for restore operations)"
@@ -309,8 +309,8 @@ Task: "Create src/schemas/version.schema.ts (if needed for restore operations)"
 ```bash
 # Launch T038-T043 together:
 Task: "Create src/services/AuthService.ts with register(), login(), logout() methods"
-Task: "Create src/services/WorkspaceService.ts with CRUD methods"
-Task: "Create src/services/NodeService.ts with CRUD methods workspace-scoped"
+Task: "Create src/services/SpaceService.ts with CRUD methods"
+Task: "Create src/services/NodeService.ts with CRUD methods space-scoped"
 Task: "Create src/services/AttributeService.ts with create(), getAll(), delete()"
 Task: "Create src/services/VersionService.ts with getAll(), restore() methods"
 Task: "Create src/services/SearchService.ts with search() method"
@@ -320,7 +320,7 @@ Task: "Create src/services/SearchService.ts with search() method"
 ```bash
 # Launch T044-T046 together:
 Task: "Create src/stores/authStore.ts with user, isAuthenticated, login, logout actions"
-Task: "Create src/stores/workspaceStore.ts with currentWorkspace, setWorkspace actions"
+Task: "Create src/stores/spaceStore.ts with currentSpace, setSpace actions"
 Task: "Create src/stores/uiStore.ts with theme, sidebar, preferences state"
 ```
 
@@ -328,7 +328,7 @@ Task: "Create src/stores/uiStore.ts with theme, sidebar, preferences state"
 ```bash
 # Launch T047-T055 together:
 Task: "Create src/hooks/api/useAuth.ts with useLogin, useRegister mutations"
-Task: "Create src/hooks/api/useWorkspaces.ts with queries and mutations"
+Task: "Create src/hooks/api/useSpaces.ts with queries and mutations"
 Task: "Create src/hooks/api/useNodes.ts with queries and mutations"
 Task: "Create src/hooks/api/useAttributes.ts with queries and mutations"
 Task: "Create src/hooks/api/useVersions.ts with queries and mutations"
