@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { useWorkspace } from '@/hooks/api';
+import { useSpace } from '@/hooks/api';
 import { Button } from '@/components/ui/button';
 import { CreateNodeDialog } from '@/components/nodes/CreateNodeDialog';
 import { NodeList } from '@/components/nodes/NodeList';
@@ -21,11 +21,11 @@ export default function WorkspaceDetailPage() {
   const slug = params.slug as string;
   const [activeTab, setActiveTab] = useState<'list' | 'hierarchy' | 'graph'>('list');
 
-  const { data: workspace, isLoading, error } = useWorkspace(slug);
+  const { data: workspace, isLoading, error } = useSpace(slug);
   const { setWorkspace, selectedNodeId } = useNavigationStore();
 
   // Fetch all nodes for hierarchy and graph
-  const { data: nodesResponse } = useQuery({
+  const { data: nodes } = useQuery({
     queryKey: ['workspace-nodes', slug],
     queryFn: () => nodeService.getNodes(slug, { page: 1, size: 1000 }),
     enabled: !!workspace,
@@ -38,7 +38,7 @@ export default function WorkspaceDetailPage() {
     enabled: !!workspace,
   });
 
-  const nodes = nodesResponse?.content || [];
+  const allNodes = nodes || [];
   const allAttributes = attributes || [];
 
   if (isLoading) {
@@ -79,9 +79,6 @@ export default function WorkspaceDetailPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{workspace.name}</h1>
-                {workspace.description && (
-                  <p className="text-sm text-gray-600 mt-1">{workspace.description}</p>
-                )}
               </div>
               <div className="flex items-center gap-2">
                 <CreateNodeDialog workspaceSlug={slug} />
@@ -103,7 +100,7 @@ export default function WorkspaceDetailPage() {
               <h2 className="text-lg font-semibold text-gray-900">Hierarchy</h2>
             </div>
             <HierarchyNavigator
-              nodes={nodes}
+              nodes={allNodes}
               attributes={allAttributes}
               onNodeSelect={nodeId => router.push(`/workspaces/${slug}/node/${nodeId}`)}
             />
@@ -166,7 +163,7 @@ export default function WorkspaceDetailPage() {
                       Hierarchy Tree View
                     </h2>
                     <HierarchyNavigator
-                      nodes={nodes}
+                      nodes={allNodes}
                       attributes={allAttributes}
                       onNodeSelect={nodeId => router.push(`/workspaces/${slug}/node/${nodeId}`)}
                     />
@@ -177,7 +174,7 @@ export default function WorkspaceDetailPage() {
               {activeTab === 'graph' && (
                 <div className="h-full">
                   <GraphVisualization
-                    nodes={nodes}
+                    nodes={allNodes}
                     attributes={allAttributes}
                     onNodeClick={nodeId => router.push(`/workspaces/${slug}/node/${nodeId}`)}
                   />

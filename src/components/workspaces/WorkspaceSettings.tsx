@@ -1,6 +1,6 @@
 'use client';
 
-import { useWorkspace } from '@/hooks/api';
+import { useSpace } from '@/hooks/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EditWorkspaceDialog } from './EditWorkspaceDialog';
@@ -13,7 +13,7 @@ interface WorkspaceSettingsProps {
 }
 
 export function WorkspaceSettings({ workspaceSlug, currentUserId }: WorkspaceSettingsProps) {
-  const { data: workspace, isLoading } = useWorkspace(workspaceSlug);
+  const { data: workspace, isLoading } = useSpace(workspaceSlug);
 
   if (isLoading) {
     return (
@@ -59,10 +59,6 @@ export function WorkspaceSettings({ workspaceSlug, currentUserId }: WorkspaceSet
             <div>
               <p className="text-muted-foreground">Created</p>
               <p>{new Date(workspace.createdAt).toLocaleDateString()}</p>
-            </div>
-            <div className="col-span-2">
-              <p className="text-muted-foreground">Description</p>
-              <p>{workspace.description || 'No description'}</p>
             </div>
           </div>
 

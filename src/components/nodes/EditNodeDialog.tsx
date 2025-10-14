@@ -33,7 +33,7 @@ interface EditNodeDialogProps {
 
 export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: EditNodeDialogProps) {
   const queryClient = useQueryClient();
-  const { data: node } = useNode(nodeId.toString());
+  const { data: node } = useNode(workspaceSlug, nodeId.toString());
   const { mutate: updateNode, isPending: isLoading } = useUpdateNode();
   const [isProcessingWikiLinks, setIsProcessingWikiLinks] = useState(false);
 
@@ -67,7 +67,7 @@ export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: Ed
 
   const onSubmit = async (data: UpdateNodeFormData) => {
     // First, update the node
-    updateNode({ nodeId: nodeId.toString(), data }, {
+    updateNode({ spaceSlug: workspaceSlug, nodeId: nodeId.toString(), data }, {
       onSuccess: async (updatedNode) => {
         // Process wiki-links after successful update
         if (data.content) {

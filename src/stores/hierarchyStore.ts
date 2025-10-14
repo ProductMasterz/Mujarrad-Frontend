@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Hierarchy Store (Zustand)
  *
@@ -12,7 +14,7 @@ import { devtools } from 'zustand/middleware';
 
 export interface HierarchyState {
   // UI State
-  expandedNodeIds: Set<string>;
+  expandedNodeIds: string[];
   selectedNodeId: string | null;
 
   // Actions
@@ -32,18 +34,16 @@ export const useHierarchyStore = create<HierarchyState>()(
   devtools(
     (set, get) => ({
       // Initial state
-      expandedNodeIds: new Set<string>(),
+      expandedNodeIds: [],
       selectedNodeId: null,
 
       // Toggle expanded state
       toggleExpanded: (nodeId: string) => {
         set((state) => {
-          const newExpanded = new Set(state.expandedNodeIds);
-          if (newExpanded.has(nodeId)) {
-            newExpanded.delete(nodeId);
-          } else {
-            newExpanded.add(nodeId);
-          }
+          const isCurrentlyExpanded = state.expandedNodeIds.includes(nodeId);
+          const newExpanded = isCurrentlyExpanded
+            ? state.expandedNodeIds.filter((id) => id !== nodeId)
+            : [...state.expandedNodeIds, nodeId];
           return { expandedNodeIds: newExpanded };
         });
       },
@@ -51,32 +51,31 @@ export const useHierarchyStore = create<HierarchyState>()(
       // Expand a single node
       expandNode: (nodeId: string) => {
         set((state) => {
-          const newExpanded = new Set(state.expandedNodeIds);
-          newExpanded.add(nodeId);
-          return { expandedNodeIds: newExpanded };
+          if (state.expandedNodeIds.includes(nodeId)) {
+            return state;
+          }
+          return { expandedNodeIds: [...state.expandedNodeIds, nodeId] };
         });
       },
 
       // Collapse a single node
       collapseNode: (nodeId: string) => {
-        set((state) => {
-          const newExpanded = new Set(state.expandedNodeIds);
-          newExpanded.delete(nodeId);
-          return { expandedNodeIds: newExpanded };
-        });
+        set((state) => ({
+          expandedNodeIds: state.expandedNodeIds.filter((id) => id !== nodeId),
+        }));
       },
 
       // Expand all specified nodes
       expandAll: (nodeIds: string[]) => {
         set(() => ({
-          expandedNodeIds: new Set(nodeIds),
+          expandedNodeIds: nodeIds,
         }));
       },
 
       // Collapse all nodes
       collapseAll: () => {
         set(() => ({
-          expandedNodeIds: new Set<string>(),
+          expandedNodeIds: [],
         }));
       },
 
@@ -87,7 +86,7 @@ export const useHierarchyStore = create<HierarchyState>()(
 
       // Check if node is expanded
       isExpanded: (nodeId: string) => {
-        return get().expandedNodeIds.has(nodeId);
+        return get().expandedNodeIds.includes(nodeId);
       },
 
       // Check if node is selected

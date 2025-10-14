@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Navigation store for managing UI state
  * Tracks selected nodes, expanded state, and graph view mode
@@ -15,7 +17,7 @@ interface NavigationState {
   selectedNodeId: string | null;
 
   // Hierarchy tree state
-  expandedNodeIds: Set<string>;
+  expandedNodeIds: string[];
 
   // Graph view mode
   graphViewMode: GraphViewMode;
@@ -44,7 +46,7 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
   // Initial state
   workspaceSlug: null,
   selectedNodeId: null,
-  expandedNodeIds: new Set<string>(),
+  expandedNodeIds: [],
   graphViewMode: DEFAULT_GRAPH_VIEW_MODE,
   viewMode: 'hierarchy',
 
@@ -59,38 +61,34 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
 
   toggleNodeExpanded: (nodeId: string) => {
     const { expandedNodeIds } = get();
-    const newExpanded = new Set(expandedNodeIds);
+    const isExpanded = expandedNodeIds.includes(nodeId);
 
-    if (newExpanded.has(nodeId)) {
-      newExpanded.delete(nodeId);
-    } else {
-      newExpanded.add(nodeId);
-    }
+    const newExpanded = isExpanded
+      ? expandedNodeIds.filter((id) => id !== nodeId)
+      : [...expandedNodeIds, nodeId];
 
     set({ expandedNodeIds: newExpanded });
   },
 
   expandNode: (nodeId: string) => {
     const { expandedNodeIds } = get();
-    const newExpanded = new Set(expandedNodeIds);
-    newExpanded.add(nodeId);
-    set({ expandedNodeIds: newExpanded });
+    if (expandedNodeIds.includes(nodeId)) {
+      return;
+    }
+    set({ expandedNodeIds: [...expandedNodeIds, nodeId] });
   },
 
   collapseNode: (nodeId: string) => {
     const { expandedNodeIds } = get();
-    const newExpanded = new Set(expandedNodeIds);
-    newExpanded.delete(nodeId);
-    set({ expandedNodeIds: newExpanded });
+    set({ expandedNodeIds: expandedNodeIds.filter((id) => id !== nodeId) });
   },
 
   expandAll: (nodeIds: string[]) => {
-    const newExpanded = new Set(nodeIds);
-    set({ expandedNodeIds: newExpanded });
+    set({ expandedNodeIds: nodeIds });
   },
 
   collapseAll: () => {
-    set({ expandedNodeIds: new Set<string>() });
+    set({ expandedNodeIds: [] });
   },
 
   setGraphViewMode: (mode: Partial<GraphViewMode>) => {
@@ -111,7 +109,7 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
     set({
       workspaceSlug: null,
       selectedNodeId: null,
-      expandedNodeIds: new Set<string>(),
+      expandedNodeIds: [],
       graphViewMode: DEFAULT_GRAPH_VIEW_MODE,
       viewMode: 'hierarchy',
     });

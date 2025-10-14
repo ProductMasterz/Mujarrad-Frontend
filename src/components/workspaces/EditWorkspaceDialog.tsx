@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateWorkspaceSchema, type UpdateWorkspaceFormData } from '@/schemas';
-import { useUpdateWorkspace, useWorkspace } from '@/hooks/api';
+import { useUpdateSpace, useSpace } from '@/hooks/api';
 import {
   Dialog,
   DialogContent,
@@ -26,8 +26,8 @@ interface EditWorkspaceDialogProps {
 
 export function EditWorkspaceDialog({ workspaceSlug }: EditWorkspaceDialogProps) {
   const [open, setOpen] = useState(false);
-  const { data: workspace } = useWorkspace(workspaceSlug);
-  const { mutate: updateWorkspace, isPending: isLoading } = useUpdateWorkspace(workspace?.id || 0);
+  const { data: workspace } = useSpace(workspaceSlug);
+  const { mutate: updateWorkspace, isPending: isLoading } = useUpdateSpace(workspace?.id || '');
 
   const {
     register,
@@ -42,7 +42,6 @@ export function EditWorkspaceDialog({ workspaceSlug }: EditWorkspaceDialogProps)
   useEffect(() => {
     if (workspace) {
       setValue('name', workspace.name);
-      setValue('description', workspace.description || '');
     }
   }, [workspace, setValue]);
 

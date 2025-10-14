@@ -61,7 +61,7 @@ export function CreateNodeDialog({ workspaceSlug }: CreateNodeDialogProps) {
   });
 
   const onSubmit = (data: CreateNodeFormData) => {
-    createNode(data, {
+    createNode({ spaceSlug: workspaceSlug, data }, {
       onSuccess: (newNode) => {
         // If a parent was selected, create the CONTAINS relationship
         if (selectedParentId) {
@@ -145,12 +145,12 @@ export function CreateNodeDialog({ workspaceSlug }: CreateNodeDialogProps) {
             {/* Parent node selection */}
             <div className="space-y-2">
               <Label htmlFor="parentNode">Parent Node (Optional)</Label>
-              <Select value={selectedParentId || ''} onValueChange={(value) => setSelectedParentId(value || null)}>
+              <Select value={selectedParentId || 'none'} onValueChange={(value) => setSelectedParentId(value === 'none' ? null : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="No parent (root level)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No parent (root level)</SelectItem>
+                  <SelectItem value="none">No parent (root level)</SelectItem>
                   {nodes.map((node) => (
                     <SelectItem key={node.id} value={node.id.toString()}>
                       📁 {node.title}

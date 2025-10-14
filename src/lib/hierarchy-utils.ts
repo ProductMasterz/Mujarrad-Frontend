@@ -11,14 +11,14 @@ import { TreeNode, HierarchyTree, BuildHierarchyTreeParams } from '@/types/hiera
  * Uses 'contains' relationships to establish parent-child connections
  * @param nodes - Array of nodes
  * @param attributes - Array of attributes (relationships)
- * @param expandedNodeIds - Set of expanded node IDs (optional)
+ * @param expandedNodeIds - Array of expanded node IDs (optional)
  * @param selectedNodeId - Currently selected node ID (optional)
  * @returns Hierarchical tree structure with root nodes and lookup map
  */
 export function buildHierarchyTree(
   nodes: Node[],
   attributes: Attribute[],
-  expandedNodeIds: Set<string> = new Set(),
+  expandedNodeIds: string[] = [],
   selectedNodeId: string | null = null
 ): HierarchyTree {
 
@@ -59,7 +59,7 @@ export function buildHierarchyTree(
       node,
       children,
       level,
-      isExpanded: expandedNodeIds.has(nodeIdStr),
+      isExpanded: expandedNodeIds.includes(nodeIdStr),
       isSelected: nodeIdStr === selectedNodeId,
       parentId: parentMap.get(nodeIdStr) || null,
     };

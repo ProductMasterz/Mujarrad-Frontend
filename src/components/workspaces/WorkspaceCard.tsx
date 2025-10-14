@@ -15,7 +15,7 @@ export function WorkspaceCard({ workspace }: WorkspaceCardProps) {
       <Card className="hover:shadow-lg transition-shadow cursor-pointer">
         <CardHeader>
           <CardTitle>{workspace.name}</CardTitle>
-          <CardDescription>{workspace.description || 'No description'}</CardDescription>
+          <CardDescription>{workspace.slug}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">

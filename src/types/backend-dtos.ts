@@ -12,23 +12,29 @@ export interface User {
 }
 
 /**
- * Workspace entity from backend
+ * Space entity from backend (formerly Workspace)
+ * Backend: SpaceResponse from /api/spaces endpoints
  */
-export interface Workspace {
-  id: number;
+export interface Space {
+  /** Unique identifier (UUID v4) */
+  id: string;
+  /** Human-readable space name (1-255 characters) */
   name: string;
+  /** URL-friendly slug (unique, lowercase, alphanumeric + hyphens) */
   slug: string;
-  description?: string;
-  ownerId: string; // UUID (matches User.id)
+  /** Owner user ID (UUID v4) */
+  ownerId: string;
+  /** Creation timestamp (ISO 8601) */
   createdAt: string;
+  /** Last update timestamp (ISO 8601) */
   updatedAt: string;
-  // Optional aggregated counts (populated by backend when needed)
-  nodeCount?: number;
-  relationshipCount?: number;
-  versionCount?: number;
-  // Optional populated collaborators (when fetched with details)
-  collaborators?: WorkspaceCollaborator[];
 }
+
+/**
+ * @deprecated Use Space instead. Workspace has been renamed to Space in backend API v2.
+ * This alias is provided for backward compatibility during migration.
+ */
+export type Workspace = Space;
 
 /**
  * Node type enum - must match backend exactly
@@ -37,23 +43,38 @@ export enum NodeType {
   REGULAR = 'REGULAR',
   CONTEXT = 'CONTEXT',
   ASSUMPTION = 'ASSUMPTION',
+  TEMPLATE = 'TEMPLATE',
 }
 
 /**
  * Node entity from backend
+ * Backend: NodeResponse from /api/spaces/{spaceSlug}/nodes endpoints
  */
 export interface Node {
-  id: number;
-  workspaceId: number;
-  title: string;
+  /** Unique identifier (UUID v4) */
+  id: string;
+  /** Parent space ID (UUID v4) - scopes this node to a space */
+  spaceId: string;
+  /** Node type classification */
   nodeType: NodeType;
+  /** Human-readable title (1-255 characters) */
+  title: string;
+  /** URL-friendly slug (unique within space) */
+  slug: string;
+  /** Markdown content */
   content: string;
-  nodeDetails?: Record<string, unknown>; // JSON field
-  version: number; // For optimistic locking
+  /** Additional metadata (JSON object) */
+  nodeDetails: Record<string, unknown>;
+  /** Current version ID (UUID v4) */
+  currentVersionId: string;
+  /** Creator user ID (UUID v4) */
+  createdBy: string;
+  /** Last modifier user ID (UUID v4) */
+  modifiedBy: string;
+  /** Creation timestamp (ISO 8601) */
   createdAt: string;
+  /** Last update timestamp (ISO 8601) */
   updatedAt: string;
-  createdBy?: number;
-  updatedBy?: number;
 }
 
 /**
@@ -119,30 +140,64 @@ export interface LoginResponse {
   user: User;
 }
 
-export interface CreateWorkspaceRequest {
+/**
+ * Request body for creating a new space
+ * Backend: SpaceCreateRequest for POST /api/spaces
+ */
+export interface CreateSpaceRequest {
+  /** Space name (required, 1-255 chars) */
   name: string;
-  slug: string;
-  description?: string;
+  /** Optional slug (auto-generated from name if omitted) */
+  slug?: string;
 }
 
-export interface UpdateWorkspaceRequest {
+/**
+ * Request body for updating a space
+ * Backend: SpaceUpdateRequest for PUT /api/spaces/{id}
+ */
+export interface UpdateSpaceRequest {
+  /** New space name (optional) */
   name?: string;
-  description?: string;
+  /** New slug (optional, must be unique) */
+  slug?: string;
 }
 
+/**
+ * @deprecated Use CreateSpaceRequest instead
+ */
+export type CreateWorkspaceRequest = CreateSpaceRequest;
+
+/**
+ * @deprecated Use UpdateSpaceRequest instead
+ */
+export type UpdateWorkspaceRequest = UpdateSpaceRequest;
+
+/**
+ * Request body for creating a node
+ * Backend: NodeCreateRequest for POST /api/spaces/{spaceSlug}/nodes
+ */
 export interface CreateNodeRequest {
+  /** Node title (required, 1-255 chars) */
   title: string;
+  /** Node type (required) */
   nodeType: NodeType;
-  content: string;
+  /** Markdown content (optional) */
+  content?: string;
+  /** Additional metadata (optional) */
   nodeDetails?: Record<string, unknown>;
 }
 
+/**
+ * Request body for updating a node
+ * Backend: NodeUpdateRequest for PUT /api/spaces/{spaceSlug}/nodes/{nodeId}
+ */
 export interface UpdateNodeRequest {
+  /** New title (optional, 1-255 chars) */
   title?: string;
-  nodeType?: NodeType;
+  /** New content (optional) */
   content?: string;
+  /** Updated metadata (optional) */
   nodeDetails?: Record<string, unknown>;
-  version: number; // Required for optimistic locking
 }
 
 export interface CreateAttributeRequest {

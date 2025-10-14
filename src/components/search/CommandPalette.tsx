@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import { Search, FileText, Folder, Loader2 } from 'lucide-react';
 import { useSearchNodes } from '@/hooks/api';
-import { useWorkspaces } from '@/hooks/api';
+import { useSpaces } from '@/hooks/api';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
@@ -20,8 +20,8 @@ export function CommandPalette({ open, onOpenChange, currentWorkspaceSlug }: Com
   const [search, setSearch] = useState('');
   const [selectedWorkspace, setSelectedWorkspace] = useState<string>(currentWorkspaceSlug || '');
 
-  // Fetch workspaces for workspace switcher
-  const { data: workspaces } = useWorkspaces();
+  // Fetch spaces for workspace switcher
+  const { data: workspaces } = useSpaces();
 
   // Update selected workspace when current workspace changes
   useEffect(() => {
@@ -97,11 +97,9 @@ export function CommandPalette({ open, onOpenChange, currentWorkspaceSlug }: Com
                     <Folder className="h-4 w-4 text-muted-foreground" />
                     <div className="flex-1">
                       <div className="font-medium">{workspace.name}</div>
-                      {workspace.description && (
-                        <div className="text-xs text-muted-foreground">
-                          {workspace.description}
-                        </div>
-                      )}
+                      <div className="text-xs text-muted-foreground">
+                        {workspace.slug}
+                      </div>
                     </div>
                   </Command.Item>
                 ))}

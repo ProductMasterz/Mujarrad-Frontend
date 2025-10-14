@@ -1,11 +1,11 @@
 'use client';
 
-import { useWorkspaces } from '@/hooks/api';
+import { useSpaces } from '@/hooks/api';
 import { WorkspaceCard } from './WorkspaceCard';
 import { Spinner } from '@/components/ui/spinner';
 
 export function WorkspaceList() {
-  const { data, isLoading, error } = useWorkspaces();
+  const { data, isLoading, error } = useSpaces();
 
   if (isLoading) {
     return (

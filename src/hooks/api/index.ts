@@ -5,7 +5,8 @@
  */
 
 export * from './useAuth';
-export * from './useWorkspaces';
+export * from './useSpaces';
+export * from './useWorkspaces'; // @deprecated - will be removed in future
 export * from './useNodes';
 export * from './useNode';
 export * from './useCreateNode';

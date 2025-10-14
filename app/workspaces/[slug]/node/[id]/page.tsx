@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { useWorkspace } from '@/hooks/api';
+import { useSpace } from '@/hooks/api';
 import { Button } from '@/components/ui/button';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
@@ -21,18 +21,18 @@ export default function NodeDetailPage() {
   const nodeId = params.id as string;
   const [activeView, setActiveView] = useState<'content' | 'graph'>('content');
 
-  const { data: workspace } = useWorkspace(slug);
+  const { data: workspace } = useSpace(slug);
   const { setSelectedNode } = useNavigationStore();
 
   // Fetch the current node
   const { data: node, isLoading: nodeLoading } = useQuery({
-    queryKey: ['node', nodeId],
-    queryFn: () => nodeService.getNode(nodeId),
+    queryKey: ['node', slug, nodeId],
+    queryFn: () => nodeService.getNode(slug, nodeId),
     enabled: !!workspace,
   });
 
   // Fetch all nodes for hierarchy and wiki-link resolution
-  const { data: nodesResponse } = useQuery({
+  const { data: nodes } = useQuery({
     queryKey: ['workspace-nodes', slug],
     queryFn: () => nodeService.getNodes(slug, { page: 1, size: 1000 }),
     enabled: !!workspace,
@@ -45,7 +45,7 @@ export default function NodeDetailPage() {
     enabled: !!workspace,
   });
 
-  const nodes = nodesResponse?.content || [];
+  const allNodes = nodes || [];
   const allAttributes = attributes || [];
 
   // Set selected node in store
@@ -127,7 +127,7 @@ export default function NodeDetailPage() {
               <h2 className="text-lg font-semibold text-gray-900">Hierarchy</h2>
             </div>
             <HierarchyNavigator
-              nodes={nodes}
+              nodes={allNodes}
               attributes={allAttributes}
               onNodeSelect={id => router.push(`/workspaces/${slug}/node/${id}`)}
             />
@@ -168,7 +168,7 @@ export default function NodeDetailPage() {
                       <MarkdownRenderer
                         content={node.content}
                         workspaceSlug={slug}
-                        availableNodes={nodes}
+                        availableNodes={allNodes}
                         onWikiLinkClick={targetTitle => {
                           console.log('Wiki-link clicked:', targetTitle);
                           // TODO: Navigate to target or create placeholder
@@ -194,8 +194,8 @@ export default function NodeDetailPage() {
                         <dd className="text-gray-900">{node.nodeType.toString()}</dd>
                       </div>
                       <div>
-                        <dt className="text-gray-500">Workspace ID</dt>
-                        <dd className="text-gray-900">{node.workspaceId}</dd>
+                        <dt className="text-gray-500">Space ID</dt>
+                        <dd className="text-gray-900">{node.spaceId}</dd>
                       </div>
                       <div>
                         <dt className="text-gray-500">Created</dt>
@@ -205,7 +205,7 @@ export default function NodeDetailPage() {
                       </div>
                       <div>
                         <dt className="text-gray-500">Version</dt>
-                        <dd className="text-gray-900">{node.version}</dd>
+                        <dd className="text-gray-900">{node.currentVersionId}</dd>
                       </div>
                     </dl>
                   </div>
@@ -215,7 +215,7 @@ export default function NodeDetailPage() {
               {activeView === 'graph' && (
                 <div className="h-full">
                   <GraphVisualization
-                    nodes={nodes}
+                    nodes={allNodes}
                     attributes={allAttributes}
                     onNodeClick={id => router.push(`/workspaces/${slug}/node/${id}`)}
                   />

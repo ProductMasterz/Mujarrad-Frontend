@@ -28,7 +28,7 @@ export function DeleteNodeDialog({ workspaceSlug, nodeId, nodeName }: DeleteNode
   const { mutate: deleteNode, isPending: isLoading } = useDeleteNode();
 
   const handleDelete = () => {
-    deleteNode(nodeId.toString(), {
+    deleteNode({ spaceSlug: workspaceSlug, nodeId: nodeId.toString() }, {
       onSuccess: () => {
         setOpen(false);
         router.push(`/workspaces/${workspaceSlug}/nodes`);

@@ -22,7 +22,7 @@ export default function NodeDetailPage({ params }: NodeDetailPageProps) {
   const router = useRouter();
 
   // Fetch node data
-  const { data: node, isLoading, error } = useNode(id);
+  const { data: node, isLoading, error } = useNode(slug, id);
 
   // Fetch all workspace nodes for wiki-link resolution
   const { data: availableNodes = [] } = useWorkspaceNodes(slug);

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { CreateWorkspaceDialog } from '@/components/workspaces/CreateWorkspaceDialog';
 import { WorkspaceCard } from '@/components/workspaces/WorkspaceCard';
-import { workspaceService } from '@/services/api';
+import { spaceService } from '@/services/api';
 import type { Workspace } from '@/types/backend-dtos';
 
 export default function WorkspacesPage() {
@@ -23,7 +23,7 @@ export default function WorkspacesPage() {
 
   useEffect(() => {
     console.log('[WorkspacesPage] useEffect running, fetching workspaces...');
-    workspaceService.getWorkspaces()
+    spaceService.getSpaces()
       .then((data) => {
         console.log('[WorkspacesPage] Workspaces fetched:', data);
         // Backend returns plain array, not PaginatedResponse
