@@ -1215,7 +1215,7 @@ Syntax anatomy enables breaking down complex syntax/documents into reusable clau
 **NFR-ATTR-001**: Attribute creation shall complete in <400ms (Performance)
 **NFR-ATTR-002**: Suggestions return within 500ms (Performance)
 **NFR-ATTR-003**: Bulk operations complete in <5 seconds for 100 nodes (Performance)
-**NFR-ATTR-004**: System shall support 10,000+ attributes per workspace (Scalability)
+**NFR-ATTR-004**: System shall support 10,000+ attributes per space (Scalability)
 
 ---
 
@@ -1291,7 +1291,7 @@ Syntax anatomy enables breaking down complex syntax/documents into reusable clau
 **NFR-CTX-001**: Context node creation shall complete in <400ms (Performance)
 **NFR-CTX-002**: Context suggestions return within 1 second (Performance)
 **NFR-CTX-003**: ML context matching accuracy >70% (Accuracy)
-**NFR-CTX-004**: System shall support 10,000+ context nodes per workspace (Scalability)
+**NFR-CTX-004**: System shall support 10,000+ context nodes per space (Scalability)
 **NFR-CTX-005**: Containment queries (finding parent contexts) shall complete in <200ms (Performance)
 
 ---

@@ -97,17 +97,17 @@ public class GraphService {
     public boolean hasContainmentCycle(
         UUID sourceNodeId,
         UUID targetNodeId,
-        UUID workspaceId
+        UUID spaceId
     ) {
         // Only check containment relationships
         Set<UUID> visited = new HashSet<>();
-        return dfsContainmentOnly(targetNodeId, sourceNodeId, workspaceId, visited);
+        return dfsContainmentOnly(targetNodeId, sourceNodeId, spaceId, visited);
     }
 
     private boolean dfsContainmentOnly(
         UUID currentNodeId,
         UUID searchNodeId,
-        UUID workspaceId,
+        UUID spaceId,
         Set<UUID> visited
     ) {
         if (currentNodeId.equals(searchNodeId)) {
@@ -122,14 +122,14 @@ public class GraphService {
 
         // CRITICAL: Only traverse 'contains' relationships
         List<Attribute> containmentRelationships = attributeRepository
-            .findBySourceNodeIdAndAttributeNameAndWorkspaceId(
+            .findBySourceNodeIdAndAttributeNameAndSpaceId(
                 currentNodeId,
                 "contains",  // Only check containment
-                workspaceId
+                spaceId
             );
 
         for (Attribute attr : containmentRelationships) {
-            if (dfsContainmentOnly(attr.getTargetNodeId(), searchNodeId, workspaceId, visited)) {
+            if (dfsContainmentOnly(attr.getTargetNodeId(), searchNodeId, spaceId, visited)) {
                 return true;
             }
         }
@@ -151,11 +151,11 @@ public class AttributeService {
         UUID sourceNodeId,
         UUID targetNodeId,
         String attributeName,
-        UUID workspaceId
+        UUID spaceId
     ) {
         // Only check cycles for containment relationships
         if ("contains".equals(attributeName)) {
-            if (graphService.hasContainmentCycle(sourceNodeId, targetNodeId, workspaceId)) {
+            if (graphService.hasContainmentCycle(sourceNodeId, targetNodeId, spaceId)) {
                 throw new CircularContainmentException(
                     "Cannot create containment cycle: would break UI navigation hierarchy"
                 );
@@ -169,7 +169,7 @@ public class AttributeService {
         attribute.setSourceNodeId(sourceNodeId);
         attribute.setTargetNodeId(targetNodeId);
         attribute.setAttributeName(attributeName);
-        attribute.setWorkspaceId(workspaceId);
+        attribute.setSpaceId(spaceId);
 
         return attributeRepository.save(attribute);
     }
@@ -180,16 +180,16 @@ public class AttributeService {
 
 **All traversal methods use visited sets**:
 ```java
-public List<Node> getAllAncestors(UUID nodeId, UUID workspaceId) {
+public List<Node> getAllAncestors(UUID nodeId, UUID spaceId) {
     Set<UUID> visited = new HashSet<>();
     List<Node> ancestors = new ArrayList<>();
-    collectAncestors(nodeId, workspaceId, visited, ancestors);
+    collectAncestors(nodeId, spaceId, visited, ancestors);
     return ancestors;
 }
 
 private void collectAncestors(
     UUID nodeId,
-    UUID workspaceId,
+    UUID spaceId,
     Set<UUID> visited,
     List<Node> result
 ) {
@@ -200,13 +200,13 @@ private void collectAncestors(
     visited.add(nodeId);
 
     List<Attribute> parents = attributeRepository
-        .findByTargetNodeIdAndWorkspaceId(nodeId, workspaceId);
+        .findByTargetNodeIdAndSpaceId(nodeId, spaceId);
 
     for (Attribute attr : parents) {
         Node parent = nodeRepository.findById(attr.getSourceNodeId()).orElse(null);
         if (parent != null) {
             result.add(parent);
-            collectAncestors(attr.getSourceNodeId(), workspaceId, visited, result);
+            collectAncestors(attr.getSourceNodeId(), spaceId, visited, result);
         }
     }
 }
@@ -398,11 +398,11 @@ Idle → Active → Processing → Complete
 ### Phase 1: Update Cycle Detection (T051)
 ```diff
 - // Prevent ALL cycles
-- if (graphService.hasCyclePath(sourceNodeId, targetNodeId, workspaceId)) {
+- if (graphService.hasCyclePath(sourceNodeId, targetNodeId, spaceId)) {
 
 + // Only prevent CONTAINMENT cycles
 + if ("contains".equals(attributeName) &&
-+     graphService.hasContainmentCycle(sourceNodeId, targetNodeId, workspaceId)) {
++     graphService.hasContainmentCycle(sourceNodeId, targetNodeId, spaceId)) {
 ```
 
 ### Phase 2: Update Exception Handling (T059)

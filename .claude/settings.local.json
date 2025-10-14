@@ -81,7 +81,13 @@
       "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
       "Bash(gh auth:*)",
       "Bash(for file in test-space-api.sh test-authorization-bug.sh test-complete-flow.sh)",
-      "Bash(do sed -i.bak 's/WORKSPACES/SPACES/g; s/WORKSPACE/SPACE/g; s/workspaces/spaces/g; s/workspace/space/g' \"$file\")"
+      "Bash(do sed -i.bak 's/SPACES/SPACES/g; s/SPACE/SPACE/g; s/spaces/spaces/g; s/space/space/g' \"$file\")",
+      "Bash(for:*)",
+      "Bash(do)",
+      "Bash(if [ -f \"$file\" ])",
+      "Bash(then)",
+      "Bash(echo \"Updated: $file\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []

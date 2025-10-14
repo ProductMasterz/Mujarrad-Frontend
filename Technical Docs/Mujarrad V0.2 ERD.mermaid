@@ -2,11 +2,11 @@ erDiagram
     %% =====================================================
     %% MUJARRAD V0.2 - PRODUCTION-READY ERD (Multi-Tenant)
     %% Architecture: "Everything is a Node" + Multi-Tenancy
-    %% Updated: 2025-10-05 (Added Workspaces, Fixed NodeDetails)
+    %% Updated: 2025-10-05 (Added Spaces, Fixed NodeDetails)
     %% =====================================================
 
     %% Multi-Tenancy Tables (NEW)
-    WORKSPACES {
+    SPACES {
         uuid id PK
         string name "NOT NULL"
         string slug UK "NOT NULL, CHECK slug pattern"
@@ -14,13 +14,13 @@ erDiagram
         timestamp updated_at "DEFAULT CURRENT_TIMESTAMP"
     }
 
-    WORKSPACE_USERS {
+    SPACE_USERS {
         uuid id PK
-        uuid workspace_id FK "REFERENCES WORKSPACES ON DELETE CASCADE"
+        uuid space_id FK "REFERENCES SPACES ON DELETE CASCADE"
         uuid user_id FK "REFERENCES USERS ON DELETE CASCADE"
         string role "CHECK IN OWNER, ADMIN, MEMBER, VIEWER"
         timestamp joined_at "DEFAULT CURRENT_TIMESTAMP"
-        string UNIQUE_workspace_user "UNIQUE(workspace_id, user_id)"
+        string UNIQUE_space_user "UNIQUE(space_id, user_id)"
     }
 
     %% Core Tables
@@ -36,10 +36,10 @@ erDiagram
 
     NODES {
         uuid id PK
-        uuid workspace_id FK "REFERENCES WORKSPACES ON DELETE CASCADE"
+        uuid space_id FK "REFERENCES SPACES ON DELETE CASCADE"
         string node_type "CHECK IN REGULAR, CONTEXT, ASSUMPTION"
         string title "NOT NULL"
-        string slug UK "NOT NULL, CHECK slug pattern, workspace-scoped"
+        string slug UK "NOT NULL, CHECK slug pattern, space-scoped"
         text description
         text markdown_content
         jsonb node_details "GIN indexed, replaces NODE_DETAILS table"
@@ -63,7 +63,7 @@ erDiagram
 
     ATTRIBUTES {
         uuid id PK
-        uuid workspace_id FK "REFERENCES WORKSPACES ON DELETE CASCADE"
+        uuid space_id FK "REFERENCES SPACES ON DELETE CASCADE"
         uuid source_node_id FK "REFERENCES NODES, CHECK source != target"
         uuid target_node_id FK "REFERENCES NODES"
         string attribute_name "NOT NULL"
@@ -80,7 +80,7 @@ erDiagram
 
     MAPPINGS {
         uuid id PK
-        uuid workspace_id FK "REFERENCES WORKSPACES ON DELETE CASCADE"
+        uuid space_id FK "REFERENCES SPACES ON DELETE CASCADE"
         uuid node_id FK UK "REFERENCES NODES ON DELETE CASCADE"
         string ordering_strategy "CHECK IN manual, alphabetical, chronological, custom"
         boolean allow_duplicates "DEFAULT false"
@@ -102,7 +102,7 @@ erDiagram
 
     CONDITIONALS {
         uuid id PK
-        uuid workspace_id FK "REFERENCES WORKSPACES ON DELETE CASCADE"
+        uuid space_id FK "REFERENCES SPACES ON DELETE CASCADE"
         uuid node_id FK UK "REFERENCES NODES ON DELETE CASCADE"
         uuid preceding_node_id FK "REFERENCES NODES"
         uuid default_target_id FK "REFERENCES NODES ON DELETE SET NULL"
@@ -124,7 +124,7 @@ erDiagram
     AUDIT_LOG {
         uuid id PK
         uuid entity_id "NOT NULL"
-        string entity_type "NOT NULL, CHECK IN node, attribute, mapping, conditional, user, workspace"
+        string entity_type "NOT NULL, CHECK IN node, attribute, mapping, conditional, user, space"
         string operation "CHECK IN CREATE, UPDATE, DELETE, RESTORE"
         uuid performed_by FK "REFERENCES USERS"
         jsonb before_value
@@ -134,7 +134,7 @@ erDiagram
 
     SEARCH_INDEX {
         uuid id PK
-        uuid workspace_id FK "REFERENCES WORKSPACES ON DELETE CASCADE"
+        uuid space_id FK "REFERENCES SPACES ON DELETE CASCADE"
         uuid node_id FK UK "REFERENCES NODES ON DELETE CASCADE"
         tsvector search_vector "GIN indexed"
         text[] keywords
@@ -147,13 +147,13 @@ erDiagram
     %% =====================================================
 
     %% Multi-Tenancy Relationships (NEW)
-    WORKSPACES ||--o{ WORKSPACE_USERS : has_members
-    USERS ||--o{ WORKSPACE_USERS : member_of
-    WORKSPACES ||--o{ NODES : contains_nodes
-    WORKSPACES ||--o{ ATTRIBUTES : scopes_attributes
-    WORKSPACES ||--o{ MAPPINGS : scopes_mappings
-    WORKSPACES ||--o{ CONDITIONALS : scopes_conditionals
-    WORKSPACES ||--o{ SEARCH_INDEX : scopes_search
+    SPACES ||--o{ SPACE_USERS : has_members
+    USERS ||--o{ SPACE_USERS : member_of
+    SPACES ||--o{ NODES : contains_nodes
+    SPACES ||--o{ ATTRIBUTES : scopes_attributes
+    SPACES ||--o{ MAPPINGS : scopes_mappings
+    SPACES ||--o{ CONDITIONALS : scopes_conditionals
+    SPACES ||--o{ SEARCH_INDEX : scopes_search
 
     %% User Relationships
     USERS ||--o{ NODES : creates
@@ -184,10 +184,10 @@ erDiagram
     %% =====================================================
     %%
     %% MULTI-TENANCY (NEW IN V0.2):
-    %% - All data scoped to workspaces via workspace_id foreign keys
-    %% - Workspace access controlled via WORKSPACE_USERS join table
+    %% - All data scoped to spaces via space_id foreign keys
+    %% - Space access controlled via SPACE_USERS join table
     %% - Roles: OWNER, ADMIN, MEMBER, VIEWER
-    %% - Slug-based routing: /api/workspaces/{slug}/...
+    %% - Slug-based routing: /api/spaces/{slug}/...
     %%
     %% NODE_DETAILS REMOVED:
     %% - NODE_DETAILS table removed in favor of node_details JSONB column in NODES
@@ -234,11 +234,11 @@ erDiagram
     %% =====================================================
     %% CHANGES FROM V0.1:
     %% =====================================================
-    %% 1. Added WORKSPACES table (multi-tenancy)
-    %% 2. Added WORKSPACE_USERS table (role-based access)
+    %% 1. Added SPACES table (multi-tenancy)
+    %% 2. Added SPACE_USERS table (role-based access)
     %% 3. Removed NODE_DETAILS table (now JSONB column in NODES)
     %% 4. Updated NODE_TYPE enum (REGULAR/CONTEXT/ASSUMPTION)
-    %% 5. Added workspace_id FK to all tenant-scoped tables
+    %% 5. Added space_id FK to all tenant-scoped tables
     %% 6. Enhanced ATTRIBUTES with dual-mode system
-    %% 7. Added workspace to AUDIT_LOG entity_type
+    %% 7. Added space to AUDIT_LOG entity_type
     %% =====================================================

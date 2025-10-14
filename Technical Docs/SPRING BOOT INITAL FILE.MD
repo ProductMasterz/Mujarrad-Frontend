@@ -83,8 +83,8 @@ public class Node {
     private Map<String, Object> nodeDetails; // JSONB column, not separate entity
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "workspace_id", nullable = false)
-    private Workspace workspace;
+    @JoinColumn(name = "space_id", nullable = false)
+    private Space space;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id", nullable = false)

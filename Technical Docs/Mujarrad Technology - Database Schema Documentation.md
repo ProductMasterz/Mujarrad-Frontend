@@ -106,17 +106,17 @@ Comprehensive indexing strategy for all access patterns
         boolean is_active "DEFAULT true"
     }
     
-    WORKSPACES {
+    SPACES {
         uuid id PK
         string name "NOT NULL"
-        string slug UK "Unique workspace slug"
+        string slug UK "Unique space slug"
         timestamp created_at
         timestamp updated_at
     }
 
-    WORKSPACE_USERS {
+    SPACE_USERS {
         uuid id PK
-        uuid workspace_id FK
+        uuid space_id FK
         uuid user_id FK
         string role "CHECK(OWNER, ADMIN, MEMBER, VIEWER)"
         timestamp joined_at
@@ -124,10 +124,10 @@ Comprehensive indexing strategy for all access patterns
 
     NODES {
         uuid id PK
-        uuid workspace_id FK
+        uuid space_id FK
         string node_type "CHECK(REGULAR, CONTEXT, ASSUMPTION)"
         string title "NOT NULL"
-        string slug "Workspace-scoped unique"
+        string slug "Space-scoped unique"
         text description
         text markdown_content
         jsonb node_details "GIN indexed for tags/metadata"
@@ -226,10 +226,10 @@ Comprehensive indexing strategy for all access patterns
 
     %% Relationships
     
-    %% Workspace and User Management
-    WORKSPACES ||--o{ WORKSPACE_USERS : "has"
-    USERS ||--o{ WORKSPACE_USERS : "is in"
-    WORKSPACES ||--o{ NODES : "contains"
+    %% Space and User Management
+    SPACES ||--o{ SPACE_USERS : "has"
+    USERS ||--o{ SPACE_USERS : "is in"
+    SPACES ||--o{ NODES : "contains"
     
     %% User Actions
     USERS }o--|| NODES : "creates"
@@ -301,10 +301,10 @@ CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_active ON users(is_active) WHERE is_active = true;
 
 -- =====================================================
--- TABLE: WORKSPACES
--- Purpose: Multi-tenant workspace isolation
+-- TABLE: SPACES
+-- Purpose: Multi-tenant space isolation
 -- =====================================================
-CREATE TABLE workspaces (
+CREATE TABLE spaces (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(100) NOT NULL UNIQUE
@@ -313,29 +313,29 @@ CREATE TABLE workspaces (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-COMMENT ON TABLE workspaces IS 'Multi-tenant workspace containers - conceptually super-contexts in node graph';
-COMMENT ON COLUMN workspaces.slug IS 'URL-friendly workspace identifier used in routing';
+COMMENT ON TABLE spaces IS 'Multi-tenant space containers - conceptually super-contexts in node graph';
+COMMENT ON COLUMN spaces.slug IS 'URL-friendly space identifier used in routing';
 
-CREATE INDEX idx_workspaces_slug ON workspaces(slug);
+CREATE INDEX idx_spaces_slug ON spaces(slug);
 
 -- =====================================================
--- TABLE: WORKSPACE_USERS
--- Purpose: Workspace membership and role-based access
+-- TABLE: SPACE_USERS
+-- Purpose: Space membership and role-based access
 -- =====================================================
-CREATE TABLE workspace_users (
+CREATE TABLE space_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    space_id UUID NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role VARCHAR(50) NOT NULL CHECK (role IN ('OWNER', 'ADMIN', 'MEMBER', 'VIEWER')),
     joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(workspace_id, user_id)
+    UNIQUE(space_id, user_id)
 );
 
-COMMENT ON TABLE workspace_users IS 'Junction table for workspace membership with roles';
-COMMENT ON COLUMN workspace_users.role IS 'Workspace-level role: OWNER, ADMIN, MEMBER, or VIEWER';
+COMMENT ON TABLE space_users IS 'Junction table for space membership with roles';
+COMMENT ON COLUMN space_users.role IS 'Space-level role: OWNER, ADMIN, MEMBER, or VIEWER';
 
-CREATE INDEX idx_workspace_users_workspace ON workspace_users(workspace_id);
-CREATE INDEX idx_workspace_users_user ON workspace_users(user_id);
+CREATE INDEX idx_space_users_space ON space_users(space_id);
+CREATE INDEX idx_space_users_user ON space_users(user_id);
 
 -- =====================================================
 -- TABLE: NODES
@@ -343,7 +343,7 @@ CREATE INDEX idx_workspace_users_user ON workspace_users(user_id);
 -- =====================================================
 CREATE TABLE nodes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    space_id UUID NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
     node_type VARCHAR(50) NOT NULL DEFAULT 'REGULAR'
         CHECK (node_type IN ('REGULAR', 'CONTEXT', 'ASSUMPTION')),
     title VARCHAR(500) NOT NULL CHECK (LENGTH(TRIM(title)) > 0),
@@ -357,22 +357,22 @@ CREATE TABLE nodes (
     version INTEGER DEFAULT 1 NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(workspace_id, slug)
+    UNIQUE(space_id, slug)
 );
 
 COMMENT ON TABLE nodes IS 'Base content nodes supporting REGULAR, CONTEXT, and ASSUMPTION types';
-COMMENT ON COLUMN nodes.workspace_id IS 'Multi-tenant workspace scoping';
+COMMENT ON COLUMN nodes.space_id IS 'Multi-tenant space scoping';
 COMMENT ON COLUMN nodes.node_type IS 'Discriminator: REGULAR, CONTEXT, or ASSUMPTION';
-COMMENT ON COLUMN nodes.slug IS 'URL-friendly identifier unique per workspace';
+COMMENT ON COLUMN nodes.slug IS 'URL-friendly identifier unique per space';
 COMMENT ON COLUMN nodes.node_details IS 'JSONB for flexible schema-less data (tags, metadata, is_template, etc.)';
 COMMENT ON COLUMN nodes.version IS 'Optimistic locking version number';
 COMMENT ON COLUMN nodes.current_version_id IS 'Reference to active version in node_versions';
 
 -- Indexes
-CREATE INDEX idx_nodes_workspace ON nodes(workspace_id);
+CREATE INDEX idx_nodes_space ON nodes(space_id);
 CREATE INDEX idx_nodes_type ON nodes(node_type);
 CREATE INDEX idx_nodes_creator ON nodes(creator_id);
-CREATE INDEX idx_nodes_slug ON nodes(workspace_id, slug);
+CREATE INDEX idx_nodes_slug ON nodes(space_id, slug);
 CREATE INDEX idx_nodes_created_at ON nodes(created_at DESC);
 CREATE INDEX idx_nodes_type_created ON nodes(node_type, created_at DESC);
 CREATE INDEX idx_nodes_details ON nodes USING GIN (node_details);
