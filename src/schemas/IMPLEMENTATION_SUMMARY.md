@@ -23,15 +23,15 @@ Successfully implemented all Zod validation schemas for form inputs in the Mujar
 - ✓ `loginSchema`: Login form with email and password
 - ✓ Exported inferred types: `RegisterFormData`, `LoginFormData`
 
-#### T028: Workspace Schemas
-**File:** `/src/schemas/workspace.schema.ts`
+#### T028: Space Schemas
+**File:** `/src/schemas/space.schema.ts`
 
-- ✓ `createWorkspaceSchema`: Workspace creation with validation
+- ✓ `createSpaceSchema`: Space creation with validation
   - Name: Required, 1-100 chars, auto-trimmed
   - Slug: 3-50 chars, lowercase + hyphens only, must start with letter
   - Description: Optional, max 500 chars
-- ✓ `updateWorkspaceSchema`: Partial update validation
-- ✓ Exported inferred types: `CreateWorkspaceFormData`, `UpdateWorkspaceFormData`
+- ✓ `updateSpaceSchema`: Partial update validation
+- ✓ Exported inferred types: `CreateSpaceFormData`, `UpdateSpaceFormData`
 
 #### T029: Node Schemas
 **File:** `/src/schemas/node.schema.ts`
@@ -96,7 +96,7 @@ Successfully implemented all Zod validation schemas for form inputs in the Mujar
 
 ```
 Auth Schemas:        4/4 tests passed
-Workspace Schemas:   5/5 tests passed
+Space Schemas:   5/5 tests passed
 Node Schemas:        4/4 tests passed
 Attribute Schema:    5/5 tests passed
 Version Schemas:     4/4 tests passed
@@ -157,7 +157,7 @@ Tested scenarios include:
 src/schemas/
 ├── index.ts                                      # Barrel exports
 ├── auth.schema.ts                                # Authentication (T027)
-├── workspace.schema.ts                           # Workspaces (T028)
+├── space.schema.ts                           # Spaces (T028)
 ├── node.schema.ts                                # Nodes (T029)
 ├── attribute.schema.ts                           # Relationships (T030)
 ├── version.schema.ts                             # Version control (T031)
@@ -287,7 +287,7 @@ Phase 3.3 is **100% complete**. All five schema files have been created with com
 
 **Tasks Completed:**
 - [x] T027: Create src/schemas/auth.schema.ts
-- [x] T028: Create src/schemas/workspace.schema.ts
+- [x] T028: Create src/schemas/space.schema.ts
 - [x] T029: Create src/schemas/node.schema.ts
 - [x] T030: Create src/schemas/attribute.schema.ts
 - [x] T031: Create src/schemas/version.schema.ts

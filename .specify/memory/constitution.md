@@ -179,19 +179,19 @@ MUST be a first-class citizen. All graph operations MUST have visual representat
 **Rationale:** Visual representation makes the abstract node system intuitive and
 enables users to understand complex relationship structures at a glance.
 
-### VIII. Workspace Isolation
-All operations MUST be scoped to workspaces. Users access nodes within workspaces,
-and workspace membership determines access control.
+### VIII. Space Isolation
+All operations MUST be scoped to spaces. Users access nodes within spaces,
+and space membership determines access control.
 
 **Rules:**
-- ALL API calls MUST include workspace context (slug or ID)
-- Workspace switching MUST clear cached data from previous workspace
-- URLs MUST follow pattern: `/workspace/{slug}/nodes/{nodeId}`
-- Search MUST be workspace-scoped by default
-- Cross-workspace references MUST be explicitly marked and handled
+- ALL API calls MUST include space context (slug or ID)
+- Space switching MUST clear cached data from previous space
+- URLs MUST follow pattern: `/space/{slug}/nodes/{nodeId}`
+- Search MUST be space-scoped by default
+- Cross-space references MUST be explicitly marked and handled
 
 **Rationale:** Multi-tenancy isolation prevents data leakage and enables proper
-access control at the workspace level.
+access control at the space level.
 
 ### IX. Version Awareness
 All content changes MUST be versioned, and users MUST have access to version
@@ -364,7 +364,7 @@ When a node belongs to multiple contexts:
 Search implementation MUST support:
 - Full-text search across title, content, and tags
 - Filter by node type, creator, date range
-- Search within current context or workspace-wide
+- Search within current context or space-wide
 - Relevance ranking based on backend's tsvector
 - Search result previews with highlighted matches
 

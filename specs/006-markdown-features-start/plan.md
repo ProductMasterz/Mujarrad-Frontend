@@ -31,7 +31,7 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-This feature enables markdown rendering and editing across all content types in Mujarrad (node descriptions, workspace documentation, comments/annotations, and standalone notes). Users can write content using markdown syntax with a tabbed editor (Edit/Preview tabs) and view formatted output without seeing raw markdown. The implementation uses react-markdown (60KB) for rendering and @uiw/react-md-editor for editing, supporting full GitHub Flavored Markdown including code blocks with syntax highlighting, tables, images (external URLs only), and task lists. All content is stored as plain markdown text in existing entity fields without schema changes, with client-side rendering on demand.
+This feature enables markdown rendering and editing across all content types in Mujarrad (node descriptions, space documentation, comments/annotations, and standalone notes). Users can write content using markdown syntax with a tabbed editor (Edit/Preview tabs) and view formatted output without seeing raw markdown. The implementation uses react-markdown (60KB) for rendering and @uiw/react-md-editor for editing, supporting full GitHub Flavored Markdown including code blocks with syntax highlighting, tables, images (external URLs only), and task lists. All content is stored as plain markdown text in existing entity fields without schema changes, with client-side rendering on demand.
 
 ## Technical Context
 **Language/Version**: TypeScript 5.3.3, React 18.2.0, Next.js 14.1.0
@@ -45,7 +45,7 @@ This feature enables markdown rendering and editing across all content types in 
 - react-hook-form 7.49.3 + zod 3.22.4 - Form handling and validation
 - @tailwindcss/typography - Prose styling for rendered markdown
 
-**Storage**: Existing entity fields (Node.description, Workspace.documentation, Comment.text, Note.content) - no schema changes, plain markdown text stored in backend PostgreSQL via REST API
+**Storage**: Existing entity fields (Node.description, Space.documentation, Comment.text, Note.content) - no schema changes, plain markdown text stored in backend PostgreSQL via REST API
 **Testing**: Jest + React Testing Library (component tests), Playwright (E2E tests), MSW (API mocking)
 **Target Platform**: Modern web browsers (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
 **Project Type**: Web application (Next.js 14 frontend + Spring Boot backend API)
@@ -63,10 +63,10 @@ This feature enables markdown rendering and editing across all content types in 
 - Must align with constitution's Clean Architecture principles
 
 **Scale/Scope**:
-- Support markdown in 4 content types (nodes, workspaces, comments, notes)
+- Support markdown in 4 content types (nodes, spaces, comments, notes)
 - Handle documents up to 50,000 characters
 - Support 8 programming languages for syntax highlighting (JS, TS, Python, Java, HTML, CSS, JSON, Markdown)
-- Integrate with existing 5+ UI contexts (CreateNodeDialog, EditNodeDialog, WorkspaceSettings, CommentForm, NoteEditor)
+- Integrate with existing 5+ UI contexts (CreateNodeDialog, EditNodeDialog, SpaceSettings, CommentForm, NoteEditor)
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
@@ -75,14 +75,14 @@ This feature enables markdown rendering and editing across all content types in 
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| **I. Node Supremacy** | ✅ PASS | Markdown content stored in existing Node/Workspace/Comment fields. No new entities or schemas. |
+| **I. Node Supremacy** | ✅ PASS | Markdown content stored in existing Node/Space/Comment fields. No new entities or schemas. |
 | **II. Relationship-Driven Structure** | ✅ PASS | No changes to relationship/edge system. Markdown is purely content formatting. |
 | **III. Abstraction Immutability** | ✅ PASS | No workflow logic changes. Purely UI/content formatting feature. |
 | **IV. Backend Architecture Alignment** | ✅ PASS | Uses existing API endpoints, no backend changes. DTOs unchanged. |
 | **V. Clean Architecture in React** | ✅ PASS | Components separated from logic. Services in /services, UI in /components. |
 | **VI. Type Safety and Validation** | ✅ PASS | TypeScript interfaces for markdown props, Zod validation for content length. |
 | **VII. Graph Visualization First** | ✅ PASS | Markdown rendering in node detail view, doesn't affect graph visualization. |
-| **VIII. Workspace Isolation** | ✅ PASS | Markdown content scoped to workspace via existing entity scoping. |
+| **VIII. Space Isolation** | ✅ PASS | Markdown content scoped to space via existing entity scoping. |
 | **IX. Version Awareness** | ✅ PASS | Version control handled by backend for all content including markdown. |
 | **X. Performance and Optimization** | ✅ PASS | Lazy load editor component, bundle < 150KB, React Query caching. |
 
@@ -146,8 +146,8 @@ src/
 │   │   ├── CreateNodeDialog.tsx       # MODIFIED: Add markdown editor
 │   │   ├── EditNodeDialog.tsx         # MODIFIED: Add markdown editor
 │   │   └── NodeDetail.tsx             # MODIFIED: Render markdown content
-│   ├── workspaces/
-│   │   └── WorkspaceSettings.tsx      # MODIFIED: Add markdown editor for docs
+│   ├── spaces/
+│   │   └── SpaceSettings.tsx      # MODIFIED: Add markdown editor for docs
 │   └── ui/
 │       └── tabs.tsx                   # EXISTING: Radix UI Tabs (may use)
 ├── lib/
@@ -230,7 +230,7 @@ All unknowns from Technical Context resolved through research.
 ### Deliverables Created
 
 1. **data-model.md** ✅
-   - Documented existing entities (Node, Workspace, Comment, Note)
+   - Documented existing entities (Node, Space, Comment, Note)
    - Defined frontend-only interfaces (MarkdownRendererProps, MarkdownEditorProps)
    - Validation schemas (Zod)
    - No backend changes confirmed
@@ -321,7 +321,7 @@ Each modification: Test → Implementation
   - Wrap content in MarkdownRenderer
   - Apply prose styling
 
-- **WorkspaceSettings** (if applicable):
+- **SpaceSettings** (if applicable):
   - Add markdown editor for documentation field
   - Test rendering
 
@@ -409,7 +409,7 @@ Each modification: Test → Implementation
 17. Modify EditNodeDialog (add editor)
 18. Write NodeDetail tests
 19. Modify NodeDetail (add renderer)
-20. [P] Modify WorkspaceSettings (if needed)
+20. [P] Modify SpaceSettings (if needed)
 
 ## Phase 4: Polish (Tasks 21-27)
 21. [P] Create global markdown styles

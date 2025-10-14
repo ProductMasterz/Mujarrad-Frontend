@@ -9,13 +9,13 @@
 
 ### Protected Routes (Authenticated)
 
-#### Workspace Management
-- `/workspaces` - List all user's workspaces
-  - **Components**: CreateWorkspaceDialog
-  - **Actions**: View all workspaces, Create new workspace
+#### Space Management
+- `/spaces` - List all user's spaces
+  - **Components**: CreateSpaceDialog
+  - **Actions**: View all spaces, Create new space
 
-#### Workspace Detail View
-- `/workspaces/[slug]` - Individual workspace view
+#### Space Detail View
+- `/spaces/[slug]` - Individual space view
   - **Tabs**:
     - Node List (default)
     - Hierarchy Navigator
@@ -24,13 +24,13 @@
   - **Actions**: Create nodes, View nodes, Navigate hierarchy, Visualize relationships
 
 #### Node Detail View
-- `/workspaces/[slug]/node/[id]` - Individual node view
+- `/spaces/[slug]/node/[id]` - Individual node view
   - **Components**: NodeDetailView, MarkdownRenderer with WikiLinks
   - **Actions**: View node content, Edit node, Delete node, Navigate via wiki-links
 
 #### Legacy Routes (Deprecated - should be removed)
-- `/workspace/[slug]` - Old workspace route (duplicate)
-- `/workspace/[slug]/node/[id]` - Old node route (duplicate)
+- `/space/[slug]` - Old space route (duplicate)
+- `/space/[slug]/node/[id]` - Old node route (duplicate)
 
 #### Demo/Testing
 - `/feature-004-demo` - Feature showcase (currently disabled)
@@ -48,17 +48,17 @@ app/
 
 ### Page-Specific Components
 
-#### Workspaces List Page (`/workspaces`)
+#### Spaces List Page (`/spaces`)
 ```
-WorkspacesPage
-  ├─ CreateWorkspaceDialog
-  └─ Workspace cards/list (Basic implementation)
+SpacesPage
+  ├─ CreateSpaceDialog
+  └─ Space cards/list (Basic implementation)
 ```
 
-#### Workspace Detail Page (`/workspaces/[slug]`)
+#### Space Detail Page (`/spaces/[slug]`)
 ```
-WorkspaceDetailPage
-  ├─ Workspace Header/Title
+SpaceDetailPage
+  ├─ Space Header/Title
   ├─ Tab Navigation
   │   ├─ Node List Tab
   │   │   ├─ CreateNodeDialog
@@ -74,7 +74,7 @@ WorkspaceDetailPage
   └─ CreateNodeDialog (global action)
 ```
 
-#### Node Detail Page (`/workspaces/[slug]/node/[id]`)
+#### Node Detail Page (`/spaces/[slug]/node/[id]`)
 ```
 NodeDetailPage
   ├─ Node Header (title, type, version)
@@ -92,13 +92,13 @@ NodeDetailPage
    - No breadcrumbs for navigation context
    - No user profile/logout menu
 
-2. **Workspace Sidebar**
-   - No persistent navigation between workspaces
+2. **Space Sidebar**
+   - No persistent navigation between spaces
    - No quick access to recent nodes
-   - No workspace switcher
+   - No space switcher
 
 3. **Empty States**
-   - No "no workspaces" placeholder
+   - No "no spaces" placeholder
    - No "no nodes" placeholder
    - No loading skeletons
 
@@ -109,7 +109,7 @@ NodeDetailPage
 
 ### Inconsistent Patterns
 1. **Duplicate Routes**
-   - `/workspace/[slug]` vs `/workspaces/[slug]`
+   - `/space/[slug]` vs `/spaces/[slug]`
    - Need to consolidate and redirect
 
 2. **Tab Component Missing**
@@ -123,12 +123,12 @@ NodeDetailPage
 
 ### User Experience Issues
 1. **Navigation Flow**
-   - No clear path to go back to workspace list from node detail
-   - No breadcrumbs showing: Workspaces > My Workspace > Node Title
+   - No clear path to go back to space list from node detail
+   - No breadcrumbs showing: Spaces > My Space > Node Title
    - Can't navigate between nodes easily without going back
 
 2. **Discovery**
-   - Hard to find nodes within large workspaces
+   - Hard to find nodes within large spaces
    - No search functionality
    - No filters or sorting options
 
@@ -143,7 +143,7 @@ NodeDetailPage
 /
 ├─ Global Navigation Bar
 │   ├─ Logo / Home
-│   ├─ Workspace Switcher Dropdown
+│   ├─ Space Switcher Dropdown
 │   ├─ Search
 │   └─ User Menu (Profile, Settings, Logout)
 │
@@ -158,32 +158,32 @@ NodeDetailPage
 
 ### Proposed Page Layouts
 
-#### `/workspaces` - Workspace Gallery
+#### `/spaces` - Space Gallery
 ```
 [Nav Bar]
-[Breadcrumbs: Workspaces]
-[Page Title: "My Workspaces" | Create Button]
-[Grid/List of Workspace Cards]
-  - Workspace name
+[Breadcrumbs: Spaces]
+[Page Title: "My Spaces" | Create Button]
+[Grid/List of Space Cards]
+  - Space name
   - Description
   - Node count
   - Last modified
   - Thumbnail/Icon
 ```
 
-#### `/workspaces/[slug]` - Workspace Detail
+#### `/spaces/[slug]` - Space Detail
 ```
-[Nav Bar with Workspace Switcher]
-[Breadcrumbs: Workspaces > Workspace Name]
-[Workspace Header: Title | Create Node | Settings]
+[Nav Bar with Space Switcher]
+[Breadcrumbs: Spaces > Space Name]
+[Space Header: Title | Create Node | Settings]
 [Tabs: List | Hierarchy | Graph]
 [Tab Content]
 ```
 
-#### `/workspaces/[slug]/node/[id]` - Node Detail
+#### `/spaces/[slug]/node/[id]` - Node Detail
 ```
 [Nav Bar]
-[Breadcrumbs: Workspaces > Workspace > Node Title]
+[Breadcrumbs: Spaces > Space > Node Title]
 [Node Header: Type Badge | Edit | Delete]
 [Markdown Content with Wiki Links]
 [Related Nodes Sidebar]
@@ -210,7 +210,7 @@ NodeDetailPage
 - Empty states
 - Loading states with skeletons
 - Tabs UI component
-- Workspace switcher
+- Space switcher
 - Search functionality
 - Node filtering/sorting
 - Visual distinction for node types
@@ -222,12 +222,12 @@ NodeDetailPage
 1. Add global navigation header
 2. Implement breadcrumbs
 3. Add Tabs UI component (shadcn/ui)
-4. Remove duplicate `/workspace` routes
+4. Remove duplicate `/space` routes
 
 ### P1 - High
 5. Empty states for all lists
 6. Loading skeletons
-7. Workspace switcher in header
+7. Space switcher in header
 8. Visual node type indicators
 
 ### P2 - Medium

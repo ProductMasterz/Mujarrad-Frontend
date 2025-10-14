@@ -133,7 +133,7 @@ Create `src/types/markdown.ts` with:
 Create schemas:
 - `markdownContentSchema` (max 50,000 chars)
 - `nodeWithMarkdownSchema` (extends existing node schema)
-- `workspaceWithMarkdownSchema` (extends existing workspace schema)
+- `spaceWithMarkdownSchema` (extends existing space schema)
 
 **Reference**: See `specs/006-markdown-features-start/data-model.md` lines 257-286
 
@@ -462,22 +462,22 @@ Changes:
 
 ---
 
-### T021: [P] Integrate Markdown into WorkspaceSettings (if applicable)
-**File**: `src/components/workspaces/WorkspaceSettings.tsx` (modify existing)
-**Description**: Add markdown editor for workspace documentation field
+### T021: [P] Integrate Markdown into SpaceSettings (if applicable)
+**File**: `src/components/spaces/SpaceSettings.tsx` (modify existing)
+**Description**: Add markdown editor for space documentation field
 
 Changes:
-1. Check if workspace has `documentation` field
+1. Check if space has `documentation` field
 2. If yes, replace textarea with MarkdownEditor
 3. Add validation for documentation length
-4. Render documentation with MarkdownRenderer on workspace page
+4. Render documentation with MarkdownRenderer on space page
 
 **Reference**: See `specs/006-markdown-features-start/quickstart.md` lines 368-413
 
 **Acceptance**:
 - Documentation field supports markdown
 - Editor works in settings
-- Renders on workspace home page
+- Renders on space home page
 - If documentation field doesn't exist, skip this task
 
 ---
@@ -493,7 +493,7 @@ Changes:
 **Description**: Write Playwright E2E test for creating node with markdown
 
 Test flow:
-1. Navigate to workspace
+1. Navigate to space
 2. Click "Create Node"
 3. Enter title and markdown content (with headings, bold, code blocks)
 4. Switch to Preview tab
@@ -687,7 +687,7 @@ Run through:
 3. ✅ Edit existing node
 4. ✅ Character limit validation
 5. ✅ XSS protection
-6. ✅ Workspace documentation
+6. ✅ Space documentation
 7. ✅ Mobile responsiveness
 8. ✅ Plain text backward compatibility
 9. ✅ Performance with large documents

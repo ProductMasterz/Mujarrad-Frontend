@@ -110,7 +110,7 @@ Required: API-Driven React SPA
 | **V. Clean Architecture** | ❌ 0% | No service layer, no separation of concerns |
 | **VI. Type Safety** | ❌ 0% | JavaScript only, no type definitions |
 | **VII. Graph Visualization First** | ⚠️ 20% | Has Cytoscape, but wrong library + no relationships |
-| **VIII. Workspace Isolation** | ❌ 0% | No workspace concept, no multi-tenancy |
+| **VIII. Space Isolation** | ❌ 0% | No space concept, no multi-tenancy |
 | **IX. Version Awareness** | ❌ 0% | No version history UI, no version API calls |
 | **X. Performance & Optimization** | ⚠️ 30% | Has code splitting, but missing React Query caching |
 
@@ -123,18 +123,18 @@ Required: API-Driven React SPA
 - `POST /api/users/register`
 - `POST /api/users/login`
 
-#### Workspace Management (4 endpoints)
-- `POST /api/workspaces`
-- `GET /api/workspaces/{slug}`
-- `GET /api/workspaces`
-- `DELETE /api/workspaces/{slug}`
+#### Space Management (4 endpoints)
+- `POST /api/spaces`
+- `GET /api/spaces/{slug}`
+- `GET /api/spaces`
+- `DELETE /api/spaces/{slug}`
 
 #### Node CRUD (6 endpoints)
-- `POST /api/workspaces/{slug}/nodes`
-- `GET /api/workspaces/{slug}/nodes/{id}`
-- `PUT /api/workspaces/{slug}/nodes/{id}`
-- `DELETE /api/workspaces/{slug}/nodes/{id}`
-- `GET /api/workspaces/{slug}/nodes` (with pagination)
+- `POST /api/spaces/{slug}/nodes`
+- `GET /api/spaces/{slug}/nodes/{id}`
+- `PUT /api/spaces/{slug}/nodes/{id}`
+- `DELETE /api/spaces/{slug}/nodes/{id}`
+- `GET /api/spaces/{slug}/nodes` (with pagination)
 - `GET /api/nodes/search?q={query}`
 
 #### Relationship Management (3 endpoints)
@@ -181,7 +181,7 @@ Required: API-Driven React SPA
 ### 5. No State Management ⚠️ HIGH PRIORITY
 - **Current**: Local component state only
 - **Required**: Zustand (global) + React Query (server cache)
-- **Impact**: Cannot manage workspace context, user sessions, graph state
+- **Impact**: Cannot manage space context, user sessions, graph state
 
 ---
 
@@ -234,7 +234,7 @@ npm create vite@latest mujarrad-frontend -- --template react-ts
 - [ ] React Query setup with default options
 
 **Week 2 Deliverables**:
-- [ ] Workspace service and basic UI
+- [ ] Space service and basic UI
 - [ ] Protected route wrapper component
 - [ ] Error handling with RFC 7807 format
 - [ ] Toast notification system
@@ -271,8 +271,8 @@ npm create vite@latest mujarrad-frontend -- --template react-ts
 - [ ] Version history UI
 - [ ] Version comparison with diffs
 - [ ] Version restoration functionality
-- [ ] Workspace switcher with data clearing
-- [ ] Cross-workspace reference handling
+- [ ] Space switcher with data clearing
+- [ ] Cross-space reference handling
 
 ### Phase 4: Polish & Production (Weeks 11-12)
 **Performance, Testing, Deployment**
@@ -362,7 +362,7 @@ export enum NodeType {
 
 export interface NodeResponse {
   id: string;
-  workspaceId: string;
+  spaceId: string;
   nodeType: NodeType;
   title: string;
   slug: string;
@@ -414,68 +414,68 @@ import type { CreateNodeRequest, UpdateNodeRequest } from '@/types/backend-dtos'
 
 export const nodeKeys = {
   all: ['nodes'] as const,
-  workspace: (workspaceSlug: string) => [...nodeKeys.all, workspaceSlug] as const,
-  detail: (workspaceSlug: string, nodeId: string) =>
-    [...nodeKeys.workspace(workspaceSlug), nodeId] as const,
-  search: (workspaceSlug: string, query: string) =>
-    [...nodeKeys.workspace(workspaceSlug), 'search', query] as const,
+  space: (spaceSlug: string) => [...nodeKeys.all, spaceSlug] as const,
+  detail: (spaceSlug: string, nodeId: string) =>
+    [...nodeKeys.space(spaceSlug), nodeId] as const,
+  search: (spaceSlug: string, query: string) =>
+    [...nodeKeys.space(spaceSlug), 'search', query] as const,
 };
 
-export function useNode(workspaceSlug: string, nodeId: string) {
+export function useNode(spaceSlug: string, nodeId: string) {
   return useQuery({
-    queryKey: nodeKeys.detail(workspaceSlug, nodeId),
-    queryFn: () => NodeService.getById(workspaceSlug, nodeId),
-    enabled: !!workspaceSlug && !!nodeId,
+    queryKey: nodeKeys.detail(spaceSlug, nodeId),
+    queryFn: () => NodeService.getById(spaceSlug, nodeId),
+    enabled: !!spaceSlug && !!nodeId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
-export function useNodes(workspaceSlug: string, page = 0, size = 20) {
+export function useNodes(spaceSlug: string, page = 0, size = 20) {
   return useQuery({
-    queryKey: [...nodeKeys.workspace(workspaceSlug), 'list', page, size],
-    queryFn: () => NodeService.getAll(workspaceSlug, page, size),
-    enabled: !!workspaceSlug,
+    queryKey: [...nodeKeys.space(spaceSlug), 'list', page, size],
+    queryFn: () => NodeService.getAll(spaceSlug, page, size),
+    enabled: !!spaceSlug,
     keepPreviousData: true,
   });
 }
 
-export function useCreateNode(workspaceSlug: string) {
+export function useCreateNode(spaceSlug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (request: CreateNodeRequest) =>
-      NodeService.create(workspaceSlug, request),
+      NodeService.create(spaceSlug, request),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: nodeKeys.workspace(workspaceSlug)
+        queryKey: nodeKeys.space(spaceSlug)
       });
     },
   });
 }
 
-export function useUpdateNode(workspaceSlug: string, nodeId: string) {
+export function useUpdateNode(spaceSlug: string, nodeId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (request: UpdateNodeRequest) =>
-      NodeService.update(workspaceSlug, nodeId, request),
+      NodeService.update(spaceSlug, nodeId, request),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: nodeKeys.detail(workspaceSlug, nodeId)
+        queryKey: nodeKeys.detail(spaceSlug, nodeId)
       });
     },
   });
 }
 
-export function useDeleteNode(workspaceSlug: string) {
+export function useDeleteNode(spaceSlug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (nodeId: string) =>
-      NodeService.delete(workspaceSlug, nodeId),
+      NodeService.delete(spaceSlug, nodeId),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: nodeKeys.workspace(workspaceSlug)
+        queryKey: nodeKeys.space(spaceSlug)
       });
     },
   });
@@ -544,65 +544,65 @@ import type {
 
 export class NodeService {
   static async getById(
-    workspaceSlug: string,
+    spaceSlug: string,
     nodeId: string
   ): Promise<NodeResponse> {
     const { data } = await apiClient.get(
-      `/workspaces/${workspaceSlug}/nodes/${nodeId}`
+      `/spaces/${spaceSlug}/nodes/${nodeId}`
     );
     return data;
   }
 
   static async getAll(
-    workspaceSlug: string,
+    spaceSlug: string,
     page = 0,
     size = 20
   ): Promise<{ content: NodeResponse[]; totalElements: number }> {
     const { data } = await apiClient.get(
-      `/workspaces/${workspaceSlug}/nodes`,
+      `/spaces/${spaceSlug}/nodes`,
       { params: { page, size } }
     );
     return data;
   }
 
   static async create(
-    workspaceSlug: string,
+    spaceSlug: string,
     request: CreateNodeRequest
   ): Promise<NodeResponse> {
     const { data } = await apiClient.post(
-      `/workspaces/${workspaceSlug}/nodes`,
+      `/spaces/${spaceSlug}/nodes`,
       request
     );
     return data;
   }
 
   static async update(
-    workspaceSlug: string,
+    spaceSlug: string,
     nodeId: string,
     request: UpdateNodeRequest
   ): Promise<NodeResponse> {
     const { data } = await apiClient.put(
-      `/workspaces/${workspaceSlug}/nodes/${nodeId}`,
+      `/spaces/${spaceSlug}/nodes/${nodeId}`,
       request
     );
     return data;
   }
 
   static async delete(
-    workspaceSlug: string,
+    spaceSlug: string,
     nodeId: string
   ): Promise<void> {
     await apiClient.delete(
-      `/workspaces/${workspaceSlug}/nodes/${nodeId}`
+      `/spaces/${spaceSlug}/nodes/${nodeId}`
     );
   }
 
   static async search(
     query: string,
-    workspaceSlug?: string
+    spaceSlug?: string
   ): Promise<NodeResponse[]> {
     const { data } = await apiClient.get('/nodes/search', {
-      params: { q: query, workspace: workspaceSlug },
+      params: { q: query, space: spaceSlug },
     });
     return data;
   }
@@ -799,7 +799,7 @@ export function GraphVisualization({ nodes, relationships, onNodeClick }: Props)
 **Zustand for**:
 - Authentication state
 - UI state (sidebar open, theme, etc.)
-- Workspace context
+- Space context
 - User preferences
 
 **React Query for**:
@@ -839,7 +839,7 @@ export function GraphVisualization({ nodes, relationships, onNodeClick }: Props)
 - Consider WebGL renderer for very large graphs (via `@react-sigma/core`)
 
 #### 2. Real-Time Sync 🟡 MEDIUM
-**Risk**: Multiple users editing same workspace may cause conflicts
+**Risk**: Multiple users editing same space may cause conflicts
 
 **Mitigation**:
 - Use optimistic locking (version field from backend)
@@ -869,7 +869,7 @@ export function GraphVisualization({ nodes, relationships, onNodeClick }: Props)
 
 ### Week 4 Checkpoint (MVP Core)
 - [ ] User can register/login
-- [ ] User can create workspace
+- [ ] User can create space
 - [ ] User can create/edit/delete nodes
 - [ ] Basic graph visualization works
 - [ ] Search returns results
@@ -924,9 +924,9 @@ mujarrad-frontend/
 │   │   ├── (auth)/
 │   │   │   ├── login/page.tsx
 │   │   │   └── register/page.tsx
-│   │   ├── workspace/
+│   │   ├── space/
 │   │   │   └── [slug]/
-│   │   │       ├── page.tsx      # Workspace home
+│   │   │       ├── page.tsx      # Space home
 │   │   │       ├── nodes/
 │   │   │       │   ├── page.tsx  # Node list
 │   │   │       │   └── [id]/page.tsx # Node detail
@@ -948,12 +948,12 @@ mujarrad-frontend/
 │   │   │   └── Input.tsx
 │   │   └── layouts/
 │   │       ├── AppLayout.tsx
-│   │       └── WorkspaceLayout.tsx
+│   │       └── SpaceLayout.tsx
 │   │
 │   ├── hooks/
 │   │   ├── api/
 │   │   │   ├── useNodes.ts
-│   │   │   ├── useWorkspaces.ts
+│   │   │   ├── useSpaces.ts
 │   │   │   ├── useRelationships.ts
 │   │   │   └── useAuth.ts
 │   │   └── useDebounce.ts
@@ -962,13 +962,13 @@ mujarrad-frontend/
 │   │   ├── api/
 │   │   │   └── client.ts         # Axios instance
 │   │   ├── NodeService.ts
-│   │   ├── WorkspaceService.ts
+│   │   ├── SpaceService.ts
 │   │   ├── RelationshipService.ts
 │   │   └── AuthService.ts
 │   │
 │   ├── stores/
 │   │   ├── authStore.ts          # Zustand
-│   │   ├── workspaceStore.ts
+│   │   ├── spaceStore.ts
 │   │   └── uiStore.ts
 │   │
 │   ├── types/
@@ -978,7 +978,7 @@ mujarrad-frontend/
 │   │
 │   ├── schemas/
 │   │   ├── nodeSchemas.ts        # Zod
-│   │   ├── workspaceSchemas.ts
+│   │   ├── spaceSchemas.ts
 │   │   └── authSchemas.ts
 │   │
 │   └── lib/

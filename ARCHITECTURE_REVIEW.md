@@ -139,7 +139,7 @@ services/api/
 **Strengths:**
 - Clean service interfaces (async/await only, no `.then()`)
 - RFC 7807 error handling in interceptor
-- Proper API contract alignment (GET /api/nodes/:id, NOT /api/workspaces/:id/nodes/:id)
+- Proper API contract alignment (GET /api/nodes/:id, NOT /api/spaces/:id/nodes/:id)
 - WikiLinkService orchestrates complex workflows
 
 **API Client Architecture:**
@@ -180,14 +180,14 @@ apiClient.interceptors.response.use(
 
 ```typescript
 // ✅ EXCELLENT: Orchestration with clear steps
-async processWikiLinks(markdown, sourceNodeId, workspaceId) {
+async processWikiLinks(markdown, sourceNodeId, spaceId) {
   // Step 1: Parse and resolve
-  const parseResult = await this.parseAndResolve(markdown, workspaceId);
+  const parseResult = await this.parseAndResolve(markdown, spaceId);
 
   // Step 2: Create placeholders for unresolved links
   const placeholderResult = await this.createPlaceholders(
     parseResult.resolutions,
-    workspaceId
+    spaceId
   );
 
   // Step 3: Create relationships
@@ -304,13 +304,13 @@ export const useCreateNode = () => {
 
     onMutate: async (newNode) => {
       // Cancel outgoing refetches (prevent race conditions)
-      await queryClient.cancelQueries({ queryKey: ['nodes', newNode.workspaceId] });
+      await queryClient.cancelQueries({ queryKey: ['nodes', newNode.spaceId] });
 
       // Snapshot previous value
-      const previousNodes = queryClient.getQueryData(['nodes', newNode.workspaceId]);
+      const previousNodes = queryClient.getQueryData(['nodes', newNode.spaceId]);
 
       // Optimistically add temp node
-      queryClient.setQueryData<Node[]>(['nodes', newNode.workspaceId], (old) => {
+      queryClient.setQueryData<Node[]>(['nodes', newNode.spaceId], (old) => {
         if (!old) return old;
         const tempNode = { id: 'temp-' + Date.now(), ...newNode, version: 1 };
         return [...old, tempNode];
@@ -322,13 +322,13 @@ export const useCreateNode = () => {
     onError: (err, newNode, context) => {
       // Rollback on error
       if (context?.previousNodes) {
-        queryClient.setQueryData(['nodes', newNode.workspaceId], context.previousNodes);
+        queryClient.setQueryData(['nodes', newNode.spaceId], context.previousNodes);
       }
     },
 
     onSuccess: (data, variables) => {
       // Invalidate to trigger refetch with real ID
-      queryClient.invalidateQueries({ queryKey: ['nodes', variables.workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['nodes', variables.spaceId] });
     },
   });
 };
@@ -388,8 +388,8 @@ jest.config.js              # Async override for transformIgnorePatterns
 ```typescript
 // ✅ EXCELLENT: Integration test covering full workflow
 it('should parse, resolve, create placeholders, and create relationships', async () => {
-  // Setup: Mock workspace nodes (only "Existing Page" exists)
-  server.use(http.get('/api/workspaces/:id/nodes', () =>
+  // Setup: Mock space nodes (only "Existing Page" exists)
+  server.use(http.get('/api/spaces/:id/nodes', () =>
     HttpResponse.json([{...existingPage}])
   ));
 
@@ -397,7 +397,7 @@ it('should parse, resolve, create placeholders, and create relationships', async
   const result = await wikiLinkService.processWikiLinks(
     '# Welcome\n\nCheck out [[Existing Page]] and [[New Page]].',
     sourceNodeId,
-    workspaceId
+    spaceId
   );
 
   // Verify: Existing page resolved, new page created as placeholder
@@ -552,11 +552,11 @@ Refactor these components in Sprint 3 to use new hooks/services.
 **Recommendation:**
 ```typescript
 // Add useSearchNodes hook
-export const useSearchNodes = (workspaceId: string, query: string) => {
+export const useSearchNodes = (spaceId: string, query: string) => {
   return useQuery({
-    queryKey: ['searchNodes', workspaceId, query],
-    queryFn: async () => nodeService.searchNodes(workspaceId, { q: query }),
-    enabled: !!workspaceId && !!query && query.length >= 2,
+    queryKey: ['searchNodes', spaceId, query],
+    queryFn: async () => nodeService.searchNodes(spaceId, { q: query }),
+    enabled: !!spaceId && !!query && query.length >= 2,
   });
 };
 ```

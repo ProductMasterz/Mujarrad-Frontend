@@ -23,7 +23,7 @@ interface Node {
   content: string;               // ← ENHANCED: Now supports markdown syntax
   node_type: string;             // 'CONTEXT', 'CONCEPT', 'TASK', etc.
   node_details: Record<string, any>;
-  workspace_id: string;
+  space_id: string;
   parent_id: string | null;
   created_at: string;            // ISO timestamp
   updated_at: string;            // ISO timestamp
@@ -40,14 +40,14 @@ interface Node {
 
 ---
 
-### 2. Workspace Entity
+### 2. Space Entity
 
 **Backend**: Already exists
 
 ```typescript
-interface Workspace {
+interface Space {
   id: string;                    // UUID
-  name: string;                  // Workspace name
+  name: string;                  // Space name
   slug: string;                  // URL-friendly identifier
   description: string;           // Brief description
   documentation: string;         // ← ENHANCED: Now supports markdown syntax
@@ -95,7 +95,7 @@ interface Note {
   id: string;                    // UUID
   title: string;                 // Note title
   content: string;               // ← ENHANCED: Now supports markdown syntax
-  workspace_id: string;
+  space_id: string;
   author_id: string;
   created_at: string;
   updated_at: string;
@@ -334,14 +334,14 @@ export const nodeWithMarkdownSchema = z.object({
   // ... other node fields
 });
 
-export const workspaceWithMarkdownSchema = z.object({
+export const spaceWithMarkdownSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   slug: z.string().regex(/^[a-z0-9-]+$/),
   documentation: z
     .string()
     .max(50000, 'Documentation must be less than 50,000 characters')
     .optional(),
-  // ... other workspace fields
+  // ... other space fields
 });
 ```
 
@@ -364,17 +364,17 @@ const form = useForm({
 ### No New Zustand Stores Required
 
 Markdown content is managed through:
-1. **Existing React Query hooks** for server state (nodes, workspaces)
+1. **Existing React Query hooks** for server state (nodes, spaces)
 2. **React Hook Form** for form state (editing)
 3. **Local component state** for editor tab switching
 
 **Example**:
 ```typescript
 // Fetching node with markdown content (existing hook)
-const { data: node } = useNode(workspaceSlug, nodeId);
+const { data: node } = useNode(spaceSlug, nodeId);
 
 // Editing node with markdown (existing mutation)
-const updateNode = useUpdateNode(workspaceSlug);
+const updateNode = useUpdateNode(spaceSlug);
 
 // Form state for markdown editor
 const [content, setContent] = useState(node?.content || '');
@@ -388,7 +388,7 @@ const [content, setContent] = useState(node?.content || '');
 
 1. **Create Node with Markdown**
    ```
-   POST /api/workspaces/{slug}/nodes
+   POST /api/spaces/{slug}/nodes
    Content-Type: application/json
 
    {
@@ -400,7 +400,7 @@ const [content, setContent] = useState(node?.content || '');
 
 2. **Update Node with Markdown**
    ```
-   PUT /api/workspaces/{slug}/nodes/{id}
+   PUT /api/spaces/{slug}/nodes/{id}
    Content-Type: application/json
 
    {
@@ -412,7 +412,7 @@ const [content, setContent] = useState(node?.content || '');
 
 3. **Get Node (Returns Markdown)**
    ```
-   GET /api/workspaces/{slug}/nodes/{id}
+   GET /api/spaces/{slug}/nodes/{id}
 
    Response:
    {
@@ -425,13 +425,13 @@ const [content, setContent] = useState(node?.content || '');
    }
    ```
 
-4. **Update Workspace Documentation**
+4. **Update Space Documentation**
    ```
-   PUT /api/workspaces/{slug}
+   PUT /api/spaces/{slug}
    Content-Type: application/json
 
    {
-     "documentation": "# Workspace Docs\n\nOverview..."
+     "documentation": "# Space Docs\n\nOverview..."
    }
    ```
 
@@ -444,7 +444,7 @@ const [content, setContent] = useState(node?.content || '');
 ```
 User opens node detail page
   ↓
-Next.js route: /workspaces/[slug]/node/[id]/page.tsx
+Next.js route: /spaces/[slug]/node/[id]/page.tsx
   ↓
 useNode(slug, id) → React Query cache/API
   ↓
@@ -472,7 +472,7 @@ User clicks "Save"
   ↓
 React Hook Form validates (Zod schema)
   ↓
-useUpdateNode mutation → PUT /api/workspaces/{slug}/nodes/{id}
+useUpdateNode mutation → PUT /api/spaces/{slug}/nodes/{id}
   ↓
 Backend saves plain markdown text to node.content
   ↓

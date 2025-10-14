@@ -317,8 +317,8 @@ const debouncedSave = useMemo(
    - Add prose classes for styling
    - Maintain existing layout
 
-4. **WorkspaceSettings.tsx** (`src/components/workspaces/`)
-   - Add markdown editor for workspace documentation field
+4. **SpaceSettings.tsx** (`src/components/spaces/`)
+   - Add markdown editor for space documentation field
    - Similar to node dialogs
 
 5. **Comment Components** (if exists)
@@ -328,10 +328,10 @@ const debouncedSave = useMemo(
 ### 8.2 No Backend Changes Required
 
 **Existing API Endpoints Used**:
-- `POST /api/workspaces/{slug}/nodes` - Create node with markdown content
-- `PUT /api/workspaces/{slug}/nodes/{id}` - Update node with markdown content
-- `GET /api/workspaces/{slug}/nodes/{id}` - Retrieve node (content already includes markdown)
-- `PUT /api/workspaces/{slug}` - Update workspace with markdown documentation
+- `POST /api/spaces/{slug}/nodes` - Create node with markdown content
+- `PUT /api/spaces/{slug}/nodes/{id}` - Update node with markdown content
+- `GET /api/spaces/{slug}/nodes/{id}` - Retrieve node (content already includes markdown)
+- `PUT /api/spaces/{slug}` - Update space with markdown documentation
 
 **DTOs Unchanged**:
 ```typescript
@@ -393,7 +393,7 @@ describe('MarkdownEditor', () => {
 **markdown-integration.spec.ts**:
 ```typescript
 test('create node with markdown content', async ({ page }) => {
-  await page.goto('/workspaces/test-workspace/nodes');
+  await page.goto('/spaces/test-space/nodes');
   await page.click('text=Create Node');
   await page.fill('[placeholder="Node title"]', 'Test Node');
 
@@ -456,7 +456,7 @@ All critical questions were resolved during `/clarify` workflow:
 
 | Question | Resolution |
 |----------|------------|
-| Where is markdown used? | ALL contexts (nodes, workspaces, comments, notes) |
+| Where is markdown used? | ALL contexts (nodes, spaces, comments, notes) |
 | Editor UX? | Tabbed interface (Edit/Preview) |
 | Feature scope? | Full GFM (basic + code + tables + images + tasks) |
 | Image handling? | External URLs only, no upload |
@@ -511,7 +511,7 @@ All critical questions were resolved during `/clarify` workflow:
 
 ## 14. Success Criteria
 
-- ✅ Markdown renders in all content types (nodes, workspaces, comments, notes)
+- ✅ Markdown renders in all content types (nodes, spaces, comments, notes)
 - ✅ Editor provides Edit and Preview tabs
 - ✅ Syntax highlighting works for 8+ languages
 - ✅ Tables and task lists render correctly

@@ -8,7 +8,7 @@
 
 - ✅ Backend API running at `https://mujarrad.onrender.com` (or local)
 - ✅ Frontend dev server running (`npm run dev`)
-- ✅ Test workspace created with slug: `test-workspace`
+- ✅ Test space created with slug: `test-space`
 - ✅ User authenticated with valid JWT token
 
 ---
@@ -61,9 +61,9 @@ Open browser: `http://localhost:3000`
 
 #### Steps:
 
-1. Navigate to workspace:
+1. Navigate to space:
    ```
-   http://localhost:3000/workspaces/test-workspace
+   http://localhost:3000/spaces/test-space
    ```
 
 2. Click **"Create Node"** button
@@ -284,24 +284,24 @@ Open browser: `http://localhost:3000`
 
 ---
 
-### Scenario 6: Workspace Documentation
+### Scenario 6: Space Documentation
 
-**Objective**: Verify markdown works in Workspace Settings.
+**Objective**: Verify markdown works in Space Settings.
 
 #### Steps:
 
-1. Navigate to workspace settings:
+1. Navigate to space settings:
    ```
-   http://localhost:3000/workspaces/test-workspace/settings
+   http://localhost:3000/spaces/test-space/settings
    ```
 
 2. Find "Documentation" field
 
 3. **Add markdown documentation**:
    ```markdown
-   # Test Workspace
+   # Test Space
 
-   This workspace is for **testing markdown features**.
+   This space is for **testing markdown features**.
 
    ## Purpose
 
@@ -319,14 +319,14 @@ Open browser: `http://localhost:3000`
 
 5. **Save changes**
 
-6. **Navigate back to workspace home**
+6. **Navigate back to space home**
 
 7. **Verify Documentation Renders**:
-   - ✅ Markdown documentation visible on workspace page
+   - ✅ Markdown documentation visible on space page
    - ✅ Properly formatted with headings, lists, links
 
 #### Expected Result:
-✅ Workspace documentation supports markdown
+✅ Space documentation supports markdown
 
 ---
 
@@ -369,7 +369,7 @@ Open browser: `http://localhost:3000`
 
 1. **Option A - Create plain text node programmatically**:
    ```bash
-   curl -X POST https://mujarrad.onrender.com/api/workspaces/test-workspace/nodes \
+   curl -X POST https://mujarrad.onrender.com/api/spaces/test-space/nodes \
      -H "Authorization: Bearer YOUR_TOKEN" \
      -H "Content-Type: application/json" \
      -d '{
@@ -552,7 +552,7 @@ Open browser: `http://localhost:3000`
 
 ### Should Pass (Important)
 
-- ✅ Scenario 6: Workspace documentation
+- ✅ Scenario 6: Space documentation
 - ✅ Scenario 7: Mobile responsiveness
 - ✅ Scenario 8: Plain text compatibility
 
@@ -620,7 +620,7 @@ After testing, you may want to:
    - Select "Markdown Test Node" → Delete
    - Select "XSS Test" → Delete
 
-2. **Reset workspace documentation**:
+2. **Reset space documentation**:
    - Go to settings → Clear documentation field
 
 3. **Export test data** (optional):

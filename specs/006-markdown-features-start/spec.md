@@ -64,12 +64,12 @@ When creating this spec from a user prompt:
 ## User Scenarios & Testing *(mandatory)*
 
 ### Primary User Story
-As a user of Mujarrad, I need to create and view content formatted with markdown across all content types (node descriptions, workspace documentation, comments/annotations, and standalone notes) so that I can write rich text documents with headers, lists, code blocks, and other formatting without using complex tools. When I'm creating content, I want to write in markdown syntax and see how it will look. When I'm reading content, I want to see it beautifully formatted without seeing the raw markdown syntax.
+As a user of Mujarrad, I need to create and view content formatted with markdown across all content types (node descriptions, space documentation, comments/annotations, and standalone notes) so that I can write rich text documents with headers, lists, code blocks, and other formatting without using complex tools. When I'm creating content, I want to write in markdown syntax and see how it will look. When I'm reading content, I want to see it beautifully formatted without seeing the raw markdown syntax.
 
 ### Acceptance Scenarios
 1. **Given** I am editing a node description, **When** I write markdown content, **Then** I should be able to format the node's description using markdown syntax
 2. **Given** I am viewing a node with markdown content, **When** the description contains markdown syntax (headers, bold, lists, etc.), **Then** I should see properly formatted, styled content without raw markdown symbols
-3. **Given** I am creating workspace documentation, **When** I use markdown formatting, **Then** the workspace documentation should render with proper formatting for all team members
+3. **Given** I am creating space documentation, **When** I use markdown formatting, **Then** the space documentation should render with proper formatting for all team members
 4. **Given** I am adding a comment or annotation, **When** I write in markdown, **Then** the comment should support markdown formatting for clarity
 5. **Given** I am creating a standalone note, **When** I write content using markdown, **Then** the note should preserve and display markdown formatting
 6. **Given** I am creating new content, **When** I open the editor, **Then** I should see a tabbed interface with "Edit" and "Preview" tabs where I can write markdown and switch to see the formatted output
@@ -94,7 +94,7 @@ As a user of Mujarrad, I need to create and view content formatted with markdown
 ### Functional Requirements
 
 #### Storage & Data Model
-- **FR-001**: System MUST store markdown as plain text in existing entity fields without schema changes (nodes use existing description/content fields, workspaces use existing documentation fields)
+- **FR-001**: System MUST store markdown as plain text in existing entity fields without schema changes (nodes use existing description/content fields, spaces use existing documentation fields)
 - **FR-002**: System MUST preserve the original markdown text when storing content in the database
 - **FR-003**: System MUST render markdown text into formatted HTML output for display on the client-side
 - **FR-004**: System MUST handle existing plain text content gracefully (render as-is without breaking when text lacks markdown syntax)
@@ -120,7 +120,7 @@ As a user of Mujarrad, I need to create and view content formatted with markdown
 - **FR-014c**: Editor MUST provide visual warning when content exceeds 90% of maximum (45,000+ characters)
 - **FR-015**: Editor MUST provide a tabbed interface with separate "Edit" and "Preview" tabs (not split view, not live preview)
 - **FR-016**: Editor MUST allow users to switch between Edit tab (raw markdown) and Preview tab (formatted output) without saving
-- **FR-017**: Editor MUST work within existing UI contexts (node edit dialogs, workspace settings, comment forms, note creation)
+- **FR-017**: Editor MUST work within existing UI contexts (node edit dialogs, space settings, comment forms, note creation)
 - **FR-017a**: Editor MUST implement hybrid save behavior: auto-save changes to draft after 2-second debounce, require explicit "Save" or "Publish" action to finalize changes
 - **FR-017b**: Editor MUST visually indicate draft vs published state to the user
 - **FR-017c**: System MUST only show finalized (published) content to other users, not draft versions
@@ -136,7 +136,7 @@ As a user of Mujarrad, I need to create and view content formatted with markdown
 ### Key Entities *(include if feature involves data)*
 - **Markdown Content**: Plain text content written in markdown syntax, stored in existing entity fields:
   - **Node.description/content**: Existing text fields now support markdown formatting (no schema change)
-  - **Workspace.documentation**: Existing text field now supports markdown formatting (no schema change)
+  - **Space.documentation**: Existing text field now supports markdown formatting (no schema change)
   - **Comment.text**: Existing text field now supports markdown formatting (no schema change)
   - **Note.content**: Uses existing Note entity structure if available, or plain text field (no new entity required)
 - **Formatted Output**: The rendered HTML version of markdown content, generated on-demand in the browser (not cached in database, purely client-side rendering)
@@ -179,7 +179,7 @@ As a user of Mujarrad, I need to create and view content formatted with markdown
 
 **✅ CLARIFICATIONS RESOLVED (5 Critical Questions)**
 
-1. **Use Cases** → ALL contexts: node descriptions, workspace documentation, comments/annotations, standalone notes
+1. **Use Cases** → ALL contexts: node descriptions, space documentation, comments/annotations, standalone notes
 2. **Storage Strategy** → Use EXISTING entity fields (no schema changes), store plain markdown text, render client-side
 3. **Editor Experience** → TABBED interface (Edit/Preview tabs, not split view, not live preview)
 4. **Feature Scope** → FULL features for MVP: basic syntax + code highlighting + tables + images (external URLs) + task lists
