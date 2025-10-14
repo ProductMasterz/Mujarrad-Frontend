@@ -16,17 +16,17 @@ echo "User 1 ID: $USER1_ID"
 echo ""
 
 echo "2. Fetch spaces for User 1..."
-USER1_WORKSPACES=$(curl -s -X GET http://localhost:3000/api/spaces \
+USER1_SPACES=$(curl -s -X GET http://localhost:3000/api/spaces \
   -H "Authorization: Bearer $USER1_TOKEN" \
   -H "Content-Type: application/json")
 
 echo "User 1 spaces:"
-echo "$USER1_WORKSPACES" | jq -c '.[] | {id: .id, name: .name, ownerId: .ownerId}'
+echo "$USER1_SPACES" | jq -c '.[] | {id: .id, name: .name, ownerId: .ownerId}'
 echo ""
 
 # Count spaces owned by User 1 vs others
-USER1_OWN_COUNT=$(echo "$USER1_WORKSPACES" | jq "[.[] | select(.ownerId == \"$USER1_ID\")] | length")
-OTHER_OWNER_COUNT=$(echo "$USER1_WORKSPACES" | jq "[.[] | select(.ownerId != \"$USER1_ID\")] | length")
+USER1_OWN_COUNT=$(echo "$USER1_SPACES" | jq "[.[] | select(.ownerId == \"$USER1_ID\")] | length")
+OTHER_OWNER_COUNT=$(echo "$USER1_SPACES" | jq "[.[] | select(.ownerId != \"$USER1_ID\")] | length")
 
 echo "Summary for User 1:"
 echo "  - Spaces owned by User 1: $USER1_OWN_COUNT"
@@ -38,7 +38,7 @@ if [ "$OTHER_OWNER_COUNT" -gt 0 ]; then
   echo "   User 1 can see $OTHER_OWNER_COUNT space(s) belonging to other users!"
   echo ""
   echo "Other owners found:"
-  echo "$USER1_WORKSPACES" | jq -r '[.[] | select(.ownerId != "'$USER1_ID'") | .ownerId] | unique | .[]'
+  echo "$USER1_SPACES" | jq -r '[.[] | select(.ownerId != "'$USER1_ID'") | .ownerId] | unique | .[]'
   echo ""
   echo "🔒 SECURITY ISSUE: The backend /api/spaces endpoint should only return"
   echo "   spaces where the authenticated user is either:"

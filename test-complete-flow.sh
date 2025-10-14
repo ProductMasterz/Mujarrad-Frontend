@@ -32,21 +32,21 @@ echo ""
 
 # Test 2: Fetch Spaces
 echo "${BLUE}[Test 2]${NC} Fetch spaces for authenticated user..."
-WORKSPACES=$(curl -s -X GET http://localhost:3000/api/spaces \
+SPACES=$(curl -s -X GET http://localhost:3000/api/spaces \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json")
 
-WORKSPACE_COUNT=$(echo "$WORKSPACES" | jq 'length')
-echo "${GREEN}✓${NC} Retrieved $WORKSPACE_COUNT space(s)"
+SPACE_COUNT=$(echo "$SPACES" | jq 'length')
+echo "${GREEN}✓${NC} Retrieved $SPACE_COUNT space(s)"
 echo ""
 
 # Test 3: Authorization Verification
 echo "${BLUE}[Test 3]${NC} Verify authorization - check all spaces belong to user..."
-OTHER_OWNER_COUNT=$(echo "$WORKSPACES" | jq "[.[] | select(.ownerId != \"$USER_ID\")] | length")
+OTHER_OWNER_COUNT=$(echo "$SPACES" | jq "[.[] | select(.ownerId != \"$USER_ID\")] | length")
 
 if [ "$OTHER_OWNER_COUNT" -eq 0 ]; then
   echo "${GREEN}✓${NC} Authorization working correctly"
-  echo "  All $WORKSPACE_COUNT spaces belong to the authenticated user"
+  echo "  All $SPACE_COUNT spaces belong to the authenticated user"
 else
   echo "${RED}✗${NC} Authorization bug detected"
   echo "  Found $OTHER_OWNER_COUNT space(s) belonging to other users"
@@ -56,7 +56,7 @@ echo ""
 
 # Test 4: Response Structure
 echo "${BLUE}[Test 4]${NC} Verify response structure (plain array vs paginated)..."
-IS_ARRAY=$(echo "$WORKSPACES" | jq 'type == "array"')
+IS_ARRAY=$(echo "$SPACES" | jq 'type == "array"')
 
 if [ "$IS_ARRAY" == "true" ]; then
   echo "${GREEN}✓${NC} Response is a plain array (correct)"
@@ -69,9 +69,9 @@ echo ""
 # Test 5: Space Data Integrity
 echo "${BLUE}[Test 5]${NC} Verify space data integrity..."
 echo "Spaces:"
-echo "$WORKSPACES" | jq -r '.[] | "  • \(.name) (slug: \(.slug))"'
+echo "$SPACES" | jq -r '.[] | "  • \(.name) (slug: \(.slug))"'
 
-MISSING_FIELDS=$(echo "$WORKSPACES" | jq '[.[] | select(.id == null or .name == null or .slug == null or .ownerId == null)] | length')
+MISSING_FIELDS=$(echo "$SPACES" | jq '[.[] | select(.id == null or .name == null or .slug == null or .ownerId == null)] | length')
 
 if [ "$MISSING_FIELDS" -eq 0 ]; then
   echo "${GREEN}✓${NC} All spaces have required fields (id, name, slug, ownerId)"
@@ -83,21 +83,21 @@ echo ""
 
 # Test 6: Create New Space
 TIMESTAMP=$(date +%s)
-NEW_WORKSPACE_NAME="Test Complete Flow $TIMESTAMP"
-echo "${BLUE}[Test 6]${NC} Create new space: $NEW_WORKSPACE_NAME..."
+NEW_SPACE_NAME="Test Complete Flow $TIMESTAMP"
+echo "${BLUE}[Test 6]${NC} Create new space: $NEW_SPACE_NAME..."
 
 CREATE_RESPONSE=$(curl -s -X POST http://localhost:3000/api/spaces \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"name\":\"$NEW_WORKSPACE_NAME\",\"description\":\"Created by complete flow test\"}")
+  -d "{\"name\":\"$NEW_SPACE_NAME\",\"description\":\"Created by complete flow test\"}")
 
-NEW_WORKSPACE_ID=$(echo "$CREATE_RESPONSE" | jq -r '.id')
-NEW_WORKSPACE_SLUG=$(echo "$CREATE_RESPONSE" | jq -r '.slug')
+NEW_SPACE_ID=$(echo "$CREATE_RESPONSE" | jq -r '.id')
+NEW_SPACE_SLUG=$(echo "$CREATE_RESPONSE" | jq -r '.slug')
 
-if [ "$NEW_WORKSPACE_ID" != "null" ] && [ -n "$NEW_WORKSPACE_ID" ]; then
+if [ "$NEW_SPACE_ID" != "null" ] && [ -n "$NEW_SPACE_ID" ]; then
   echo "${GREEN}✓${NC} Space created successfully"
-  echo "  ID: $NEW_WORKSPACE_ID"
-  echo "  Slug: $NEW_WORKSPACE_SLUG"
+  echo "  ID: $NEW_SPACE_ID"
+  echo "  Slug: $NEW_SPACE_SLUG"
 else
   echo "${RED}✗${NC} Failed to create space"
   echo "$CREATE_RESPONSE" | jq '.'
@@ -107,16 +107,16 @@ echo ""
 
 # Test 7: Verify Creation
 echo "${BLUE}[Test 7]${NC} Verify new space appears in list..."
-UPDATED_WORKSPACES=$(curl -s -X GET http://localhost:3000/api/spaces \
+UPDATED_SPACES=$(curl -s -X GET http://localhost:3000/api/spaces \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json")
 
-UPDATED_COUNT=$(echo "$UPDATED_WORKSPACES" | jq 'length')
-FOUND_NEW=$(echo "$UPDATED_WORKSPACES" | jq ".[] | select(.id == \"$NEW_WORKSPACE_ID\") | .name" -r)
+UPDATED_COUNT=$(echo "$UPDATED_SPACES" | jq 'length')
+FOUND_NEW=$(echo "$UPDATED_SPACES" | jq ".[] | select(.id == \"$NEW_SPACE_ID\") | .name" -r)
 
-if [ "$FOUND_NEW" == "$NEW_WORKSPACE_NAME" ]; then
+if [ "$FOUND_NEW" == "$NEW_SPACE_NAME" ]; then
   echo "${GREEN}✓${NC} New space found in list"
-  echo "  Total spaces: $WORKSPACE_COUNT → $UPDATED_COUNT"
+  echo "  Total spaces: $SPACE_COUNT → $UPDATED_COUNT"
 else
   echo "${RED}✗${NC} New space not found in list"
   exit 1

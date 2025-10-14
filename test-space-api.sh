@@ -26,23 +26,23 @@ echo ""
 
 # Step 2: Fetch spaces
 echo "2. Fetching spaces with Authorization header..."
-WORKSPACES_RESPONSE=$(curl -s -X GET http://localhost:3000/api/spaces \
+SPACES_RESPONSE=$(curl -s -X GET http://localhost:3000/api/spaces \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json")
 
 echo "Spaces Response:"
-echo "$WORKSPACES_RESPONSE" | jq '.'
+echo "$SPACES_RESPONSE" | jq '.'
 echo ""
 
 # Check if we got spaces
-WORKSPACE_COUNT=$(echo "$WORKSPACES_RESPONSE" | jq '.content | length')
+SPACE_COUNT=$(echo "$SPACES_RESPONSE" | jq '.content | length')
 
-if [ "$WORKSPACE_COUNT" == "null" ]; then
+if [ "$SPACE_COUNT" == "null" ]; then
   echo "❌ Failed to get spaces - response structure incorrect"
   exit 1
 fi
 
-echo "✅ Successfully retrieved $WORKSPACE_COUNT space(s)"
+echo "✅ Successfully retrieved $SPACE_COUNT space(s)"
 echo ""
 
 # Step 3: Create a test space
@@ -57,26 +57,26 @@ echo "Create Response:"
 echo "$CREATE_RESPONSE" | jq '.'
 echo ""
 
-NEW_WORKSPACE_ID=$(echo "$CREATE_RESPONSE" | jq -r '.id')
-NEW_WORKSPACE_SLUG=$(echo "$CREATE_RESPONSE" | jq -r '.slug')
+NEW_SPACE_ID=$(echo "$CREATE_RESPONSE" | jq -r '.id')
+NEW_SPACE_SLUG=$(echo "$CREATE_RESPONSE" | jq -r '.slug')
 
-if [ "$NEW_WORKSPACE_ID" == "null" ] || [ -z "$NEW_WORKSPACE_ID" ]; then
+if [ "$NEW_SPACE_ID" == "null" ] || [ -z "$NEW_SPACE_ID" ]; then
   echo "❌ Failed to create space"
   exit 1
 fi
 
-echo "✅ Successfully created space: $NEW_WORKSPACE_SLUG (ID: $NEW_WORKSPACE_ID)"
+echo "✅ Successfully created space: $NEW_SPACE_SLUG (ID: $NEW_SPACE_ID)"
 echo ""
 
 # Step 4: Fetch spaces again to verify
 echo "4. Fetching spaces again to verify creation..."
-WORKSPACES_RESPONSE_2=$(curl -s -X GET http://localhost:3000/api/spaces \
+SPACES_RESPONSE_2=$(curl -s -X GET http://localhost:3000/api/spaces \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json")
 
-WORKSPACE_COUNT_2=$(echo "$WORKSPACES_RESPONSE_2" | jq '.content | length')
+SPACE_COUNT_2=$(echo "$SPACES_RESPONSE_2" | jq '.content | length')
 
-echo "✅ Now have $WORKSPACE_COUNT_2 space(s) (was $WORKSPACE_COUNT)"
+echo "✅ Now have $SPACE_COUNT_2 space(s) (was $SPACE_COUNT)"
 echo ""
 
 echo "=== All API Tests Passed! ==="
