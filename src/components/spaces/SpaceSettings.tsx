@@ -3,17 +3,17 @@
 import { useSpace } from '@/hooks/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { EditWorkspaceDialog } from './EditWorkspaceDialog';
-import { DeleteWorkspaceDialog } from './DeleteWorkspaceDialog';
+import { EditSpaceDialog } from './EditSpaceDialog';
+import { DeleteSpaceDialog } from './DeleteSpaceDialog';
 import { CollaboratorList } from './CollaboratorList';
 
-interface WorkspaceSettingsProps {
-  workspaceSlug: string;
+interface SpaceSettingsProps {
+  spaceSlug: string;
   currentUserId: string;
 }
 
-export function WorkspaceSettings({ workspaceSlug, currentUserId }: WorkspaceSettingsProps) {
-  const { data: workspace, isLoading } = useSpace(workspaceSlug);
+export function SpaceSettings({ spaceSlug, currentUserId }: SpaceSettingsProps) {
+  const { data: space, isLoading } = useSpace(spaceSlug);
 
   if (isLoading) {
     return (
@@ -23,27 +23,27 @@ export function WorkspaceSettings({ workspaceSlug, currentUserId }: WorkspaceSet
     );
   }
 
-  if (!workspace) {
+  if (!space) {
     return (
       <div className="p-8 text-center">
-        <p className="text-muted-foreground">Workspace not found</p>
+        <p className="text-muted-foreground">Space not found</p>
       </div>
     );
   }
 
-  const isOwner = workspace.ownerId === currentUserId;
-  const isCollaborator = workspace.collaborators?.some(c => c.userId === currentUserId);
+  const isOwner = space.ownerId === currentUserId;
+  const isCollaborator = space.collaborators?.some(c => c.userId === currentUserId);
   const canEdit = isOwner || isCollaborator;
 
   return (
     <div className="space-y-6">
-      {/* Workspace Info Card */}
+      {/* Space Info Card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>{workspace.name}</CardTitle>
-              <CardDescription>Workspace settings and information</CardDescription>
+              <CardTitle>{space.name}</CardTitle>
+              <CardDescription>Space settings and information</CardDescription>
             </div>
             <Badge variant={isOwner ? 'default' : 'secondary'}>
               {isOwner ? 'Owner' : 'Collaborator'}
@@ -54,24 +54,24 @@ export function WorkspaceSettings({ workspaceSlug, currentUserId }: WorkspaceSet
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Slug</p>
-              <p className="font-mono">{workspace.slug}</p>
+              <p className="font-mono">{space.slug}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Created</p>
-              <p>{new Date(workspace.createdAt).toLocaleDateString()}</p>
+              <p>{new Date(space.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
 
           {canEdit && (
             <div className="flex gap-2 pt-4 border-t">
-              <EditWorkspaceDialog workspaceSlug={workspaceSlug} />
+              <EditSpaceDialog spaceSlug={spaceSlug} />
               {isOwner && (
-                <DeleteWorkspaceDialog
-                  workspaceId={workspace.id}
-                  workspaceName={workspace.name}
-                  nodeCount={workspace.nodeCount || 0}
-                  relationshipCount={workspace.relationshipCount || 0}
-                  versionCount={workspace.versionCount || 0}
+                <DeleteSpaceDialog
+                  spaceId={space.id}
+                  spaceName={space.name}
+                  nodeCount={space.nodeCount || 0}
+                  relationshipCount={space.relationshipCount || 0}
+                  versionCount={space.versionCount || 0}
                 />
               )}
             </div>
@@ -79,7 +79,7 @@ export function WorkspaceSettings({ workspaceSlug, currentUserId }: WorkspaceSet
 
           {!canEdit && (
             <p className="text-sm text-muted-foreground pt-4 border-t">
-              You have read-only access to this workspace
+              You have read-only access to this space
             </p>
           )}
         </CardContent>
@@ -90,10 +90,10 @@ export function WorkspaceSettings({ workspaceSlug, currentUserId }: WorkspaceSet
         <Card>
           <CardHeader>
             <CardTitle>Collaborators</CardTitle>
-            <CardDescription>Manage who can access and edit this workspace</CardDescription>
+            <CardDescription>Manage who can access and edit this space</CardDescription>
           </CardHeader>
           <CardContent>
-            <CollaboratorList workspaceId={workspace.id} isOwner={isOwner} />
+            <CollaboratorList spaceId={space.id} isOwner={isOwner} />
           </CardContent>
         </Card>
       )}

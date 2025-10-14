@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDeleteWorkspace } from '@/hooks/api';
+import { useDeleteSpace } from '@/hooks/api';
 import {
   Dialog,
   DialogContent,
@@ -17,43 +17,43 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { isApiError } from '@/lib/errors';
 
-interface DeleteWorkspaceDialogProps {
-  workspaceId: number;
-  workspaceName: string;
+interface DeleteSpaceDialogProps {
+  spaceId: number;
+  spaceName: string;
   nodeCount?: number;
   relationshipCount?: number;
   versionCount?: number;
 }
 
-export function DeleteWorkspaceDialog({
-  workspaceId,
-  workspaceName,
+export function DeleteSpaceDialog({
+  spaceId,
+  spaceName,
   nodeCount = 0,
   relationshipCount = 0,
   versionCount = 0
-}: DeleteWorkspaceDialogProps) {
+}: DeleteSpaceDialogProps) {
   const [open, setOpen] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { mutate: deleteWorkspace, isPending: isLoading } = useDeleteWorkspace();
+  const { mutate: deleteSpace, isPending: isLoading } = useDeleteSpace();
 
-  const isConfirmed = confirmationText === workspaceName;
+  const isConfirmed = confirmationText === spaceName;
 
   const handleDelete = () => {
     if (!isConfirmed) return;
 
-    deleteWorkspace(workspaceId, {
+    deleteSpace(spaceId, {
       onSuccess: () => {
         setOpen(false);
         setConfirmationText('');
-        router.push('/workspaces');
+        router.push('/spaces');
       },
       onError: (err) => {
         if (isApiError(err)) {
           setError(err.getUserMessage());
         } else {
-          setError('Failed to delete workspace');
+          setError('Failed to delete space');
         }
       },
     });
@@ -70,13 +70,13 @@ export function DeleteWorkspaceDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="destructive">Delete Workspace</Button>
+        <Button variant="destructive">Delete Space</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Workspace</DialogTitle>
+          <DialogTitle>Delete Space</DialogTitle>
           <DialogDescription>
-            This action cannot be undone. This will permanently delete the workspace and all its contents.
+            This action cannot be undone. This will permanently delete the space and all its contents.
           </DialogDescription>
         </DialogHeader>
 
@@ -92,13 +92,13 @@ export function DeleteWorkspaceDialog({
 
           <div className="space-y-2">
             <Label htmlFor="confirmation">
-              Type <strong>{workspaceName}</strong> to confirm:
+              Type <strong>{spaceName}</strong> to confirm:
             </Label>
             <Input
               id="confirmation"
               value={confirmationText}
               onChange={(e) => setConfirmationText(e.target.value)}
-              placeholder={workspaceName}
+              placeholder={spaceName}
               autoComplete="off"
             />
           </div>
@@ -115,7 +115,7 @@ export function DeleteWorkspaceDialog({
             onClick={handleDelete}
             disabled={isLoading || !isConfirmed}
           >
-            {isLoading ? 'Deleting...' : 'Delete Workspace'}
+            {isLoading ? 'Deleting...' : 'Delete Space'}
           </Button>
         </DialogFooter>
       </DialogContent>

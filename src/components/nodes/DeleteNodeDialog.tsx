@@ -16,22 +16,22 @@ import { Button } from '@/components/ui/button';
 import { isApiError } from '@/lib/errors';
 
 interface DeleteNodeDialogProps {
-  workspaceSlug: string;
+  spaceSlug: string;
   nodeId: number;
   nodeName: string;
 }
 
-export function DeleteNodeDialog({ workspaceSlug, nodeId, nodeName }: DeleteNodeDialogProps) {
+export function DeleteNodeDialog({ spaceSlug, nodeId, nodeName }: DeleteNodeDialogProps) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { mutate: deleteNode, isPending: isLoading } = useDeleteNode();
 
   const handleDelete = () => {
-    deleteNode({ spaceSlug: workspaceSlug, nodeId: nodeId.toString() }, {
+    deleteNode({ spaceSlug: spaceSlug, nodeId: nodeId.toString() }, {
       onSuccess: () => {
         setOpen(false);
-        router.push(`/workspaces/${workspaceSlug}/nodes`);
+        router.push(`/spaces/${spaceSlug}/nodes`);
       },
       onError: (err) => {
         if (isApiError(err)) {

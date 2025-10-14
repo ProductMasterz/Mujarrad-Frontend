@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Graph Visualization', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/workspaces/test-workspace/graph');
+    await page.goto('/spaces/test-space/graph');
   });
 
   test('should display graph canvas', async ({ page }) => {
@@ -84,8 +84,8 @@ test.describe('Graph Visualization', () => {
   });
 
   test('should display empty state when no nodes', async ({ page }) => {
-    // Navigate to empty workspace
-    await page.goto('/workspaces/empty-workspace/graph');
+    // Navigate to empty space
+    await page.goto('/spaces/empty-space/graph');
 
     await expect(page.getByText(/no nodes.*graph/i)).toBeVisible();
   });

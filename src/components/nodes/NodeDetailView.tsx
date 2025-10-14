@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 
 interface NodeDetailViewProps {
   node: Node;
-  workspaceSlug: string;
+  spaceSlug: string;
   availableNodes: Node[];
   onWikiLinkClick?: (target: string) => void;
 }
@@ -20,7 +20,7 @@ interface NodeDetailViewProps {
  */
 export function NodeDetailView({
   node,
-  workspaceSlug,
+  spaceSlug,
   availableNodes,
   onWikiLinkClick,
 }: NodeDetailViewProps) {
@@ -85,7 +85,7 @@ export function NodeDetailView({
             {node.content ? (
               <MarkdownRenderer
                 content={node.content}
-                workspaceSlug={workspaceSlug}
+                spaceSlug={spaceSlug}
                 availableNodes={availableNodes}
                 onWikiLinkClick={onWikiLinkClick}
               />
@@ -109,7 +109,7 @@ export function NodeDetailView({
 
       {/* Edit Dialog */}
       <EditNodeDialog
-        workspaceSlug={workspaceSlug}
+        spaceSlug={spaceSlug}
         nodeId={node.id}
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}

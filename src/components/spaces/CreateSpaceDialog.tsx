@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { createWorkspaceSchema, type CreateWorkspaceFormData } from '@/schemas';
-import { useCreateWorkspace } from '@/hooks/api';
+import { createSpaceSchema, type CreateSpaceFormData } from '@/schemas';
+import { useCreateSpace } from '@/hooks/api';
 import {
   Dialog,
   DialogContent,
@@ -21,10 +21,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { isApiError } from '@/lib/errors';
 
-export function CreateWorkspaceDialog() {
+export function CreateSpaceDialog() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const { mutate: createWorkspace, isPending } = useCreateWorkspace();
+  const { mutate: createSpace, isPending } = useCreateSpace();
 
   const {
     register,
@@ -32,24 +32,24 @@ export function CreateWorkspaceDialog() {
     formState: { errors },
     setError,
     reset,
-  } = useForm<CreateWorkspaceFormData>({
-    resolver: zodResolver(createWorkspaceSchema),
+  } = useForm<CreateSpaceFormData>({
+    resolver: zodResolver(createSpaceSchema),
   });
 
-  const onSubmit = (data: CreateWorkspaceFormData) => {
-    createWorkspace(data, {
-      onSuccess: (workspace) => {
+  const onSubmit = (data: CreateSpaceFormData) => {
+    createSpace(data, {
+      onSuccess: (space) => {
         setOpen(false);
         reset();
-        // Navigate to the newly created workspace
-        router.push(`/workspaces/${workspace.slug}`);
+        // Navigate to the newly created space
+        router.push(`/spaces/${space.slug}`);
       },
       onError: (error) => {
-        console.error('Failed to create workspace:', error);
+        console.error('Failed to create space:', error);
         if (isApiError(error)) {
           setError('root', { message: error.getUserMessage() });
         } else {
-          setError('root', { message: 'Failed to create workspace. Please try again.' });
+          setError('root', { message: 'Failed to create space. Please try again.' });
         }
       },
     });
@@ -58,26 +58,26 @@ export function CreateWorkspaceDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Create Workspace</Button>
+        <Button>Create Space</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Workspace</DialogTitle>
+          <DialogTitle>Create Space</DialogTitle>
           <DialogDescription>
-            Create a new workspace to organize your knowledge graph
+            Create a new space to organize your knowledge graph
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" placeholder="My Workspace" {...register('name')} />
+              <Input id="name" placeholder="My Space" {...register('name')} />
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="slug">Slug</Label>
-              <Input id="slug" placeholder="my-workspace" {...register('slug')} />
+              <Input id="slug" placeholder="my-space" {...register('slug')} />
               {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
             </div>
 
@@ -85,7 +85,7 @@ export function CreateWorkspaceDialog() {
               <Label htmlFor="description">Description (optional)</Label>
               <Textarea
                 id="description"
-                placeholder="A workspace for..."
+                placeholder="A space for..."
                 {...register('description')}
               />
               {errors.description && (

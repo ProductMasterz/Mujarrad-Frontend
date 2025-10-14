@@ -254,7 +254,7 @@ describe('Graph Utilities Unit Tests', () => {
     const mockNodes: Node[] = [
       {
         id: 'context-1',
-        workspaceId: 'ws-1',
+        spaceId: 'ws-1',
         title: 'Folder 1',
         slug: 'folder-1',
         nodeType: 'CONTEXT',
@@ -267,7 +267,7 @@ describe('Graph Utilities Unit Tests', () => {
       },
       {
         id: 'regular-1',
-        workspaceId: 'ws-1',
+        spaceId: 'ws-1',
         title: 'Page 1',
         slug: 'page-1',
         nodeType: 'REGULAR',
@@ -280,7 +280,7 @@ describe('Graph Utilities Unit Tests', () => {
       },
       {
         id: 'context-2',
-        workspaceId: 'ws-1',
+        spaceId: 'ws-1',
         title: 'Folder 2',
         slug: 'folder-2',
         nodeType: 'CONTEXT',
@@ -293,7 +293,7 @@ describe('Graph Utilities Unit Tests', () => {
       },
       {
         id: 'regular-2',
-        workspaceId: 'ws-1',
+        spaceId: 'ws-1',
         title: 'Page 2',
         slug: 'page-2',
         nodeType: 'REGULAR',
@@ -469,7 +469,7 @@ describe('Graph Utilities Unit Tests', () => {
       const nodesWithBidi: Node[] = [
         {
           id: 'node-A',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Node A',
           slug: 'node-a',
           nodeType: 'REGULAR',
@@ -482,7 +482,7 @@ describe('Graph Utilities Unit Tests', () => {
         },
         {
           id: 'node-B',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Node B',
           slug: 'node-b',
           nodeType: 'REGULAR',

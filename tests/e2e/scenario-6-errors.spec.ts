@@ -10,9 +10,9 @@ test.describe('Scenario 6: Error Handling', () => {
     await page.fill('input[name="email"]', 'omar.h.shafeek@gmail.com');
     await page.fill('input[name="password"]', 'Om@r1234');
     await page.click('button:has-text("Sign in")');
-    await page.waitForURL('**/workspaces');
-    await page.click('text=Demo Workspace');
-    await page.waitForURL('**/workspace/demo-workspace');
+    await page.waitForURL('**/spaces');
+    await page.click('text=Demo Space');
+    await page.waitForURL('**/space/demo-space');
   });
 
   test('should handle network errors with retry', async ({ page }) => {
@@ -97,7 +97,7 @@ test.describe('Scenario 6: Error Handling', () => {
     });
 
     // Try to navigate to non-existent node
-    await page.goto('/workspace/demo-workspace/node/nonexistent');
+    await page.goto('/space/demo-space/node/nonexistent');
 
     await expect(page.locator('text=page does not exist')).toBeVisible();
     await expect(page.locator('button:has-text("Go Back")')).toBeVisible();
@@ -105,7 +105,7 @@ test.describe('Scenario 6: Error Handling', () => {
 
   test('should not break UI when errors occur', async ({ page }) => {
     // Force an error
-    await page.route('**/api/workspaces/**/nodes', (route) => {
+    await page.route('**/api/spaces/**/nodes', (route) => {
       route.abort('failed');
     });
 

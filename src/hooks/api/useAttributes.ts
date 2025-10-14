@@ -25,18 +25,18 @@ export const useAttributes = (
 };
 
 /**
- * useWorkspaceAttributes Hook
+ * useSpaceAttributes Hook
  *
- * Fetches all attributes in a workspace (for graph visualization)
+ * Fetches all attributes in a space (for graph visualization)
  */
-export const useWorkspaceAttributes = (workspaceId: string | null) => {
+export const useSpaceAttributes = (spaceId: string | null) => {
   return useQuery({
-    queryKey: ['workspaceAttributes', workspaceId],
+    queryKey: ['spaceAttributes', spaceId],
     queryFn: async () => {
-      if (!workspaceId) throw new Error('Workspace ID is required');
-      return await attributeService.getWorkspaceAttributes(workspaceId);
+      if (!spaceId) throw new Error('Space ID is required');
+      return await attributeService.getSpaceAttributes(spaceId);
     },
-    enabled: !!workspaceId,
+    enabled: !!spaceId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
@@ -64,7 +64,7 @@ export const useCreateAttribute = () => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: ['nodeAttributes', variables.sourceNodeId] });
       queryClient.invalidateQueries({ queryKey: ['nodeAttributes', variables.data.targetNodeId.toString()] });
-      queryClient.invalidateQueries({ queryKey: ['workspaceAttributes'] });
+      queryClient.invalidateQueries({ queryKey: ['spaceAttributes'] });
     },
   });
 };

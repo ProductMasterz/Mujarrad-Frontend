@@ -269,7 +269,7 @@ export default function Feature004DemoPage() {
                   {selectedNode.content ? (
                     <MarkdownRenderer
                       content={selectedNode.content}
-                      workspaceSlug="demo"
+                      spaceSlug="demo"
                       availableNodes={mockNodes}
                       onWikiLinkClick={handleWikiLinkClick}
                     />
@@ -351,7 +351,7 @@ export default function Feature004DemoPage() {
                         <li>CreateNodeDialog with hierarchy parent selection</li>
                         <li>EditNodeDialog with wiki-link processing on save</li>
                         <li>NodeDetailView with markdown rendering</li>
-                        <li>Workspace page with sidebar + 3 tabs</li>
+                        <li>Space page with sidebar + 3 tabs</li>
                         <li>Node detail page with navigation handlers</li>
                       </ul>
                     </div>

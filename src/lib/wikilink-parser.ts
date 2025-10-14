@@ -50,7 +50,7 @@ export function parseWikiLinks(markdown: string): WikiLink[] {
  * Resolve wiki-links to existing nodes
  * Case-insensitive matching by title
  * @param wikiLinks - Parsed wiki-links to resolve
- * @param existingNodes - Available nodes in workspace
+ * @param existingNodes - Available nodes in space
  * @returns Resolution results with target node IDs or placeholder flags
  */
 export function resolveWikiLinks(
@@ -82,7 +82,7 @@ export function resolveWikiLinks(
  * Resolve a single wiki-link target to a node
  * Case-insensitive title matching with whitespace trimming
  * @param targetTitle - The target title to resolve
- * @param existingNodes - Available nodes in workspace
+ * @param existingNodes - Available nodes in space
  * @returns Matching Node if found, null otherwise
  */
 export function resolveWikiLinkTarget(

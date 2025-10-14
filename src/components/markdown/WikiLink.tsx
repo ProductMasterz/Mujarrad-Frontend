@@ -10,7 +10,7 @@ interface WikiLinkProps {
   targetTitle: string;
   displayText?: string;
   targetNodeId?: string | null;
-  workspaceSlug: string;
+  spaceSlug: string;
   onClick?: (targetTitle: string) => void;
 }
 
@@ -24,7 +24,7 @@ export const WikiLink = React.memo(function WikiLink({
   targetTitle,
   displayText,
   targetNodeId,
-  workspaceSlug,
+  spaceSlug,
   onClick,
 }: WikiLinkProps) {
   const text = displayText || targetTitle;
@@ -41,7 +41,7 @@ export const WikiLink = React.memo(function WikiLink({
   if (targetNodeId) {
     return (
       <Link
-        href={`/workspace/${workspaceSlug}/node/${targetNodeId}`}
+        href={`/space/${spaceSlug}/node/${targetNodeId}`}
         className="text-blue-600 hover:text-blue-800 underline"
         onClick={handleClick}
       >

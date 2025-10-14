@@ -5,11 +5,11 @@ import { NodeCard } from './NodeCard';
 import { Spinner } from '@/components/ui/spinner';
 
 interface NodeListProps {
-  workspaceSlug: string;
+  spaceSlug: string;
 }
 
-export function NodeList({ workspaceSlug }: NodeListProps) {
-  const { data, isLoading, error } = useNodes(workspaceSlug);
+export function NodeList({ spaceSlug }: NodeListProps) {
+  const { data, isLoading, error } = useNodes(spaceSlug);
 
   if (isLoading) {
     return (
@@ -41,7 +41,7 @@ export function NodeList({ workspaceSlug }: NodeListProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {nodes.map((node) => (
-        <NodeCard key={node.id} node={node} workspaceSlug={workspaceSlug} />
+        <NodeCard key={node.id} node={node} spaceSlug={spaceSlug} />
       ))}
     </div>
   );

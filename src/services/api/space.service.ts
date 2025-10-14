@@ -5,19 +5,15 @@ import type {
   Space,
   CreateSpaceRequest,
   UpdateSpaceRequest,
+  SpaceCollaborator,
+  InviteCollaboratorRequest,
 } from '@/types/backend-dtos';
-import type { PaginationParams } from '@/types/api';
+import type { PaginatedResponse, PaginationParams } from '@/types/api';
 
-/**
- * Space Service
- * Handles all API calls related to spaces (formerly workspaces)
- * Backend endpoints: /api/spaces/*
- */
 export const spaceService = {
   /**
    * Get all spaces for current user
-   * GET /api/spaces
-   * @returns Array of Space objects
+   * Note: Backend returns a plain array, not a PaginatedResponse
    */
   async getSpaces(params?: PaginationParams): Promise<Space[]> {
     const response = await apiClient.get<Space[]>('/spaces', {
@@ -27,32 +23,30 @@ export const spaceService = {
   },
 
   /**
-   * Get space by ID
-   * GET /api/spaces/{id}
-   * @param id - Space UUID
-   * @returns Single Space object
+   * Get space by slug
+   * Note: Backend doesn't support get-by-slug, so we fetch all and find by slug
    */
-  async getSpace(id: string): Promise<Space> {
+  async getSpaceBySlug(slug: string): Promise<Space> {
+    const spaces = await this.getSpaces();
+    const space = spaces.find((w) => w.slug === slug);
+
+    if (!space) {
+      throw new Error(`Space with slug "${slug}" not found`);
+    }
+
+    return space;
+  },
+
+  /**
+   * Get space by ID
+   */
+  async getSpace(id: number): Promise<Space> {
     const response = await apiClient.get<Space>(`/spaces/${id}`);
     return response.data;
   },
 
   /**
-   * Get space by slug
-   * GET /api/spaces/slug/{slug}
-   * @param slug - Space slug (URL-friendly identifier)
-   * @returns Single Space object
-   */
-  async getSpaceBySlug(slug: string): Promise<Space> {
-    const response = await apiClient.get<Space>(`/spaces/slug/${slug}`);
-    return response.data;
-  },
-
-  /**
    * Create new space
-   * POST /api/spaces
-   * @param data - Space creation data (name required, slug optional)
-   * @returns Created Space object
    */
   async createSpace(data: CreateSpaceRequest): Promise<Space> {
     const response = await apiClient.post<Space>('/spaces', data);
@@ -61,26 +55,47 @@ export const spaceService = {
 
   /**
    * Update space
-   * PUT /api/spaces/{id}
-   * @param id - Space UUID
-   * @param data - Space update data (all fields optional)
-   * @returns Updated Space object
    */
-  async updateSpace(id: string, data: UpdateSpaceRequest): Promise<Space> {
+  async updateSpace(id: number, data: UpdateSpaceRequest): Promise<Space> {
     const response = await apiClient.put<Space>(`/spaces/${id}`, data);
     return response.data;
   },
 
   /**
    * Delete space
-   * DELETE /api/spaces/{id}
-   * @param id - Space UUID
-   * @returns void (204 No Content)
    */
-  async deleteSpace(id: string): Promise<void> {
+  async deleteSpace(id: number): Promise<void> {
     await apiClient.delete(`/spaces/${id}`);
   },
-};
 
-// Export type for use in hooks and components
-export type SpaceService = typeof spaceService;
+  /**
+   * Get collaborators for a space
+   */
+  async getCollaborators(spaceId: number): Promise<SpaceCollaborator[]> {
+    const response = await apiClient.get<SpaceCollaborator[]>(
+      `/spaces/${spaceId}/collaborators`
+    );
+    return response.data;
+  },
+
+  /**
+   * Invite a collaborator to a space
+   */
+  async inviteCollaborator(
+    spaceId: number,
+    data: InviteCollaboratorRequest
+  ): Promise<SpaceCollaborator> {
+    const response = await apiClient.post<SpaceCollaborator>(
+      `/spaces/${spaceId}/collaborators`,
+      data
+    );
+    return response.data;
+  },
+
+  /**
+   * Remove a collaborator from a space
+   */
+  async removeCollaborator(spaceId: number, userId: string): Promise<void> {
+    await apiClient.delete(`/spaces/${spaceId}/collaborators/${userId}`);
+  },
+};

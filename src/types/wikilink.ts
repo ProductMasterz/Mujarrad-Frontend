@@ -45,5 +45,5 @@ export interface ParseWikiLinksParams {
 export interface ResolveWikiLinksParams {
   wikiLinks: WikiLink[];
   existingNodes: import('./backend-dtos').Node[];
-  workspaceId: string;
+  spaceId: string;
 }

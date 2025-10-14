@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Search Functionality', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/workspaces/test-workspace/search');
+    await page.goto('/spaces/test-space/search');
   });
 
   test('should display search bar', async ({ page }) => {

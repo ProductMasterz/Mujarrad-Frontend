@@ -25,17 +25,17 @@ afterAll(() => server.close());
 describe('Service Integration Tests', () => {
   describe('WikiLink Processing Workflow', () => {
     it('should parse, resolve, create placeholders, and create relationships', async () => {
-      const workspaceId = 'ws-integration-123';
+      const spaceId = 'ws-integration-123';
       const sourceNodeId = 'node-source-1';
       const markdown = '# Welcome\n\nCheck out [[Existing Page]] and [[New Page]].';
 
-      // Setup: Mock workspace nodes (only "Existing Page" exists)
+      // Setup: Mock space nodes (only "Existing Page" exists)
       server.use(
-        http.get('http://localhost:3000/api/workspaces/:workspaceId/nodes', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceId/nodes', () => {
           return HttpResponse.json([
             {
               id: 'node-existing-1',
-              workspaceId,
+              spaceId,
               title: 'Existing Page',
               slug: 'existing-page',
               nodeType: 'REGULAR',
@@ -57,7 +57,7 @@ describe('Service Integration Tests', () => {
           return HttpResponse.json(
             {
               id: 'node-placeholder-1',
-              workspaceId: body.workspaceId,
+              spaceId: body.spaceId,
               title: body.title,
               slug: body.title.toLowerCase().replace(/\s+/g, '-'),
               nodeType: body.nodeType,
@@ -101,7 +101,7 @@ describe('Service Integration Tests', () => {
       const result = await wikiLinkService.processWikiLinks(
         markdown,
         sourceNodeId,
-        workspaceId
+        spaceId
       );
 
       // Verify: Parse and resolve results
@@ -123,17 +123,17 @@ describe('Service Integration Tests', () => {
     });
 
     it('should handle wiki-links when all targets exist', async () => {
-      const workspaceId = 'ws-integration-456';
+      const spaceId = 'ws-integration-456';
       const sourceNodeId = 'node-source-2';
       const markdown = '[[Page A]] references [[Page B]].';
 
       // Mock: Both pages exist
       server.use(
-        http.get('http://localhost:3000/api/workspaces/:workspaceId/nodes', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceId/nodes', () => {
           return HttpResponse.json([
             {
               id: 'node-a',
-              workspaceId,
+              spaceId,
               title: 'Page A',
               slug: 'page-a',
               nodeType: 'REGULAR',
@@ -146,7 +146,7 @@ describe('Service Integration Tests', () => {
             },
             {
               id: 'node-b',
-              workspaceId,
+              spaceId,
               title: 'Page B',
               slug: 'page-b',
               nodeType: 'REGULAR',
@@ -186,7 +186,7 @@ describe('Service Integration Tests', () => {
       const result = await wikiLinkService.processWikiLinks(
         markdown,
         sourceNodeId,
-        workspaceId
+        spaceId
       );
 
       // Verify: No placeholders needed
@@ -196,13 +196,13 @@ describe('Service Integration Tests', () => {
     });
 
     it('should handle errors during placeholder creation', async () => {
-      const workspaceId = 'ws-error-test';
+      const spaceId = 'ws-error-test';
       const sourceNodeId = 'node-source-err';
       const markdown = '[[Valid Page]] and [[Invalid Page]].';
 
       // Mock: No existing pages
       server.use(
-        http.get('http://localhost:3000/api/workspaces/:workspaceId/nodes', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceId/nodes', () => {
           return HttpResponse.json([]);
         })
       );
@@ -219,7 +219,7 @@ describe('Service Integration Tests', () => {
             return HttpResponse.json(
               {
                 id: 'node-valid',
-                workspaceId: body.workspaceId,
+                spaceId: body.spaceId,
                 title: body.title,
                 slug: body.title.toLowerCase().replace(/\s+/g, '-'),
                 nodeType: body.nodeType,
@@ -250,7 +250,7 @@ describe('Service Integration Tests', () => {
       const result = await wikiLinkService.processWikiLinks(
         markdown,
         sourceNodeId,
-        workspaceId
+        spaceId
       );
 
       // Verify: One placeholder created, one error
@@ -262,7 +262,7 @@ describe('Service Integration Tests', () => {
 
   describe('Node CRUD with Relationships', () => {
     it('should create node, add attributes, and retrieve them', async () => {
-      const workspaceId = 'ws-crud-test';
+      const spaceId = 'ws-crud-test';
 
       // Mock: Create node
       server.use(
@@ -271,7 +271,7 @@ describe('Service Integration Tests', () => {
           return HttpResponse.json(
             {
               id: 'node-new-123',
-              workspaceId: body.workspaceId,
+              spaceId: body.spaceId,
               title: body.title,
               slug: body.title.toLowerCase().replace(/\s+/g, '-'),
               nodeType: body.nodeType,
@@ -289,7 +289,7 @@ describe('Service Integration Tests', () => {
 
       // Step 1: Create node
       const newNode = await nodeService.createNode({
-        workspaceId,
+        spaceId,
         title: 'New Node',
         nodeType: 'REGULAR',
         markdownContent: '# Content',
@@ -370,7 +370,7 @@ describe('Service Integration Tests', () => {
         http.get('http://localhost:3000/api/nodes/:id', () => {
           return HttpResponse.json({
             id: nodeId,
-            workspaceId: 'ws-1',
+            spaceId: 'ws-1',
             title: 'Original Title',
             slug: 'original-title',
             nodeType: 'REGULAR',
@@ -393,7 +393,7 @@ describe('Service Integration Tests', () => {
           const body = await request.json() as any;
           return HttpResponse.json({
             id: nodeId,
-            workspaceId: 'ws-1',
+            spaceId: 'ws-1',
             title: body.title,
             slug: body.title.toLowerCase().replace(/\s+/g, '-'),
             nodeType: body.nodeType,
@@ -481,16 +481,16 @@ describe('Service Integration Tests', () => {
     });
 
     it('should handle duplicate wiki-links correctly', async () => {
-      const workspaceId = 'ws-dup-test';
+      const spaceId = 'ws-dup-test';
       const markdown = '[[Page A]] and [[Page A]] again.';
 
       // Mock: Page A exists
       server.use(
-        http.get('http://localhost:3000/api/workspaces/:workspaceId/nodes', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceId/nodes', () => {
           return HttpResponse.json([
             {
               id: 'node-page-a',
-              workspaceId,
+              spaceId,
               title: 'Page A',
               slug: 'page-a',
               nodeType: 'REGULAR',
@@ -532,7 +532,7 @@ describe('Service Integration Tests', () => {
       const result = await wikiLinkService.processWikiLinks(
         markdown,
         'node-source',
-        workspaceId
+        spaceId
       );
 
       // Should create 2 separate attributes for duplicate links

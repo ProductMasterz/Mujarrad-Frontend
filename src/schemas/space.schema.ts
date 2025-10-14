@@ -1,11 +1,11 @@
-// src/schemas/workspace.schema.ts
+// src/schemas/space.schema.ts
 
 import { z } from 'zod';
 
 /**
- * Create workspace form schema
+ * Create space form schema
  */
-export const createWorkspaceSchema = z.object({
+export const createSpaceSchema = z.object({
   name: z
     .string()
     .min(1, 'Name is required')
@@ -24,12 +24,12 @@ export const createWorkspaceSchema = z.object({
     .optional(),
 });
 
-export type CreateWorkspaceFormData = z.infer<typeof createWorkspaceSchema>;
+export type CreateSpaceFormData = z.infer<typeof createSpaceSchema>;
 
 /**
- * Update workspace form schema
+ * Update space form schema
  */
-export const updateWorkspaceSchema = z.object({
+export const updateSpaceSchema = z.object({
   name: z
     .string()
     .min(1, 'Name is required')
@@ -42,7 +42,7 @@ export const updateWorkspaceSchema = z.object({
     .optional(),
 });
 
-export type UpdateWorkspaceFormData = z.infer<typeof updateWorkspaceSchema>;
+export type UpdateSpaceFormData = z.infer<typeof updateSpaceSchema>;
 
 /**
  * Invite collaborator form schema

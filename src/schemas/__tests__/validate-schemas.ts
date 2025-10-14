@@ -2,7 +2,7 @@
 // Manual validation script to test Zod schemas
 
 import { registerSchema, loginSchema } from '../auth.schema';
-import { createWorkspaceSchema, updateWorkspaceSchema } from '../workspace.schema';
+import { createSpaceSchema, updateSpaceSchema } from '../space.schema';
 import { createNodeSchema, updateNodeSchema } from '../node.schema';
 import { createAttributeSchema, attributeKeyLabels, attributeKeyDescriptions } from '../attribute.schema';
 import { restoreVersionSchema, compareVersionsSchema } from '../version.schema';
@@ -54,26 +54,26 @@ try {
   console.error('   ✗ Auth schema test failed:', error);
 }
 
-// Test Workspace Schemas
-console.log('\n2. Testing Workspace Schemas');
+// Test Space Schemas
+console.log('\n2. Testing Space Schemas');
 try {
-  const validCreate = createWorkspaceSchema.parse({
-    name: '  My Workspace  ',
-    slug: 'my-workspace',
-    description: 'A test workspace',
+  const validCreate = createSpaceSchema.parse({
+    name: '  My Space  ',
+    slug: 'my-space',
+    description: 'A test space',
   });
-  console.log('   ✓ Valid create workspace data passed');
-  console.log('   ✓ Name trimmed:', validCreate.name === 'My Workspace');
+  console.log('   ✓ Valid create space data passed');
+  console.log('   ✓ Name trimmed:', validCreate.name === 'My Space');
 
-  const validUpdate = updateWorkspaceSchema.parse({
+  const validUpdate = updateSpaceSchema.parse({
     name: 'Updated Name',
   });
-  console.log('   ✓ Valid update workspace data passed');
+  console.log('   ✓ Valid update space data passed');
 
   try {
-    createWorkspaceSchema.parse({
-      name: 'My Workspace',
-      slug: 'My-Workspace',
+    createSpaceSchema.parse({
+      name: 'My Space',
+      slug: 'My-Space',
     });
     console.log('   ✗ Should have rejected uppercase slug');
   } catch (e: any) {
@@ -81,16 +81,16 @@ try {
   }
 
   try {
-    createWorkspaceSchema.parse({
-      name: 'My Workspace',
-      slug: '123-workspace',
+    createSpaceSchema.parse({
+      name: 'My Space',
+      slug: '123-space',
     });
     console.log('   ✗ Should have rejected slug not starting with letter');
   } catch (e: any) {
     console.log('   ✓ Correctly rejected invalid slug:', e.errors[0].message);
   }
 } catch (error) {
-  console.error('   ✗ Workspace schema test failed:', error);
+  console.error('   ✗ Space schema test failed:', error);
 }
 
 // Test Node Schemas

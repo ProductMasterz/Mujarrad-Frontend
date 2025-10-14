@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Node Management', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to a workspace (assumes test workspace exists)
-    await page.goto('/workspaces/test-workspace/nodes');
+    // Navigate to a space (assumes test space exists)
+    await page.goto('/spaces/test-space/nodes');
   });
 
   test('should display nodes page', async ({ page }) => {

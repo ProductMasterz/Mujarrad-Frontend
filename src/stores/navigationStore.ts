@@ -10,8 +10,8 @@ import { GraphViewMode } from '@/types/graph';
 import { DEFAULT_GRAPH_VIEW_MODE } from '@/lib/graph-utils';
 
 interface NavigationState {
-  // Current workspace
-  workspaceSlug: string | null;
+  // Current space
+  spaceSlug: string | null;
 
   // Selected node
   selectedNodeId: string | null;
@@ -26,7 +26,7 @@ interface NavigationState {
   viewMode: 'hierarchy' | 'graph' | 'split';
 
   // Actions
-  setWorkspace: (slug: string) => void;
+  setSpace: (slug: string) => void;
   setSelectedNode: (nodeId: string | null) => void;
   toggleNodeExpanded: (nodeId: string) => void;
   expandNode: (nodeId: string) => void;
@@ -44,15 +44,15 @@ interface NavigationState {
  */
 export const useNavigationStore = create<NavigationState>((set, get) => ({
   // Initial state
-  workspaceSlug: null,
+  spaceSlug: null,
   selectedNodeId: null,
   expandedNodeIds: [],
   graphViewMode: DEFAULT_GRAPH_VIEW_MODE,
   viewMode: 'hierarchy',
 
   // Actions
-  setWorkspace: (slug: string) => {
-    set({ workspaceSlug: slug });
+  setSpace: (slug: string) => {
+    set({ spaceSlug: slug });
   },
 
   setSelectedNode: (nodeId: string | null) => {
@@ -107,7 +107,7 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
 
   reset: () => {
     set({
-      workspaceSlug: null,
+      spaceSlug: null,
       selectedNodeId: null,
       expandedNodeIds: [],
       graphViewMode: DEFAULT_GRAPH_VIEW_MODE,

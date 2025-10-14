@@ -29,7 +29,7 @@ export function LoginForm() {
       onSuccess: () => {
         const redirectPath = getRedirectAfterLogin();
         clearRedirectAfterLogin();
-        router.push(redirectPath || '/workspaces');
+        router.push(redirectPath || '/spaces');
       },
       onError: (error) => {
         if (isApiError(error)) {

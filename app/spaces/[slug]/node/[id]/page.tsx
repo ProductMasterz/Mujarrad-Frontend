@@ -21,28 +21,28 @@ export default function NodeDetailPage() {
   const nodeId = params.id as string;
   const [activeView, setActiveView] = useState<'content' | 'graph'>('content');
 
-  const { data: workspace } = useSpace(slug);
+  const { data: space } = useSpace(slug);
   const { setSelectedNode } = useNavigationStore();
 
   // Fetch the current node
   const { data: node, isLoading: nodeLoading } = useQuery({
     queryKey: ['node', slug, nodeId],
     queryFn: () => nodeService.getNode(slug, nodeId),
-    enabled: !!workspace,
+    enabled: !!space,
   });
 
   // Fetch all nodes for hierarchy and wiki-link resolution
   const { data: nodes } = useQuery({
-    queryKey: ['workspace-nodes', slug],
+    queryKey: ['space-nodes', slug],
     queryFn: () => nodeService.getNodes(slug, { page: 1, size: 1000 }),
-    enabled: !!workspace,
+    enabled: !!space,
   });
 
   // Fetch all attributes
   const { data: attributes } = useQuery({
-    queryKey: ['workspace-attributes', slug],
-    queryFn: () => attributeService.getWorkspaceAttributes(slug),
-    enabled: !!workspace,
+    queryKey: ['space-attributes', slug],
+    queryFn: () => attributeService.getSpaceAttributes(slug),
+    enabled: !!space,
   });
 
   const allNodes = nodes || [];
@@ -72,8 +72,8 @@ export default function NodeDetailPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Node not found</h1>
             <p className="text-gray-600 mb-4">The node you&apos;re looking for doesn&apos;t exist.</p>
-            <Button onClick={() => router.push(`/workspaces/${slug}`)}>
-              Back to Workspace
+            <Button onClick={() => router.push(`/spaces/${slug}`)}>
+              Back to Space
             </Button>
           </div>
         </div>
@@ -88,8 +88,8 @@ export default function NodeDetailPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <Breadcrumbs
               segments={[
-                { label: workspace?.name || slug, href: `/workspaces/${slug}`, isCurrent: false },
-                { label: node.title, href: `/workspaces/${slug}/node/${nodeId}`, isCurrent: true }
+                { label: space?.name || slug, href: `/spaces/${slug}`, isCurrent: false },
+                { label: node.title, href: `/spaces/${slug}/node/${nodeId}`, isCurrent: true }
               ]}
               className="mb-4"
             />
@@ -129,7 +129,7 @@ export default function NodeDetailPage() {
             <HierarchyNavigator
               nodes={allNodes}
               attributes={allAttributes}
-              onNodeSelect={id => router.push(`/workspaces/${slug}/node/${id}`)}
+              onNodeSelect={id => router.push(`/spaces/${slug}/node/${id}`)}
             />
           </aside>
 
@@ -167,7 +167,7 @@ export default function NodeDetailPage() {
                     {node.content ? (
                       <MarkdownRenderer
                         content={node.content}
-                        workspaceSlug={slug}
+                        spaceSlug={slug}
                         availableNodes={allNodes}
                         onWikiLinkClick={targetTitle => {
                           console.log('Wiki-link clicked:', targetTitle);
@@ -217,7 +217,7 @@ export default function NodeDetailPage() {
                   <GraphVisualization
                     nodes={allNodes}
                     attributes={allAttributes}
-                    onNodeClick={id => router.push(`/workspaces/${slug}/node/${id}`)}
+                    onNodeClick={id => router.push(`/spaces/${slug}/node/${id}`)}
                   />
                 </div>
               )}

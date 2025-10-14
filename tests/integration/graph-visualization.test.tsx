@@ -47,7 +47,7 @@ describe('Graph Visualization Integration Tests', () => {
   const mockNodes: Node[] = [
     {
       id: 'context-1',
-      workspaceId: 'ws-1',
+      spaceId: 'ws-1',
       title: 'Projects Folder',
       slug: 'projects',
       nodeType: 'CONTEXT',
@@ -60,7 +60,7 @@ describe('Graph Visualization Integration Tests', () => {
     },
     {
       id: 'regular-1',
-      workspaceId: 'ws-1',
+      spaceId: 'ws-1',
       title: 'Page A',
       slug: 'page-a',
       nodeType: 'REGULAR',
@@ -73,7 +73,7 @@ describe('Graph Visualization Integration Tests', () => {
     },
     {
       id: 'regular-2',
-      workspaceId: 'ws-1',
+      spaceId: 'ws-1',
       title: 'Page B',
       slug: 'page-b',
       nodeType: 'REGULAR',
@@ -235,14 +235,14 @@ describe('Graph Visualization Integration Tests', () => {
         <GraphVisualization
           nodes={mockNodes}
           attributes={mockAttributes}
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
         />
       );
 
       const node = screen.getByTestId('graph-node-regular-1');
       fireEvent.doubleClick(node);
 
-      expect(pushMock).toHaveBeenCalledWith('/workspace/test-ws/node/regular-1');
+      expect(pushMock).toHaveBeenCalledWith('/space/test-ws/node/regular-1');
     });
   });
 

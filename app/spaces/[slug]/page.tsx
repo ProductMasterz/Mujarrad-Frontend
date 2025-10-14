@@ -15,27 +15,27 @@ import { attributeService } from '@/services/api/attribute.service';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 
-export default function WorkspaceDetailPage() {
+export default function SpaceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
   const [activeTab, setActiveTab] = useState<'list' | 'hierarchy' | 'graph'>('list');
 
-  const { data: workspace, isLoading, error } = useSpace(slug);
-  const { setWorkspace, selectedNodeId } = useNavigationStore();
+  const { data: space, isLoading, error } = useSpace(slug);
+  const { setSpace, selectedNodeId } = useNavigationStore();
 
   // Fetch all nodes for hierarchy and graph
   const { data: nodes } = useQuery({
-    queryKey: ['workspace-nodes', slug],
+    queryKey: ['space-nodes', slug],
     queryFn: () => nodeService.getNodes(slug, { page: 1, size: 1000 }),
-    enabled: !!workspace,
+    enabled: !!space,
   });
 
   // Fetch all attributes for hierarchy and graph
   const { data: attributes } = useQuery({
-    queryKey: ['workspace-attributes', slug],
-    queryFn: () => attributeService.getWorkspaceAttributes(slug),
-    enabled: !!workspace,
+    queryKey: ['space-attributes', slug],
+    queryFn: () => attributeService.getSpaceAttributes(slug),
+    enabled: !!space,
   });
 
   const allNodes = nodes || [];
@@ -51,14 +51,14 @@ export default function WorkspaceDetailPage() {
     );
   }
 
-  if (error || !workspace) {
+  if (error || !space) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Workspace not found</h1>
-            <p className="text-gray-600 mb-4">The workspace you&apos;re looking for doesn&apos;t exist.</p>
-            <Button onClick={() => router.push('/workspaces')}>Back to Workspaces</Button>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Space not found</h1>
+            <p className="text-gray-600 mb-4">The space you&apos;re looking for doesn&apos;t exist.</p>
+            <Button onClick={() => router.push('/spaces')}>Back to Spaces</Button>
           </div>
         </div>
       </ProtectedRoute>
@@ -72,19 +72,19 @@ export default function WorkspaceDetailPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <Breadcrumbs
               segments={[
-                { label: workspace.name, href: `/workspaces/${slug}`, isCurrent: true }
+                { label: space.name, href: `/spaces/${slug}`, isCurrent: true }
               ]}
               className="mb-4"
             />
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{workspace.name}</h1>
+                <h1 className="text-2xl font-bold text-gray-900">{space.name}</h1>
               </div>
               <div className="flex items-center gap-2">
-                <CreateNodeDialog workspaceSlug={slug} />
+                <CreateNodeDialog spaceSlug={slug} />
                 <Button
                   variant="outline"
-                  onClick={() => router.push(`/workspaces/${slug}/settings`)}
+                  onClick={() => router.push(`/spaces/${slug}/settings`)}
                 >
                   Settings
                 </Button>
@@ -102,7 +102,7 @@ export default function WorkspaceDetailPage() {
             <HierarchyNavigator
               nodes={allNodes}
               attributes={allAttributes}
-              onNodeSelect={nodeId => router.push(`/workspaces/${slug}/node/${nodeId}`)}
+              onNodeSelect={nodeId => router.push(`/spaces/${slug}/node/${nodeId}`)}
             />
           </aside>
 
@@ -149,9 +149,9 @@ export default function WorkspaceDetailPage() {
                   <div className="bg-white rounded-lg shadow-sm p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-lg font-semibold text-gray-900">Nodes</h2>
-                      <CreateNodeDialog workspaceSlug={slug} />
+                      <CreateNodeDialog spaceSlug={slug} />
                     </div>
-                    <NodeList workspaceSlug={slug} />
+                    <NodeList spaceSlug={slug} />
                   </div>
                 </div>
               )}
@@ -165,7 +165,7 @@ export default function WorkspaceDetailPage() {
                     <HierarchyNavigator
                       nodes={allNodes}
                       attributes={allAttributes}
-                      onNodeSelect={nodeId => router.push(`/workspaces/${slug}/node/${nodeId}`)}
+                      onNodeSelect={nodeId => router.push(`/spaces/${slug}/node/${nodeId}`)}
                     />
                   </div>
                 </div>
@@ -176,7 +176,7 @@ export default function WorkspaceDetailPage() {
                   <GraphVisualization
                     nodes={allNodes}
                     attributes={allAttributes}
-                    onNodeClick={nodeId => router.push(`/workspaces/${slug}/node/${nodeId}`)}
+                    onNodeClick={nodeId => router.push(`/spaces/${slug}/node/${nodeId}`)}
                   />
                 </div>
               )}

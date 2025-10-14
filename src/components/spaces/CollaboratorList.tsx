@@ -18,13 +18,13 @@ import { InviteCollaboratorDialog } from './InviteCollaboratorDialog';
 import { isApiError } from '@/lib/errors';
 
 interface CollaboratorListProps {
-  workspaceId: number;
+  spaceId: number;
   isOwner: boolean;
 }
 
-export function CollaboratorList({ workspaceId, isOwner }: CollaboratorListProps) {
-  const { data: collaborators, isLoading } = useCollaborators(workspaceId);
-  const { mutate: removeCollaborator, isPending: isRemoving } = useRemoveCollaborator(workspaceId);
+export function CollaboratorList({ spaceId, isOwner }: CollaboratorListProps) {
+  const { data: collaborators, isLoading } = useCollaborators(spaceId);
+  const { mutate: removeCollaborator, isPending: isRemoving } = useRemoveCollaborator(spaceId);
   const [selectedCollaboratorId, setSelectedCollaboratorId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +58,7 @@ export function CollaboratorList({ workspaceId, isOwner }: CollaboratorListProps
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">No collaborators yet</p>
-        {isOwner && <InviteCollaboratorDialog workspaceId={workspaceId} />}
+        {isOwner && <InviteCollaboratorDialog spaceId={spaceId} />}
       </div>
     );
   }
@@ -105,7 +105,7 @@ export function CollaboratorList({ workspaceId, isOwner }: CollaboratorListProps
 
       {isOwner && (
         <div className="pt-2 border-t">
-          <InviteCollaboratorDialog workspaceId={workspaceId} />
+          <InviteCollaboratorDialog spaceId={spaceId} />
         </div>
       )}
 
@@ -118,7 +118,7 @@ export function CollaboratorList({ workspaceId, isOwner }: CollaboratorListProps
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Collaborator</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove this collaborator? They will lose access to this workspace.
+              Are you sure you want to remove this collaborator? They will lose access to this space.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {error && <p className="text-sm text-destructive">{error}</p>}

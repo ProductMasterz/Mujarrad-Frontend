@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { updateWorkspaceSchema, type UpdateWorkspaceFormData } from '@/schemas';
+import { updateSpaceSchema, type UpdateSpaceFormData } from '@/schemas';
 import { useUpdateSpace, useSpace } from '@/hooks/api';
 import {
   Dialog,
@@ -20,14 +20,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { isApiError } from '@/lib/errors';
 
-interface EditWorkspaceDialogProps {
-  workspaceSlug: string;
+interface EditSpaceDialogProps {
+  spaceSlug: string;
 }
 
-export function EditWorkspaceDialog({ workspaceSlug }: EditWorkspaceDialogProps) {
+export function EditSpaceDialog({ spaceSlug }: EditSpaceDialogProps) {
   const [open, setOpen] = useState(false);
-  const { data: workspace } = useSpace(workspaceSlug);
-  const { mutate: updateWorkspace, isPending: isLoading } = useUpdateSpace(workspace?.id || '');
+  const { data: space } = useSpace(spaceSlug);
+  const { mutate: updateSpace, isPending: isLoading } = useUpdateSpace(space?.id || '');
 
   const {
     register,
@@ -35,18 +35,18 @@ export function EditWorkspaceDialog({ workspaceSlug }: EditWorkspaceDialogProps)
     formState: { errors },
     setError,
     setValue,
-  } = useForm<UpdateWorkspaceFormData>({
-    resolver: zodResolver(updateWorkspaceSchema),
+  } = useForm<UpdateSpaceFormData>({
+    resolver: zodResolver(updateSpaceSchema),
   });
 
   useEffect(() => {
-    if (workspace) {
-      setValue('name', workspace.name);
+    if (space) {
+      setValue('name', space.name);
     }
-  }, [workspace, setValue]);
+  }, [space, setValue]);
 
-  const onSubmit = (data: UpdateWorkspaceFormData) => {
-    updateWorkspace(data, {
+  const onSubmit = (data: UpdateSpaceFormData) => {
+    updateSpace(data, {
       onSuccess: () => {
         setOpen(false);
       },
@@ -61,12 +61,12 @@ export function EditWorkspaceDialog({ workspaceSlug }: EditWorkspaceDialogProps)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Edit Workspace</Button>
+        <Button variant="outline">Edit Space</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Workspace</DialogTitle>
-          <DialogDescription>Update workspace information</DialogDescription>
+          <DialogTitle>Edit Space</DialogTitle>
+          <DialogDescription>Update space information</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4 py-4">

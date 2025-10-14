@@ -25,15 +25,15 @@ import { MarkdownPreview } from './MarkdownPreview';
 import { isApiError } from '@/lib/errors';
 
 interface EditNodeDialogProps {
-  workspaceSlug: string;
+  spaceSlug: string;
   nodeId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: EditNodeDialogProps) {
+export function EditNodeDialog({ spaceSlug, nodeId, open, onOpenChange }: EditNodeDialogProps) {
   const queryClient = useQueryClient();
-  const { data: node } = useNode(workspaceSlug, nodeId.toString());
+  const { data: node } = useNode(spaceSlug, nodeId.toString());
   const { mutate: updateNode, isPending: isLoading } = useUpdateNode();
   const [isProcessingWikiLinks, setIsProcessingWikiLinks] = useState(false);
 
@@ -67,7 +67,7 @@ export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: Ed
 
   const onSubmit = async (data: UpdateNodeFormData) => {
     // First, update the node
-    updateNode({ spaceSlug: workspaceSlug, nodeId: nodeId.toString(), data }, {
+    updateNode({ spaceSlug: spaceSlug, nodeId: nodeId.toString(), data }, {
       onSuccess: async (updatedNode) => {
         // Process wiki-links after successful update
         if (data.content) {
@@ -76,11 +76,11 @@ export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: Ed
             await wikiLinkService.processWikiLinks(
               data.content,
               updatedNode.id.toString(),
-              workspaceSlug
+              spaceSlug
             );
 
             // T067: Invalidate React Query cache to refresh UI
-            queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'nodes'] });
+            queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'nodes'] });
             queryClient.invalidateQueries({ queryKey: ['nodes', updatedNode.id] });
             queryClient.invalidateQueries({ queryKey: ['nodes', updatedNode.id, 'attributes'] });
 
@@ -94,7 +94,7 @@ export function EditNodeDialog({ workspaceSlug, nodeId, open, onOpenChange }: Ed
           }
         } else {
           // No content, just close
-          queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'nodes'] });
+          queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'nodes'] });
           queryClient.invalidateQueries({ queryKey: ['nodes', updatedNode.id] });
           onOpenChange(false);
         }

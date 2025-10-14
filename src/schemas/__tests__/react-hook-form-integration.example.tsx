@@ -6,12 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   registerSchema,
   loginSchema,
-  createWorkspaceSchema,
+  createSpaceSchema,
   createNodeSchema,
   createAttributeSchema,
   type RegisterFormData,
   type LoginFormData,
-  type CreateWorkspaceFormData,
+  type CreateSpaceFormData,
   type CreateNodeFormData,
   type CreateAttributeFormData,
 } from '../index';
@@ -90,37 +90,37 @@ export function LoginFormExample() {
 }
 
 /**
- * Example 3: Create Workspace Form
+ * Example 3: Create Space Form
  */
-export function CreateWorkspaceFormExample() {
+export function CreateSpaceFormExample() {
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<CreateWorkspaceFormData>({
-    resolver: zodResolver(createWorkspaceSchema),
+  } = useForm<CreateSpaceFormData>({
+    resolver: zodResolver(createSpaceSchema),
   });
 
-  const onSubmit = (data: CreateWorkspaceFormData) => {
-    console.log('Workspace data:', data);
+  const onSubmit = (data: CreateSpaceFormData) => {
+    console.log('Space data:', data);
     // API call here
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div>
-        <input {...register('name')} placeholder="Workspace Name" />
+        <input {...register('name')} placeholder="Space Name" />
         {errors.name && <span>{errors.name.message}</span>}
       </div>
       <div>
-        <input {...register('slug')} placeholder="workspace-slug" />
+        <input {...register('slug')} placeholder="space-slug" />
         {errors.slug && <span>{errors.slug.message}</span>}
       </div>
       <div>
         <textarea {...register('description')} placeholder="Description (optional)" />
         {errors.description && <span>{errors.description.message}</span>}
       </div>
-      <button type="submit">Create Workspace</button>
+      <button type="submit">Create Space</button>
     </form>
   );
 }

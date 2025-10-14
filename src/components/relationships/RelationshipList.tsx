@@ -8,15 +8,15 @@ import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
 
 interface RelationshipListProps {
-  workspaceSlug: string;
+  spaceSlug: string;
   nodeId: number;
 }
 
-export function RelationshipList({ workspaceSlug, nodeId }: RelationshipListProps) {
+export function RelationshipList({ spaceSlug, nodeId }: RelationshipListProps) {
   const queryClient = useQueryClient();
 
   const { data: attributes, isLoading } = useQuery({
-    queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'attributes'],
+    queryKey: ['spaces', spaceSlug, 'nodes', nodeId, 'attributes'],
     queryFn: () => attributeService.getNodeAttributes(nodeId.toString()),
   });
 
@@ -25,10 +25,10 @@ export function RelationshipList({ workspaceSlug, nodeId }: RelationshipListProp
       attributeService.deleteAttribute(nodeId.toString(), attributeId.toString()),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'attributes']
+        queryKey: ['spaces', spaceSlug, 'nodes', nodeId, 'attributes']
       });
       queryClient.invalidateQueries({
-        queryKey: ['workspaces', workspaceSlug, 'graph']
+        queryKey: ['spaces', spaceSlug, 'graph']
       });
     },
   });

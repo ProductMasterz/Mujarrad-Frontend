@@ -8,7 +8,7 @@ import { truncate, formatRelativeTime } from '@/lib/utils';
 
 interface NodeCardProps {
   node: Node;
-  workspaceSlug: string;
+  spaceSlug: string;
 }
 
 const nodeTypeColors: Record<NodeType, string> = {
@@ -17,9 +17,9 @@ const nodeTypeColors: Record<NodeType, string> = {
   [NodeType.ASSUMPTION]: 'bg-yellow-100 text-yellow-800',
 };
 
-export function NodeCard({ node, workspaceSlug }: NodeCardProps) {
+export function NodeCard({ node, spaceSlug }: NodeCardProps) {
   return (
-    <Link href={`/workspaces/${workspaceSlug}/nodes/${node.id}`}>
+    <Link href={`/spaces/${spaceSlug}/nodes/${node.id}`}>
       <Card className="hover:shadow-md transition-shadow cursor-pointer">
         <CardHeader>
           <div className="flex items-start justify-between">

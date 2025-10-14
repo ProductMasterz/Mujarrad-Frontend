@@ -16,15 +16,15 @@ import { CustomNode } from './CustomNode';
 import { Spinner } from '@/components/ui/spinner';
 
 interface GraphCanvasProps {
-  workspaceSlug: string;
+  spaceSlug: string;
 }
 
 const nodeTypes = {
   custom: CustomNode,
 };
 
-export function GraphCanvas({ workspaceSlug }: GraphCanvasProps) {
-  const { data: graphData, isLoading } = useGraphData(workspaceSlug);
+export function GraphCanvas({ spaceSlug }: GraphCanvasProps) {
+  const { data: graphData, isLoading } = useGraphData(spaceSlug);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);

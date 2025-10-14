@@ -2,37 +2,37 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useWorkspaceNodes, useWorkspaceAttributes } from '@/hooks/api';
+import { useSpaceNodes, useSpaceAttributes } from '@/hooks/api';
 import { HierarchyNavigator } from '@/components/hierarchy/HierarchyNavigator';
 import { GraphVisualization } from '@/components/graph/GraphVisualization';
 import { CreateNodeDialog } from '@/components/nodes/CreateNodeDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 
-interface WorkspacePageProps {
+interface SpacePageProps {
   params: {
     slug: string;
   };
 }
 
 /**
- * Workspace page
+ * Space page
  * Main view with hierarchy sidebar and graph/list tabs
  */
-export default function WorkspacePage({ params }: WorkspacePageProps) {
+export default function SpacePage({ params }: SpacePageProps) {
   const { slug } = params;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('hierarchy');
 
-  // Fetch workspace data
-  const { data: nodes = [], isLoading: nodesLoading } = useWorkspaceNodes(slug);
-  const { data: attributes = [], isLoading: attributesLoading } = useWorkspaceAttributes(slug);
+  // Fetch space data
+  const { data: nodes = [], isLoading: nodesLoading } = useSpaceNodes(slug);
+  const { data: attributes = [], isLoading: attributesLoading } = useSpaceAttributes(slug);
 
   const isLoading = nodesLoading || attributesLoading;
 
   // Handle node selection - navigate to detail page
   const handleNodeSelect = (nodeId: string) => {
-    router.push(`/workspace/${slug}/node/${nodeId}`);
+    router.push(`/space/${slug}/node/${nodeId}`);
   };
 
   // Handle wiki-link click - navigate to target node
@@ -43,7 +43,7 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
     );
 
     if (targetNode) {
-      router.push(`/workspace/${slug}/node/${targetNode.id}`);
+      router.push(`/space/${slug}/node/${targetNode.id}`);
     }
   };
 
@@ -52,7 +52,7 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading workspace...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading space...</p>
         </div>
       </div>
     );
@@ -67,7 +67,7 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
             {slug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
           </h2>
-          <CreateNodeDialog workspaceSlug={slug} />
+          <CreateNodeDialog spaceSlug={slug} />
         </div>
 
         {/* Hierarchy Navigator */}

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * T079: E2E Test - Login → workspace → browse hierarchy → navigate to page
+ * T079: E2E Test - Login → space → browse hierarchy → navigate to page
  *
  * User Story: Browse pages organized in folders, expand/collapse tree, navigate to pages
  */
@@ -14,16 +14,16 @@ test.describe('Scenario 1: Hierarchy Navigation', () => {
     await page.fill('input[name="password"]', 'Om@r1234');
     await page.click('button:has-text("Sign in")');
 
-    // Wait for redirect to workspaces page
-    await page.waitForURL('**/workspaces');
+    // Wait for redirect to spaces page
+    await page.waitForURL('**/spaces');
   });
 
-  test('should navigate to workspace and see hierarchy tree', async ({ page }) => {
-    // Select workspace
-    await page.click('text=Demo Workspace');
+  test('should navigate to space and see hierarchy tree', async ({ page }) => {
+    // Select space
+    await page.click('text=Demo Space');
 
-    // Wait for workspace page to load
-    await page.waitForURL('**/workspace/demo-workspace');
+    // Wait for space page to load
+    await page.waitForURL('**/space/demo-space');
 
     // Verify hierarchy sidebar is visible
     const hierarchySidebar = page.locator('[data-testid="hierarchy-sidebar"]');
@@ -34,8 +34,8 @@ test.describe('Scenario 1: Hierarchy Navigation', () => {
   });
 
   test('should display folder and document icons correctly', async ({ page }) => {
-    await page.click('text=Demo Workspace');
-    await page.waitForURL('**/workspace/demo-workspace');
+    await page.click('text=Demo Space');
+    await page.waitForURL('**/space/demo-space');
 
     // Check for folder icon on CONTEXT nodes
     const contextNode = page.locator('[data-node-type="CONTEXT"]').first();
@@ -53,8 +53,8 @@ test.describe('Scenario 1: Hierarchy Navigation', () => {
   });
 
   test('should expand and collapse folder nodes', async ({ page }) => {
-    await page.click('text=Demo Workspace');
-    await page.waitForURL('**/workspace/demo-workspace');
+    await page.click('text=Demo Space');
+    await page.waitForURL('**/space/demo-space');
 
     // Find a CONTEXT node (folder)
     const folderNode = page.locator('[data-node-type="CONTEXT"]').first();
@@ -83,8 +83,8 @@ test.describe('Scenario 1: Hierarchy Navigation', () => {
   });
 
   test('should navigate to page when clicked', async ({ page }) => {
-    await page.click('text=Demo Workspace');
-    await page.waitForURL('**/workspace/demo-workspace');
+    await page.click('text=Demo Space');
+    await page.waitForURL('**/space/demo-space');
 
     // Expand a folder to see pages
     const expandButton = page.locator('button[aria-label*="Expand"]').first();
@@ -99,7 +99,7 @@ test.describe('Scenario 1: Hierarchy Navigation', () => {
     await pageNode.click();
 
     // Verify URL changed to node detail page
-    await expect(page).toHaveURL(/\/workspace\/demo-workspace\/node\/[a-zA-Z0-9-]+/);
+    await expect(page).toHaveURL(/\/space\/demo-space\/node\/[a-zA-Z0-9-]+/);
 
     // Verify page content is displayed
     await expect(page.locator('[data-testid="node-detail-view"]')).toBeVisible();
@@ -109,8 +109,8 @@ test.describe('Scenario 1: Hierarchy Navigation', () => {
   });
 
   test('should highlight selected node in tree', async ({ page }) => {
-    await page.click('text=Demo Workspace');
-    await page.waitForURL('**/workspace/demo-workspace');
+    await page.click('text=Demo Space');
+    await page.waitForURL('**/space/demo-space');
 
     // Expand to see pages
     const expandButton = page.locator('button[aria-label*="Expand"]').first();
@@ -129,8 +129,8 @@ test.describe('Scenario 1: Hierarchy Navigation', () => {
   });
 
   test('should support keyboard navigation in tree', async ({ page }) => {
-    await page.click('text=Demo Workspace');
-    await page.waitForURL('**/workspace/demo-workspace');
+    await page.click('text=Demo Space');
+    await page.waitForURL('**/space/demo-space');
 
     // Focus first tree item
     const firstNode = page.locator('[role="treeitem"]').first();
@@ -147,12 +147,12 @@ test.describe('Scenario 1: Hierarchy Navigation', () => {
     await page.keyboard.press('Enter');
 
     // Verify navigation occurred
-    await expect(page).toHaveURL(/\/workspace\/demo-workspace\/node\/[a-zA-Z0-9-]+/);
+    await expect(page).toHaveURL(/\/space\/demo-space\/node\/[a-zA-Z0-9-]+/);
   });
 
   test('should persist expand/collapse state during navigation', async ({ page }) => {
-    await page.click('text=Demo Workspace');
-    await page.waitForURL('**/workspace/demo-workspace');
+    await page.click('text=Demo Space');
+    await page.waitForURL('**/space/demo-space');
 
     // Expand a folder
     const expandButton = page.locator('button[aria-label*="Expand"]').first();
@@ -175,8 +175,8 @@ test.describe('Scenario 1: Hierarchy Navigation', () => {
   });
 
   test('should support multi-level hierarchy navigation', async ({ page }) => {
-    await page.click('text=Demo Workspace');
-    await page.waitForURL('**/workspace/demo-workspace');
+    await page.click('text=Demo Space');
+    await page.waitForURL('**/space/demo-space');
 
     // Expand root folder
     const rootExpandButton = page.locator('[role="treeitem"]').first().locator('button[aria-label*="Expand"]');
@@ -201,8 +201,8 @@ test.describe('Scenario 1: Hierarchy Navigation', () => {
   });
 
   test('should show correct indentation for tree levels', async ({ page }) => {
-    await page.click('text=Demo Workspace');
-    await page.waitForURL('**/workspace/demo-workspace');
+    await page.click('text=Demo Space');
+    await page.waitForURL('**/space/demo-space');
 
     // Get root node padding
     const rootNode = page.locator('[role="treeitem"][data-level="0"]').first();

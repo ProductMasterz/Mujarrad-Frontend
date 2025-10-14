@@ -8,13 +8,13 @@ import type { CreateAttributeRequest } from '@/types/backend-dtos';
 /**
  * Fetch and combine nodes + attributes into graph data
  */
-export function useGraphData(workspaceSlug: string) {
+export function useGraphData(spaceSlug: string) {
   return useQuery({
-    queryKey: ['workspaces', workspaceSlug, 'graph'],
+    queryKey: ['spaces', spaceSlug, 'graph'],
     queryFn: async (): Promise<GraphData> => {
       const [nodesResponse, attributes] = await Promise.all([
-        nodeService.getNodes(workspaceSlug),
-        attributeService.getWorkspaceAttributes(workspaceSlug),
+        nodeService.getNodes(spaceSlug),
+        attributeService.getSpaceAttributes(spaceSlug),
       ]);
 
       const nodes: GraphNode[] = nodesResponse.content.map((node, index) => ({
@@ -47,30 +47,30 @@ export function useGraphData(workspaceSlug: string) {
 
       return { nodes, edges };
     },
-    enabled: !!workspaceSlug,
+    enabled: !!spaceSlug,
   });
 }
 
-export function useCreateEdge(workspaceSlug: string) {
+export function useCreateEdge(spaceSlug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ sourceNodeId, data }: { sourceNodeId: string; data: CreateAttributeRequest }) =>
       attributeService.createAttribute(sourceNodeId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'graph'] });
+      queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'graph'] });
     },
   });
 }
 
-export function useDeleteEdge(workspaceSlug: string) {
+export function useDeleteEdge(spaceSlug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ sourceNodeId, attributeId }: { sourceNodeId: string; attributeId: string }) =>
       attributeService.deleteAttribute(sourceNodeId, attributeId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'graph'] });
+      queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'graph'] });
     },
   });
 }

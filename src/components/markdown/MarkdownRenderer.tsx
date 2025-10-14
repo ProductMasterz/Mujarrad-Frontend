@@ -14,7 +14,7 @@ import type { Node } from '@/types/backend-dtos';
 
 interface MarkdownRendererProps {
   content: string;
-  workspaceSlug: string;
+  spaceSlug: string;
   availableNodes: Node[];
   onWikiLinkClick?: (targetTitle: string) => void;
 }
@@ -25,7 +25,7 @@ interface MarkdownRendererProps {
  */
 export function MarkdownRenderer({
   content,
-  workspaceSlug,
+  spaceSlug,
   availableNodes,
   onWikiLinkClick,
 }: MarkdownRendererProps) {
@@ -97,7 +97,7 @@ export function MarkdownRenderer({
                   targetTitle={resolution.link.targetTitle}
                   displayText={resolution.link.displayText}
                   targetNodeId={resolution.targetNodeId}
-                  workspaceSlug={workspaceSlug}
+                  spaceSlug={spaceSlug}
                   onClick={onWikiLinkClick}
                 />
               );

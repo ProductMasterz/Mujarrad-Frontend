@@ -12,42 +12,42 @@ import { cn } from '@/lib/utils';
 interface CommandPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentWorkspaceSlug?: string;
+  currentSpaceSlug?: string;
 }
 
-export function CommandPalette({ open, onOpenChange, currentWorkspaceSlug }: CommandPaletteProps) {
+export function CommandPalette({ open, onOpenChange, currentSpaceSlug }: CommandPaletteProps) {
   const router = useRouter();
   const [search, setSearch] = useState('');
-  const [selectedWorkspace, setSelectedWorkspace] = useState<string>(currentWorkspaceSlug || '');
+  const [selectedSpace, setSelectedSpace] = useState<string>(currentSpaceSlug || '');
 
-  // Fetch spaces for workspace switcher
-  const { data: workspaces } = useSpaces();
+  // Fetch spaces for space switcher
+  const { data: spaces } = useSpaces();
 
-  // Update selected workspace when current workspace changes
+  // Update selected space when current space changes
   useEffect(() => {
-    if (currentWorkspaceSlug) {
-      setSelectedWorkspace(currentWorkspaceSlug);
+    if (currentSpaceSlug) {
+      setSelectedSpace(currentSpaceSlug);
     }
-  }, [currentWorkspaceSlug]);
+  }, [currentSpaceSlug]);
 
-  // Search nodes in the selected workspace
+  // Search nodes in the selected space
   const { data: searchResponse, isLoading } = useSearchNodes(
-    selectedWorkspace,
+    selectedSpace,
     search,
     {}
   );
   const searchResults = searchResponse?.content || [];
 
   const handleSelectNode = useCallback((nodeId: string) => {
-    if (selectedWorkspace) {
-      router.push(`/workspaces/${selectedWorkspace}/node/${nodeId}`);
+    if (selectedSpace) {
+      router.push(`/spaces/${selectedSpace}/node/${nodeId}`);
       onOpenChange(false);
       setSearch('');
     }
-  }, [selectedWorkspace, router, onOpenChange]);
+  }, [selectedSpace, router, onOpenChange]);
 
-  const handleSelectWorkspace = useCallback((slug: string) => {
-    router.push(`/workspaces/${slug}`);
+  const handleSelectSpace = useCallback((slug: string) => {
+    router.push(`/spaces/${slug}`);
     onOpenChange(false);
     setSearch('');
   }, [router, onOpenChange]);
@@ -66,7 +66,7 @@ export function CommandPalette({ open, onOpenChange, currentWorkspaceSlug }: Com
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <Command.Input
-              placeholder="Search nodes or switch workspace..."
+              placeholder="Search nodes or switch space..."
               value={search}
               onValueChange={setSearch}
               className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -84,21 +84,21 @@ export function CommandPalette({ open, onOpenChange, currentWorkspaceSlug }: Com
               )}
             </Command.Empty>
 
-            {/* Workspaces Group */}
-            {!search && workspaces && workspaces.length > 0 && (
-              <Command.Group heading="Workspaces">
-                {workspaces.map((workspace) => (
+            {/* Spaces Group */}
+            {!search && spaces && spaces.length > 0 && (
+              <Command.Group heading="Spaces">
+                {spaces.map((space) => (
                   <Command.Item
-                    key={workspace.slug}
-                    value={`workspace-${workspace.slug}`}
-                    onSelect={() => handleSelectWorkspace(workspace.slug)}
+                    key={space.slug}
+                    value={`space-${space.slug}`}
+                    onSelect={() => handleSelectSpace(space.slug)}
                     className="flex items-center gap-2 rounded-sm px-2 py-2 text-sm cursor-pointer hover:bg-accent"
                   >
                     <Folder className="h-4 w-4 text-muted-foreground" />
                     <div className="flex-1">
-                      <div className="font-medium">{workspace.name}</div>
+                      <div className="font-medium">{space.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {workspace.slug}
+                        {space.slug}
                       </div>
                     </div>
                   </Command.Item>

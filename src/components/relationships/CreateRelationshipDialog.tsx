@@ -22,18 +22,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { isApiError } from '@/lib/errors';
 
 interface CreateRelationshipDialogProps {
-  workspaceSlug: string;
+  spaceSlug: string;
   sourceNodeId: number;
   sourceNodeName: string;
 }
 
 export function CreateRelationshipDialog({
-  workspaceSlug,
+  spaceSlug,
   sourceNodeId,
   sourceNodeName
 }: CreateRelationshipDialogProps) {
   const [open, setOpen] = useState(false);
-  const { data: nodesData } = useNodes(workspaceSlug);
+  const { data: nodesData } = useNodes(spaceSlug);
   const { mutate: createAttribute, isPending: isLoading } = useCreateAttribute();
 
   const {

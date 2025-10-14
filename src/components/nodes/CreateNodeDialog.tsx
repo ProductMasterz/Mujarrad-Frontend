@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createNodeSchema, type CreateNodeFormData } from '@/schemas';
-import { useCreateNode, useWorkspaceNodes, useCreateAttribute } from '@/hooks/api';
+import { useCreateNode, useSpaceNodes, useCreateAttribute } from '@/hooks/api';
 import { NodeType, AttributeKey } from '@/types/backend-dtos';
 import {
   Dialog,
@@ -24,18 +24,18 @@ import { MarkdownPreview } from './MarkdownPreview';
 import { isApiError } from '@/lib/errors';
 
 interface CreateNodeDialogProps {
-  workspaceSlug: string;
+  spaceSlug: string;
 }
 
-export function CreateNodeDialog({ workspaceSlug }: CreateNodeDialogProps) {
+export function CreateNodeDialog({ spaceSlug }: CreateNodeDialogProps) {
   const [open, setOpen] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
 
   const { mutate: createNode, isPending } = useCreateNode();
   const { mutate: createAttribute } = useCreateAttribute();
 
-  // Fetch all workspace nodes for parent selection
-  const { data: nodes = [] } = useWorkspaceNodes(workspaceSlug, { type: NodeType.CONTEXT });
+  // Fetch all space nodes for parent selection
+  const { data: nodes = [] } = useSpaceNodes(spaceSlug, { type: NodeType.CONTEXT });
 
   const {
     register,
@@ -61,7 +61,7 @@ export function CreateNodeDialog({ workspaceSlug }: CreateNodeDialogProps) {
   });
 
   const onSubmit = (data: CreateNodeFormData) => {
-    createNode({ spaceSlug: workspaceSlug, data }, {
+    createNode({ spaceSlug: spaceSlug, data }, {
       onSuccess: (newNode) => {
         // If a parent was selected, create the CONTAINS relationship
         if (selectedParentId) {

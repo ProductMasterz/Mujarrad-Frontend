@@ -64,7 +64,7 @@ export function Breadcrumbs({ className, segments: manualSegments }: Breadcrumbs
       aria-label="Breadcrumb"
       className={cn('flex items-center gap-2 text-sm text-muted-foreground', className)}
     >
-      <Link href="/workspaces" className="hover:text-foreground transition-colors">
+      <Link href="/spaces" className="hover:text-foreground transition-colors">
         <Home className="h-4 w-4" />
       </Link>
       {segments.map((segment, index) => (
@@ -91,54 +91,54 @@ export function Breadcrumbs({ className, segments: manualSegments }: Breadcrumbs
 /**
  * Generate breadcrumb segments from pathname
  * Handles common patterns:
- * - /workspaces -> []
- * - /workspaces/my-workspace -> [Workspace Name]
- * - /workspaces/my-workspace/node/123 -> [Workspace Name, Node Name]
+ * - /spaces -> []
+ * - /spaces/my-space -> [Space Name]
+ * - /spaces/my-space/node/123 -> [Space Name, Node Name]
  */
 function generateSegmentsFromPath(pathname: string): BreadcrumbSegment[] {
   const segments: BreadcrumbSegment[] = [];
   const parts = pathname.split('/').filter(Boolean);
 
-  // Skip if only on /workspaces
-  if (parts.length === 0 || (parts.length === 1 && parts[0] === 'workspaces')) {
+  // Skip if only on /spaces
+  if (parts.length === 0 || (parts.length === 1 && parts[0] === 'spaces')) {
     return segments;
   }
 
-  // Handle /workspaces/:slug
-  if (parts[0] === 'workspaces' && parts.length >= 2) {
-    const workspaceSlug = parts[1];
+  // Handle /spaces/:slug
+  if (parts[0] === 'spaces' && parts.length >= 2) {
+    const spaceSlug = parts[1];
     segments.push({
-      label: formatLabel(workspaceSlug),
-      href: `/workspaces/${workspaceSlug}`,
+      label: formatLabel(spaceSlug),
+      href: `/spaces/${spaceSlug}`,
       isCurrent: parts.length === 2,
     });
 
-    // Handle /workspaces/:slug/node/:id
+    // Handle /spaces/:slug/node/:id
     if (parts.length >= 4 && parts[2] === 'node') {
       const nodeId = parts[3];
       segments.push({
         label: `Node ${nodeId}`, // Will be replaced by actual node title in page
-        href: `/workspaces/${workspaceSlug}/node/${nodeId}`,
+        href: `/spaces/${spaceSlug}/node/${nodeId}`,
         isCurrent: true,
       });
     }
   }
 
-  // Handle /workspace/:slug (deprecated route)
-  if (parts[0] === 'workspace' && parts.length >= 2) {
-    const workspaceSlug = parts[1];
+  // Handle /space/:slug (deprecated route)
+  if (parts[0] === 'space' && parts.length >= 2) {
+    const spaceSlug = parts[1];
     segments.push({
-      label: formatLabel(workspaceSlug),
-      href: `/workspace/${workspaceSlug}`,
+      label: formatLabel(spaceSlug),
+      href: `/space/${spaceSlug}`,
       isCurrent: parts.length === 2,
     });
 
-    // Handle /workspace/:slug/node/:id
+    // Handle /space/:slug/node/:id
     if (parts.length >= 4 && parts[2] === 'node') {
       const nodeId = parts[3];
       segments.push({
         label: `Node ${nodeId}`,
-        href: `/workspace/${workspaceSlug}/node/${nodeId}`,
+        href: `/space/${spaceSlug}/node/${nodeId}`,
         isCurrent: true,
       });
     }
@@ -149,7 +149,7 @@ function generateSegmentsFromPath(pathname: string): BreadcrumbSegment[] {
 
 /**
  * Format slug into readable label
- * my-workspace -> My Workspace
+ * my-space -> My Space
  */
 function formatLabel(slug: string): string {
   return slug

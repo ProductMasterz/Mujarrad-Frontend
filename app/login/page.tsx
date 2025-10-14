@@ -44,7 +44,7 @@ export default function LoginPage() {
         <Card>
           <CardHeader>
             <CardTitle>Sign in to your account</CardTitle>
-            <CardDescription>Enter your credentials to access your workspaces</CardDescription>
+            <CardDescription>Enter your credentials to access your spaces</CardDescription>
           </CardHeader>
           <CardContent>
             <Suspense fallback={<LoginForm />}>

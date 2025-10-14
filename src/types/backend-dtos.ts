@@ -12,7 +12,7 @@ export interface User {
 }
 
 /**
- * Space entity from backend (formerly Workspace)
+ * Space entity from backend (formerly Space)
  * Backend: SpaceResponse from /api/spaces endpoints
  */
 export interface Space {
@@ -31,10 +31,10 @@ export interface Space {
 }
 
 /**
- * @deprecated Use Space instead. Workspace has been renamed to Space in backend API v2.
+ * @deprecated Use Space instead. Space has been renamed to Space in backend API v2.
  * This alias is provided for backward compatibility during migration.
  */
-export type Workspace = Space;
+export type Space = Space;
 
 /**
  * Node type enum - must match backend exactly
@@ -165,12 +165,12 @@ export interface UpdateSpaceRequest {
 /**
  * @deprecated Use CreateSpaceRequest instead
  */
-export type CreateWorkspaceRequest = CreateSpaceRequest;
+export type CreateSpaceRequest = CreateSpaceRequest;
 
 /**
  * @deprecated Use UpdateSpaceRequest instead
  */
-export type UpdateWorkspaceRequest = UpdateSpaceRequest;
+export type UpdateSpaceRequest = UpdateSpaceRequest;
 
 /**
  * Request body for creating a node
@@ -208,11 +208,11 @@ export interface CreateAttributeRequest {
 }
 
 /**
- * Workspace collaborator entity from backend
+ * Space collaborator entity from backend
  */
-export interface WorkspaceCollaborator {
+export interface SpaceCollaborator {
   id: string; // UUID
-  workspaceId: number;
+  spaceId: number;
   userId: string; // UUID
   role: 'owner' | 'editor';
   invitedBy: string; // UUID

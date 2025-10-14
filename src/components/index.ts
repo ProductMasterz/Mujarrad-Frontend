@@ -10,7 +10,7 @@ export * from './ui/spinner';
 export * from './ui/textarea';
 
 // Domain Components
-export * from './workspaces';
+export * from './spaces';
 export * from './nodes';
 export * from './graph';
 export * from './relationships';

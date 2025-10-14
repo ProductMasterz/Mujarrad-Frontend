@@ -53,7 +53,7 @@ describe('Error Response Contract Tests - RFC 7807', () => {
               detail: 'Request validation failed',
               errors: {
                 title: 'must not be blank',
-                workspaceId: 'is required',
+                spaceId: 'is required',
               },
             },
             { status: 400 }
@@ -64,7 +64,7 @@ describe('Error Response Contract Tests - RFC 7807', () => {
       try {
         await nodeService.createNode({
           title: '',
-          workspaceId: '',
+          spaceId: '',
           nodeType: 'REGULAR',
         });
         fail('Expected error to be thrown');
@@ -81,7 +81,7 @@ describe('Error Response Contract Tests - RFC 7807', () => {
         // Verify field-level errors are included
         expect(errorData.errors).toBeDefined();
         expect(errorData.errors).toHaveProperty('title');
-        expect(errorData.errors).toHaveProperty('workspaceId');
+        expect(errorData.errors).toHaveProperty('spaceId');
       }
     });
 
@@ -234,7 +234,7 @@ describe('Error Response Contract Tests - RFC 7807', () => {
       try {
         await nodeService.createNode({
           title: 'Test',
-          workspaceId: 'ws-123',
+          spaceId: 'ws-123',
           nodeType: 'REGULAR',
         });
         fail('Expected error to be thrown');

@@ -53,15 +53,15 @@ export interface CreateRelationshipsResult {
 export const wikiLinkService = {
   /**
    * Parse wiki-links from markdown and resolve them to existing nodes
-   * API Calls: GET /api/workspaces/{id}/nodes (to get all nodes for resolution)
+   * API Calls: GET /api/spaces/{id}/nodes (to get all nodes for resolution)
    *
    * @param markdown - The markdown content to parse
-   * @param workspaceId - Workspace ID for resolving nodes
+   * @param spaceId - Space ID for resolving nodes
    * @returns Resolution results with target nodes or placeholder flags
    */
   async parseAndResolve(
     markdown: string,
-    workspaceId: string
+    spaceId: string
   ): Promise<ParseAndResolveResult> {
     // Parse wiki-links from markdown
     const wikiLinks = parseWikiLinks(markdown);
@@ -74,8 +74,8 @@ export const wikiLinkService = {
       };
     }
 
-    // Fetch all nodes in workspace for resolution
-    const response = await nodeService.getWorkspaceNodes(workspaceId);
+    // Fetch all nodes in space for resolution
+    const response = await nodeService.getSpaceNodes(spaceId);
     const existingNodes = response;
 
     // Resolve each wiki-link
@@ -106,12 +106,12 @@ export const wikiLinkService = {
    * API Calls: POST /api/nodes (for each placeholder)
    *
    * @param resolutions - Wiki-link resolution results
-   * @param workspaceId - Workspace ID for creating nodes
+   * @param spaceId - Space ID for creating nodes
    * @returns Created placeholder nodes and any errors
    */
   async createPlaceholders(
     resolutions: WikiLinkResolution[],
-    workspaceId: string
+    spaceId: string
   ): Promise<CreatePlaceholdersResult> {
     const unresolvedLinks = resolutions.filter(r => r.needsPlaceholder);
 
@@ -230,13 +230,13 @@ export const wikiLinkService = {
    *
    * @param markdown - The markdown content with wiki-links
    * @param sourceNodeId - The node containing the wiki-links
-   * @param workspaceId - Workspace ID
+   * @param spaceId - Space ID
    * @returns Complete result with all created entities and errors
    */
   async processWikiLinks(
     markdown: string,
     sourceNodeId: string,
-    workspaceId: string
+    spaceId: string
   ): Promise<{
     resolutions: WikiLinkResolution[];
     createdPlaceholders: Node[];
@@ -244,12 +244,12 @@ export const wikiLinkService = {
     errors: string[];
   }> {
     // Step 1: Parse and resolve
-    const parseResult = await this.parseAndResolve(markdown, workspaceId);
+    const parseResult = await this.parseAndResolve(markdown, spaceId);
 
     // Step 2: Create placeholders for unresolved links
     const placeholderResult = await this.createPlaceholders(
       parseResult.resolutions,
-      workspaceId
+      spaceId
     );
 
     // Step 3: Create relationships

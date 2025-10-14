@@ -8,26 +8,26 @@ import { Spinner } from '@/components/ui/spinner';
 import { formatDateTime } from '@/lib/utils';
 
 interface VersionHistoryProps {
-  workspaceSlug: string;
+  spaceSlug: string;
   nodeId: number;
   currentVersion: number;
 }
 
-export function VersionHistory({ workspaceSlug, nodeId, currentVersion }: VersionHistoryProps) {
+export function VersionHistory({ spaceSlug, nodeId, currentVersion }: VersionHistoryProps) {
   const queryClient = useQueryClient();
 
   const { data: versions, isLoading } = useQuery({
-    queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'versions'],
-    queryFn: () => versionService.getNodeVersions(workspaceSlug, nodeId),
+    queryKey: ['spaces', spaceSlug, 'nodes', nodeId, 'versions'],
+    queryFn: () => versionService.getNodeVersions(spaceSlug, nodeId),
   });
 
   const { mutate: restoreVersion, isPending: isRestoring } = useMutation({
     mutationFn: (versionId: number) =>
-      versionService.restoreVersion(workspaceSlug, nodeId, versionId),
+      versionService.restoreVersion(spaceSlug, nodeId, versionId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId] });
+      queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'nodes', nodeId] });
       queryClient.invalidateQueries({
-        queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'versions']
+        queryKey: ['spaces', spaceSlug, 'nodes', nodeId, 'versions']
       });
     },
   });

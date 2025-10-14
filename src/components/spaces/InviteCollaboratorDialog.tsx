@@ -20,12 +20,12 @@ import { Label } from '@/components/ui/label';
 import { isApiError } from '@/lib/errors';
 
 interface InviteCollaboratorDialogProps {
-  workspaceId: number;
+  spaceId: number;
 }
 
-export function InviteCollaboratorDialog({ workspaceId }: InviteCollaboratorDialogProps) {
+export function InviteCollaboratorDialog({ spaceId }: InviteCollaboratorDialogProps) {
   const [open, setOpen] = useState(false);
-  const { mutate: inviteCollaborator, isPending: isLoading } = useInviteCollaborator(workspaceId);
+  const { mutate: inviteCollaborator, isPending: isLoading } = useInviteCollaborator(spaceId);
 
   const {
     register,
@@ -69,7 +69,7 @@ export function InviteCollaboratorDialog({ workspaceId }: InviteCollaboratorDial
         <DialogHeader>
           <DialogTitle>Invite Collaborator</DialogTitle>
           <DialogDescription>
-            Invite a user to collaborate on this workspace. They will have edit permissions.
+            Invite a user to collaborate on this space. They will have edit permissions.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>

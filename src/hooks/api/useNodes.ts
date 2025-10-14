@@ -67,6 +67,6 @@ export const useSpaceNodes = (
 };
 
 /**
- * @deprecated Use useSpaceNodes instead - workspace terminology is being phased out
+ * @deprecated Use useSpaceNodes instead - space terminology is being phased out
  */
-export const useWorkspaceNodes = useSpaceNodes;
+export const useSpaceNodes = useSpaceNodes;

@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { registerSchema, loginSchema } from '../auth.schema';
-import { createWorkspaceSchema, updateWorkspaceSchema } from '../workspace.schema';
+import { createSpaceSchema, updateSpaceSchema } from '../space.schema';
 import { createNodeSchema, updateNodeSchema } from '../node.schema';
 import { createAttributeSchema } from '../attribute.schema';
 import { restoreVersionSchema, compareVersionsSchema } from '../version.schema';
@@ -70,53 +70,53 @@ describe('Auth Schemas', () => {
   });
 });
 
-describe('Workspace Schemas', () => {
-  describe('createWorkspaceSchema', () => {
-    it('should validate valid workspace data', () => {
+describe('Space Schemas', () => {
+  describe('createSpaceSchema', () => {
+    it('should validate valid space data', () => {
       const validData = {
-        name: 'My Workspace',
-        slug: 'my-workspace',
-        description: 'A test workspace',
+        name: 'My Space',
+        slug: 'my-space',
+        description: 'A test space',
       };
-      expect(() => createWorkspaceSchema.parse(validData)).not.toThrow();
+      expect(() => createSpaceSchema.parse(validData)).not.toThrow();
     });
 
     it('should trim whitespace from name', () => {
       const data = {
-        name: '  My Workspace  ',
-        slug: 'my-workspace',
+        name: '  My Space  ',
+        slug: 'my-space',
       };
-      const result = createWorkspaceSchema.parse(data);
-      expect(result.name).toBe('My Workspace');
+      const result = createSpaceSchema.parse(data);
+      expect(result.name).toBe('My Space');
     });
 
     it('should reject slug with uppercase letters', () => {
       const invalidData = {
-        name: 'My Workspace',
-        slug: 'My-Workspace',
+        name: 'My Space',
+        slug: 'My-Space',
       };
-      expect(() => createWorkspaceSchema.parse(invalidData)).toThrow('Slug can only contain lowercase letters, numbers, and hyphens');
+      expect(() => createSpaceSchema.parse(invalidData)).toThrow('Slug can only contain lowercase letters, numbers, and hyphens');
     });
 
     it('should reject slug not starting with letter', () => {
       const invalidData = {
-        name: 'My Workspace',
-        slug: '123-workspace',
+        name: 'My Space',
+        slug: '123-space',
       };
-      expect(() => createWorkspaceSchema.parse(invalidData)).toThrow('Slug must start with a letter');
+      expect(() => createSpaceSchema.parse(invalidData)).toThrow('Slug must start with a letter');
     });
   });
 
-  describe('updateWorkspaceSchema', () => {
+  describe('updateSpaceSchema', () => {
     it('should validate partial update data', () => {
       const validData = {
         name: 'Updated Name',
       };
-      expect(() => updateWorkspaceSchema.parse(validData)).not.toThrow();
+      expect(() => updateSpaceSchema.parse(validData)).not.toThrow();
     });
 
     it('should allow empty object', () => {
-      expect(() => updateWorkspaceSchema.parse({})).not.toThrow();
+      expect(() => updateSpaceSchema.parse({})).not.toThrow();
     });
   });
 });
