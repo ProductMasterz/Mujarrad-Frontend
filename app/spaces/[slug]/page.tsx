@@ -140,6 +140,12 @@ export default function SpaceDetailPage() {
               >
                 Graph View
               </button>
+              <button
+                onClick={() => router.push(`/spaces/${slug}/whiteboard`)}
+                className="px-4 py-2 text-sm font-medium rounded text-gray-600 hover:bg-gray-100"
+              >
+                Whiteboard
+              </button>
             </div>
 
             {/* Tab Content */}

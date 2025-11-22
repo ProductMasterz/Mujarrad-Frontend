@@ -101,7 +101,9 @@
       "Bash(time curl:*)",
       "WebFetch(domain:reactflow.dev)",
       "WebFetch(domain:tldraw.dev)",
-      "SlashCommand(/plan)"
+      "SlashCommand(/plan)",
+      "mcp__local-models__list_local_models",
+      "mcp__local-models__parallel_inference"
     ],
     "deny": [],
     "ask": []

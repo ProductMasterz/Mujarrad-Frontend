@@ -13,12 +13,12 @@
 
 ## Phase 3.1: Setup
 
-- [ ] T001 Install @excalidraw/excalidraw package and verify in package.json
+- [x] T001 Install @excalidraw/excalidraw package and verify in package.json
   ```bash
   npm install @excalidraw/excalidraw
   ```
 
-- [ ] T002 [P] Create whiteboard directory structure
+- [x] T002 [P] Create whiteboard directory structure
   ```
   src/components/whiteboard/
   src/hooks/api/ (add whiteboard hooks)
@@ -31,7 +31,7 @@
   tests/integration/whiteboard/
   ```
 
-- [ ] T003 [P] Create TypeScript types in `src/types/whiteboard.ts`
+- [x] T003 [P] Create TypeScript types in `src/types/whiteboard.ts`
   - ExcalidrawElement interface
   - WhiteboardNode interface
   - WhiteboardConnector interface
@@ -46,51 +46,51 @@
 
 **Contract Tests** (based on contracts/whiteboard-api.yaml)
 
-- [ ] T004 [P] Contract test GET /api/spaces/{slug}/nodes (whiteboard filter) in `tests/contract/whiteboard-get-nodes.test.ts`
+- [x] T004 [P] Contract test GET /api/spaces/{slug}/nodes (whiteboard filter) in `tests/contract/whiteboard-get-nodes.test.ts`
   - Test fetching nodes with element_subtype filter
   - Verify response matches WhiteboardNode schema
   - Test empty response for new space
 
-- [ ] T005 [P] Contract test POST /api/spaces/{slug}/nodes (create element) in `tests/contract/whiteboard-create-node.test.ts`
+- [x] T005 [P] Contract test POST /api/spaces/{slug}/nodes (create element) in `tests/contract/whiteboard-create-node.test.ts`
   - Test creating rectangle element
   - Test creating text element
   - Verify node_details structure returned
   - Test validation errors (missing title, invalid type)
 
-- [ ] T006 [P] Contract test PUT /api/spaces/{slug}/nodes/{id} (update element) in `tests/contract/whiteboard-update-node.test.ts`
+- [x] T006 [P] Contract test PUT /api/spaces/{slug}/nodes/{id} (update element) in `tests/contract/whiteboard-update-node.test.ts`
   - Test updating element position (x, y)
   - Test updating element style (color)
   - Verify version increment
 
-- [ ] T007 [P] Contract test DELETE /api/spaces/{slug}/nodes/{id} in `tests/contract/whiteboard-delete-node.test.ts`
+- [x] T007 [P] Contract test DELETE /api/spaces/{slug}/nodes/{id} in `tests/contract/whiteboard-delete-node.test.ts`
   - Test deleting element
   - Verify 204 response
   - Verify element not returned on subsequent GET
 
-- [ ] T008 [P] Contract test POST /api/nodes/{id}/attributes (create connector) in `tests/contract/whiteboard-create-connector.test.ts`
+- [x] T008 [P] Contract test POST /api/nodes/{id}/attributes (create connector) in `tests/contract/whiteboard-create-connector.test.ts`
   - Test creating connects_to attribute
   - Verify connector_meta structure
   - Test invalid source/target IDs
 
 **Integration Tests** (based on quickstart.md scenarios)
 
-- [ ] T009 [P] Integration test basic canvas load in `tests/integration/whiteboard/canvas-load.test.tsx`
+- [x] T009 [P] Integration test basic canvas load in `tests/integration/whiteboard/canvas-load.test.tsx`
   - Render WhiteboardCanvas component
   - Verify Excalidraw mounts
   - Verify no console errors
 
-- [ ] T010 [P] Integration test create shape element in `tests/integration/whiteboard/create-shape.test.tsx`
+- [x] T010 [P] Integration test create shape element in `tests/integration/whiteboard/create-shape.test.tsx`
   - Create rectangle via Excalidraw API
   - Trigger onChange
   - Verify API call made after debounce
   - Verify element in response
 
-- [ ] T011 [P] Integration test create connector in `tests/integration/whiteboard/create-connector.test.tsx`
+- [x] T011 [P] Integration test create connector in `tests/integration/whiteboard/create-connector.test.tsx`
   - Create two shapes
   - Create arrow with bindings
   - Verify attribute created with connects_to key
 
-- [ ] T012 [P] Integration test persistence in `tests/integration/whiteboard/persistence.test.tsx`
+- [x] T012 [P] Integration test persistence in `tests/integration/whiteboard/persistence.test.tsx`
   - Create elements
   - Save to backend
   - Remount component
@@ -102,21 +102,21 @@
 
 **Utilities**
 
-- [ ] T013 [P] Element mapper utility in `src/lib/whiteboard/elementMapper.ts`
+- [x] T013 [P] Element mapper utility in `src/lib/whiteboard/elementMapper.ts`
   - `mapExcalidrawToNode(element: ExcalidrawElement): CreateWhiteboardNodeDTO`
   - `mapNodeToExcalidraw(node: WhiteboardNode): ExcalidrawElement`
   - `mapArrowToAttribute(arrow: ExcalidrawElement): CreateConnectorDTO`
   - `generateTitle(element: ExcalidrawElement): string`
   - Element type config lookup
 
-- [ ] T014 [P] Config schemas in `src/lib/whiteboard/configSchemas.ts`
+- [x] T014 [P] Config schemas in `src/lib/whiteboard/configSchemas.ts`
   - DEFAULT_ELEMENT_CONFIGS array
   - `getConfigForElementType(type: string): ElementTypeConfig`
   - Validation helpers
 
 **Service Layer**
 
-- [ ] T015 Whiteboard service in `src/services/api/whiteboard.service.ts`
+- [x] T015 Whiteboard service in `src/services/api/whiteboard.service.ts`
   - `getWhiteboardNodes(spaceSlug: string): Promise<WhiteboardNode[]>`
   - `createWhiteboardNode(spaceSlug: string, dto: CreateWhiteboardNodeDTO): Promise<WhiteboardNode>`
   - `updateWhiteboardNode(spaceSlug: string, id: string, dto: UpdateWhiteboardNodeDTO): Promise<WhiteboardNode>`
@@ -125,12 +125,12 @@
 
 **React Query Hooks**
 
-- [ ] T016 Query hook in `src/hooks/api/useWhiteboard.ts`
+- [x] T016 Query hook in `src/hooks/api/useWhiteboard.ts`
   - `useWhiteboardNodes(spaceSlug: string)` - fetch all whiteboard elements
   - `useWhiteboardState(spaceSlug: string)` - fetch and convert to Excalidraw format
   - Query key: `['spaces', spaceSlug, 'whiteboard']`
 
-- [ ] T017 Mutation hooks in `src/hooks/api/useWhiteboardMutations.ts`
+- [x] T017 Mutation hooks in `src/hooks/api/useWhiteboardMutations.ts`
   - `useCreateWhiteboardNode(spaceSlug: string)`
   - `useUpdateWhiteboardNode(spaceSlug: string)`
   - `useDeleteWhiteboardNode(spaceSlug: string)`
@@ -139,7 +139,7 @@
 
 **State Management**
 
-- [ ] T018 Zustand store in `src/stores/whiteboardStore.ts`
+- [x] T018 Zustand store in `src/stores/whiteboardStore.ts`
   - `elements: ExcalidrawElement[]`
   - `appState: Partial<AppState>`
   - `isDirty: boolean`
@@ -149,46 +149,46 @@
 
 **Components**
 
-- [ ] T019 WhiteboardCanvas component in `src/components/whiteboard/WhiteboardCanvas.tsx`
+- [x] T019 WhiteboardCanvas component in `src/components/whiteboard/WhiteboardCanvas.tsx`
   - Import and render Excalidraw
   - Accept initialData prop
   - Handle onChange with debounced save
   - Wrap in useMemo to prevent infinite loops
   - Store excalidrawAPI ref
 
-- [ ] T020 Whiteboard page in `app/spaces/[slug]/whiteboard/page.tsx`
+- [x] T020 Whiteboard page in `app/spaces/[slug]/whiteboard/page.tsx`
   - Fetch space data
   - Load whiteboard state
   - Render WhiteboardCanvas with loading/error states
   - Handle permissions check
 
-- [ ] T021 Export index in `src/components/whiteboard/index.ts`
+- [x] T021 Export index in `src/components/whiteboard/index.ts`
   - Export WhiteboardCanvas
 
 ---
 
 ## Phase 3.4: Integration
 
-- [ ] T022 Connect WhiteboardCanvas to backend save
+- [x] T022 Connect WhiteboardCanvas to backend save
   - Implement debounced save (2 second delay)
   - Call useSaveWhiteboard on onChange
   - Diff elements to determine create/update/delete operations
   - Handle arrow bindings → attribute creation
 
-- [ ] T023 Implement element-to-node sync
+- [x] T023 Implement element-to-node sync
   - On save: convert Excalidraw elements → Node DTOs
   - Match by excalidraw element ID
   - Create new nodes for new elements
   - Update existing nodes for modified elements
   - Delete nodes for removed elements
 
-- [ ] T024 Load state from backend
+- [x] T024 Load state from backend
   - On mount: fetch whiteboard nodes
   - Convert nodes → Excalidraw elements
   - Fetch connectors → add arrows with bindings
   - Pass to Excalidraw initialData
 
-- [ ] T025 Error handling and user feedback
+- [x] T025 Error handling and user feedback
   - Show toast on save failure
   - Show toast on load failure
   - Retry logic for transient errors
@@ -198,27 +198,27 @@
 
 ## Phase 3.5: Polish
 
-- [ ] T026 [P] Unit tests for element mapper in `tests/unit/whiteboard/elementMapper.test.ts`
+- [x] T026 [P] Unit tests for element mapper in `tests/unit/whiteboard/elementMapper.test.ts`
   - Test each element type mapping
   - Test title generation
   - Test arrow → attribute conversion
   - Test round-trip conversion
 
-- [ ] T027 [P] Unit tests for config schemas in `tests/unit/whiteboard/configSchemas.test.ts`
+- [x] T027 [P] Unit tests for config schemas in `tests/unit/whiteboard/configSchemas.test.ts`
   - Test getConfigForElementType
   - Test all element types have config
 
-- [ ] T028 Performance validation
+- [x] T028 Performance validation
   - Load test with 100 elements
   - Verify load time < 3 seconds
   - Verify UI doesn't freeze during save
   - Profile React re-renders
 
-- [ ] T029 Add whiteboard link to space navigation
+- [x] T029 Add whiteboard link to space navigation
   - Add "Whiteboard" tab to space page
   - Style consistently with other tabs
 
-- [ ] T030 Run quickstart.md validation
+- [x] T030 Run quickstart.md validation
   - Execute all 8 test scenarios manually
   - Document any issues
   - Fix failures
