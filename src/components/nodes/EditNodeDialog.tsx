@@ -19,9 +19,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MarkdownPreview } from './MarkdownPreview';
+// import { MarkdownEditor } from '@/components/markdown/MarkdownEditor'; // Temporarily disabled
 import { isApiError } from '@/lib/errors';
 
 interface EditNodeDialogProps {
@@ -61,7 +60,9 @@ export function EditNodeDialog({ spaceSlug, nodeId, open, onOpenChange }: EditNo
       setValue('title', node.title);
       setValue('nodeType', node.nodeType);
       setValue('content', node.content);
-      setValue('version', node.version);
+      // Parse version number from currentVersionId (e.g., "v1" -> 1)
+      const versionNum = parseInt(node.currentVersionId.replace(/^v/, ''), 10);
+      setValue('version', isNaN(versionNum) ? 1 : versionNum);
     }
   }, [node, setValue]);
 
@@ -115,13 +116,13 @@ export function EditNodeDialog({ spaceSlug, nodeId, open, onOpenChange }: EditNo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl h-[90vh] flex flex-col gap-0 p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle>Edit Node</DialogTitle>
           <DialogDescription>Update node information</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
-          <div className="space-y-4 pb-4">
+          <div className="px-6 space-y-4 shrink-0">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
@@ -138,7 +139,7 @@ export function EditNodeDialog({ spaceSlug, nodeId, open, onOpenChange }: EditNo
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" className="z-[100]">
                     <SelectItem value={NodeType.REGULAR}>Regular</SelectItem>
                     <SelectItem value={NodeType.CONTEXT}>Context</SelectItem>
                     <SelectItem value={NodeType.ASSUMPTION}>Assumption</SelectItem>
@@ -148,32 +149,27 @@ export function EditNodeDialog({ spaceSlug, nodeId, open, onOpenChange }: EditNo
             </div>
           </div>
 
-          {/* Split view: Editor | Preview */}
-          <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
-            <div className="space-y-2 flex flex-col">
-              <Label htmlFor="content">Content (Markdown)</Label>
-              <Textarea
-                id="content"
-                placeholder="# Content here...&#10;&#10;Edit your markdown content. The preview will update as you type."
-                className="flex-1 resize-none font-mono text-sm"
-                {...register('content')}
-              />
-              {errors.content && (
-                <p className="text-sm text-destructive">{errors.content.message}</p>
-              )}
-            </div>
+          {/* Simple textarea - MarkdownEditor temporarily disabled */}
+          <div className="flex-1 min-h-0 flex flex-col px-6 py-4">
+            <Label htmlFor="content" className="mb-2">Content (Markdown)</Label>
+            <textarea
+              id="content"
+              value={content || ''}
+              onChange={(e) => setValue('content', e.target.value)}
+              placeholder="# Edit your content here...
 
-            <div className="space-y-2 flex flex-col">
-              <Label>Preview</Label>
-              <div className="flex-1 overflow-y-auto border rounded-md p-4 bg-muted/30">
-                <MarkdownPreview content={content || ''} />
-              </div>
-            </div>
+Supports **bold**, *italic*, code blocks, tables, and more!"
+              maxLength={50000}
+              className="flex-1 min-h-0 w-full p-3 border border-gray-200 rounded-lg resize-none font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.content && (
+              <p className="text-sm text-destructive mt-2">{errors.content.message}</p>
+            )}
           </div>
 
-          {errors.root && <p className="text-sm text-destructive pt-2">{errors.root.message}</p>}
+          {errors.root && <p className="text-sm text-destructive px-6">{errors.root.message}</p>}
 
-          <DialogFooter className="pt-4">
+          <DialogFooter className="px-6 py-4 border-t shrink-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading || isProcessingWikiLinks}>
               Cancel
             </Button>

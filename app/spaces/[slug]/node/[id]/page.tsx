@@ -2,17 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useForm, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { updateNodeSchema, type UpdateNodeFormData } from '@/schemas';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { useSpace } from '@/hooks/api';
+import { useSpace, useUpdateNode } from '@/hooks/api';
 import { Button } from '@/components/ui/button';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
-import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { wikiLinkService } from '@/services/api/wikilink.service';
+import { MarkdownPreview } from '@/components/nodes/MarkdownPreview';
+// import { MarkdownEditor } from '@/components/markdown/MarkdownEditor'; // Temporarily disabled
 import { HierarchyNavigator } from '@/components/hierarchy/HierarchyNavigator';
 import { GraphVisualization } from '@/components/graph/GraphVisualization';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
+import { isApiError } from '@/lib/errors';
+
+type ViewMode = 'preview' | 'edit' | 'draft' | 'publish';
 
 export default function NodeDetailPage() {
   const params = useParams();
@@ -20,9 +28,14 @@ export default function NodeDetailPage() {
   const slug = params.slug as string;
   const nodeId = params.id as string;
   const [activeView, setActiveView] = useState<'content' | 'graph'>('content');
+  const [mode, setMode] = useState<ViewMode>('preview');
 
+  const queryClient = useQueryClient();
   const { data: space } = useSpace(slug);
   const { setSelectedNode } = useNavigationStore();
+  const { mutate: updateNode, isPending: isSaving } = useUpdateNode();
+  const [isProcessingWikiLinks, setIsProcessingWikiLinks] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Fetch the current node
   const { data: node, isLoading: nodeLoading } = useQuery({
@@ -48,12 +61,112 @@ export default function NodeDetailPage() {
   const allNodes = nodes || [];
   const allAttributes = attributes || [];
 
+  // React Hook Form setup
+  const {
+    setValue,
+    control,
+    getValues,
+    reset,
+  } = useForm<UpdateNodeFormData>({
+    resolver: zodResolver(updateNodeSchema),
+  });
+
+  // Watch markdown content for live editor
+  const content = useWatch({
+    control,
+    name: 'content',
+    defaultValue: '',
+  });
+
+  // Initialize form when node loads
+  useEffect(() => {
+    if (node) {
+      setValue('title', node.title);
+      setValue('nodeType', node.nodeType);
+      setValue('content', node.content);
+      // Handle null or missing currentVersionId
+      const versionNum = node.currentVersionId
+        ? parseInt(node.currentVersionId.replace(/^v/, ''), 10)
+        : 1;
+      setValue('version', isNaN(versionNum) ? 1 : versionNum);
+    }
+  }, [node, setValue]);
+
   // Set selected node in store
   useEffect(() => {
     if (node) {
       setSelectedNode(node.id.toString());
     }
   }, [node, setSelectedNode]);
+
+  // Handle save changes
+  const handleSaveChanges = async () => {
+    if (!node) return;
+
+    setSaveError(null);
+    const data = getValues();
+
+    updateNode({ spaceSlug: slug, nodeId: nodeId, data }, {
+      onSuccess: async (updatedNode) => {
+        // Process wiki-links after successful update
+        if (data.content) {
+          setIsProcessingWikiLinks(true);
+          try {
+            await wikiLinkService.processWikiLinks(
+              data.content,
+              updatedNode.id.toString(),
+              slug
+            );
+
+            // Invalidate cache to refresh UI
+            queryClient.invalidateQueries({ queryKey: ['node', slug, nodeId] });
+            queryClient.invalidateQueries({ queryKey: ['space-nodes', slug] });
+            queryClient.invalidateQueries({ queryKey: ['nodes', updatedNode.id, 'attributes'] });
+
+            setMode('preview');
+          } catch (error) {
+            if (isApiError(error)) {
+              setSaveError(`Node saved but wiki-link processing failed: ${error.getUserMessage()}`);
+            }
+          } finally {
+            setIsProcessingWikiLinks(false);
+          }
+        } else {
+          queryClient.invalidateQueries({ queryKey: ['node', slug, nodeId] });
+          queryClient.invalidateQueries({ queryKey: ['space-nodes', slug] });
+          setMode('preview');
+        }
+      },
+      onError: (error) => {
+        if (isApiError(error)) {
+          if (error.statusCode === 409) {
+            setSaveError('Version conflict. The node was modified by someone else. Please refresh and try again.');
+          } else {
+            setSaveError(error.getUserMessage());
+          }
+        }
+      },
+    });
+  };
+
+  // Handle mode changes
+  const handleModeChange = (newMode: ViewMode) => {
+    if (newMode === 'edit' && mode === 'preview') {
+      // Reset form to current node data when entering edit mode
+      if (node) {
+        setValue('title', node.title);
+        setValue('nodeType', node.nodeType);
+        setValue('content', node.content);
+        // Handle null or missing currentVersionId
+        const versionNum = node.currentVersionId
+          ? parseInt(node.currentVersionId.replace(/^v/, ''), 10)
+          : 1;
+        setValue('version', isNaN(versionNum) ? 1 : versionNum);
+      }
+      setSaveError(null);
+    }
+    setMode(newMode);
+  };
 
   if (nodeLoading) {
     return (
@@ -112,9 +225,54 @@ export default function NodeDetailPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => alert('Edit functionality coming soon')}>
+                {/* Mode Toggle Buttons */}
+                <Button
+                  variant={mode === 'preview' ? 'default' : 'outline'}
+                  onClick={() => handleModeChange('preview')}
+                  disabled={isSaving || isProcessingWikiLinks}
+                >
+                  Preview
+                </Button>
+                <Button
+                  variant={mode === 'edit' ? 'default' : 'outline'}
+                  onClick={() => handleModeChange('edit')}
+                  disabled={isSaving || isProcessingWikiLinks}
+                >
                   Edit
                 </Button>
+                <Button
+                  variant={mode === 'draft' ? 'default' : 'outline'}
+                  onClick={() => handleModeChange('draft')}
+                  disabled={isSaving || isProcessingWikiLinks}
+                >
+                  Draft
+                </Button>
+                <Button
+                  variant={mode === 'publish' ? 'default' : 'outline'}
+                  onClick={() => handleModeChange('publish')}
+                  disabled={isSaving || isProcessingWikiLinks}
+                >
+                  Publish
+                </Button>
+
+                {/* Save button (visible only in edit mode) */}
+                {mode === 'edit' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleModeChange('preview')}
+                      disabled={isSaving || isProcessingWikiLinks}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveChanges}
+                      disabled={isSaving || isProcessingWikiLinks}
+                    >
+                      {isSaving ? 'Saving...' : isProcessingWikiLinks ? 'Processing...' : 'Save Changes'}
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -163,23 +321,78 @@ export default function NodeDetailPage() {
             <div className="flex-1 overflow-auto">
               {activeView === 'content' && (
                 <div className="max-w-4xl mx-auto p-8">
-                  <div className="bg-white rounded-lg shadow-sm p-8">
-                    {node.content ? (
-                      <MarkdownRenderer
-                        content={node.content}
-                        spaceSlug={slug}
-                        availableNodes={allNodes}
-                        onWikiLinkClick={targetTitle => {
-                          console.log('Wiki-link clicked:', targetTitle);
-                          // TODO: Navigate to target or create placeholder
-                        }}
-                      />
-                    ) : (
-                      <div className="text-gray-500 text-center py-8">
-                        <p>No content yet. Click Edit to add content.</p>
+                  {/* Error message display */}
+                  {saveError && (
+                    <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                      {saveError}
+                    </div>
+                  )}
+
+                  {/* Preview Mode */}
+                  {mode === 'preview' && (
+                    <div className="bg-white rounded-lg shadow-sm p-8">
+                      {node.content ? (
+                        <MarkdownPreview
+                          content={node.content}
+                        />
+                      ) : (
+                        <div className="text-gray-500 text-center py-8">
+                          <p>No content yet. Click Edit to add content.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Edit Mode */}
+                  {mode === 'edit' && (
+                    <div className="bg-white rounded-lg shadow-sm p-8">
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Content (Markdown)
+                        </label>
+                        <textarea
+                          value={content || ''}
+                          onChange={(e) => setValue('content', e.target.value)}
+                          placeholder="# Edit your content here...
+
+Supports **bold**, *italic*, code blocks, tables, and more!"
+                          maxLength={50000}
+                          className="w-full p-3 border border-gray-200 rounded-lg resize-none font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          style={{ height: '600px' }}
+                        />
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Draft Mode */}
+                  {mode === 'draft' && (
+                    <div className="bg-white rounded-lg shadow-sm p-8">
+                      <div className="text-center py-12">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Draft Mode</h3>
+                        <p className="text-gray-600 mb-4">
+                          View and manage draft versions of this node.
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Draft functionality coming soon...
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Publish Mode */}
+                  {mode === 'publish' && (
+                    <div className="bg-white rounded-lg shadow-sm p-8">
+                      <div className="text-center py-12">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Publish Mode</h3>
+                        <p className="text-gray-600 mb-4">
+                          Publish this node and make it available to collaborators.
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Publish functionality coming soon...
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Node Metadata */}
                   <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
