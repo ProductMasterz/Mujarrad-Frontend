@@ -56,3 +56,35 @@
     @apply bg-accent/50;
   }
 }
+
+/* Force light mode for markdown editor */
+@layer components {
+  .markdown-editor-container[data-color-mode="light"],
+  .markdown-editor-container[data-color-mode="light"] .w-md-editor,
+  .markdown-editor-container[data-color-mode="light"] .w-md-editor-text-pre,
+  .markdown-editor-container[data-color-mode="light"] .w-md-editor-text-input,
+  .markdown-editor-container[data-color-mode="light"] .w-md-editor-toolbar,
+  .markdown-editor-container[data-color-mode="light"] .w-md-editor-content {
+    color-scheme: light;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .markdown-editor-container[data-color-mode="light"] .w-md-editor-text-pre > code,
+  .markdown-editor-container[data-color-mode="light"] .w-md-editor-text-input {
+    color: #000000 !important;
+  }
+
+  .markdown-editor-container[data-color-mode="light"] .w-md-editor-toolbar {
+    background-color: #f3f4f6 !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+
+  .markdown-editor-container[data-color-mode="light"] .w-md-editor-toolbar li button {
+    color: #374151 !important;
+  }
+
+  .markdown-editor-container[data-color-mode="light"] .w-md-editor-toolbar li button:hover {
+    background-color: #e5e7eb !important;
+  }
+}

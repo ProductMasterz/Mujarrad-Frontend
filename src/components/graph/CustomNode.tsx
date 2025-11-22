@@ -9,6 +9,7 @@ const nodeTypeStyles: Record<NodeType, string> = {
   [NodeType.REGULAR]: 'bg-blue-50 border-blue-500',
   [NodeType.CONTEXT]: 'bg-purple-50 border-purple-500',
   [NodeType.ASSUMPTION]: 'bg-yellow-50 border-yellow-500',
+  [NodeType.TEMPLATE]: 'bg-green-50 border-green-500',
 };
 
 export const CustomNode = memo(({ data }: NodeProps) => {

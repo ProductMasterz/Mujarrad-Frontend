@@ -23,8 +23,8 @@ interface CollaboratorListProps {
 }
 
 export function CollaboratorList({ spaceId, isOwner }: CollaboratorListProps) {
-  const { data: collaborators, isLoading } = useCollaborators(spaceId);
-  const { mutate: removeCollaborator, isPending: isRemoving } = useRemoveCollaborator(spaceId);
+  const { data: collaborators, isLoading } = useCollaborators(spaceId.toString());
+  const { mutate: removeCollaborator, isPending: isRemoving } = useRemoveCollaborator(spaceId.toString());
   const [selectedCollaboratorId, setSelectedCollaboratorId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 

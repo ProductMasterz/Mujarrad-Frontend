@@ -1,0 +1,16 @@
+/* Import highlight.js theme for code syntax highlighting */
+@import 'highlight.js/styles/github-dark.css';
+
+/* Custom markdown overrides */
+.markdown-content {
+  @apply prose dark:prose-invert max-w-none;
+}
+
+/* Code block customizations */
+.markdown-content pre {
+  @apply rounded-lg border border-gray-700;
+}
+
+.markdown-content code {
+  @apply text-sm;
+}

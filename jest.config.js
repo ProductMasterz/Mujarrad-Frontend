@@ -26,9 +26,9 @@ const config = {
 module.exports = async () => {
   const nextJestConfig = await createJestConfig(config)()
 
-  // Override the transformIgnorePatterns to allow MSW v2 ESM modules
+  // Override the transformIgnorePatterns to allow MSW v2 ESM modules and markdown libraries
   nextJestConfig.transformIgnorePatterns = [
-    '/node_modules/(?!(msw|@mswjs|@bundled-es-modules|until-async)/)',
+    '/node_modules/(?!(msw|@mswjs|@bundled-es-modules|until-async|react-markdown|remark-gfm|rehype-highlight|devlop|micromark|mdast-util-from-markdown|mdast-util-to-hast|unist-util-visit|decode-named-character-reference)/)',
   ]
 
   return nextJestConfig

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { NodeType, AttributeKey, type Node, type Attribute } from '@/types/backend-dtos';
 import { HierarchyNavigator } from '@/components/hierarchy/HierarchyNavigator';
 import { GraphVisualization } from '@/components/graph/GraphVisualization';
-import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { MarkdownPreview } from '@/components/nodes/MarkdownPreview';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 
@@ -267,11 +267,8 @@ export default function Feature004DemoPage() {
                   </div>
 
                   {selectedNode.content ? (
-                    <MarkdownRenderer
+                    <MarkdownPreview
                       content={selectedNode.content}
-                      spaceSlug="demo"
-                      availableNodes={mockNodes}
-                      onWikiLinkClick={handleWikiLinkClick}
                     />
                   ) : (
                     <p className="text-gray-500 italic">

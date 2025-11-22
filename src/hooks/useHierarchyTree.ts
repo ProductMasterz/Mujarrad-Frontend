@@ -29,7 +29,7 @@ export function useHierarchyTree({
     return buildHierarchyTree(
       nodes,
       attributes,
-      expandedNodeIds,
+      Array.from(expandedNodeIds),
       selectedNodeId
     );
   }, [nodes, attributes, expandedNodeIds, selectedNodeId]);

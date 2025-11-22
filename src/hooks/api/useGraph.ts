@@ -17,7 +17,7 @@ export function useGraphData(spaceSlug: string) {
         attributeService.getSpaceAttributes(spaceSlug),
       ]);
 
-      const nodes: GraphNode[] = nodesResponse.content.map((node, index) => ({
+      const nodes: GraphNode[] = nodesResponse.map((node, index) => ({
         id: String(node.id),
         type: node.nodeType.toLowerCase() as 'context' | 'regular',
         position: { x: index * 200, y: index * 100 }, // TODO: Calculate proper layout

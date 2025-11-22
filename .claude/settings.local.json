@@ -90,7 +90,17 @@
       "Bash(fi)",
       "Bash(if [ -d \"./posts/User interface/Space\" ])",
       "Bash(if [ -f \"./posts/Plugins/Spaces.md\" ])",
-      "Bash(if [ -f \"./posts/User interface/Space/Space.md\" ])"
+      "Bash(if [ -f \"./posts/User interface/Space/Space.md\" ])",
+      "Bash(timeout 30 npm run build:*)",
+      "Bash(timeout 45 npm run build)",
+      "Bash(timeout 60 npm run build:*)",
+      "Read(//private/tmp/**)",
+      "Bash(timeout 30 npm test:*)",
+      "Bash(npx eslint:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkODUwMjJmZC1mMTQzLTQwNWEtOWM0Yi02NzJjNzBmNGZiMDUiLCJpYXQiOjE3NjA2NDgzNjMsImV4cCI6MTc2MDczNDc2M30.cYh16ntPlR1BZTyQiQniscO1AKZYfjMkE2CgHC-qsfU\")",
+      "Bash(time curl:*)",
+      "WebFetch(domain:reactflow.dev)",
+      "WebFetch(domain:tldraw.dev)"
     ],
     "deny": [],
     "ask": []

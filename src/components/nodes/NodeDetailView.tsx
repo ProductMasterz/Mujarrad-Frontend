@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Node } from '@/types/backend-dtos';
-import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { MarkdownPreview } from './MarkdownPreview';
 import { Button } from '@/components/ui/button';
 import { EditNodeDialog } from './EditNodeDialog';
 import { Badge } from '@/components/ui/badge';
@@ -70,7 +70,7 @@ export function NodeDetailView({
                 <span>•</span>
                 <span>Updated {updatedAt}</span>
                 <span>•</span>
-                <span className="text-xs">v{node.version}</span>
+                <span className="text-xs">{node.currentVersionId}</span>
               </div>
             </div>
             <Button onClick={() => setIsEditDialogOpen(true)}>
@@ -83,11 +83,8 @@ export function NodeDetailView({
         <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 p-6">
           <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
             {node.content ? (
-              <MarkdownRenderer
+              <MarkdownPreview
                 content={node.content}
-                spaceSlug={spaceSlug}
-                availableNodes={availableNodes}
-                onWikiLinkClick={onWikiLinkClick}
               />
             ) : (
               <div className="text-center py-12">
@@ -110,7 +107,7 @@ export function NodeDetailView({
       {/* Edit Dialog */}
       <EditNodeDialog
         spaceSlug={spaceSlug}
-        nodeId={node.id}
+        nodeId={Number(node.id)}
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
       />

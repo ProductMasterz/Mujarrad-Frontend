@@ -25,7 +25,7 @@ interface InviteCollaboratorDialogProps {
 
 export function InviteCollaboratorDialog({ spaceId }: InviteCollaboratorDialogProps) {
   const [open, setOpen] = useState(false);
-  const { mutate: inviteCollaborator, isPending: isLoading } = useInviteCollaborator(spaceId);
+  const { mutate: inviteCollaborator, isPending: isLoading } = useInviteCollaborator(spaceId.toString());
 
   const {
     register,

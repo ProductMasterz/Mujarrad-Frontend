@@ -73,7 +73,7 @@ export function CreateRelationshipDialog({
     );
   };
 
-  const availableNodes = nodesData?.filter(node => node.id !== sourceNodeId) || [];
+  const availableNodes = nodesData?.filter(node => Number(node.id) !== sourceNodeId) || [];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

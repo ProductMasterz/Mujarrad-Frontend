@@ -31,12 +31,6 @@ export interface Space {
 }
 
 /**
- * @deprecated Use Space instead. Space has been renamed to Space in backend API v2.
- * This alias is provided for backward compatibility during migration.
- */
-export type Space = Space;
-
-/**
  * Node type enum - must match backend exactly
  */
 export enum NodeType {
@@ -161,16 +155,6 @@ export interface UpdateSpaceRequest {
   /** New slug (optional, must be unique) */
   slug?: string;
 }
-
-/**
- * @deprecated Use CreateSpaceRequest instead
- */
-export type CreateSpaceRequest = CreateSpaceRequest;
-
-/**
- * @deprecated Use UpdateSpaceRequest instead
- */
-export type UpdateSpaceRequest = UpdateSpaceRequest;
 
 /**
  * Request body for creating a node

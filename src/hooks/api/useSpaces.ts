@@ -7,7 +7,19 @@ import type {
   CreateSpaceRequest,
   UpdateSpaceRequest,
   InviteCollaboratorRequest,
+  SpaceCollaborator,
 } from '@/types/backend-dtos';
+
+/**
+ * Query key factory for spaces
+ */
+export const spaceKeys = {
+  all: ['spaces'] as const,
+  lists: () => [...spaceKeys.all, 'list'] as const,
+  list: () => [...spaceKeys.lists()] as const,
+  details: () => [...spaceKeys.all, 'detail'] as const,
+  detail: (slug: string) => [...spaceKeys.details(), slug] as const,
+};
 
 /** @deprecated Use useSpaces instead */
 export function useSpaces() {
@@ -47,7 +59,7 @@ export function useUpdateSpace(id: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: UpdateSpaceRequest) => spaceService.updateSpace(id, data),
+    mutationFn: (data: UpdateSpaceRequest) => spaceService.updateSpace(Number(id), data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
@@ -60,7 +72,7 @@ export function useDeleteSpace() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => spaceService.deleteSpace(id),
+    mutationFn: (id: string) => spaceService.deleteSpace(Number(id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
@@ -73,7 +85,7 @@ export function useDeleteSpace() {
  * @deprecated - Collaborator functionality needs to be migrated to space-based API
  */
 export function useCollaborators(spaceId: string) {
-  return useQuery({
+  return useQuery<SpaceCollaborator[]>({
     queryKey: ['spaces', spaceId, 'collaborators'],
     queryFn: async () => {
       // TODO: Update when backend migrates collaborators to space-based endpoints

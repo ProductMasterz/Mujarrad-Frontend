@@ -75,8 +75,7 @@ export const wikiLinkService = {
     }
 
     // Fetch all nodes in space for resolution
-    const response = await nodeService.getSpaceNodes(spaceId);
-    const existingNodes = response;
+    const existingNodes = await nodeService.getNodes(spaceId);
 
     // Resolve each wiki-link
     const resolutions: WikiLinkResolution[] = wikiLinks.map(link => {
@@ -138,7 +137,7 @@ export const wikiLinkService = {
           },
         };
 
-        const createdNode = await nodeService.createNode(createRequest);
+        const createdNode = await nodeService.createNode(spaceId, createRequest);
         createdNodes.push(createdNode);
       } catch (error: any) {
         errors.push({
@@ -195,7 +194,7 @@ export const wikiLinkService = {
 
         // Create attribute relationship
         const createRequest: CreateAttributeRequest = {
-          targetNodeId: targetNode.id,
+          targetNodeId: Number(targetNode.id),
           attributeKey: AttributeKey.REFERENCES,
           attributeValue: resolution.displayText,
           metadata: {

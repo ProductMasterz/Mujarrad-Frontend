@@ -32,8 +32,8 @@ export function SpaceSettings({ spaceSlug, currentUserId }: SpaceSettingsProps) 
   }
 
   const isOwner = space.ownerId === currentUserId;
-  const isCollaborator = space.collaborators?.some(c => c.userId === currentUserId);
-  const canEdit = isOwner || isCollaborator;
+  // TODO: Implement collaborator check when API is ready
+  const canEdit = isOwner;
 
   return (
     <div className="space-y-6">
@@ -67,11 +67,11 @@ export function SpaceSettings({ spaceSlug, currentUserId }: SpaceSettingsProps) 
               <EditSpaceDialog spaceSlug={spaceSlug} />
               {isOwner && (
                 <DeleteSpaceDialog
-                  spaceId={space.id}
+                  spaceId={Number(space.id)}
                   spaceName={space.name}
-                  nodeCount={space.nodeCount || 0}
-                  relationshipCount={space.relationshipCount || 0}
-                  versionCount={space.versionCount || 0}
+                  nodeCount={0}
+                  relationshipCount={0}
+                  versionCount={0}
                 />
               )}
             </div>
@@ -93,7 +93,7 @@ export function SpaceSettings({ spaceSlug, currentUserId }: SpaceSettingsProps) 
             <CardDescription>Manage who can access and edit this space</CardDescription>
           </CardHeader>
           <CardContent>
-            <CollaboratorList spaceId={space.id} isOwner={isOwner} />
+            <CollaboratorList spaceId={Number(space.id)} isOwner={isOwner} />
           </CardContent>
         </Card>
       )}

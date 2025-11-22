@@ -66,7 +66,3 @@ export const useSpaceNodes = (
   });
 };
 
-/**
- * @deprecated Use useSpaceNodes instead - space terminology is being phased out
- */
-export const useSpaceNodes = useSpaceNodes;

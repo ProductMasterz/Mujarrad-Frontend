@@ -43,7 +43,7 @@ export function DeleteSpaceDialog({
   const handleDelete = () => {
     if (!isConfirmed) return;
 
-    deleteSpace(spaceId, {
+    deleteSpace(spaceId.toString(), {
       onSuccess: () => {
         setOpen(false);
         setConfirmationText('');

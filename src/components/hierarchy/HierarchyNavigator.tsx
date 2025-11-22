@@ -34,7 +34,7 @@ export function HierarchyNavigator({
   const hierarchyTree = useHierarchyTree({
     nodes,
     attributes,
-    expandedNodeIds,
+    expandedNodeIds: new Set(expandedNodeIds),
     selectedNodeId,
   });
 
