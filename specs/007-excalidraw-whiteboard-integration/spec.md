@@ -1,9 +1,9 @@
-# Feature Specification: Interactive Graph Node Creation
+# Feature Specification: Excalidraw Whiteboard Integration
 
-**Feature Branch**: `007-we-are-going`
+**Feature Branch**: `007-excalidraw-whiteboard-integration`
 **Created**: 2025-11-22
 **Status**: Draft
-**Input**: User description: "we are going to create our active flow solid features with solid connections. Once I create a node inside the graph, it's supposed to be created in the database and appear inside the workspace. So basically, I need you to start understanding what I'm doing or what I am trying to do and develop the needed specs accordingly. I'm going to provide you a URL that has a lot of examples from React Flow itself so that you don't recreate or reinvent the wheel. https://reactflow.dev/examples"
+**Input**: User description: "Build a FigJam-like collaborative whiteboard using Excalidraw (MIT licensed) as the canvas engine. Elements created in the whiteboard persist to the Mujarrad database. Data-driven configuration architecture where element types map to Node configurations stored as JSON."
 
 ---
 
@@ -17,28 +17,26 @@
 ## User Scenarios & Testing *(mandatory)*
 
 ### Primary User Story
-As a knowledge worker using Mujarrad, I want to create nodes directly within the graph visualization by clicking or dragging, so that I can quickly build out my knowledge structure without switching contexts to dialogs or forms. When I create a node in the graph, it should immediately persist to the database and appear in the workspace's node list and hierarchy.
+As a Mujarrad user, I want to create and manipulate visual elements (sticky notes, shapes, connectors) on an infinite canvas whiteboard, so that I can brainstorm, diagram, and organize knowledge visually. All elements I create should persist to my space and be available when I return.
 
 ### Acceptance Scenarios
 
-1. **Given** a user is viewing a space's graph, **When** they perform a node creation action (e.g., click empty canvas, drag from palette, or drop connection on empty space), **Then** a new node is created at that position, saved to the database, and visible in both the graph and workspace node list.
+1. **Given** a user navigates to a space's whiteboard view, **When** the page loads, **Then** they see an interactive canvas where they can create shapes, sticky notes, and draw freely.
 
-2. **Given** a user creates a node in the graph, **When** the creation is successful, **Then** the user can immediately edit the node's properties (name, type, content) without leaving the graph view.
+2. **Given** a user creates elements on the whiteboard (sticky note, shape, connector), **When** they leave and return to the whiteboard, **Then** all elements are restored exactly as they left them.
 
-3. **Given** a user drags a connection from an existing node and drops it on empty canvas space, **When** the drop occurs, **Then** a new node is created and automatically connected to the source node via a relationship.
+3. **Given** a user creates a sticky note on the whiteboard, **When** it is saved, **Then** it is stored as a Node in the database with appropriate type configuration.
 
-4. **Given** a user creates a node in the graph, **When** the node is saved, **Then** it appears in the hierarchy navigator and can be accessed from the workspace's node list immediately.
+4. **Given** a user draws a connector between two elements, **When** it is saved, **Then** it is stored as an Attribute (relationship) linking the two corresponding Nodes.
 
-5. **Given** a user is creating a node in the graph, **When** the creation fails (network error, validation error), **Then** the user receives clear feedback and the graph state is not corrupted.
+5. **Given** a user modifies an element (move, resize, edit text), **When** the modification is complete, **Then** the change is persisted to the database.
 
-6. **Given** a user creates multiple nodes rapidly in the graph, **When** each creation completes, **Then** all nodes are persisted correctly without data loss or conflicts.
+6. **Given** a user deletes an element from the whiteboard, **When** deleted, **Then** the corresponding Node/Attribute is removed from the database.
 
 ### Edge Cases
-- What happens when a user tries to create a node but loses network connectivity?
-- How does the system handle creating a node when the user doesn't have edit permissions for the space?
-- What happens if a user tries to create a node with a duplicate name within the same space?
-- How does the graph handle undo/redo for node creation? [NEEDS CLARIFICATION: Is undo/redo required for this feature?]
-- What is the default node type when creating from the graph? [NEEDS CLARIFICATION: Should user be prompted for type, or use a default?]
+- What happens if the user loses internet connection while editing? (Accept temporary inconsistency for MVP)
+- How are concurrent edits handled if user has multiple tabs open? (Out of scope for MVP)
+- What happens when canvas has hundreds of elements? (Performance testing needed)
 
 ---
 
@@ -46,81 +44,98 @@ As a knowledge worker using Mujarrad, I want to create nodes directly within the
 
 ### Functional Requirements
 
-#### Node Creation in Graph
-- **FR-001**: System MUST allow users to create new nodes directly within the graph visualization interface
-- **FR-002**: System MUST provide at least one intuitive method for initiating node creation in the graph [NEEDS CLARIFICATION: Which methods? Options include: click on empty space, drag from sidebar palette, context menu, keyboard shortcut, drop connection on empty space]
-- **FR-003**: System MUST create the node at the visual position where the user initiated the creation action
-- **FR-004**: System MUST persist newly created nodes to the database immediately upon creation
-- **FR-005**: System MUST display the new node in the graph immediately after creation (optimistic update)
+#### Phase 1: Basic Excalidraw Integration
+- **FR-001**: System MUST display an Excalidraw canvas within the space's whiteboard view
+- **FR-002**: System MUST allow users to create all standard Excalidraw elements (shapes, sticky notes, text, connectors, freehand drawing)
+- **FR-003**: System MUST preserve Excalidraw's native UI and tools (no customization for MVP)
+- **FR-004**: System MUST load existing whiteboard state when user navigates to the view
 
-#### Node Properties
-- **FR-006**: System MUST allow users to set a name for the new node [NEEDS CLARIFICATION: Should this be inline editing in the graph or a minimal dialog?]
-- **FR-007**: System MUST allow users to select the node type (Context, Regular, Template, Assumption) during or immediately after creation
-- **FR-008**: System SHOULD allow users to add initial content/description to the node from the graph view [NEEDS CLARIFICATION: Is this required, or can content be added later in detail view?]
+#### Phase 2: Data Persistence
+- **FR-005**: System MUST save whiteboard state to the database via API
+- **FR-006**: System MUST map Excalidraw elements to Mujarrad Node entities
+- **FR-007**: System MUST map Excalidraw connectors/arrows to Mujarrad Attribute (relationship) entities
+- **FR-008**: System MUST store element-specific configuration as JSON (position, size, color, text, etc.)
+- **FR-009**: System MUST auto-save changes (debounced to avoid excessive API calls)
 
-#### Connection Creation (Edge on Drop)
-- **FR-009**: System MUST create a new node when a user drags a connection handle and drops it on empty canvas space
-- **FR-010**: System MUST automatically create a relationship (edge) between the source node and the newly created node
-- **FR-011**: System MUST allow users to specify the relationship type when creating via edge drop [NEEDS CLARIFICATION: Should this default to a specific type like "contains" or "references"?]
-
-#### Workspace Synchronization
-- **FR-012**: System MUST update the workspace's node list to include newly created nodes immediately
-- **FR-013**: System MUST update the hierarchy navigator to reflect newly created nodes and their relationships
-- **FR-014**: System MUST ensure the graph view stays synchronized with other views (list, hierarchy) in real-time
-
-#### Visual Feedback & UX
-- **FR-015**: System MUST provide visual feedback during node creation (e.g., placeholder node, loading indicator)
-- **FR-016**: System MUST display error messages clearly when node creation fails
-- **FR-017**: System MUST allow users to cancel a node creation in progress
-- **FR-018**: System SHOULD position new nodes to avoid overlap with existing nodes [NEEDS CLARIFICATION: Should the system auto-layout, or preserve exact drop position?]
+#### Phase 3: Data-Driven Configuration
+- **FR-010**: System MUST store element type configurations in a JSON lookup structure
+- **FR-011**: System MUST support different Node types for different Excalidraw element types
+- **FR-012**: System MUST reconstruct elements from stored JSON configuration on load
+- **FR-013**: System MUST maintain referential integrity between whiteboard elements and database entities
 
 #### Permissions & Validation
-- **FR-019**: System MUST validate user has edit permissions before allowing node creation in the graph
-- **FR-020**: System MUST validate node name is not empty before persisting
-- **FR-021**: System MUST enforce any space-specific constraints on node creation
+- **FR-014**: System MUST validate user has edit permissions before allowing whiteboard modifications
+- **FR-015**: System MUST handle save failures gracefully with user feedback
 
 ### Non-Functional Requirements
-- **NFR-001**: Node creation should complete within 2 seconds under normal network conditions
-- **NFR-002**: Graph should remain responsive during node creation (no UI blocking)
-- **NFR-003**: System should handle concurrent node creations from the same user without conflicts
+- **NFR-001**: Whiteboard should load within 3 seconds for canvases with up to 100 elements
+- **NFR-002**: Auto-save should not block or freeze the UI
+- **NFR-003**: Canvas should remain responsive during save operations
 
 ### Key Entities
 
-- **Node**: A knowledge unit in the workspace. Has name, type (Context/Regular/Template/Assumption), content, and position within the graph. Can have relationships with other nodes.
+- **Node**: Represents any whiteboard element (sticky note, shape, text box, etc.). Contains type, name, and JSON configuration for visual properties.
 
-- **Relationship (Edge/Attribute)**: A connection between two nodes representing a semantic relationship. Types include "contains" (hierarchical) and "references" (associative).
+- **Attribute (Relationship)**: Represents connections between elements. Maps to Excalidraw arrows/connectors linking two Nodes.
 
-- **Graph Position**: The visual x/y coordinates where a node appears in the graph view. May be stored for persistence or calculated dynamically.
+- **Element Configuration**: JSON structure storing all properties needed to reconstruct an Excalidraw element (position, dimensions, color, text, style, etc.).
+
+- **Configuration Lookup Table**: Database table mapping element types to their configuration schemas and rendering rules.
 
 ---
 
-## Out of Scope
-- Advanced graph layouts (force-directed, hierarchical) - use existing circular layout
-- Multi-select and bulk node creation
-- Copy/paste nodes
-- Import/export graph data
-- Collaborative real-time editing (multiple users editing same graph simultaneously)
+## Out of Scope (MVP)
+
+- Real-time collaboration (multiple users editing simultaneously) - will be added later
+- Custom Excalidraw UI/theme customization
+- Element-to-Node bidirectional sync (editing Node in list updates whiteboard)
+- Undo/redo persistence across sessions
+- Export/import whiteboard data
+- Offline support with sync
+- Event durability (OutBox pattern, Restate) - architecture planned but not implemented
+
+---
+
+## Future Considerations (Post-MVP)
+
+- **Real-time collaboration**: Research Excalidraw's collaboration features, may need backend WebSocket support
+- **Durable workflows**: Implement Restate for event durability and consistency
+- **OutBox pattern**: PostgreSQL OutBox for event preservation during connection issues
+- **Bidirectional sync**: Changes in whiteboard reflect in node list and vice versa
 
 ---
 
 ## Dependencies & Assumptions
 
 ### Dependencies
-- Existing React Flow graph implementation
-- Existing node creation API endpoints
-- Existing relationship/attribute creation API endpoints
-- Current workspace node list and hierarchy navigator components
+- @excalidraw/excalidraw npm package (MIT licensed)
+- Existing Node API endpoints (create, update, delete)
+- Existing Attribute API endpoints for relationships
+- Database schema support for JSON configuration storage
 
 ### Assumptions
-- The backend already supports all necessary API operations for node and relationship creation
-- Users are already authenticated and have space membership
-- The graph component already handles basic node rendering and edge connections
+- Excalidraw can be embedded as a React component without modification
+- Backend can store and retrieve arbitrary JSON configurations
+- Element-to-Node mapping can be established via element type → node type
+- Users have existing space membership and permissions
+
+---
+
+## Architecture Decisions
+
+1. **No UI Customization**: Ship Excalidraw as-is to minimize complexity and time to market
+2. **Data-Driven Configuration**: All element properties stored as JSON, making the system flexible and extensible
+3. **Configuration Lookup Tables**: Database tables define how each element type maps to Node configuration
+4. **Accept Temporary Inconsistency**: For MVP, accept that connection loss may cause unsaved changes
+5. **API-First Persistence**: All saves go through existing REST API endpoints
 
 ---
 
 ## Reference Materials
-- React Flow Examples: https://reactflow.dev/examples
-  - Relevant examples: Add Node on Edge Drop, Drag and Drop, Save and Restore, Custom Nodes
+- Excalidraw: https://excalidraw.com
+- Excalidraw GitHub: https://github.com/excalidraw/excalidraw
+- Excalidraw React Component: https://www.npmjs.com/package/@excalidraw/excalidraw
+- FigJam (inspiration): https://www.figma.com/figjam/
 
 ---
 
@@ -133,29 +148,11 @@ As a knowledge worker using Mujarrad, I want to create nodes directly within the
 - [x] All mandatory sections completed
 
 ### Requirement Completeness
-- [ ] No [NEEDS CLARIFICATION] markers remain
-- [x] Requirements are testable and unambiguous (where not marked)
+- [x] No [NEEDS CLARIFICATION] markers remain
+- [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Scope is clearly bounded
 - [x] Dependencies and assumptions identified
-
----
-
-## Clarifications Needed
-
-1. **Node creation method**: Which interaction methods should be supported? (click empty space, drag from palette, context menu, edge drop, etc.)
-
-2. **Default node type**: What type should be assigned when creating from graph? Should user be prompted?
-
-3. **Property editing UX**: Should name/type be set via inline editing in graph or a minimal dialog?
-
-4. **Content entry**: Is adding node content from graph view required, or can users add it later in detail view?
-
-5. **Relationship type on edge drop**: What default relationship type when creating node via edge drop?
-
-6. **Undo/redo**: Is undo/redo functionality required for graph node creation?
-
-7. **Auto-layout**: Should new nodes auto-position to avoid overlap, or preserve exact drop position?
 
 ---
 
@@ -163,10 +160,12 @@ As a knowledge worker using Mujarrad, I want to create nodes directly within the
 
 - [x] User description parsed
 - [x] Key concepts extracted
-- [x] Ambiguities marked
+- [x] Ambiguities resolved
 - [x] User scenarios defined
 - [x] Requirements generated
 - [x] Entities identified
-- [ ] Review checklist passed (clarifications pending)
+- [x] Review checklist passed
+
+**Status: Ready for Planning Phase**
 
 ---
