@@ -100,7 +100,8 @@
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkODUwMjJmZC1mMTQzLTQwNWEtOWM0Yi02NzJjNzBmNGZiMDUiLCJpYXQiOjE3NjA2NDgzNjMsImV4cCI6MTc2MDczNDc2M30.cYh16ntPlR1BZTyQiQniscO1AKZYfjMkE2CgHC-qsfU\")",
       "Bash(time curl:*)",
       "WebFetch(domain:reactflow.dev)",
-      "WebFetch(domain:tldraw.dev)"
+      "WebFetch(domain:tldraw.dev)",
+      "SlashCommand(/plan)"
     ],
     "deny": [],
     "ask": []
