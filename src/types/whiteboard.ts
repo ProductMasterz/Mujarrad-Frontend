@@ -69,6 +69,9 @@ export interface ExcalidrawElement {
   // Binding (for arrows/lines)
   boundElements: BoundElement[] | null;
 
+  // Container binding (for text inside shapes)
+  containerId?: string | null;
+
   // Type-specific properties
   text?: string;
   fontSize?: number;

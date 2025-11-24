@@ -1,138 +1,105 @@
 'use client';
 
 /**
- * WhiteboardCanvas - Excalidraw wrapper component
- * Core component for the whiteboard feature
+ * WhiteboardCanvas - Excalidraw wrapper component with save functionality
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Excalidraw } from '@excalidraw/excalidraw';
-import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
+import React, { useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import debounce from 'lodash/debounce';
 
+import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
 import {
   ExcalidrawElement,
-  WhiteboardAppState,
   BinaryFileData,
   WhiteboardCanvasProps,
-  WhiteboardNode,
 } from '@/types/whiteboard';
 import { useWhiteboardStore } from '@/stores/whiteboardStore';
 import { useSaveWhiteboard } from '@/hooks/api/useWhiteboardMutations';
 
-// Import Excalidraw styles
-import '@excalidraw/excalidraw/index.css';
+// Dynamic import of the wrapper to avoid SSR issues
+const ExcalidrawWrapper = dynamic(
+  () => import('./ExcalidrawWrapper'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      </div>
+    )
+  }
+);
 
 export function WhiteboardCanvas({
   spaceSlug,
   initialElements = [],
   initialAppState = {},
   initialFiles = {},
-  onSave,
   onError,
   readOnly = false,
 }: WhiteboardCanvasProps) {
-  const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
+  const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const existingNodesRef = useRef<Map<string, string>>(new Map());
 
   // Zustand store
-  const { setElements, setSaving, setError, markSaved } = useWhiteboardStore();
+  const { setSaving, setError, markSaved } = useWhiteboardStore();
 
   // Save mutation
   const saveWhiteboard = useSaveWhiteboard(spaceSlug);
+  const saveWhiteboardRef = useRef(saveWhiteboard);
+  saveWhiteboardRef.current = saveWhiteboard;
 
   // Debounced save function
-  const debouncedSave = useMemo(
-    () =>
-      debounce(async (elements: ExcalidrawElement[]) => {
-        if (readOnly) return;
+  const debouncedSave = useRef(
+    debounce(async (elements: ExcalidrawElement[]) => {
+      if (readOnly) return;
 
-        try {
-          setSaving(true);
-          setError(null);
+      try {
+        setSaving(true);
+        setError(null);
 
-          await saveWhiteboard.mutateAsync({
-            elements,
-            existingNodes: existingNodesRef.current,
-          });
+        await saveWhiteboardRef.current.mutateAsync({
+          elements,
+          existingNodes: existingNodesRef.current,
+        });
 
-          markSaved();
-
-          if (onSave && excalidrawAPI) {
-            const appState = excalidrawAPI.getAppState();
-            onSave(elements, appState as WhiteboardAppState);
-          }
-        } catch (error) {
-          const message = error instanceof Error ? error.message : 'Failed to save';
-          setError(message);
-          onError?.(error instanceof Error ? error : new Error(message));
-        } finally {
-          setSaving(false);
-        }
-      }, 2000),
-    [spaceSlug, readOnly, saveWhiteboard, setSaving, setError, markSaved, onSave, onError, excalidrawAPI]
-  );
+        markSaved();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to save';
+        setError(message);
+        onError?.(error instanceof Error ? error : new Error(message));
+      } finally {
+        setSaving(false);
+      }
+    }, 2000)
+  ).current;
 
   // Handle changes from Excalidraw
   const handleChange = useCallback(
     (elements: readonly ExcalidrawElement[], appState: any, files: BinaryFileData) => {
-      // Update local store
-      setElements([...elements] as ExcalidrawElement[]);
-
-      // Trigger debounced save
-      debouncedSave([...elements] as ExcalidrawElement[]);
+      // Only save if there are actual elements (avoid saving on initial load)
+      if (elements.length > 0) {
+        debouncedSave([...elements] as ExcalidrawElement[]);
+      }
     },
-    [setElements, debouncedSave]
+    [debouncedSave]
   );
 
-  // Update existing nodes map when initial data changes
-  const updateExistingNodes = useCallback((nodes: WhiteboardNode[]) => {
-    existingNodesRef.current = new Map(
-      nodes.map((node) => [
-        node.node_details.excalidraw_element.id,
-        node.id,
-      ])
-    );
+  // Handle API mount
+  const handleMount = useCallback((api: ExcalidrawImperativeAPI) => {
+    excalidrawAPIRef.current = api;
   }, []);
-
-  // Memoize Excalidraw component to prevent infinite loops
-  const ExcalidrawComponent = useMemo(
-    () => (
-      <Excalidraw
-        excalidrawAPI={(api) => setExcalidrawAPI(api)}
-        initialData={{
-          elements: initialElements,
-          appState: {
-            viewBackgroundColor: '#ffffff',
-            ...initialAppState,
-          },
-          files: initialFiles,
-        }}
-        onChange={handleChange}
-        viewModeEnabled={readOnly}
-        zenModeEnabled={false}
-        gridModeEnabled={false}
-        theme="light"
-        name="Mujarrad Whiteboard"
-        UIOptions={{
-          canvasActions: {
-            changeViewBackgroundColor: true,
-            clearCanvas: !readOnly,
-            export: { saveFileToDisk: true },
-            loadScene: !readOnly,
-            saveToActiveFile: false,
-            toggleTheme: true,
-            saveAsImage: true,
-          },
-        }}
-      />
-    ),
-    [initialElements, initialAppState, initialFiles, handleChange, readOnly]
-  );
 
   return (
     <div className="w-full h-full" style={{ minHeight: '600px' }}>
-      {ExcalidrawComponent}
+      <ExcalidrawWrapper
+        initialElements={initialElements}
+        initialAppState={initialAppState}
+        initialFiles={initialFiles}
+        onChange={handleChange}
+        onMount={handleMount}
+        readOnly={readOnly}
+      />
     </div>
   );
 }

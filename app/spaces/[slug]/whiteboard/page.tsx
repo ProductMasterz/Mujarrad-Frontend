@@ -9,14 +9,14 @@ import { useParams } from 'next/navigation';
 import { WhiteboardCanvas } from '@/components/whiteboard/WhiteboardCanvas';
 import { useWhiteboardState } from '@/hooks/api/useWhiteboard';
 import { useWhiteboardStore } from '@/stores/whiteboardStore';
-import { useSpaceBySlug } from '@/hooks/api/useSpaces';
+import { useSpace } from '@/hooks/api/useSpaces';
 
 export default function WhiteboardPage() {
   const params = useParams();
   const spaceSlug = params.slug as string;
 
   // Fetch space info
-  const { data: space, isLoading: spaceLoading, error: spaceError } = useSpaceBySlug(spaceSlug);
+  const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(spaceSlug);
 
   // Fetch whiteboard state
   const {

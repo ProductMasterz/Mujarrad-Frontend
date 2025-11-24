@@ -18,18 +18,17 @@ export const whiteboardService = {
    * Get all whiteboard nodes for a space
    */
   async getWhiteboardNodes(spaceSlug: string): Promise<WhiteboardNode[]> {
-    const response = await apiClient.get<WhiteboardNodesResponse>(
-      `/api/spaces/${spaceSlug}/nodes`,
+    const response = await apiClient.get<WhiteboardNode[]>(
+      `/spaces/${spaceSlug}/nodes`,
       {
         params: {
-          // Filter for nodes that have element_subtype (whiteboard elements)
           size: 1000, // Get all elements
         },
       }
     );
 
     // Filter to only whiteboard nodes (those with element_subtype)
-    return response.data.content.filter(
+    return response.data.filter(
       (node) => node.node_details?.element_subtype
     );
   },
@@ -42,7 +41,7 @@ export const whiteboardService = {
     dto: CreateWhiteboardNodeDTO
   ): Promise<WhiteboardNode> {
     const response = await apiClient.post<WhiteboardNode>(
-      `/api/spaces/${spaceSlug}/nodes`,
+      `/spaces/${spaceSlug}/nodes`,
       dto
     );
     return response.data;
@@ -57,7 +56,7 @@ export const whiteboardService = {
     dto: UpdateWhiteboardNodeDTO
   ): Promise<WhiteboardNode> {
     const response = await apiClient.put<WhiteboardNode>(
-      `/api/spaces/${spaceSlug}/nodes/${id}`,
+      `/spaces/${spaceSlug}/nodes/${id}`,
       dto
     );
     return response.data;
@@ -67,7 +66,7 @@ export const whiteboardService = {
    * Delete a whiteboard node
    */
   async deleteWhiteboardNode(spaceSlug: string, id: string): Promise<void> {
-    await apiClient.delete(`/api/spaces/${spaceSlug}/nodes/${id}`);
+    await apiClient.delete(`/spaces/${spaceSlug}/nodes/${id}`);
   },
 
   /**
@@ -75,7 +74,7 @@ export const whiteboardService = {
    */
   async getConnectors(spaceSlug: string): Promise<WhiteboardConnector[]> {
     const response = await apiClient.get<WhiteboardConnector[]>(
-      `/api/spaces/${spaceSlug}/attributes`,
+      `/spaces/${spaceSlug}/attributes`,
       {
         params: {
           attribute_key: 'connects_to',
@@ -93,7 +92,7 @@ export const whiteboardService = {
     dto: CreateConnectorDTO
   ): Promise<WhiteboardConnector> {
     const response = await apiClient.post<WhiteboardConnector>(
-      `/api/nodes/${nodeId}/attributes`,
+      `/nodes/${nodeId}/attributes`,
       dto
     );
     return response.data;
@@ -103,7 +102,7 @@ export const whiteboardService = {
    * Delete a connector
    */
   async deleteConnector(nodeId: string, attributeId: string): Promise<void> {
-    await apiClient.delete(`/api/nodes/${nodeId}/attributes/${attributeId}`);
+    await apiClient.delete(`/nodes/${nodeId}/attributes/${attributeId}`);
   },
 
   /**
