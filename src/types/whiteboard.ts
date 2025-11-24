@@ -163,16 +163,16 @@ export interface WhiteboardConnector {
 
 export interface CreateWhiteboardNodeDTO {
   title: string;
-  node_type: 'REGULAR';
+  nodeType: 'REGULAR';
   content?: string;
-  node_details: WhiteboardNodeDetails;
+  nodeDetails: WhiteboardNodeDetails;
 }
 
 export interface UpdateWhiteboardNodeDTO {
   id: string;
   title?: string;
   content?: string;
-  node_details: WhiteboardNodeDetails;
+  nodeDetails: WhiteboardNodeDetails;
 }
 
 export interface CreateConnectorDTO {

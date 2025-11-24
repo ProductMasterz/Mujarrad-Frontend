@@ -48,8 +48,8 @@ export const whiteboardService = {
       `/spaces/${spaceSlug}/nodes`,
       {
         title: `${spaceSlug} Whiteboard`,
-        node_type: 'CONTEXT',
-        node_details: {
+        nodeType: 'CONTEXT',
+        nodeDetails: {
           whiteboard_context: {
             context_type: 'whiteboard',
             app_state: appState,
@@ -74,7 +74,7 @@ export const whiteboardService = {
     const response = await apiClient.put<WhiteboardNode>(
       `/spaces/${spaceSlug}/nodes/${contextNodeId}`,
       {
-        node_details: {
+        nodeDetails: {
           whiteboard_context: {
             context_type: 'whiteboard',
             app_state: appState,

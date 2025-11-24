@@ -125,7 +125,7 @@ export function useSaveWhiteboard(spaceSlug: string) {
             dto: {
               id: nodeId,
               title: dto.title,
-              node_details: dto.node_details,
+              nodeDetails: dto.nodeDetails,
             },
           });
         } else {

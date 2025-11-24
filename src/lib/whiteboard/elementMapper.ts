@@ -27,8 +27,8 @@ export function mapExcalidrawToNode(
 
   return {
     title,
-    node_type: 'REGULAR',
-    node_details: {
+    nodeType: 'REGULAR',
+    nodeDetails: {
       element_subtype: subtype,
       excalidraw_element: element,
       whiteboard_meta: {
