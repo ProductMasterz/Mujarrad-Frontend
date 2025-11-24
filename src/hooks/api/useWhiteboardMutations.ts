@@ -192,7 +192,7 @@ export function useSaveWhiteboard(spaceSlug: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'whiteboard'] });
       queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'nodes'] });
-      queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'whiteboard', 'context'] });
+      queryClient.invalidateQueries({ queryKey: ['space-nodes', spaceSlug] });
     },
   });
 }

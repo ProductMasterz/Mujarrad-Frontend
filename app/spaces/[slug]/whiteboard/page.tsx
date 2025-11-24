@@ -5,7 +5,8 @@
  */
 
 import React, { useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { WhiteboardCanvas } from '@/components/whiteboard/WhiteboardCanvas';
 import { useWhiteboardState, useWhiteboardContext } from '@/hooks/api/useWhiteboard';
 import { useWhiteboardStore } from '@/stores/whiteboardStore';
@@ -14,6 +15,7 @@ import { WhiteboardNode } from '@/types/whiteboard';
 
 export default function WhiteboardPage() {
   const params = useParams();
+  const router = useRouter();
   const spaceSlug = params.slug as string;
 
   // Fetch space info
@@ -105,11 +107,20 @@ export default function WhiteboardPage() {
     <div className="flex flex-col h-screen">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
-        <div>
-          <h1 className="text-lg font-semibold">{space.name} - Whiteboard</h1>
-          <p className="text-sm text-gray-500">
-            {elements.length} element{elements.length !== 1 ? 's' : ''}
-          </p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push(`/spaces/${spaceSlug}`)}
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            title="Back to space"
+          >
+            <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
+          </button>
+          <div>
+            <h1 className="text-lg font-semibold">{space.name} - Whiteboard</h1>
+            <p className="text-sm text-gray-500">
+              {elements.length} element{elements.length !== 1 ? 's' : ''}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           {/* Save status indicator */}

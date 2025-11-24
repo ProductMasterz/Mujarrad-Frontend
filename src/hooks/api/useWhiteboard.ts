@@ -13,7 +13,7 @@ import { mapNodeToExcalidraw } from '@/lib/whiteboard/elementMapper';
  */
 export function useWhiteboardContext(spaceSlug: string) {
   return useQuery({
-    queryKey: ['spaces', spaceSlug, 'whiteboard', 'context'],
+    queryKey: ['spaces', spaceSlug, 'nodes', 'context'],
     queryFn: () => whiteboardService.getWhiteboardContext(spaceSlug),
     staleTime: 30000,
     enabled: !!spaceSlug,
