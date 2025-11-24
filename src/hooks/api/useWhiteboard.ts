@@ -5,8 +5,20 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { whiteboardService } from '@/services/api/whiteboard.service';
-import { WhiteboardNode, ExcalidrawElement } from '@/types/whiteboard';
+import { WhiteboardNode, ExcalidrawElement, WhiteboardAppState } from '@/types/whiteboard';
 import { mapNodeToExcalidraw } from '@/lib/whiteboard/elementMapper';
+
+/**
+ * Fetch the whiteboard context node for a space
+ */
+export function useWhiteboardContext(spaceSlug: string) {
+  return useQuery({
+    queryKey: ['spaces', spaceSlug, 'whiteboard', 'context'],
+    queryFn: () => whiteboardService.getWhiteboardContext(spaceSlug),
+    staleTime: 30000,
+    enabled: !!spaceSlug,
+  });
+}
 
 /**
  * Fetch raw whiteboard nodes from the API

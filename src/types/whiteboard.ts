@@ -105,6 +105,18 @@ export interface WhiteboardMeta {
   z_index: number;
 }
 
+// Metadata for the whiteboard context node (represents the canvas itself)
+export interface WhiteboardContextMeta {
+  context_type: 'whiteboard';
+  app_state?: Partial<WhiteboardAppState>;
+  created_at: string;
+  last_modified: string;
+}
+
+export interface WhiteboardContextDetails {
+  whiteboard_context: WhiteboardContextMeta;
+}
+
 export interface WhiteboardNodeDetails {
   element_subtype: WhiteboardElementSubtype;
   excalidraw_element: ExcalidrawElement;
@@ -250,6 +262,7 @@ export interface WhiteboardCanvasProps {
   initialAppState?: Partial<WhiteboardAppState>;
   initialFiles?: Record<string, BinaryFileData>;
   initialNodeMap?: Map<string, string>; // excalidraw element ID -> node ID
+  initialContextNodeId?: string | null; // whiteboard context node ID
   onSave?: (elements: ExcalidrawElement[], appState: WhiteboardAppState) => void;
   onError?: (error: Error) => void;
   readOnly?: boolean;

@@ -7,7 +7,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { WhiteboardCanvas } from '@/components/whiteboard/WhiteboardCanvas';
-import { useWhiteboardState } from '@/hooks/api/useWhiteboard';
+import { useWhiteboardState, useWhiteboardContext } from '@/hooks/api/useWhiteboard';
 import { useWhiteboardStore } from '@/stores/whiteboardStore';
 import { useSpace } from '@/hooks/api/useSpaces';
 import { WhiteboardNode } from '@/types/whiteboard';
@@ -27,6 +27,9 @@ export default function WhiteboardPage() {
     isError: whiteboardError,
     error,
   } = useWhiteboardState(spaceSlug);
+
+  // Fetch whiteboard context node
+  const { data: contextNode, isLoading: contextLoading } = useWhiteboardContext(spaceSlug);
 
   // Store state
   const { isSaving, lastSaved, error: saveError, reset } = useWhiteboardStore();
@@ -51,7 +54,7 @@ export default function WhiteboardPage() {
   }, [reset]);
 
   // Loading state
-  if (spaceLoading || whiteboardLoading) {
+  if (spaceLoading || whiteboardLoading || contextLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -135,6 +138,7 @@ export default function WhiteboardPage() {
           spaceSlug={spaceSlug}
           initialElements={elements}
           initialNodeMap={elementToNodeMap}
+          initialContextNodeId={contextNode?.id || null}
           onError={(err) => console.error('Whiteboard error:', err)}
         />
       </div>

@@ -81,10 +81,12 @@ export function useSaveWhiteboard(spaceSlug: string) {
     mutationFn: async ({
       elements,
       existingNodes,
+      contextNodeId,
     }: {
       elements: ExcalidrawElement[];
       existingNodes: Map<string, string>; // excalidraw ID -> node ID
-    }): Promise<Map<string, string>> => {
+      contextNodeId: string | null; // whiteboard context node ID
+    }): Promise<{ nodeMap: Map<string, string>; contextNodeId: string | null }> => {
       const { shapes, connectors } = categorizeElements(elements);
 
       const toCreate: CreateWhiteboardNodeDTO[] = [];
@@ -96,6 +98,22 @@ export function useSaveWhiteboard(spaceSlug: string) {
 
       // Process shapes (skip bound text elements - they're part of their container)
       const validShapes = shapes.filter(el => !(el.type === 'text' && el.containerId));
+
+      // Track context node ID (may be created during this save)
+      let currentContextId = contextNodeId;
+
+      // Check if we have new shapes to create
+      const hasNewShapes = validShapes.some(el => !existingNodes.get(el.id));
+
+      // Create context node on first shape if it doesn't exist
+      if (!currentContextId && validShapes.length > 0 && hasNewShapes) {
+        try {
+          const contextNode = await whiteboardService.createWhiteboardContext(spaceSlug);
+          currentContextId = contextNode.id;
+        } catch (err) {
+          console.error('Failed to create whiteboard context:', err);
+        }
+      }
 
       validShapes.forEach((element, index) => {
         const nodeId = existingNodes.get(element.id);
@@ -169,11 +187,12 @@ export function useSaveWhiteboard(spaceSlug: string) {
         }
       }
 
-      return updatedMap;
+      return { nodeMap: updatedMap, contextNodeId: currentContextId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'whiteboard'] });
       queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'nodes'] });
+      queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'whiteboard', 'context'] });
     },
   });
 }

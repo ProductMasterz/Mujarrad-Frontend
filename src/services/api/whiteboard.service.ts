@@ -11,9 +11,81 @@ import {
   WhiteboardConnector,
   CreateConnectorDTO,
   WhiteboardNodesResponse,
+  WhiteboardContextDetails,
+  WhiteboardAppState,
 } from '@/types/whiteboard';
 
 export const whiteboardService = {
+  /**
+   * Get the whiteboard context node for a space (if exists)
+   */
+  async getWhiteboardContext(spaceSlug: string): Promise<WhiteboardNode | null> {
+    const response = await apiClient.get<WhiteboardNode[]>(
+      `/spaces/${spaceSlug}/nodes`,
+      {
+        params: {
+          node_type: 'CONTEXT',
+          size: 100,
+        },
+      }
+    );
+
+    // Find the whiteboard context node
+    return response.data.find(
+      (node) => (node.node_details as any)?.whiteboard_context?.context_type === 'whiteboard'
+    ) || null;
+  },
+
+  /**
+   * Create a whiteboard context node
+   */
+  async createWhiteboardContext(
+    spaceSlug: string,
+    appState?: Partial<WhiteboardAppState>
+  ): Promise<WhiteboardNode> {
+    const now = new Date().toISOString();
+    const response = await apiClient.post<WhiteboardNode>(
+      `/spaces/${spaceSlug}/nodes`,
+      {
+        title: `${spaceSlug} Whiteboard`,
+        node_type: 'CONTEXT',
+        node_details: {
+          whiteboard_context: {
+            context_type: 'whiteboard',
+            app_state: appState,
+            created_at: now,
+            last_modified: now,
+          },
+        },
+      }
+    );
+    return response.data;
+  },
+
+  /**
+   * Update whiteboard context metadata
+   */
+  async updateWhiteboardContext(
+    spaceSlug: string,
+    contextNodeId: string,
+    appState?: Partial<WhiteboardAppState>
+  ): Promise<WhiteboardNode> {
+    const now = new Date().toISOString();
+    const response = await apiClient.put<WhiteboardNode>(
+      `/spaces/${spaceSlug}/nodes/${contextNodeId}`,
+      {
+        node_details: {
+          whiteboard_context: {
+            context_type: 'whiteboard',
+            app_state: appState,
+            last_modified: now,
+          },
+        },
+      }
+    );
+    return response.data;
+  },
+
   /**
    * Get all whiteboard nodes for a space
    */
