@@ -35,11 +35,12 @@ export function WhiteboardCanvas({
   initialElements = [],
   initialAppState = {},
   initialFiles = {},
+  initialNodeMap,
   onError,
   readOnly = false,
 }: WhiteboardCanvasProps) {
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
-  const existingNodesRef = useRef<Map<string, string>>(new Map());
+  const existingNodesRef = useRef<Map<string, string>>(initialNodeMap || new Map());
 
   // Zustand store
   const { setSaving, setError, markSaved } = useWhiteboardStore();
@@ -58,10 +59,13 @@ export function WhiteboardCanvas({
         setSaving(true);
         setError(null);
 
-        await saveWhiteboardRef.current.mutateAsync({
+        const updatedMap = await saveWhiteboardRef.current.mutateAsync({
           elements,
           existingNodes: existingNodesRef.current,
         });
+
+        // Update the ref with new node IDs
+        existingNodesRef.current = updatedMap;
 
         markSaved();
       } catch (error) {

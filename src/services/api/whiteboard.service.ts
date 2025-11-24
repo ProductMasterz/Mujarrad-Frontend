@@ -107,19 +107,22 @@ export const whiteboardService = {
 
   /**
    * Batch save multiple nodes (create/update/delete)
+   * Returns created nodes so we can track their IDs
    */
   async batchSave(
     spaceSlug: string,
     toCreate: CreateWhiteboardNodeDTO[],
     toUpdate: { id: string; dto: UpdateWhiteboardNodeDTO }[],
     toDelete: string[]
-  ): Promise<void> {
+  ): Promise<{ created: WhiteboardNode[] }> {
     // Execute all operations in parallel
-    await Promise.all([
-      ...toCreate.map((dto) => this.createWhiteboardNode(spaceSlug, dto)),
-      ...toUpdate.map(({ id, dto }) => this.updateWhiteboardNode(spaceSlug, id, dto)),
-      ...toDelete.map((id) => this.deleteWhiteboardNode(spaceSlug, id)),
+    const [createdNodes] = await Promise.all([
+      Promise.all(toCreate.map((dto) => this.createWhiteboardNode(spaceSlug, dto))),
+      Promise.all(toUpdate.map(({ id, dto }) => this.updateWhiteboardNode(spaceSlug, id, dto))),
+      Promise.all(toDelete.map((id) => this.deleteWhiteboardNode(spaceSlug, id))),
     ]);
+
+    return { created: createdNodes };
   },
 };
 

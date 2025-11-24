@@ -249,6 +249,7 @@ export interface WhiteboardCanvasProps {
   initialElements?: ExcalidrawElement[];
   initialAppState?: Partial<WhiteboardAppState>;
   initialFiles?: Record<string, BinaryFileData>;
+  initialNodeMap?: Map<string, string>; // excalidraw element ID -> node ID
   onSave?: (elements: ExcalidrawElement[], appState: WhiteboardAppState) => void;
   onError?: (error: Error) => void;
   readOnly?: boolean;

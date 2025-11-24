@@ -4,12 +4,13 @@
  * Whiteboard Page - Route for space whiteboard
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { WhiteboardCanvas } from '@/components/whiteboard/WhiteboardCanvas';
 import { useWhiteboardState } from '@/hooks/api/useWhiteboard';
 import { useWhiteboardStore } from '@/stores/whiteboardStore';
 import { useSpace } from '@/hooks/api/useSpaces';
+import { WhiteboardNode } from '@/types/whiteboard';
 
 export default function WhiteboardPage() {
   const params = useParams();
@@ -29,6 +30,18 @@ export default function WhiteboardPage() {
 
   // Store state
   const { isSaving, lastSaved, error: saveError, reset } = useWhiteboardStore();
+
+  // Build mapping of excalidraw element ID -> node ID
+  const elementToNodeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    nodes.forEach((node: WhiteboardNode) => {
+      const elementId = node.node_details?.excalidraw_element?.id;
+      if (elementId) {
+        map.set(elementId, node.id);
+      }
+    });
+    return map;
+  }, [nodes]);
 
   // Reset store on mount/unmount
   useEffect(() => {
@@ -121,6 +134,7 @@ export default function WhiteboardPage() {
         <WhiteboardCanvas
           spaceSlug={spaceSlug}
           initialElements={elements}
+          initialNodeMap={elementToNodeMap}
           onError={(err) => console.error('Whiteboard error:', err)}
         />
       </div>

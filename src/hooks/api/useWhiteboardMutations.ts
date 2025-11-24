@@ -84,15 +84,20 @@ export function useSaveWhiteboard(spaceSlug: string) {
     }: {
       elements: ExcalidrawElement[];
       existingNodes: Map<string, string>; // excalidraw ID -> node ID
-    }) => {
+    }): Promise<Map<string, string>> => {
       const { shapes, connectors } = categorizeElements(elements);
 
       const toCreate: CreateWhiteboardNodeDTO[] = [];
       const toUpdate: { id: string; dto: UpdateWhiteboardNodeDTO }[] = [];
       const toDelete: string[] = [];
 
-      // Process shapes
-      shapes.forEach((element, index) => {
+      // Track element IDs for created nodes
+      const createdElementIds: string[] = [];
+
+      // Process shapes (skip bound text elements - they're part of their container)
+      const validShapes = shapes.filter(el => !(el.type === 'text' && el.containerId));
+
+      validShapes.forEach((element, index) => {
         const nodeId = existingNodes.get(element.id);
         const dto = mapExcalidrawToNode(element, spaceSlug, index);
 
@@ -107,11 +112,12 @@ export function useSaveWhiteboard(spaceSlug: string) {
           });
         } else {
           toCreate.push(dto);
+          createdElementIds.push(element.id);
         }
       });
 
       // Find deleted elements
-      const currentElementIds = new Set(shapes.map((e) => e.id));
+      const currentElementIds = new Set(validShapes.map((e) => e.id));
       existingNodes.forEach((nodeId, elementId) => {
         if (!currentElementIds.has(elementId)) {
           toDelete.push(nodeId);
@@ -119,12 +125,55 @@ export function useSaveWhiteboard(spaceSlug: string) {
       });
 
       // Execute batch save
-      await whiteboardService.batchSave(spaceSlug, toCreate, toUpdate, toDelete);
+      const { created } = await whiteboardService.batchSave(spaceSlug, toCreate, toUpdate, toDelete);
 
-      // TODO: Handle connectors separately
+      // Build updated map with new node IDs
+      const updatedMap = new Map(existingNodes);
+
+      // Add created nodes to map
+      created.forEach((node, index) => {
+        const elementId = createdElementIds[index];
+        if (elementId) {
+          updatedMap.set(elementId, node.id);
+        }
+      });
+
+      // Remove deleted elements from map
+      toDelete.forEach(nodeId => {
+        // Find and remove the element ID that maps to this node ID
+        for (const [elementId, nId] of updatedMap) {
+          if (nId === nodeId) {
+            updatedMap.delete(elementId);
+            break;
+          }
+        }
+      });
+
+      // Handle connectors (arrows with bindings)
+      for (const arrow of connectors) {
+        const sourceElementId = arrow.startBinding?.elementId;
+        const targetElementId = arrow.endBinding?.elementId;
+
+        if (sourceElementId && targetElementId) {
+          const sourceNodeId = updatedMap.get(sourceElementId);
+          const targetNodeId = updatedMap.get(targetElementId);
+
+          if (sourceNodeId && targetNodeId) {
+            try {
+              const connectorDto = mapArrowToAttribute(arrow, sourceNodeId, targetNodeId);
+              await whiteboardService.createConnector(sourceNodeId, connectorDto);
+            } catch (err) {
+              console.error('Failed to create connector:', err);
+            }
+          }
+        }
+      }
+
+      return updatedMap;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'whiteboard'] });
+      queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'nodes'] });
     },
   });
 }
