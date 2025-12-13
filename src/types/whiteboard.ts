@@ -117,6 +117,19 @@ export interface WhiteboardContextDetails {
   whiteboard_context: WhiteboardContextMeta;
 }
 
+// Element entry in whiteboard content - links node_id to rendering data
+export interface WhiteboardElementEntry {
+  node_id: string;
+  excalidraw_element: ExcalidrawElement;
+}
+
+// Content structure for whiteboard context node
+export interface WhiteboardContextContent {
+  elements: WhiteboardElementEntry[];
+  app_state?: Partial<WhiteboardAppState>;
+  files?: Record<string, BinaryFileData>;
+}
+
 export interface WhiteboardNodeDetails {
   element_subtype: WhiteboardElementSubtype;
   excalidraw_element: ExcalidrawElement;
@@ -127,10 +140,10 @@ export interface WhiteboardNode {
   id: string;
   title: string;
   content?: string;
-  node_type: 'CONTEXT' | 'REGULAR' | 'TEMPLATE' | 'ASSUMPTION';
-  node_details: WhiteboardNodeDetails;
-  created_at: string;
-  updated_at: string;
+  nodeType: 'CONTEXT' | 'REGULAR' | 'TEMPLATE' | 'ASSUMPTION';
+  nodeDetails: WhiteboardNodeDetails;
+  createdAt: string;
+  updatedAt: string;
   version: number;
 }
 

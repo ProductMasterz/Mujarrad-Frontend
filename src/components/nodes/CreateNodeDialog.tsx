@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createNodeSchema, type CreateNodeFormData } from '@/schemas';
+import { z } from 'zod';
 import { useCreateNode, useSpaceNodes, useCreateAttribute } from '@/hooks/api';
-import { NodeType, AttributeKey } from '@/types/backend-dtos';
+import { NodeType, AttributeKey, AttributeTypeMode } from '@/types/backend-dtos';
 import {
   Dialog,
   DialogContent,
@@ -19,14 +20,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-// import { MarkdownEditor } from '@/components/markdown/MarkdownEditor'; // Temporarily disabled
 import { isApiError } from '@/lib/errors';
+
+// Simplified schema - just title and type, no content
+const createPageSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
+  nodeType: z.nativeEnum(NodeType),
+});
+
+type CreatePageFormData = z.infer<typeof createPageSchema>;
 
 interface CreateNodeDialogProps {
   spaceSlug: string;
 }
 
+/**
+ * CreateNodeDialog - Simplified page creation like Notion
+ *
+ * Just enter a title, select type and parent, then opens the page
+ * for inline block editing. No markdown textarea.
+ */
 export function CreateNodeDialog({ spaceSlug }: CreateNodeDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
 
@@ -43,42 +58,46 @@ export function CreateNodeDialog({ spaceSlug }: CreateNodeDialogProps) {
     setError,
     setValue,
     reset,
-    control,
-  } = useForm<CreateNodeFormData>({
-    resolver: zodResolver(createNodeSchema),
+  } = useForm<CreatePageFormData>({
+    resolver: zodResolver(createPageSchema),
     defaultValues: {
       nodeType: NodeType.REGULAR,
-      content: '',
     },
   });
 
-  // Watch markdown content for live preview
-  const content = useWatch({
-    control,
-    name: 'content',
-    defaultValue: '',
-  });
+  const onSubmit = (data: CreatePageFormData) => {
+    // Create node with block editor mode by default
+    const nodeData = {
+      title: data.title,
+      nodeType: data.nodeType,
+      content: '', // Empty content - user will add via block editor
+      nodeDetails: { editorMode: 'blocks', isPage: true },
+    };
 
-  const onSubmit = (data: CreateNodeFormData) => {
-    createNode({ spaceSlug: spaceSlug, data }, {
+    createNode({ spaceSlug: spaceSlug, data: nodeData }, {
       onSuccess: (newNode) => {
         // If a parent was selected, create the CONTAINS relationship
         if (selectedParentId) {
           createAttribute({
             sourceNodeId: selectedParentId,
             data: {
-              targetNodeId: Number(newNode.id),
-              attributeKey: AttributeKey.CONTAINS,
+              sourceNodeId: selectedParentId,
+              targetNodeId: newNode.id,
+              attributeType: AttributeKey.CONTAINS,
+              attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+              attributeName: AttributeKey.CONTAINS,
+              attributeValue: {},
             },
           }, {
             onSuccess: () => {
               setOpen(false);
               reset();
               setSelectedParentId(null);
+              // Navigate to the new page
+              router.push(`/spaces/${spaceSlug}/node/${newNode.id}`);
             },
             onError: (error) => {
               if (isApiError(error)) {
-                // T075: Handle circular dependency errors
                 if (error.statusCode === 400 && error.message.toLowerCase().includes('circular')) {
                   setError('root', {
                     message: `Cannot create this relationship: it would create a circular dependency. ${error.detail || ''}`
@@ -93,6 +112,8 @@ export function CreateNodeDialog({ spaceSlug }: CreateNodeDialogProps) {
           setOpen(false);
           reset();
           setSelectedParentId(null);
+          // Navigate to the new page
+          router.push(`/spaces/${spaceSlug}/node/${newNode.id}`);
         }
       },
       onError: (error) => {
@@ -106,89 +127,76 @@ export function CreateNodeDialog({ spaceSlug }: CreateNodeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Create Node</Button>
+        <Button>New Page</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-5xl h-[90vh] flex flex-col gap-0 p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
-          <DialogTitle>Create Node</DialogTitle>
-          <DialogDescription>Add a new node to your knowledge graph</DialogDescription>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Create New Page</DialogTitle>
+          <DialogDescription>
+            Add a new page to your knowledge graph. You can start editing immediately after creation.
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 space-y-4 shrink-0">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input id="title" placeholder="Node title" {...register('title')} />
-                {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="nodeType">Type</Label>
-                <Select
-                  defaultValue={NodeType.REGULAR}
-                  onValueChange={(value) => setValue('nodeType', value as NodeType)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="z-[100]">
-                    <SelectItem value={NodeType.REGULAR}>Regular</SelectItem>
-                    <SelectItem value={NodeType.CONTEXT}>Context</SelectItem>
-                    <SelectItem value={NodeType.ASSUMPTION}>Assumption</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.nodeType && <p className="text-sm text-destructive">{errors.nodeType.message}</p>}
-              </div>
-            </div>
-
-            {/* Parent node selection */}
-            <div className="space-y-2">
-              <Label htmlFor="parentNode">Parent Node (Optional)</Label>
-              <Select value={selectedParentId || 'none'} onValueChange={(value) => setSelectedParentId(value === 'none' ? null : value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="No parent (root level)" />
-                </SelectTrigger>
-                <SelectContent position="popper" className="z-[100] max-h-[200px] overflow-y-auto">
-                  <SelectItem value="none">No parent (root level)</SelectItem>
-                  {nodes.map((node) => (
-                    <SelectItem key={node.id} value={node.id.toString()}>
-                      📁 {node.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Select a CONTEXT node to nest this node under it in the hierarchy
-              </p>
-            </div>
-          </div>
-
-          {/* Simple textarea - MarkdownEditor temporarily disabled */}
-          <div className="flex-1 min-h-0 flex flex-col px-6 py-4">
-            <Label htmlFor="content" className="mb-2">Content (Markdown)</Label>
-            <textarea
-              id="content"
-              value={content || ''}
-              onChange={(e) => setValue('content', e.target.value)}
-              placeholder="# Write your content here...
-
-Supports **bold**, *italic*, code blocks, tables, and more!"
-              maxLength={50000}
-              className="flex-1 min-h-0 w-full p-3 border border-gray-200 rounded-lg resize-none font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              placeholder="Untitled"
+              autoFocus
+              {...register('title')}
             />
-            {errors.content && (
-              <p className="text-sm text-destructive mt-2">{errors.content.message}</p>
-            )}
+            {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
           </div>
 
-          {errors.root && <p className="text-sm text-destructive px-6">{errors.root.message}</p>}
+          {/* Node Type */}
+          <div className="space-y-2">
+            <Label htmlFor="nodeType">Type</Label>
+            <Select
+              defaultValue={NodeType.REGULAR}
+              onValueChange={(value) => setValue('nodeType', value as NodeType)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper" className="z-[100]">
+                <SelectItem value={NodeType.REGULAR}>Regular Page</SelectItem>
+                <SelectItem value={NodeType.CONTEXT}>Context (Folder)</SelectItem>
+                <SelectItem value={NodeType.ASSUMPTION}>Assumption</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.nodeType && <p className="text-sm text-destructive">{errors.nodeType.message}</p>}
+          </div>
 
-          <DialogFooter className="px-6 py-4 border-t shrink-0">
+          {/* Parent node selection */}
+          <div className="space-y-2">
+            <Label htmlFor="parentNode">Parent (Optional)</Label>
+            <Select
+              value={selectedParentId || 'none'}
+              onValueChange={(value) => setSelectedParentId(value === 'none' ? null : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="No parent (root level)" />
+              </SelectTrigger>
+              <SelectContent position="popper" className="z-[100] max-h-[200px] overflow-y-auto">
+                <SelectItem value="none">No parent (root level)</SelectItem>
+                {nodes.map((node) => (
+                  <SelectItem key={node.id} value={node.id.toString()}>
+                    {node.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
+
+          <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? 'Creating...' : 'Create Node'}
+              {isPending ? 'Creating...' : 'Create Page'}
             </Button>
           </DialogFooter>
         </form>

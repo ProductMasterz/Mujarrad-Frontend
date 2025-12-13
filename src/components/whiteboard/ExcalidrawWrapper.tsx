@@ -9,15 +9,16 @@ import { useRef, useCallback, useEffect } from 'react';
 import { Excalidraw, MainMenu, Sidebar } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 
-import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
+import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import type { ExcalidrawElement, WhiteboardAppState, BinaryFileData } from '@/types/whiteboard';
 
 interface ExcalidrawWrapperProps {
   initialElements?: ExcalidrawElement[];
   initialAppState?: Partial<WhiteboardAppState>;
-  initialFiles?: BinaryFileData;
-  onChange?: (elements: readonly ExcalidrawElement[], appState: any, files: BinaryFileData) => void;
+  initialFiles?: Record<string, BinaryFileData>;
+  onChange?: (elements: readonly ExcalidrawElement[], appState: any, files: Record<string, BinaryFileData>) => void;
   onMount?: (api: ExcalidrawImperativeAPI) => void;
+  onContextMenu?: (elementId: string, x: number, y: number) => void;
   readOnly?: boolean;
 }
 
@@ -93,6 +94,7 @@ export default function ExcalidrawWrapper({
   initialFiles = {},
   onChange,
   onMount,
+  onContextMenu,
   readOnly = false,
 }: ExcalidrawWrapperProps) {
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
@@ -161,19 +163,60 @@ export default function ExcalidrawWrapper({
           api.updateScene({
             appState: {
               ...api.getAppState(),
-              editingElement: newElements[1] as any,
+              editingTextElement: newElements[1] as any,
             },
           });
         }, 50);
       }
     };
 
-    container.addEventListener('dblclick', handleDoubleClick, { capture: true });
+    // Use bubble phase instead of capture to avoid blocking Excalidraw's event handlers
+    container.addEventListener('dblclick', handleDoubleClick);
 
     return () => {
-      container.removeEventListener('dblclick', handleDoubleClick, { capture: true });
+      container.removeEventListener('dblclick', handleDoubleClick);
     };
   }, [readOnly]);
+
+  // Custom right-click handler for context menu
+  useEffect(() => {
+    if (readOnly || !containerRef.current || !onContextMenu) return;
+
+    const container = containerRef.current;
+
+    const handleContextMenu = (e: MouseEvent) => {
+      const api = excalidrawAPIRef.current;
+      if (!api) return;
+
+      const appState = api.getAppState();
+
+      // Check if there's exactly one selected element
+      const selectedIds = Object.keys(appState.selectedElementIds || {});
+      if (selectedIds.length !== 1) {
+        return; // Only show context menu for single selection
+      }
+
+      const selectedId = selectedIds[0];
+      const elements = api.getSceneElements();
+      const selectedElement = elements.find((el: any) => el.id === selectedId);
+
+      // Only show for shape elements (not text, lines, or connectors)
+      if (!selectedElement) return;
+      if (selectedElement.isDeleted) return;
+      if (selectedElement.type === 'text' && selectedElement.containerId) return;
+      if (selectedElement.type === 'line' || selectedElement.type === 'arrow') return;
+
+      // Show our custom context menu
+      e.preventDefault();
+      onContextMenu(selectedId, e.clientX, e.clientY);
+    };
+
+    container.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      container.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [readOnly, onContextMenu]);
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
@@ -203,8 +246,8 @@ export default function ExcalidrawWrapper({
             ...initialAppState,
           },
           files: initialFiles,
-        }}
-        onChange={onChange}
+        } as any}
+        onChange={onChange as any}
         viewModeEnabled={readOnly}
         zenModeEnabled={false}
         gridModeEnabled={false}

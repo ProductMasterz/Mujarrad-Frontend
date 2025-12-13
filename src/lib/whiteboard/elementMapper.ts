@@ -45,7 +45,7 @@ export function mapExcalidrawToNode(
  * Maps a WhiteboardNode back to an Excalidraw element
  */
 export function mapNodeToExcalidraw(node: WhiteboardNode): ExcalidrawElement {
-  return node.node_details.excalidraw_element;
+  return node.nodeDetails.excalidraw_element;
 }
 
 /**

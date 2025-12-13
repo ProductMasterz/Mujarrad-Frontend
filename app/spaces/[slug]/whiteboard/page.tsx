@@ -4,49 +4,90 @@
  * Whiteboard Page - Route for space whiteboard
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import { WhiteboardCanvas } from '@/components/whiteboard/WhiteboardCanvas';
-import { useWhiteboardState, useWhiteboardContext } from '@/hooks/api/useWhiteboard';
+import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { WhiteboardCanvas, WhiteboardCanvasRef } from '@/components/whiteboard/WhiteboardCanvas';
+import { useWhiteboardState } from '@/hooks/api/useWhiteboard';
 import { useWhiteboardStore } from '@/stores/whiteboardStore';
 import { useSpace } from '@/hooks/api/useSpaces';
-import { WhiteboardNode } from '@/types/whiteboard';
+import { nodeService } from '@/services/api/node.service';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
 
 export default function WhiteboardPage() {
   const params = useParams();
   const router = useRouter();
   const spaceSlug = params.slug as string;
+  const queryClient = useQueryClient();
+  const [isResetting, setIsResetting] = useState(false);
+  const canvasRef = useRef<WhiteboardCanvasRef>(null);
 
   // Fetch space info
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(spaceSlug);
 
-  // Fetch whiteboard state
+  // Handle manual save
+  const handleSave = useCallback(async () => {
+    if (canvasRef.current) {
+      await canvasRef.current.saveNow();
+    }
+  }, []);
+
+  // Keyboard shortcut for save (Cmd+S / Ctrl+S)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave]);
+
+  // Reset workspace - delete all nodes
+  const handleReset = async () => {
+    if (!confirm('Are you sure you want to delete ALL nodes in this space? This cannot be undone.')) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      // Get all nodes
+      const nodes = await nodeService.getNodes(spaceSlug, { size: 1000 });
+
+      // Delete all nodes
+      await Promise.all(nodes.map(node =>
+        nodeService.deleteNode(spaceSlug, node.id, true)
+      ));
+
+      // Invalidate queries and reload
+      queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug] });
+      queryClient.invalidateQueries({ queryKey: ['space-nodes', spaceSlug] });
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to reset workspace:', error);
+      alert('Failed to reset workspace');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  // Fetch whiteboard state (elements and node mapping from context node content)
   const {
     elements,
-    nodes,
+    nodeMap,
+    contextNodeId,
+    appState,
+    files,
     isLoading: whiteboardLoading,
     isError: whiteboardError,
     error,
   } = useWhiteboardState(spaceSlug);
 
-  // Fetch whiteboard context node
-  const { data: contextNode, isLoading: contextLoading } = useWhiteboardContext(spaceSlug);
-
   // Store state
   const { isSaving, lastSaved, error: saveError, reset } = useWhiteboardStore();
-
-  // Build mapping of excalidraw element ID -> node ID
-  const elementToNodeMap = useMemo(() => {
-    const map = new Map<string, string>();
-    nodes.forEach((node: WhiteboardNode) => {
-      const elementId = node.node_details?.excalidraw_element?.id;
-      if (elementId) {
-        map.set(elementId, node.id);
-      }
-    });
-    return map;
-  }, [nodes]);
 
   // Reset store on mount/unmount
   useEffect(() => {
@@ -56,7 +97,7 @@ export default function WhiteboardPage() {
   }, [reset]);
 
   // Loading state
-  if (spaceLoading || whiteboardLoading || contextLoading) {
+  if (spaceLoading || whiteboardLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -132,24 +173,50 @@ export default function WhiteboardPage() {
           )}
           {!isSaving && lastSaved && (
             <span className="text-sm text-green-600">
-              ✓ Saved {lastSaved.toLocaleTimeString()}
+              Saved {lastSaved.toLocaleTimeString()}
             </span>
           )}
           {saveError && (
             <span className="text-sm text-red-500">
-              ⚠️ {saveError}
+              {saveError}
             </span>
           )}
+          {/* Manual Save button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSave}
+            disabled={isSaving}
+            title="Save (Cmd+S / Ctrl+S)"
+          >
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
+          {/* Reset button */}
+          <button
+            onClick={handleReset}
+            disabled={isResetting}
+            className="p-2 hover:bg-red-100 rounded-md transition-colors text-red-600 disabled:opacity-50"
+            title="Reset workspace (delete all nodes)"
+          >
+            {isResetting ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500" />
+            ) : (
+              <TrashIcon className="w-5 h-5" />
+            )}
+          </button>
         </div>
       </div>
 
       {/* Canvas */}
       <div className="flex-1 overflow-hidden">
         <WhiteboardCanvas
+          ref={canvasRef}
           spaceSlug={spaceSlug}
           initialElements={elements}
-          initialNodeMap={elementToNodeMap}
-          initialContextNodeId={contextNode?.id || null}
+          initialAppState={appState}
+          initialFiles={files}
+          initialNodeMap={nodeMap}
+          initialContextNodeId={contextNodeId}
           onError={(err) => console.error('Whiteboard error:', err)}
         />
       </div>

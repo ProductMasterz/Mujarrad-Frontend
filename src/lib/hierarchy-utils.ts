@@ -5,10 +5,21 @@
 
 import type { Node, Attribute } from '@/types/backend-dtos';
 import { TreeNode, HierarchyTree, BuildHierarchyTreeParams } from '@/types/hierarchy';
+import { getEffectiveVisibility, NodeVisibility } from '@/types/node-system';
+
+/**
+ * Check if a node should appear in the hierarchy tree (node list)
+ * Uses the new visibility system with legacy fallbacks
+ */
+function shouldShowInHierarchy(node: Node): boolean {
+  const visibility = getEffectiveVisibility(node.nodeDetails as Record<string, unknown> | undefined);
+  return visibility === NodeVisibility.VISIBLE;
+}
 
 /**
  * Build hierarchical tree from flat nodes and attributes
  * Uses 'contains' relationships to establish parent-child connections
+ * Filters out block-only nodes (nodes that only appear as content blocks)
  * @param nodes - Array of nodes
  * @param attributes - Array of attributes (relationships)
  * @param expandedNodeIds - Array of expanded node IDs (optional)
@@ -21,14 +32,20 @@ export function buildHierarchyTree(
   expandedNodeIds: string[] = [],
   selectedNodeId: string | null = null
 ): HierarchyTree {
+  // Filter out block-only nodes - they shouldn't appear in the hierarchy
+  const visibleNodes = nodes.filter(shouldShowInHierarchy);
 
   // Build parent-child relationship map using 'contains' attributes
   const childrenMap = new Map<string, string[]>(); // parentId -> childIds[]
   const parentMap = new Map<string, string>(); // childId -> parentId
 
-  // Filter for 'contains' relationships only
+  // Filter for 'contains' relationships only (check both attributeName and attributeType)
   const containsRelations = attributes.filter(
-    attr => attr.attributeKey.toString().toLowerCase() === 'contains'
+    attr => {
+      const name = (attr.attributeName || '').toString().toLowerCase();
+      const type = (attr.attributeType || '').toString().toLowerCase();
+      return name === 'contains' || type === 'contains';
+    }
   );
 
   for (const attr of containsRelations) {
@@ -42,9 +59,9 @@ export function buildHierarchyTree(
     parentMap.set(childId, parentId);
   }
 
-  // Create node lookup map
+  // Create node lookup map (only for visible nodes)
   const nodeMap = new Map<string, Node>();
-  nodes.forEach(node => nodeMap.set(node.id.toString(), node));
+  visibleNodes.forEach(node => nodeMap.set(node.id.toString(), node));
 
   // Recursive function to build tree node
   const buildTreeNode = (node: Node, level: number): TreeNode => {
@@ -65,11 +82,11 @@ export function buildHierarchyTree(
     };
   };
 
-  // Find root nodes (nodes without parents OR nodes whose parents don't exist in the nodes list)
+  // Find root nodes (visible nodes without parents OR nodes whose parents don't exist in visible nodes)
   const rootNodes: TreeNode[] = [];
-  for (const node of nodes) {
+  for (const node of visibleNodes) {
     const parentId = parentMap.get(node.id.toString());
-    // Node is a root if: no parent OR parent doesn't exist in nodes
+    // Node is a root if: no parent OR parent doesn't exist in visible nodes
     if (!parentId || !nodeMap.has(parentId)) {
       rootNodes.push(buildTreeNode(node, 0));
     }
@@ -101,7 +118,11 @@ export function findAncestors(nodeId: string, attributes: Attribute[]): string[]
 
   // Build parent map from contains relationships
   attributes
-    .filter(attr => attr.attributeKey.toString().toLowerCase() === 'contains')
+    .filter(attr => {
+      const name = (attr.attributeName || '').toString().toLowerCase();
+      const type = (attr.attributeType || '').toString().toLowerCase();
+      return name === 'contains' || type === 'contains';
+    })
     .forEach(attr => {
       parentMap.set(attr.targetNodeId.toString(), attr.sourceNodeId.toString());
     });

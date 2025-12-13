@@ -13,6 +13,10 @@ import {
   WhiteboardNodesResponse,
   WhiteboardContextDetails,
   WhiteboardAppState,
+  WhiteboardContextContent,
+  WhiteboardElementEntry,
+  ExcalidrawElement,
+  BinaryFileData,
 } from '@/types/whiteboard';
 
 export const whiteboardService = {
@@ -30,10 +34,39 @@ export const whiteboardService = {
       }
     );
 
-    // Find the whiteboard context node
-    return response.data.find(
-      (node) => (node.node_details as any)?.whiteboard_context?.context_type === 'whiteboard'
-    ) || null;
+    console.log('[whiteboardService] Fetched CONTEXT nodes:', {
+      count: response.data.length,
+      nodes: response.data.map(n => ({
+        id: n.id,
+        title: n.title,
+        nodeDetails: n.nodeDetails,
+      })),
+    });
+
+    // Find the whiteboard context node in list
+    const contextNode = response.data.find(
+      (node) => (node.nodeDetails as any)?.whiteboard_context?.context_type === 'whiteboard'
+    );
+
+    console.log('[whiteboardService] Found whiteboard context node:', contextNode?.id);
+
+    if (!contextNode) {
+      return null;
+    }
+
+    // Fetch full node to get content field (list endpoint may not include it)
+    const fullNode = await apiClient.get<WhiteboardNode>(
+      `/spaces/${spaceSlug}/nodes/${contextNode.id}`
+    );
+
+    console.log('[whiteboardService] Fetched full context node:', {
+      id: fullNode.data.id,
+      hasContent: !!fullNode.data.content,
+      contentLength: fullNode.data.content?.length,
+      contentPreview: fullNode.data.content?.substring(0, 100),
+    });
+
+    return fullNode.data;
   },
 
   /**
@@ -63,24 +96,93 @@ export const whiteboardService = {
   },
 
   /**
-   * Update whiteboard context metadata
+   * Update whiteboard context with all element data
    */
   async updateWhiteboardContext(
     spaceSlug: string,
     contextNodeId: string,
-    appState?: Partial<WhiteboardAppState>
+    content: WhiteboardContextContent
   ): Promise<WhiteboardNode> {
     const now = new Date().toISOString();
+
+    const contentString = JSON.stringify(content);
+    console.log('[whiteboardService] Updating context node:', {
+      contextNodeId,
+      elementsCount: content.elements.length,
+      contentLength: contentString.length,
+      contentPreview: contentString.substring(0, 200),
+    });
+
     const response = await apiClient.put<WhiteboardNode>(
       `/spaces/${spaceSlug}/nodes/${contextNodeId}`,
       {
+        content: contentString,
         nodeDetails: {
           whiteboard_context: {
             context_type: 'whiteboard',
-            app_state: appState,
+            app_state: content.app_state,
             last_modified: now,
           },
         },
+      }
+    );
+
+    console.log('[whiteboardService] Context node updated successfully');
+
+    return response.data;
+  },
+
+  /**
+   * Parse whiteboard content from context node
+   */
+  parseWhiteboardContent(contextNode: WhiteboardNode): WhiteboardContextContent {
+    if (!contextNode.content) {
+      return { elements: [] };
+    }
+    try {
+      return JSON.parse(contextNode.content) as WhiteboardContextContent;
+    } catch {
+      return { elements: [] };
+    }
+  },
+
+  /**
+   * Create a simple shape node with title and content
+   * Whiteboard shapes are hidden from the space node list by default
+   */
+  async createShapeNode(
+    spaceSlug: string,
+    title: string,
+    content?: string
+  ): Promise<WhiteboardNode> {
+    const response = await apiClient.post<WhiteboardNode>(
+      `/spaces/${spaceSlug}/nodes`,
+      {
+        title,
+        nodeType: 'REGULAR',
+        content: content || '',
+        nodeDetails: {
+          showInSpaceList: false,  // Whiteboard shapes don't appear in the main node list
+        },
+      }
+    );
+    return response.data;
+  },
+
+  /**
+   * Update a shape node's title and content
+   */
+  async updateShapeNode(
+    spaceSlug: string,
+    nodeId: string,
+    title: string,
+    content?: string
+  ): Promise<WhiteboardNode> {
+    const response = await apiClient.put<WhiteboardNode>(
+      `/spaces/${spaceSlug}/nodes/${nodeId}`,
+      {
+        title,
+        content: content || '',
       }
     );
     return response.data;
@@ -101,7 +203,7 @@ export const whiteboardService = {
 
     // Filter to only whiteboard nodes (those with element_subtype)
     return response.data.filter(
-      (node) => node.node_details?.element_subtype
+      (node) => node.nodeDetails?.element_subtype
     );
   },
 
@@ -178,19 +280,19 @@ export const whiteboardService = {
   },
 
   /**
-   * Batch save multiple nodes (create/update/delete)
-   * Returns created nodes so we can track their IDs
+   * Batch save shape nodes (create/update/delete)
+   * Handles titles and content - element data is stored in context node
    */
-  async batchSave(
+  async batchSaveShapeNodes(
     spaceSlug: string,
-    toCreate: CreateWhiteboardNodeDTO[],
-    toUpdate: { id: string; dto: UpdateWhiteboardNodeDTO }[],
+    toCreate: { title: string; content?: string }[],
+    toUpdate: { id: string; title: string; content?: string }[],
     toDelete: string[]
   ): Promise<{ created: WhiteboardNode[] }> {
     // Execute all operations in parallel
     const [createdNodes] = await Promise.all([
-      Promise.all(toCreate.map((dto) => this.createWhiteboardNode(spaceSlug, dto))),
-      Promise.all(toUpdate.map(({ id, dto }) => this.updateWhiteboardNode(spaceSlug, id, dto))),
+      Promise.all(toCreate.map(({ title, content }) => this.createShapeNode(spaceSlug, title, content))),
+      Promise.all(toUpdate.map(({ id, title, content }) => this.updateShapeNode(spaceSlug, id, title, content))),
       Promise.all(toDelete.map((id) => this.deleteWhiteboardNode(spaceSlug, id))),
     ]);
 

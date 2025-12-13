@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createAttributeSchema, type CreateAttributeFormData, attributeKeyLabels, attributeKeyDescriptions } from '@/schemas';
 import { useCreateAttribute, useNodes } from '@/hooks/api';
-import { AttributeKey } from '@/types/backend-dtos';
+import { AttributeKey, AttributeTypeMode } from '@/types/backend-dtos';
 import {
   Dialog,
   DialogContent,
@@ -51,8 +51,18 @@ export function CreateRelationshipDialog({
   const selectedAttributeKey = watch('attributeKey');
 
   const onSubmit = (data: CreateAttributeFormData) => {
+    // Transform form data to API format
+    const apiData = {
+      sourceNodeId: sourceNodeId.toString(),
+      targetNodeId: data.targetNodeId.toString(),
+      attributeType: data.attributeKey,
+      attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+      attributeName: data.attributeKey,
+      attributeValue: data.attributeValue ? { label: data.attributeValue } : {},
+    };
+
     createAttribute(
-      { sourceNodeId: sourceNodeId.toString(), data },
+      { sourceNodeId: sourceNodeId.toString(), data: apiData },
       {
         onSuccess: () => {
           setOpen(false);

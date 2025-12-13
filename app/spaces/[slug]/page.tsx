@@ -2,13 +2,29 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { EllipsisVerticalIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useSpace } from '@/hooks/api';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { CreateNodeDialog } from '@/components/nodes/CreateNodeDialog';
 import { NodeList } from '@/components/nodes/NodeList';
 import { HierarchyNavigator } from '@/components/hierarchy/HierarchyNavigator';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
 import { useNavigationStore } from '@/stores/navigationStore';
@@ -17,8 +33,13 @@ import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 export default function SpaceDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const slug = params.slug as string;
   const [activeTab, setActiveTab] = useState<'list' | 'hierarchy'>('list');
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
+  const [clearConfirmText, setClearConfirmText] = useState('');
+  const [isClearing, setIsClearing] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
 
   const { data: space, isLoading, error } = useSpace(slug);
   const { setSpace, selectedNodeId } = useNavigationStore();
@@ -39,6 +60,40 @@ export default function SpaceDetailPage() {
 
   const allNodes = nodes || [];
   const allAttributes = attributes || [];
+
+  // Clear all nodes in the space
+  const handleClearAllNodes = async () => {
+    if (clearConfirmText !== space?.name) return;
+
+    setIsClearing(true);
+    setClearError(null);
+
+    try {
+      // Get all nodes
+      const allNodesToDelete = await nodeService.getNodes(slug, { size: 10000 });
+
+      // Delete all nodes (with force to skip cascade checks)
+      await Promise.all(
+        allNodesToDelete.map((node) =>
+          nodeService.deleteNode(slug, node.id, true).catch((err) => {
+            console.warn(`Failed to delete node ${node.id}:`, err);
+          })
+        )
+      );
+
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ['space-nodes', slug] });
+      queryClient.invalidateQueries({ queryKey: ['space-attributes', slug] });
+      queryClient.invalidateQueries({ queryKey: ['spaces', slug, 'whiteboard'] });
+
+      setClearDialogOpen(false);
+      setClearConfirmText('');
+    } catch (err) {
+      setClearError(err instanceof Error ? err.message : 'Failed to clear space');
+    } finally {
+      setIsClearing(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -87,6 +142,22 @@ export default function SpaceDetailPage() {
                 >
                   Settings
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <EllipsisVerticalIcon className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setClearDialogOpen(true)}
+                    >
+                      <TrashIcon className="h-4 w-4 mr-2" />
+                      Clear All Nodes
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
@@ -168,6 +239,48 @@ export default function SpaceDetailPage() {
             </div>
           </div>
         </main>
+
+        {/* Clear All Nodes Dialog */}
+        <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Clear All Nodes</DialogTitle>
+              <DialogDescription>
+                This will permanently delete <strong>ALL nodes</strong> in this space, including all pages, blocks, and whiteboard elements. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-muted-foreground mb-2">
+                Type <strong>{space?.name}</strong> to confirm:
+              </p>
+              <Input
+                value={clearConfirmText}
+                onChange={(e) => setClearConfirmText(e.target.value)}
+                placeholder={space?.name}
+              />
+            </div>
+            {clearError && <p className="text-sm text-destructive">{clearError}</p>}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setClearDialogOpen(false);
+                  setClearConfirmText('');
+                  setClearError(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleClearAllNodes}
+                disabled={isClearing || clearConfirmText !== space?.name}
+              >
+                {isClearing ? 'Clearing...' : 'Clear All Nodes'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </ProtectedRoute>
   );

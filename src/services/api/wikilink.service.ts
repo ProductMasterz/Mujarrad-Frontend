@@ -3,7 +3,7 @@
 import { parseWikiLinks, resolveWikiLinkTarget } from '@/lib/wikilink-parser';
 import { nodeService } from './node.service';
 import { attributeService } from './attribute.service';
-import { NodeType, AttributeKey } from '@/types/backend-dtos';
+import { NodeType, AttributeKey, AttributeTypeMode } from '@/types/backend-dtos';
 import type { Node, CreateNodeRequest, CreateAttributeRequest } from '@/types/backend-dtos';
 
 /**
@@ -194,10 +194,12 @@ export const wikiLinkService = {
 
         // Create attribute relationship
         const createRequest: CreateAttributeRequest = {
-          targetNodeId: Number(targetNode.id),
-          attributeKey: AttributeKey.REFERENCES,
-          attributeValue: resolution.displayText,
-          metadata: {
+          sourceNodeId,
+          targetNodeId: targetNode.id,
+          attributeType: AttributeKey.REFERENCES,
+          attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+          attributeName: AttributeKey.REFERENCES,
+          attributeValue: {
             displayText: resolution.displayText,
             targetTitle: resolution.targetTitle,
             isPlaceholder: resolution.needsPlaceholder,

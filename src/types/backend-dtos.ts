@@ -41,6 +41,51 @@ export enum NodeType {
 }
 
 /**
+ * Node details metadata structure
+ * Controls visibility and context for nodes
+ */
+export interface NodeDetails {
+  /**
+   * Whether this node appears in the space's node list.
+   * - true (default): Shows in the main node list
+   * - false: Hidden from list (blocks, whiteboard elements)
+   */
+  showInSpaceList?: boolean;
+
+  /**
+   * Block type - if set, this node is a block within a page
+   * Values: 'text', 'heading1', 'heading2', 'heading3', 'bulletList', 'numberedList', 'todo', 'quote', 'code', 'divider'
+   */
+  blockType?: string;
+
+  /**
+   * If true, this node is a page (can contain blocks)
+   */
+  isPage?: boolean;
+
+  /**
+   * Whiteboard element subtype - if set, this node is a whiteboard element
+   * Values: 'shape_rectangle', 'shape_ellipse', 'shape_diamond', 'text', 'drawing', 'image', 'frame'
+   */
+  element_subtype?: string;
+
+  /**
+   * Whiteboard context metadata - for CONTEXT nodes that store whiteboard data
+   */
+  whiteboard_context?: {
+    context_type: 'whiteboard';
+    app_state?: Record<string, unknown>;
+    created_at?: string;
+    last_modified?: string;
+  };
+
+  /**
+   * Additional metadata fields (extensible)
+   */
+  [key: string]: unknown;
+}
+
+/**
  * Node entity from backend
  * Backend: NodeResponse from /api/spaces/{spaceSlug}/nodes endpoints
  */
@@ -58,7 +103,7 @@ export interface Node {
   /** Markdown content */
   content: string;
   /** Additional metadata (JSON object) */
-  nodeDetails: Record<string, unknown>;
+  nodeDetails: NodeDetails;
   /** Current version ID (UUID v4) */
   currentVersionId: string;
   /** Creator user ID (UUID v4) */
@@ -88,15 +133,18 @@ export enum AttributeKey {
  * Attribute entity from backend (represents edges/relationships)
  */
 export interface Attribute {
-  id: number;
-  sourceNodeId: number;
-  targetNodeId: number;
-  attributeKey: AttributeKey;
-  attributeValue?: string;
-  metadata?: Record<string, unknown>; // JSON field
+  id: string;
+  spaceId: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+  attributeName: string;
+  attributeType: string;
+  attributeTypeMode: AttributeTypeMode;
+  attributeDataType?: string | null;
+  attributeValue: Record<string, unknown>;
+  properties?: Record<string, unknown> | null;
+  createdBy: string;
   createdAt: string;
-  updatedAt: string;
-  createdBy?: number;
 }
 
 /**
@@ -184,11 +232,25 @@ export interface UpdateNodeRequest {
   nodeDetails?: Record<string, unknown>;
 }
 
+/**
+ * Attribute type mode - how the attribute type is defined
+ */
+export enum AttributeTypeMode {
+  SCHEMALESS = 'SCHEMALESS',
+  TYPED = 'TYPED',
+}
+
+/**
+ * Request body for creating an attribute (relationship between nodes)
+ * Backend: POST /api/nodes/{nodeId}/attributes
+ */
 export interface CreateAttributeRequest {
-  targetNodeId: number;
-  attributeKey: AttributeKey;
-  attributeValue?: string;
-  metadata?: Record<string, unknown>;
+  sourceNodeId: string;  // UUID of the source node
+  targetNodeId: string;  // UUID of the target node
+  attributeType: string; // Type of relationship (e.g., "contains", "references")
+  attributeTypeMode: AttributeTypeMode;
+  attributeName: string; // Name of the attribute
+  attributeValue: Record<string, unknown>; // Value object (e.g., {order: 1000})
 }
 
 /**

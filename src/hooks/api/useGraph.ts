@@ -29,8 +29,12 @@ export function useGraphData(spaceSlug: string) {
       }));
 
       const edges: GraphEdge[] = attributes.map((attr) => {
-        // Determine edge type based on attribute key
-        const edgeType = attr.attributeKey === 'contains' ? 'contains' : 'default';
+        // Determine edge type based on attribute name/type
+        const attrType = (attr.attributeName || attr.attributeType || '').toLowerCase();
+        const edgeType = attrType === 'contains' ? 'contains' : 'default';
+        // Get label from attributeValue.label or fall back to attributeName
+        const labelValue = attr.attributeValue?.label;
+        const label = typeof labelValue === 'string' ? labelValue : attr.attributeName;
 
         return {
           id: String(attr.id),
@@ -40,7 +44,7 @@ export function useGraphData(spaceSlug: string) {
           data: {
             attribute: attr,
             isBidirectional: false, // TODO: Detect bidirectional relationships
-            label: attr.attributeValue,
+            label,
           },
         };
       });
