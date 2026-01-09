@@ -56,3 +56,9 @@ This an early version of MindStone, which mean there are bugs and issues. Below 
 - Graphview does not load when clicking on side-bar or click node on graphview, browser reload will refresh it state
 - Graph view layout and interaction is still very rough. More UI/UX improvements are needed.
 - Transclusion is not working yet.
+
+----
+
+### Open Source Project Based Resources
+- [QUD & Abstract Logic Experience Frontend](https://github.com/Qix-/node-editor?tab=readme-ov-file)
+- [Abstract Logic Frontend](https://github.com/DayuanJiang/next-ai-draw-io)
