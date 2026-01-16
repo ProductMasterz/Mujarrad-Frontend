@@ -27,7 +27,7 @@ Plugins can be managed through the "Settings" button on the bottom left. Some of
 1. [[Slides]]
 1. [[Audio recorder]]
 1. [[Open in default app]]
-1. [[Workspaces]]
+1. [[Spaces]]
 1. [[File recovery]]
 1. [[Publish]]
 1. [[Obsidian Sync|Sync]]

@@ -10,9 +10,9 @@ test.describe('Scenario 5: Relationship Preservation', () => {
     await page.fill('input[name="email"]', 'omar.h.shafeek@gmail.com');
     await page.fill('input[name="password"]', 'Om@r1234');
     await page.click('button:has-text("Sign in")');
-    await page.waitForURL('**/workspaces');
-    await page.click('text=Demo Workspace');
-    await page.waitForURL('**/workspace/demo-workspace');
+    await page.waitForURL('**/spaces');
+    await page.click('text=Demo Space');
+    await page.waitForURL('**/space/demo-space');
   });
 
   test('should preserve relationship after removing wiki-link text', async ({ page }) => {

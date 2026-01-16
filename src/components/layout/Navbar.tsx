@@ -24,8 +24,14 @@ export function Navbar({ className }: NavbarProps) {
   const params = useParams();
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // Get current workspace slug from URL if available
-  const currentWorkspaceSlug = params?.slug as string | undefined;
+  // Get current space slug from URL if available
+  const currentSpaceSlug = params?.slug as string | undefined;
+
+  // Hide navbar on auth pages
+  const authPages = ['/login', '/register'];
+  if (authPages.includes(pathname)) {
+    return null;
+  }
 
   const isActive = (path: string) => {
     return pathname.startsWith(path);
@@ -49,26 +55,26 @@ export function Navbar({ className }: NavbarProps) {
       <CommandPalette
         open={searchOpen}
         onOpenChange={setSearchOpen}
-        currentWorkspaceSlug={currentWorkspaceSlug}
+        currentSpaceSlug={currentSpaceSlug}
       />
       <nav className={`border-b bg-background ${className || ''}`}>
       <div className="flex h-16 items-center px-6 gap-6">
         {/* Logo */}
-        <Link href="/workspaces" className="flex items-center gap-2 font-semibold text-lg">
+        <Link href="/spaces" className="flex items-center gap-2 font-semibold text-lg">
           <Network className="h-6 w-6" />
           <span>Mujarrad</span>
         </Link>
 
         {/* Navigation Links */}
         <div className="flex items-center gap-1 flex-1">
-          <Link href="/workspaces">
+          <Link href="/spaces">
             <Button
-              variant={isActive('/workspaces') ? 'secondary' : 'ghost'}
+              variant={isActive('/spaces') ? 'secondary' : 'ghost'}
               size="sm"
               className="gap-2"
             >
               <Home className="h-4 w-4" />
-              Workspaces
+              Spaces
             </Button>
           </Link>
         </div>

@@ -14,7 +14,7 @@ This project uses a comprehensive testing strategy with three types of tests:
 tests/
 ├── e2e/                    # Playwright E2E tests
 │   ├── auth.spec.ts        # Authentication flows
-│   ├── workspaces.spec.ts  # Workspace management
+│   ├── spaces.spec.ts  # Space management
 │   ├── nodes.spec.ts       # Node CRUD operations
 │   ├── search.spec.ts      # Search functionality
 │   └── graph.spec.ts       # Graph visualization
@@ -83,7 +83,7 @@ npm run test:all
 
 2. **Test database should be seeded with**:
    - Test user (test@example.com / Password123)
-   - Test workspace (slug: test-workspace)
+   - Test space (slug: test-space)
    - Sample nodes for testing
 
 3. **Environment Variables**:

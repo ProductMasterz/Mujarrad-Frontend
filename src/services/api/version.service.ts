@@ -7,9 +7,9 @@ export const versionService = {
   /**
    * Get all versions for a node
    */
-  async getNodeVersions(workspaceSlug: string, nodeId: number): Promise<NodeVersion[]> {
+  async getNodeVersions(spaceSlug: string, nodeId: number): Promise<NodeVersion[]> {
     const response = await apiClient.get<NodeVersion[]>(
-      `/workspaces/${workspaceSlug}/nodes/${nodeId}/versions`
+      `/spaces/${spaceSlug}/nodes/${nodeId}/versions`
     );
     return response.data;
   },
@@ -18,12 +18,12 @@ export const versionService = {
    * Get specific version
    */
   async getVersion(
-    workspaceSlug: string,
+    spaceSlug: string,
     nodeId: number,
     versionId: number
   ): Promise<NodeVersion> {
     const response = await apiClient.get<NodeVersion>(
-      `/workspaces/${workspaceSlug}/nodes/${nodeId}/versions/${versionId}`
+      `/spaces/${spaceSlug}/nodes/${nodeId}/versions/${versionId}`
     );
     return response.data;
   },
@@ -33,12 +33,12 @@ export const versionService = {
    * Creates a new version with the historical content
    */
   async restoreVersion(
-    workspaceSlug: string,
+    spaceSlug: string,
     nodeId: number,
     versionId: number
   ): Promise<Node> {
     const response = await apiClient.post<Node>(
-      `/workspaces/${workspaceSlug}/nodes/${nodeId}/versions/${versionId}/restore`
+      `/spaces/${spaceSlug}/nodes/${nodeId}/versions/${versionId}/restore`
     );
     return response.data;
   },
@@ -47,12 +47,12 @@ export const versionService = {
    * Delete a specific version from history
    */
   async deleteVersion(
-    workspaceSlug: string,
+    spaceSlug: string,
     nodeId: number,
     versionId: number
   ): Promise<void> {
     await apiClient.delete(
-      `/workspaces/${workspaceSlug}/nodes/${nodeId}/versions/${versionId}`
+      `/spaces/${spaceSlug}/nodes/${nodeId}/versions/${versionId}`
     );
   },
 };

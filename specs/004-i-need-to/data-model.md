@@ -19,7 +19,7 @@ Represents both CONTEXT (folders) and REGULAR (content pages) nodes.
 ```typescript
 interface Node {
   id: string;
-  workspaceId: string;
+  spaceId: string;
   title: string;
   slug: string;
   nodeType: 'REGULAR' | 'CONTEXT';
@@ -34,7 +34,7 @@ interface Node {
 
 **Validation Rules:**
 - `title`: 1-200 characters, required
-- `slug`: URL-safe, unique within workspace
+- `slug`: URL-safe, unique within space
 - `nodeType`: Must be 'REGULAR' or 'CONTEXT'
 - `markdownContent`: Only for REGULAR nodes, optional for CONTEXT
 - `version`: Used for optimistic locking
@@ -98,12 +98,12 @@ interface AttributeMetadata {
 
 ---
 
-### Workspace Context
+### Space Context
 
-Current workspace information for scoping all operations.
+Current space information for scoping all operations.
 
 ```typescript
-interface Workspace {
+interface Space {
   id: string;
   slug: string;
   name: string;
@@ -356,9 +356,9 @@ function detectBidirectionalEdges(attributes: Attribute[]): Set<string> {
 
 ```typescript
 interface NavigationState {
-  // Workspace context
-  currentWorkspaceId: string | null;
-  currentWorkspace: Workspace | null;
+  // Space context
+  currentSpaceId: string | null;
+  currentSpace: Space | null;
 
   // Navigation
   selectedNodeId: string | null;
@@ -372,7 +372,7 @@ interface NavigationState {
   expandedNodeIds: Set<string>;
 
   // Actions
-  setWorkspace: (workspace: Workspace) => void;
+  setSpace: (space: Space) => void;
   setSelectedNode: (nodeId: string) => void;
   goBack: () => void;
   goForward: () => void;
@@ -381,8 +381,8 @@ interface NavigationState {
 }
 
 const useNavigationStore = create<NavigationState>((set, get) => ({
-  currentWorkspaceId: null,
-  currentWorkspace: null,
+  currentSpaceId: null,
+  currentSpace: null,
   selectedNodeId: null,
   navigationHistory: [],
   historyIndex: -1,
@@ -394,9 +394,9 @@ const useNavigationStore = create<NavigationState>((set, get) => ({
   },
   expandedNodeIds: new Set(),
 
-  setWorkspace: (workspace) => set({
-    currentWorkspace: workspace,
-    currentWorkspaceId: workspace.id
+  setSpace: (space) => set({
+    currentSpace: space,
+    currentSpaceId: space.id
   }),
 
   setSelectedNode: (nodeId) => {
@@ -458,13 +458,13 @@ const useNavigationStore = create<NavigationState>((set, get) => ({
 ### React Query Hooks (Server State)
 
 ```typescript
-// Fetch nodes in workspace
-function useWorkspaceNodes(workspaceId: string) {
+// Fetch nodes in space
+function useSpaceNodes(spaceId: string) {
   return useQuery({
-    queryKey: ['workspaces', workspaceId, 'nodes'],
-    queryFn: () => nodeService.getNodesByWorkspace(workspaceId),
+    queryKey: ['spaces', spaceId, 'nodes'],
+    queryFn: () => nodeService.getNodesBySpace(spaceId),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: Boolean(workspaceId),
+    enabled: Boolean(spaceId),
   });
 }
 
@@ -502,7 +502,7 @@ function useCreateWikiLinks() {
             title: l.link.targetTitle,
             nodeType: 'REGULAR',
             markdownContent: '',
-            workspaceId: /* from store */,
+            spaceId: /* from store */,
           }))
       );
 
@@ -526,7 +526,7 @@ function useCreateWikiLinks() {
     onSuccess: (_, { nodeId }) => {
       // Invalidate queries to refresh UI
       queryClient.invalidateQueries({ queryKey: ['nodes', nodeId, 'attributes'] });
-      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      queryClient.invalidateQueries({ queryKey: ['spaces'] });
     },
   });
 }

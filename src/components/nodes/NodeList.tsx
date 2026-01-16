@@ -1,15 +1,26 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useNodes } from '@/hooks/api';
 import { NodeCard } from './NodeCard';
 import { Spinner } from '@/components/ui/spinner';
+import { getEffectiveVisibility, NodeVisibility } from '@/types/node-system';
 
 interface NodeListProps {
-  workspaceSlug: string;
+  spaceSlug: string;
 }
 
-export function NodeList({ workspaceSlug }: NodeListProps) {
-  const { data, isLoading, error } = useNodes(workspaceSlug);
+export function NodeList({ spaceSlug }: NodeListProps) {
+  const { data, isLoading, error } = useNodes(spaceSlug);
+
+  // Filter to only show visible nodes (not blocks, whiteboard shapes, etc.)
+  const visibleNodes = useMemo(() => {
+    if (!data) return [];
+    return data.filter((node) => {
+      const visibility = getEffectiveVisibility(node.nodeDetails as Record<string, unknown> | undefined);
+      return visibility === NodeVisibility.VISIBLE;
+    });
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -27,7 +38,7 @@ export function NodeList({ workspaceSlug }: NodeListProps) {
     );
   }
 
-  const nodes = data || [];
+  const nodes = visibleNodes;
 
   if (nodes.length === 0) {
     return (
@@ -41,7 +52,7 @@ export function NodeList({ workspaceSlug }: NodeListProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {nodes.map((node) => (
-        <NodeCard key={node.id} node={node} workspaceSlug={workspaceSlug} />
+        <NodeCard key={node.id} node={node} spaceSlug={spaceSlug} />
       ))}
     </div>
   );

@@ -9,13 +9,13 @@ export {
 } from './auth.schema';
 
 export {
-  createWorkspaceSchema,
-  updateWorkspaceSchema,
+  createSpaceSchema,
+  updateSpaceSchema,
   inviteCollaboratorSchema,
-  type CreateWorkspaceFormData,
-  type UpdateWorkspaceFormData,
+  type CreateSpaceFormData,
+  type UpdateSpaceFormData,
   type InviteCollaboratorFormData,
-} from './workspace.schema';
+} from './space.schema';
 
 export {
   createNodeSchema,

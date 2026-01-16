@@ -10,7 +10,7 @@ export default function Home() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/workspaces');
+      router.push('/spaces');
     } else {
       router.push('/login');
     }

@@ -9,7 +9,7 @@
 - Backend running on http://localhost:3000
 - Frontend running on http://localhost:3001
 - User account created: `omar.h.shafeek@gmail.com` / `Om@r1234`
-- Test workspace created: "Demo Workspace"
+- Test space created: "Demo Space"
 
 ---
 
@@ -27,9 +27,9 @@
    Click: "Sign in"
    ```
 
-2. **Select Workspace**:
+2. **Select Space**:
    ```
-   Click: "Demo Workspace" card
+   Click: "Demo Space" card
    ```
 
 3. **View Hierarchy** (NEW UI):
@@ -60,7 +60,7 @@
 6. **Verify Selection State**:
    ```
    Expected: "Project A" highlighted in tree
-   Expected: Browser URL: /workspace/demo-workspace/node/{nodeId}
+   Expected: Browser URL: /space/demo-space/node/{nodeId}
    ```
 
 ### Validation Checklist
@@ -109,7 +109,7 @@
    ```
    Click: The "Projects" wiki-link
    Expected: Navigate to "Projects" folder page
-   Expected: URL changes to /workspace/demo-workspace/node/{projects-id}
+   Expected: URL changes to /space/demo-space/node/{projects-id}
    Expected: Tree automatically expands "Projects" folder
    ```
 
@@ -189,13 +189,13 @@
 
 ## Test Scenario 4: Graph Visualization
 
-**User Story**: View workspace as interactive graph, see connections, toggle node types
+**User Story**: View space as interactive graph, see connections, toggle node types
 
 ### Steps
 
 1. **Open Graph View**:
    ```
-   In workspace page, click: "Graph" tab
+   In space page, click: "Graph" tab
    Expected: Canvas displays all nodes as graph
    ```
 
@@ -373,7 +373,7 @@
 
 2. **Refresh Frontend**:
    ```
-   Reload page: http://localhost:3001/workspace/demo-workspace
+   Reload page: http://localhost:3001/space/demo-space
    ```
 
 3. **Measure Tree Load Time**:
@@ -456,7 +456,7 @@ Test with VoiceOver (Mac) or NVDA (Windows):
 ### Complete User Flow
 
 ```
-1. Login → 2. Select workspace → 3. Browse tree →
+1. Login → 2. Select space → 3. Browse tree →
 4. Expand folder → 5. Click page → 6. Read markdown →
 7. Click wiki-link → 8. Navigate → 9. View graph →
 10. Toggle filters → 11. Edit page → 12. Save →

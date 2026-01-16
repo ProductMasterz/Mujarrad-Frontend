@@ -34,14 +34,14 @@ Successfully implemented a comprehensive UI component library for the Mujarrad K
 /src/components/ui/badge.tsx       (1,103 bytes)
 ```
 
-### 2. Workspace Components (3 components + 1 barrel export)
+### 2. Space Components (3 components + 1 barrel export)
 
-- **WorkspaceCard** - Card displaying workspace info with click-to-navigate
-- **WorkspaceList** - Grid of workspaces with loading/error/empty states
-- **CreateWorkspaceDialog** - Form dialog for creating new workspaces
+- **SpaceCard** - Card displaying space info with click-to-navigate
+- **SpaceList** - Grid of spaces with loading/error/empty states
+- **CreateSpaceDialog** - Form dialog for creating new spaces
 
 **Features:**
-- Integrated with React Query hooks (`useWorkspaces`, `useCreateWorkspace`)
+- Integrated with React Query hooks (`useSpaces`, `useCreateSpace`)
 - Form validation using Zod schemas
 - Real-time error handling with ApiError
 - Responsive grid layout (1/2/3 columns)
@@ -49,10 +49,10 @@ Successfully implemented a comprehensive UI component library for the Mujarrad K
 
 **File Locations:**
 ```
-/src/components/workspaces/WorkspaceCard.tsx            (908 bytes)
-/src/components/workspaces/WorkspaceList.tsx            (1,099 bytes)
-/src/components/workspaces/CreateWorkspaceDialog.tsx    (3,344 bytes)
-/src/components/workspaces/index.ts                     (163 bytes)
+/src/components/spaces/SpaceCard.tsx            (908 bytes)
+/src/components/spaces/SpaceList.tsx            (1,099 bytes)
+/src/components/spaces/CreateSpaceDialog.tsx    (3,344 bytes)
+/src/components/spaces/index.ts                     (163 bytes)
 ```
 
 ### 3. Node Components (3 components + 1 barrel export)
@@ -113,8 +113,8 @@ Successfully implemented a comprehensive UI component library for the Mujarrad K
 
 | Component | Hooks Used | Types Used | Schemas Used |
 |-----------|-----------|------------|--------------|
-| WorkspaceList | useWorkspaces | Workspace, PageResponse | - |
-| CreateWorkspaceDialog | useCreateWorkspace | CreateWorkspaceFormData | createWorkspaceSchema |
+| SpaceList | useSpaces | Space, PageResponse | - |
+| CreateSpaceDialog | useCreateSpace | CreateSpaceFormData | createSpaceSchema |
 | NodeList | useNodes | Node, PageResponse | - |
 | CreateNodeDialog | useCreateNode | CreateNodeFormData, NodeType | createNodeSchema |
 | GraphCanvas | useGraphData | GraphData, GraphNode, GraphEdge | - |
@@ -142,7 +142,7 @@ All mutation components implement:
 ```
 src/components/
 ├── ui/ (9 components)
-├── workspaces/ (3 components + index)
+├── spaces/ (3 components + index)
 ├── nodes/ (3 components + index)
 ├── graph/ (2 components + index)
 └── index.ts (barrel export)
@@ -164,15 +164,15 @@ src/components/
 
 ## Usage Examples
 
-### Simple Workspace Page
+### Simple Space Page
 ```typescript
-import { WorkspaceList, CreateWorkspaceDialog } from '@/components/workspaces';
+import { SpaceList, CreateSpaceDialog } from '@/components/spaces';
 
-export default function WorkspacesPage() {
+export default function SpacesPage() {
   return (
     <div>
-      <CreateWorkspaceDialog />
-      <WorkspaceList />
+      <CreateSpaceDialog />
+      <SpaceList />
     </div>
   );
 }
@@ -185,8 +185,8 @@ import { NodeList, CreateNodeDialog } from '@/components/nodes';
 export default function NodesPage({ params }) {
   return (
     <div>
-      <CreateNodeDialog workspaceSlug={params.slug} />
-      <NodeList workspaceSlug={params.slug} />
+      <CreateNodeDialog spaceSlug={params.slug} />
+      <NodeList spaceSlug={params.slug} />
     </div>
   );
 }
@@ -199,7 +199,7 @@ import { GraphCanvas } from '@/components/graph';
 export default function GraphPage({ params }) {
   return (
     <div className="h-screen">
-      <GraphCanvas workspaceSlug={params.slug} />
+      <GraphCanvas spaceSlug={params.slug} />
     </div>
   );
 }
@@ -209,7 +209,7 @@ export default function GraphPage({ params }) {
 
 ## Component Features Matrix
 
-| Feature | Workspaces | Nodes | Graph |
+| Feature | Spaces | Nodes | Graph |
 |---------|-----------|-------|-------|
 | List View | ✅ | ✅ | - |
 | Card View | ✅ | ✅ | - |
@@ -232,7 +232,7 @@ export default function GraphPage({ params }) {
 3. ✅ Configure routing
 
 ### Future Enhancements
-1. Add edit/delete dialogs for workspaces and nodes
+1. Add edit/delete dialogs for spaces and nodes
 2. Implement advanced graph layouts (dagre, force-directed)
 3. Add search and filter functionality
 4. Create node detail view with markdown rendering

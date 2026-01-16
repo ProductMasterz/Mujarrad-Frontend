@@ -39,11 +39,11 @@ This document consolidates technical research and decisions for implementing the
 
 **Zustand** for client state:
 - Authentication state (user, token, isAuthenticated)
-- Current workspace context
+- Current space context
 - UI preferences (theme, sidebar, graph layout)
 
 **React Query** for server state:
-- All API data (nodes, workspaces, attributes, versions)
+- All API data (nodes, spaces, attributes, versions)
 - Automatic caching with configurable stale times
 - Optimistic updates for mutations
 - Background refetching
@@ -124,7 +124,7 @@ const {
   "title": "Validation Failed",
   "status": 400,
   "detail": "Title is required",
-  "instance": "/api/workspaces/my-workspace/nodes",
+  "instance": "/api/spaces/my-space/nodes",
   "errors": {
     "title": ["Must not be empty"]
   }
@@ -280,7 +280,7 @@ const MarkdownEditor = dynamic(() => import('@/components/ui/MarkdownEditor'), {
 **E2E Tests (Playwright)**:
 - Critical user flows:
   - Authentication flow
-  - Workspace creation and switching
+  - Space creation and switching
   - Node CRUD operations
   - Graph visualization and navigation
   - Version history and restoration
@@ -298,15 +298,15 @@ From backend Swagger specification:
 |----------|--------|----------|----------------|
 | Auth | POST | `/api/users/register` | AuthService.register() |
 | Auth | POST | `/api/users/login` | AuthService.login() |
-| Workspaces | POST | `/api/workspaces` | WorkspaceService.create() |
-| Workspaces | GET | `/api/workspaces` | WorkspaceService.getAll() |
-| Workspaces | GET | `/api/workspaces/{slug}` | WorkspaceService.getBySlug() |
-| Workspaces | DELETE | `/api/workspaces/{slug}` | WorkspaceService.delete() |
-| Nodes | POST | `/api/workspaces/{slug}/nodes` | NodeService.create() |
-| Nodes | GET | `/api/workspaces/{slug}/nodes` | NodeService.getAll() |
-| Nodes | GET | `/api/workspaces/{slug}/nodes/{id}` | NodeService.getById() |
-| Nodes | PUT | `/api/workspaces/{slug}/nodes/{id}` | NodeService.update() |
-| Nodes | DELETE | `/api/workspaces/{slug}/nodes/{id}` | NodeService.delete() |
+| Spaces | POST | `/api/spaces` | SpaceService.create() |
+| Spaces | GET | `/api/spaces` | SpaceService.getAll() |
+| Spaces | GET | `/api/spaces/{slug}` | SpaceService.getBySlug() |
+| Spaces | DELETE | `/api/spaces/{slug}` | SpaceService.delete() |
+| Nodes | POST | `/api/spaces/{slug}/nodes` | NodeService.create() |
+| Nodes | GET | `/api/spaces/{slug}/nodes` | NodeService.getAll() |
+| Nodes | GET | `/api/spaces/{slug}/nodes/{id}` | NodeService.getById() |
+| Nodes | PUT | `/api/spaces/{slug}/nodes/{id}` | NodeService.update() |
+| Nodes | DELETE | `/api/spaces/{slug}/nodes/{id}` | NodeService.delete() |
 | Attributes | POST | `/api/nodes/{id}/attributes` | AttributeService.create() |
 | Attributes | GET | `/api/nodes/{id}/attributes` | AttributeService.getAll() |
 | Attributes | DELETE | `/api/nodes/{id}/attributes/{attrId}` | AttributeService.delete() |
@@ -395,9 +395,9 @@ const queryClient = new QueryClient({
 ### Benefits for Mujarrad Knowledge Graph Frontend
 
 1. **File-Based Routing Matches Domain Model**
-   - Workspace routing: `app/workspaces/[slug]/page.tsx`
-   - Node detail: `app/workspaces/[slug]/node/[id]/page.tsx`
-   - Graph view: `app/workspaces/[slug]/graph/page.tsx`
+   - Space routing: `app/spaces/[slug]/page.tsx`
+   - Node detail: `app/spaces/[slug]/node/[id]/page.tsx`
+   - Graph view: `app/spaces/[slug]/graph/page.tsx`
    - Natural mapping to backend API structure
 
 2. **Performance Optimization Out-of-the-Box**

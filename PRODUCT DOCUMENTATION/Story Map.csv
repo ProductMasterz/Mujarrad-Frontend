@@ -3,7 +3,7 @@ Onboarding Journey,Account Setup,As a new user I can create my account and profi
 - Profile created with basic information
 - Email verification sent and validated
 - User assigned to primary context automatically",Epic 10: User System,P0,2,Must Have,1000,3,100%,1,3000.00,10
-Onboarding Journey,First Context Creation,As a new user I can create my first context to organize my information so that I have a workspace to begin adding content,"- Context created with title and description
+Onboarding Journey,First Context Creation,As a new user I can create my first context to organize my information so that I have a space to begin adding content,"- Context created with title and description
 - Context visibility set to private by default
 - User becomes context owner
 - Primary context designated",Epic 5: Contexts & Emergent Architecture,P0,3,Must Have,1000,3,100%,1.5,2000.00,10
@@ -11,7 +11,7 @@ Onboarding Journey,Template Discovery,As a new user I can browse available conte
 - Preview template structure and purpose
 - Search templates by use case
 - Template metadata shown (creator, usage count, ratings)",Epic 8: Templates & Docking,P0,2,Must Have,800,2,80%,1,1600.00,8
-Onboarding Journey,First Template Application,As a new user I can apply a context template so that I can quickly set up my workspace with proven structures,"- Select template from library
+Onboarding Journey,First Template Application,As a new user I can apply a context template so that I can quickly set up my space with proven structures,"- Select template from library
 - Template applied to context within 5 seconds
 - Nodes and structure created correctly
 - User guided through customization options",Epic 8: Templates & Docking,P0,3,Must Have,800,2,80%,1.5,1066.67,8
@@ -371,7 +371,7 @@ Permissions & Security Journey,Permission Management UI,As an admin I can create
 Permissions & Security Journey,Create Sharing Context,As a user I want to have a space that I can access with my team so that we can collaborate,"- Create sharing context layers
 - Define hierarchical sharing layers
 - Add people to sharing context layer
-- Team workspace creation
+- Team space creation
 - Shared vs private contexts",Epic 10: Permissions & Access Control,P0,3,Must Have,700,3,100%,1.5,1400.00,9
 Permissions & Security Journey,Preserve or Publish Nodes,As a user I want to share or revoke sharing of nodes so that I maintain control over confidential information,"- Share nodes from default (confidential) layer
 - Revoke sharing (preserve in private layer)

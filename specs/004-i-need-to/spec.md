@@ -16,7 +16,7 @@
    → Context: spec 002 already defined markdown migration approach
 3. For each unclear aspect:
    → Hierarchy display format (tree, sidebar, breadcrumbs?)
-   → Integration with existing workspace/node CRUD
+   → Integration with existing space/node CRUD
    → Wiki-link parsing and rendering
    → Graph visualization enhancement for bidirectional navigation
 4. Fill User Scenarios & Testing section
@@ -60,10 +60,10 @@ A knowledge worker uses Mujarrad to organize interconnected notes in a hierarchi
 2. **Markdown Content Preview**: View formatted markdown content for each page
 3. **Wiki-link Navigation**: Click `[[links]]` to jump between related pages
 4. **Connection Graph Visualization**: See how pages connect to each other
-5. **Seamless Integration**: Works with existing workspace, node creation, and editing features
+5. **Seamless Integration**: Works with existing space, node creation, and editing features
 
 The user can:
-- Start from workspace view
+- Start from space view
 - Navigate into a page hierarchy (folder tree or list)
 - Select a page to view its markdown content
 - Click wiki-links within content to navigate to referenced pages
@@ -74,7 +74,7 @@ The user can:
 ### Acceptance Scenarios
 
 #### Hierarchy Navigation
-1. **Given** user is in a workspace, **When** they view the workspace, **Then** they see a hierarchical list of pages organized by CONTEXT nodes (folders)
+1. **Given** user is in a space, **When** they view the space, **Then** they see a hierarchical list of pages organized by CONTEXT nodes (folders)
 2. **Given** pages are nested in folders, **When** displaying hierarchy, **Then** tree structure shows parent-child relationships
 3. **Given** user clicks a folder in hierarchy, **When** expanded, **Then** all contained pages are displayed
 4. **Given** user clicks a page in hierarchy, **When** selected, **Then** page content is displayed in preview pane
@@ -94,7 +94,7 @@ The user can:
 14. **Given** bidirectional wiki-links (A→B and B→A exist), **When** displaying in graph, **Then** system merges into single edge with special visual indicator (double-headed arrow or distinct styling)
 
 #### Graph Visualization
-15. **Given** user views workspace graph, **When** displayed, **Then** all pages appear as nodes
+15. **Given** user views space graph, **When** displayed, **Then** all pages appear as nodes
 16. **Given** pages have wiki-link relationships, **When** displaying graph, **Then** edges connect related pages
 17. **Given** user clicks node in graph, **When** selected, **Then** page content is displayed
 18. **Given** user hovers over edge in graph, **When** hovered, **Then** relationship type and metadata are shown
@@ -159,7 +159,7 @@ The user can:
 - **FR-022**: System MUST [NEEDS CLARIFICATION: handle ambiguous targets (multiple pages with same title)? show picker? use first match?]
 
 #### Graph Visualization Enhancement
-- **FR-023**: System MUST display all pages in workspace as nodes in graph
+- **FR-023**: System MUST display all pages in space as nodes in graph
 - **FR-024**: System MUST display wiki-link relationships as edges in graph
 - **FR-024a**: System MUST detect bidirectional relationships (A→B and B→A both exist)
 - **FR-024b**: System MUST merge bidirectional relationships into single edge with distinct visual styling (double-headed arrow, thicker line, or different color)
@@ -178,7 +178,7 @@ The user can:
 - **FR-033**: System MUST work with existing EditNodeDialog for editing page content
 - **FR-034**: System MUST work with existing DeleteNodeDialog for deleting pages
 - **FR-035**: System MUST update hierarchy display when pages are created, edited, or deleted
-- **FR-036**: System MUST maintain workspace access control (only show pages user has permission to view)
+- **FR-036**: System MUST maintain space access control (only show pages user has permission to view)
 - **FR-037**: System MUST preserve existing node metadata (type, slug, timestamps, creator)
 - **FR-038**: System MUST support version history for all page edits
 - **FR-039**: System MUST [NEEDS CLARIFICATION: show recent pages? favorites? bookmarks?]
@@ -257,25 +257,25 @@ The user can:
 
 ### Dependencies
 - **Spec 002 (Markdown Migration)**: Analysis and patterns for wiki-link parsing
-- **Spec 003 (CRUD UI)**: Existing workspace, node, and relationship CRUD operations
+- **Spec 003 (CRUD UI)**: Existing space, node, and relationship CRUD operations
 - **Backend API**: All endpoints from spec 003 must be functional
-- **Current Components**: CreateNodeDialog, EditNodeDialog, WorkspaceCard, NodeList components
+- **Current Components**: CreateNodeDialog, EditNodeDialog, SpaceCard, NodeList components
 - **Graph Visualization**: Existing graph component from initial implementation
 
 ### Assumptions
 - Users are familiar with Obsidian or similar note-taking tools
-- Workspace and node CRUD features from spec 003 are complete and working
+- Space and node CRUD features from spec 003 are complete and working
 - Backend supports markdown_content field on nodes
 - Backend supports `references` and `contains` attribute types
 - Graph visualization component exists and can be enhanced
 - Wiki-link syntax follows Obsidian conventions `[[Target]]`
-- Page titles are unique within a workspace (or system handles duplicates)
+- Page titles are unique within a space (or system handles duplicates)
 - Markdown content is stored as plain text with wiki-link syntax preserved
 - Real-time collaboration is out of scope (async updates acceptable)
 
 ### Constraints
 - Must integrate seamlessly with existing UI (no complete redesign)
-- Performance must be acceptable for workspaces with 100+ pages
+- Performance must be acceptable for spaces with 100+ pages
 - Wiki-link parsing should not block page save operations
 - Graph visualization must render efficiently for large networks
 - Hierarchy navigation must be intuitive (follow file explorer patterns)
@@ -293,7 +293,7 @@ The user can:
 - Experience feels cohesive (Obsidian-like UX in Mujarrad system)
 
 ### Technical Success
-- All pages in workspace visible in hierarchy
+- All pages in space visible in hierarchy
 - Wiki-links automatically create relationships in backend
 - Graph displays all relationships accurately
 - No performance degradation with 100+ pages
@@ -301,7 +301,7 @@ The user can:
 - Version control preserves markdown content and relationships
 
 ### Feature Completeness
-- Hierarchy display shows full workspace structure
+- Hierarchy display shows full space structure
 - Markdown rendering supports all common syntax
 - Wiki-links are clickable and navigate correctly
 - Graph is interactive (pan, zoom, click to navigate)
@@ -324,7 +324,7 @@ Spec 002 defined the **migration** of markdown files from `/posts` to the backen
 - User-facing hierarchy navigation UI
 - Interactive markdown preview with clickable wiki-links
 - Enhanced graph visualization for navigation
-- Integration with existing workspace/node CRUD operations
+- Integration with existing space/node CRUD operations
 - Real-time relationship updates on content changes
 
 ---

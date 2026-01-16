@@ -8,24 +8,24 @@
 ## Execution Flow (main)
 ```
 1. Parse user description from Input
-   → Feature: Complete CRUD UI for Workspaces, Nodes, Attributes, and Version History
+   → Feature: Complete CRUD UI for Spaces, Nodes, Attributes, and Version History
 2. Extract key concepts from description
    → Actors: Authenticated users
    → Actions: Create, Read, Update, Delete for all entities
-   → Data: Workspaces (spaces), Nodes, Attributes (relationships), Node Versions
-   → Priority: Workspace creation is critical (currently missing)
+   → Data: Spaces (spaces), Nodes, Attributes (relationships), Node Versions
+   → Priority: Space creation is critical (currently missing)
 3. For each unclear aspect:
-   → ✅ Workspaces can be deleted with cascade deletion of all nodes/relationships
+   → ✅ Spaces can be deleted with cascade deletion of all nodes/relationships
    → ✅ Versions are restorable (creates new version) and deletable
-   → ✅ Workspace owners can invite specific users as collaborators with edit permissions
+   → ✅ Space owners can invite specific users as collaborators with edit permissions
    → Bulk operations deferred to future iteration
    → Slug validation: lowercase alphanumeric + hyphens, must start with letter
 4. Fill User Scenarios & Testing section
-   → Primary flow: Create workspace → Add nodes → Manage relationships
+   → Primary flow: Create space → Add nodes → Manage relationships
 5. Generate Functional Requirements
    → CRUD operations for each entity type
 6. Identify Key Entities
-   → Workspace, Node, Attribute, NodeVersion
+   → Space, Node, Attribute, NodeVersion
 7. Run Review Checklist
    → WARN "Spec has uncertainties regarding permissions and deletion behavior"
 8. Return: SUCCESS (spec ready for clarification then planning)
@@ -43,8 +43,8 @@
 ## Clarifications
 
 ### Session 2025-10-07
-- Q: When a user deletes a workspace, what should happen to its contained nodes and relationships? → A: Cascade delete - All nodes and relationships are automatically deleted
-- Q: What are the permission rules for workspace and node access? → A: Shared workspaces - Owners can invite specific users with edit permissions
+- Q: When a user deletes a space, what should happen to its contained nodes and relationships? → A: Cascade delete - All nodes and relationships are automatically deleted
+- Q: What are the permission rules for space and node access? → A: Shared spaces - Owners can invite specific users with edit permissions
 - Q: When a user deletes a node, what should happen to its relationships (attributes)? → A: Cascade delete - All relationships (incoming and outgoing) are automatically deleted
 - Q: Are node versions immutable (read-only history) or can users restore/modify them? → A: Restorable + Deletable - Users can both restore and delete version entries
 - Q: Should the system allow circular relationships (e.g., Node A → Node B → Node A)? → A: Allow all - No restrictions on circular relationships
@@ -54,22 +54,22 @@
 ## User Scenarios & Testing *(mandatory)*
 
 ### Primary User Story
-As an authenticated user, I need to manage my knowledge graph workspaces and their contents. I should be able to create new workspaces (spaces), add and organize nodes within them, establish relationships between nodes, and maintain the integrity of my knowledge structure through full CRUD capabilities.
+As an authenticated user, I need to manage my knowledge graph spaces and their contents. I should be able to create new spaces (spaces), add and organize nodes within them, establish relationships between nodes, and maintain the integrity of my knowledge structure through full CRUD capabilities.
 
-**Critical Gap**: Currently, users cannot create workspaces, blocking the primary workflow.
+**Critical Gap**: Currently, users cannot create spaces, blocking the primary workflow.
 
 ### Acceptance Scenarios
 
-#### Workspace Management
-1. **Given** a logged-in user on the workspaces page, **When** they click a "Create Workspace" button, **Then** they see a form to enter workspace name, slug, and optional description
-2. **Given** a user viewing their workspaces list, **When** they select a workspace, **Then** they can view its details and access edit/delete options (if owner or invited collaborator)
-3. **Given** a workspace owner, **When** they access workspace settings, **Then** they can invite users by email or username to become collaborators
-4. **Given** a user editing a workspace, **When** they update the name or description and save, **Then** the changes are reflected immediately
-5. **Given** a user attempting to delete a workspace, **When** they confirm deletion, **Then** all contained nodes and their relationships are permanently deleted (cascade delete)
-6. **Given** a user without permissions, **When** they attempt to access another user's private workspace, **Then** they receive an access denied message
+#### Space Management
+1. **Given** a logged-in user on the spaces page, **When** they click a "Create Space" button, **Then** they see a form to enter space name, slug, and optional description
+2. **Given** a user viewing their spaces list, **When** they select a space, **Then** they can view its details and access edit/delete options (if owner or invited collaborator)
+3. **Given** a space owner, **When** they access space settings, **Then** they can invite users by email or username to become collaborators
+4. **Given** a user editing a space, **When** they update the name or description and save, **Then** the changes are reflected immediately
+5. **Given** a user attempting to delete a space, **When** they confirm deletion, **Then** all contained nodes and their relationships are permanently deleted (cascade delete)
+6. **Given** a user without permissions, **When** they attempt to access another user's private space, **Then** they receive an access denied message
 
 #### Node Management
-5. **Given** a user inside a workspace, **When** they click "Create Node", **Then** they see a form with fields for title, type (Regular/Context/Assumption), and markdown content
+5. **Given** a user inside a space, **When** they click "Create Node", **Then** they see a form with fields for title, type (Regular/Context/Assumption), and markdown content
 6. **Given** a user viewing a node, **When** they click edit, **Then** they can modify the title, type, and content
 7. **Given** a user viewing a node, **When** they request to delete it, **Then** the node and all its relationships (both incoming and outgoing) are permanently deleted (cascade delete)
 8. **Given** a user creating/editing a node, **When** they provide markdown content, **Then** they should see a preview of the rendered content
@@ -86,12 +86,12 @@ As an authenticated user, I need to manage my knowledge graph workspaces and the
 15. **Given** a user viewing version history, **When** they select a version to delete, **Then** that version entry is permanently removed from history
 
 ### Edge Cases
-- What happens when a user tries to create a workspace with a duplicate slug?
+- What happens when a user tries to create a space with a duplicate slug?
 - How does the system handle attempting to create a relationship to a non-existent node?
 - What happens when a user tries to delete a node that has dependent relationships? (Answer: Cascade delete all relationships)
 - How does the system handle concurrent edits to the same node (optimistic locking)?
-- What is the maximum length for workspace names, node titles, and markdown content?
-- Can a workspace have zero nodes?
+- What is the maximum length for space names, node titles, and markdown content?
+- Can a space have zero nodes?
 - Can a node have zero relationships?
 - Are circular relationships displayed differently in the UI to help users identify cycles?
 
@@ -99,19 +99,19 @@ As an authenticated user, I need to manage my knowledge graph workspaces and the
 
 ### Functional Requirements
 
-#### Workspace (Space) CRUD
-- **FR-001**: System MUST provide a clearly visible button/action to create a new workspace from the workspaces list page
-- **FR-002**: Users MUST be able to view a list of all their workspaces with name, slug, description, and creation date
-- **FR-003**: Users MUST be able to edit workspace name and description
-- **FR-004**: System MUST validate workspace slugs to ensure uniqueness and valid format (lowercase alphanumeric characters with hyphens, must start with a letter, 3-50 characters)
-- **FR-005**: Users MUST be able to delete workspaces with cascade deletion of all contained nodes, relationships, and version history
-- **FR-006**: System MUST prevent creation of duplicate workspace slugs with clear error messaging
-- **FR-007**: Users SHOULD be able to search/filter their workspaces by name (optional enhancement, deferred to Phase 2 if time permits)
+#### Space (Space) CRUD
+- **FR-001**: System MUST provide a clearly visible button/action to create a new space from the spaces list page
+- **FR-002**: Users MUST be able to view a list of all their spaces with name, slug, description, and creation date
+- **FR-003**: Users MUST be able to edit space name and description
+- **FR-004**: System MUST validate space slugs to ensure uniqueness and valid format (lowercase alphanumeric characters with hyphens, must start with a letter, 3-50 characters)
+- **FR-005**: Users MUST be able to delete spaces with cascade deletion of all contained nodes, relationships, and version history
+- **FR-006**: System MUST prevent creation of duplicate space slugs with clear error messaging
+- **FR-007**: Users SHOULD be able to search/filter their spaces by name (optional enhancement, deferred to Phase 2 if time permits)
 
 #### Node CRUD
-- **FR-008**: System MUST allow users to create nodes within a workspace with title, type, and markdown content
+- **FR-008**: System MUST allow users to create nodes within a space with title, type, and markdown content
 - **FR-009**: System MUST support three node types: Regular, Context, and Assumption with visual distinction
-- **FR-010**: Users MUST be able to view a list of all nodes in a workspace
+- **FR-010**: Users MUST be able to view a list of all nodes in a space
 - **FR-011**: Users MUST be able to edit node title, type, and content
 - **FR-012**: System MUST provide markdown preview during node creation/editing
 - **FR-013**: Users MUST be able to delete nodes with cascade deletion of all associated relationships (both incoming and outgoing)
@@ -142,16 +142,16 @@ As an authenticated user, I need to manage my knowledge graph workspaces and the
 - **FR-031**: System MUST display clear error messages when operations fail with actionable guidance
 - **FR-032**: System MUST require confirmation before destructive actions (delete operations)
 - **FR-033**: System SHOULD provide undo/redo functionality (optional enhancement, deferred to Phase 2 - version history provides manual restore capability)
-- **FR-034**: System MUST enforce workspace ownership permissions where only the owner and invited collaborators can view/edit/delete workspace content
-- **FR-036**: System MUST allow workspace owners to invite specific users as collaborators with edit permissions
-- **FR-037**: System MUST allow workspace owners to revoke collaborator access
+- **FR-034**: System MUST enforce space ownership permissions where only the owner and invited collaborators can view/edit/delete space content
+- **FR-036**: System MUST allow space owners to invite specific users as collaborators with edit permissions
+- **FR-037**: System MUST allow space owners to revoke collaborator access
 - **FR-035**: System MUST validate all user inputs with appropriate constraints and provide immediate feedback
 
 ### Key Entities
 
-- **Workspace**: Represents a container for organizing related nodes. Has a unique slug (URL-friendly identifier), name, optional description, owner, and timestamps. Priority entity as creation is currently missing.
+- **Space**: Represents a container for organizing related nodes. Has a unique slug (URL-friendly identifier), name, optional description, owner, and timestamps. Priority entity as creation is currently missing.
 
-- **Node**: The fundamental unit of knowledge in a workspace. Contains a title, type classification (Regular/Context/Assumption), markdown content, optional JSON metadata, version number for conflict resolution, and audit timestamps.
+- **Node**: The fundamental unit of knowledge in a space. Contains a title, type classification (Regular/Context/Assumption), markdown content, optional JSON metadata, version number for conflict resolution, and audit timestamps.
 
 - **Attribute**: Represents directed relationships between nodes. Has a source node, target node, relationship type (contains/depends_on/references/triggers/next/calls), optional value, optional metadata, and timestamps. Enables graph structure.
 
@@ -183,7 +183,7 @@ As an authenticated user, I need to manage my knowledge graph workspaces and the
 *Updated by main() during processing*
 
 - [x] User description parsed
-- [x] Key concepts extracted - Workspaces (priority), Nodes, Attributes, Versions
+- [x] Key concepts extracted - Spaces (priority), Nodes, Attributes, Versions
 - [x] Ambiguities marked - 8 clarifications identified
 - [x] User scenarios defined - 14 acceptance scenarios across 4 entity types
 - [x] Requirements generated - 35 functional requirements
@@ -198,7 +198,7 @@ As an authenticated user, I need to manage my knowledge graph workspaces and the
 **Spec File**: `/Users/mac/Developer/Software-Projects/PMZ Projects/Mujarrad/Mujarrad-Frontend/specs/003-crud-ui-i/spec.md`
 
 **Critical Items**:
-1. Workspace creation UI (currently missing - blocking primary workflow)
+1. Space creation UI (currently missing - blocking primary workflow)
 2. Complete CRUD for all 4 entities
 3. 8 clarifications needed before implementation planning
 

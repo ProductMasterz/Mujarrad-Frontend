@@ -77,7 +77,8 @@ export function formatRelativeTime(isoString: string): string {
  * truncate('Hello World', 8) // 'Hello...'
  * truncate('Short', 10) // 'Short'
  */
-export function truncate(text: string, maxLength: number): string {
+export function truncate(text: string | null | undefined, maxLength: number): string {
+  if (!text) return '';
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - 3) + '...';
 }

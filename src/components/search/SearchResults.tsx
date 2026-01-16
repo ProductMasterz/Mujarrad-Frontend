@@ -5,12 +5,12 @@ import { NodeCard } from '@/components/nodes/NodeCard';
 import { Spinner } from '@/components/ui/spinner';
 
 interface SearchResultsProps {
-  workspaceSlug: string;
+  spaceSlug: string;
   query: string;
 }
 
-export function SearchResults({ workspaceSlug, query }: SearchResultsProps) {
-  const { data, isLoading } = useSearchNodes(workspaceSlug, query);
+export function SearchResults({ spaceSlug, query }: SearchResultsProps) {
+  const { data, isLoading } = useSearchNodes(spaceSlug, query);
 
   if (!query) {
     return (
@@ -43,7 +43,7 @@ export function SearchResults({ workspaceSlug, query }: SearchResultsProps) {
       </p>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {data.content.map((node) => (
-          <NodeCard key={node.id} node={node} workspaceSlug={workspaceSlug} />
+          <NodeCard key={node.id} node={node} spaceSlug={spaceSlug} />
         ))}
       </div>
     </div>

@@ -7,15 +7,15 @@
 // Backend DTOs
 export type {
   User,
-  Workspace,
+  Space,
   Node,
   Attribute,
   NodeVersion,
   CreateUserRequest,
   LoginRequest,
   LoginResponse,
-  CreateWorkspaceRequest,
-  UpdateWorkspaceRequest,
+  CreateSpaceRequest,
+  UpdateSpaceRequest,
   CreateNodeRequest,
   UpdateNodeRequest,
   CreateAttributeRequest,

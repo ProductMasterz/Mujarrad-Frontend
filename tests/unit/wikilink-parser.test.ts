@@ -227,7 +227,7 @@ Second paragraph with [[Link 2]].`;
     const mockNodes: Node[] = [
       {
         id: 'node-1',
-        workspaceId: 'ws-1',
+        spaceId: 'ws-1',
         title: 'My Page',
         slug: 'my-page',
         nodeType: 'REGULAR',
@@ -240,7 +240,7 @@ Second paragraph with [[Link 2]].`;
       },
       {
         id: 'node-2',
-        workspaceId: 'ws-1',
+        spaceId: 'ws-1',
         title: 'Another Page',
         slug: 'another-page',
         nodeType: 'REGULAR',
@@ -253,7 +253,7 @@ Second paragraph with [[Link 2]].`;
       },
       {
         id: 'node-3',
-        workspaceId: 'ws-1',
+        spaceId: 'ws-1',
         title: 'UPPERCASE TITLE',
         slug: 'uppercase-title',
         nodeType: 'REGULAR',
@@ -320,7 +320,7 @@ Second paragraph with [[Link 2]].`;
         ...mockNodes,
         {
           id: 'node-4',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'My Page 2',
           slug: 'my-page-2',
           nodeType: 'REGULAR',

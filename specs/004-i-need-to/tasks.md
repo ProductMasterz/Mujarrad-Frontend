@@ -35,7 +35,7 @@
 - Include exact file paths in descriptions
 
 ## Path Conventions
-- Next.js App Router: `app/workspace/[slug]/`, `app/workspace/[slug]/node/[id]/`
+- Next.js App Router: `app/space/[slug]/`, `app/space/[slug]/node/[id]/`
 - Source: `src/components/`, `src/services/`, `src/stores/`, `src/hooks/`, `src/lib/`, `src/types/`
 - Tests: `tests/unit/`, `tests/integration/`, `tests/contracts/`, `tests/e2e/`
 
@@ -53,7 +53,7 @@
 
 **Prerequisites**: T001-T003 complete ✅
 
-- [X] **T004** [P] Define core entity types (Node, Attribute, Workspace) in src/types/entities.ts
+- [X] **T004** [P] Define core entity types (Node, Attribute, Space) in src/types/entities.ts
 - [X] **T005** [P] Define hierarchy types (TreeNode, HierarchyTree) in src/types/hierarchy.ts
 - [X] **T006** [P] Define wiki-link types (WikiLink, WikiLinkResolution) in src/types/wikilink.ts
 - [X] **T007** [P] Define graph types (GraphNode, GraphEdge, GraphViewMode) in src/types/graph.ts
@@ -68,7 +68,7 @@
 **Prerequisites**: T002, T004-T008 complete
 
 - [X] **T009** [P] Contract test: GET /api/nodes/:id returns valid Node schema in tests/contracts/node.contract.test.ts
-- [X] **T010** [P] Contract test: GET /api/workspaces/:id/nodes returns Node[] in tests/contracts/node.contract.test.ts
+- [X] **T010** [P] Contract test: GET /api/spaces/:id/nodes returns Node[] in tests/contracts/node.contract.test.ts
 - [X] **T011** [P] Contract test: POST /api/nodes creates node and returns 201 in tests/contracts/node.contract.test.ts
 - [X] **T012** [P] Contract test: PUT /api/nodes/:id updates node with version check in tests/contracts/node.contract.test.ts
 - [X] **T013** [P] Contract test: GET /api/nodes/:id/attributes returns Attribute[] in tests/contracts/attribute.contract.test.ts
@@ -110,7 +110,7 @@
 
 **Prerequisites**: T009-T015 (contract tests), T004, T008
 
-- [ ] **T029** [P] Implement NodeService with getNode, getWorkspaceNodes, createNode, updateNode, searchNodes in src/services/api/node.service.ts
+- [ ] **T029** [P] Implement NodeService with getNode, getSpaceNodes, createNode, updateNode, searchNodes in src/services/api/node.service.ts
 - [ ] **T030** [P] Implement AttributeService with getNodeAttributes, createAttribute, deleteAttribute in src/services/api/attribute.service.ts
 - [ ] **T031** [P] Implement WikiLinkService with parseAndResolve, createPlaceholders, createRelationships in src/services/api/wikilink.service.ts
 
@@ -120,9 +120,9 @@
 
 **Prerequisites**: T004-T008
 
-- [ ] **T032** Create Zustand navigation store with workspace, selected node, graph view mode, expanded nodes in src/stores/navigationStore.ts
+- [ ] **T032** Create Zustand navigation store with space, selected node, graph view mode, expanded nodes in src/stores/navigationStore.ts
 - [ ] **T033** Add navigation history (back/forward) actions to navigation store in src/stores/navigationStore.ts
-- [ ] **T034** [P] Create React Query hook useWorkspaceNodes(workspaceId) in src/hooks/api/useWorkspaceNodes.ts
+- [ ] **T034** [P] Create React Query hook useSpaceNodes(spaceId) in src/hooks/api/useSpaceNodes.ts
 - [ ] **T035** [P] Create React Query hook useNode(nodeId) in src/hooks/api/useNode.ts
 - [ ] **T036** [P] Create React Query hook useNodeAttributes(nodeId) in src/hooks/api/useNodeAttributes.ts
 - [ ] **T037** [P] Create React Query mutation hook useCreateWikiLinks() in src/hooks/api/useCreateWikiLinks.ts
@@ -205,9 +205,9 @@
 
 **Prerequisites**: T052-T053, T062-T063, T068
 
-- [ ] **T069** Create workspace page layout with hierarchy sidebar + graph tabs in app/workspace/[slug]/page.tsx
-- [ ] **T070** Create node detail page with NodeDetailView component in app/workspace/[slug]/node/[id]/page.tsx
-- [ ] **T071** Add navigation handlers (wiki-link clicks, tree clicks, graph double-clicks) in app/workspace/[slug]/node/[id]/page.tsx
+- [ ] **T069** Create space page layout with hierarchy sidebar + graph tabs in app/space/[slug]/page.tsx
+- [ ] **T070** Create node detail page with NodeDetailView component in app/space/[slug]/node/[id]/page.tsx
+- [ ] **T071** Add navigation handlers (wiki-link clicks, tree clicks, graph double-clicks) in app/space/[slug]/node/[id]/page.tsx
 
 ---
 
@@ -229,7 +229,7 @@
 
 **Prerequisites**: All implementation tasks (T049-T078) complete
 
-- [X] **T079** [P] E2E test: Login → workspace → browse hierarchy → navigate to page in tests/e2e/scenario-1-hierarchy.spec.ts
+- [X] **T079** [P] E2E test: Login → space → browse hierarchy → navigate to page in tests/e2e/scenario-1-hierarchy.spec.ts
 - [X] **T080** [P] E2E test: View markdown → click wiki-link → navigate in tests/e2e/scenario-2-wiki-links.spec.ts
 - [X] **T081** [P] E2E test: Edit page → add wiki-link → placeholder created → relationship in graph in tests/e2e/scenario-3-placeholder.spec.ts
 - [X] **T082** [P] E2E test: Graph view → toggle filters → verify nodes shown/hidden in tests/e2e/scenario-4-graph.spec.ts
@@ -362,7 +362,7 @@ Task T003: "TypeScript config"
 
 # Example 2: Contract tests
 Task T009: "GET /nodes/:id contract test"
-Task T010: "GET /workspaces/:id/nodes contract test"
+Task T010: "GET /spaces/:id/nodes contract test"
 Task T011: "POST /nodes contract test"
 Task T012: "PUT /nodes/:id contract test"
 Task T013: "GET /attributes contract test"

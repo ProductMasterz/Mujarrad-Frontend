@@ -30,16 +30,16 @@ export function detectBidirectionalEdges(attributes: Attribute[]): Set<string> {
     edgeMap.get(key)!.push(attr);
   }
 
-  // Check for bidirectional pairs (must have matching attribute keys)
+  // Check for bidirectional pairs (must have matching attribute types)
   for (const attr of attributes) {
-    const { id, sourceNodeId, targetNodeId, attributeKey } = attr;
+    const { id, sourceNodeId, targetNodeId, attributeName } = attr;
     // Check if reverse edge exists with matching type
     const reverseEdges = edgeMap.get(targetNodeId.toString());
     if (reverseEdges) {
       const hasReverse = reverseEdges.some(
         reverseAttr =>
           reverseAttr.targetNodeId.toString() === sourceNodeId.toString() &&
-          reverseAttr.attributeKey === attributeKey
+          reverseAttr.attributeName === attributeName
       );
       if (hasReverse) {
         bidirectional.add(id.toString());
@@ -83,8 +83,8 @@ export function buildGraphData(
     if (!visibleNodeIds.has(attr.sourceNodeId.toString())) return false;
     if (!visibleNodeIds.has(attr.targetNodeId.toString())) return false;
 
-    // Filter by edge type
-    const attrTypeStr = attr.attributeKey.toString().toLowerCase();
+    // Filter by edge type (check both attributeName and attributeType)
+    const attrTypeStr = (attr.attributeName || attr.attributeType || '').toString().toLowerCase();
     if (attrTypeStr === 'contains' && !viewMode.showContains) return false;
     if (attrTypeStr === 'references' && !viewMode.showReferences) return false;
 
@@ -109,18 +109,22 @@ export function buildGraphData(
   // Transform attributes to GraphEdges
   const graphEdges: GraphEdge[] = filteredAttributes.map(attr => {
     const isBidirectional = bidirectionalSet.has(attr.id.toString());
+    const attrType = (attr.attributeName || attr.attributeType || '').toLowerCase();
+    // Get label from attributeValue.label or fall back to attributeName
+    const labelValue = attr.attributeValue?.label;
+    const label = typeof labelValue === 'string' ? labelValue : attr.attributeName;
 
     return {
       id: attr.id.toString(),
       source: attr.sourceNodeId.toString(),
       target: attr.targetNodeId.toString(),
-      type: isBidirectional ? 'bidirectional' : attr.attributeKey === 'contains' ? 'contains' : 'default',
+      type: isBidirectional ? 'bidirectional' : attrType === 'contains' ? 'contains' : 'default',
       data: {
         attribute: attr,
         isBidirectional,
-        label: attr.attributeValue || attr.attributeKey,
+        label,
       },
-      animated: attr.attributeKey === 'references',
+      animated: attrType === 'references',
     };
   });
 

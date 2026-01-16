@@ -17,7 +17,7 @@ describe('Hierarchy Navigation Integration Tests', () => {
     {
       node: {
         id: 'context-1',
-        workspaceId: 'ws-1',
+        spaceId: 'ws-1',
         title: 'Projects',
         slug: 'projects',
         nodeType: 'CONTEXT',
@@ -32,7 +32,7 @@ describe('Hierarchy Navigation Integration Tests', () => {
         {
           node: {
             id: 'regular-1',
-            workspaceId: 'ws-1',
+            spaceId: 'ws-1',
             title: 'Project A',
             slug: 'project-a',
             nodeType: 'REGULAR',
@@ -52,7 +52,7 @@ describe('Hierarchy Navigation Integration Tests', () => {
         {
           node: {
             id: 'regular-2',
-            workspaceId: 'ws-1',
+            spaceId: 'ws-1',
             title: 'Project B',
             slug: 'project-b',
             nodeType: 'REGULAR',

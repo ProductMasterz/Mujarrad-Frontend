@@ -16,22 +16,50 @@ import { Button } from '@/components/ui/button';
 import { isApiError } from '@/lib/errors';
 
 interface DeleteNodeDialogProps {
-  workspaceSlug: string;
-  nodeId: number;
+  spaceSlug: string;
+  nodeId: string;
   nodeName: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSuccess?: () => void;
+  showTrigger?: boolean;
 }
 
-export function DeleteNodeDialog({ workspaceSlug, nodeId, nodeName }: DeleteNodeDialogProps) {
-  const [open, setOpen] = useState(false);
+export function DeleteNodeDialog({
+  spaceSlug,
+  nodeId,
+  nodeName,
+  open: externalOpen,
+  onOpenChange: externalOnOpenChange,
+  onSuccess,
+  showTrigger = true,
+}: DeleteNodeDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { mutate: deleteNode, isPending: isLoading } = useDeleteNode();
 
+  // Use external state if provided, otherwise use internal state
+  const isControlled = externalOpen !== undefined;
+  const open = isControlled ? externalOpen : internalOpen;
+  const setOpen = (value: boolean) => {
+    if (externalOnOpenChange) {
+      externalOnOpenChange(value);
+    }
+    if (!isControlled) {
+      setInternalOpen(value);
+    }
+  };
+
   const handleDelete = () => {
-    deleteNode(nodeId.toString(), {
+    deleteNode({ spaceSlug: spaceSlug, nodeId: nodeId }, {
       onSuccess: () => {
         setOpen(false);
-        router.push(`/workspaces/${workspaceSlug}/nodes`);
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.push(`/spaces/${spaceSlug}`);
+        }
       },
       onError: (err) => {
         if (isApiError(err)) {
@@ -45,9 +73,11 @@ export function DeleteNodeDialog({ workspaceSlug, nodeId, nodeName }: DeleteNode
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="destructive">Delete Node</Button>
-      </DialogTrigger>
+      {showTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="destructive">Delete Node</Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete Node</DialogTitle>

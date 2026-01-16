@@ -12,7 +12,7 @@ All schemas are built using [Zod](https://zod.dev/) and integrated with [React H
 src/schemas/
 ├── index.ts                  # Barrel export for all schemas
 ├── auth.schema.ts            # Authentication forms (register, login)
-├── workspace.schema.ts       # Workspace forms (create, update)
+├── space.schema.ts       # Space forms (create, update)
 ├── node.schema.ts            # Node forms (create, update)
 ├── attribute.schema.ts       # Relationship/attribute forms
 ├── version.schema.ts         # Version management forms
@@ -48,26 +48,26 @@ Validates user login form data.
 
 ---
 
-### 2. Workspace Schemas (`workspace.schema.ts`)
+### 2. Space Schemas (`space.schema.ts`)
 
-#### `createWorkspaceSchema`
-Validates workspace creation form data.
+#### `createSpaceSchema`
+Validates space creation form data.
 
 **Fields:**
 - `name`: Required, 1-100 characters, automatically trimmed
 - `slug`: 3-50 characters, lowercase letters/numbers/hyphens only, must start with letter
 - `description`: Optional, max 500 characters
 
-**Type:** `CreateWorkspaceFormData`
+**Type:** `CreateSpaceFormData`
 
-#### `updateWorkspaceSchema`
-Validates workspace update form data.
+#### `updateSpaceSchema`
+Validates space update form data.
 
 **Fields:**
 - `name`: Optional, 1-100 characters, automatically trimmed
 - `description`: Optional, max 500 characters
 
-**Type:** `UpdateWorkspaceFormData`
+**Type:** `UpdateSpaceFormData`
 
 ---
 

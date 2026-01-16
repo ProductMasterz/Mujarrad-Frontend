@@ -9,7 +9,7 @@ describe('Hierarchy Tree Utility Tests', () => {
       const nodes: Node[] = [
         {
           id: 'parent-1',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Parent Folder',
           slug: 'parent-folder',
           nodeType: 'CONTEXT',
@@ -22,7 +22,7 @@ describe('Hierarchy Tree Utility Tests', () => {
         },
         {
           id: 'child-1',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Child Page',
           slug: 'child-page',
           nodeType: 'REGULAR',
@@ -63,7 +63,7 @@ describe('Hierarchy Tree Utility Tests', () => {
       const nodes: Node[] = [
         {
           id: 'root',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Root',
           slug: 'root',
           nodeType: 'CONTEXT',
@@ -76,7 +76,7 @@ describe('Hierarchy Tree Utility Tests', () => {
         },
         {
           id: 'level-1',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Level 1',
           slug: 'level-1',
           nodeType: 'CONTEXT',
@@ -89,7 +89,7 @@ describe('Hierarchy Tree Utility Tests', () => {
         },
         {
           id: 'level-2',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Level 2',
           slug: 'level-2',
           nodeType: 'REGULAR',
@@ -144,7 +144,7 @@ describe('Hierarchy Tree Utility Tests', () => {
       const nodes: Node[] = [
         {
           id: 'parent',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Parent',
           slug: 'parent',
           nodeType: 'CONTEXT',
@@ -157,7 +157,7 @@ describe('Hierarchy Tree Utility Tests', () => {
         },
         {
           id: 'child-1',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Child 1',
           slug: 'child-1',
           nodeType: 'REGULAR',
@@ -170,7 +170,7 @@ describe('Hierarchy Tree Utility Tests', () => {
         },
         {
           id: 'child-2',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Child 2',
           slug: 'child-2',
           nodeType: 'REGULAR',
@@ -183,7 +183,7 @@ describe('Hierarchy Tree Utility Tests', () => {
         },
         {
           id: 'child-3',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Child 3',
           slug: 'child-3',
           nodeType: 'REGULAR',
@@ -249,7 +249,7 @@ describe('Hierarchy Tree Utility Tests', () => {
       const nodes: Node[] = [
         {
           id: 'parent',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Parent',
           slug: 'parent',
           nodeType: 'CONTEXT',
@@ -262,7 +262,7 @@ describe('Hierarchy Tree Utility Tests', () => {
         },
         {
           id: 'child',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Child',
           slug: 'child',
           nodeType: 'REGULAR',
@@ -303,7 +303,7 @@ describe('Hierarchy Tree Utility Tests', () => {
       const nodes: Node[] = [
         {
           id: 'node-1',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Node 1',
           slug: 'node-1',
           nodeType: 'REGULAR',
@@ -316,7 +316,7 @@ describe('Hierarchy Tree Utility Tests', () => {
         },
         {
           id: 'node-2',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Node 2',
           slug: 'node-2',
           nodeType: 'REGULAR',
@@ -356,7 +356,7 @@ describe('Hierarchy Tree Utility Tests', () => {
       const nodes: Node[] = [
         {
           id: 'node-1',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Node 1',
           slug: 'node-1',
           nodeType: 'REGULAR',
@@ -381,7 +381,7 @@ describe('Hierarchy Tree Utility Tests', () => {
       const nodes: Node[] = [
         {
           id: 'root-1',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Root 1',
           slug: 'root-1',
           nodeType: 'CONTEXT',
@@ -394,7 +394,7 @@ describe('Hierarchy Tree Utility Tests', () => {
         },
         {
           id: 'root-2',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Root 2',
           slug: 'root-2',
           nodeType: 'REGULAR',
@@ -420,7 +420,7 @@ describe('Hierarchy Tree Utility Tests', () => {
       const nodes: Node[] = [
         {
           id: 'root-1',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Root 1',
           slug: 'root-1',
           nodeType: 'CONTEXT',
@@ -433,7 +433,7 @@ describe('Hierarchy Tree Utility Tests', () => {
         },
         {
           id: 'child-1',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Child 1',
           slug: 'child-1',
           nodeType: 'REGULAR',
@@ -446,7 +446,7 @@ describe('Hierarchy Tree Utility Tests', () => {
         },
         {
           id: 'root-2',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Root 2',
           slug: 'root-2',
           nodeType: 'REGULAR',
@@ -503,7 +503,7 @@ describe('Hierarchy Tree Utility Tests', () => {
       const nodes: Node[] = [
         {
           id: 'node-1',
-          workspaceId: 'ws-1',
+          spaceId: 'ws-1',
           title: 'Node 1',
           slug: 'node-1',
           nodeType: 'REGULAR',
@@ -541,7 +541,7 @@ describe('Hierarchy Tree Utility Tests', () => {
     it('should handle large number of root nodes', () => {
       const nodes: Node[] = Array.from({ length: 50 }, (_, i) => ({
         id: `root-${i}`,
-        workspaceId: 'ws-1',
+        spaceId: 'ws-1',
         title: `Root ${i}`,
         slug: `root-${i}`,
         nodeType: 'REGULAR' as const,

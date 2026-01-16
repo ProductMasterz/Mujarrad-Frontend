@@ -38,7 +38,7 @@ Authorization: Bearer {token}
 ```json
 {
   "id": "abc-123",
-  "workspaceId": "ws-789",
+  "spaceId": "ws-789",
   "title": "My Page",
   "slug": "my-page",
   "nodeType": "REGULAR",
@@ -63,13 +63,13 @@ Authorization: Bearer {token}
 
 ---
 
-### GET /api/workspaces/{workspaceId}/nodes
+### GET /api/spaces/{spaceId}/nodes
 
-Retrieve all nodes in a workspace (for hierarchy and graph).
+Retrieve all nodes in a space (for hierarchy and graph).
 
 **Request:**
 ```http
-GET /api/workspaces/ws-789/nodes HTTP/1.1
+GET /api/spaces/ws-789/nodes HTTP/1.1
 Authorization: Bearer {token}
 ```
 
@@ -83,7 +83,7 @@ Authorization: Bearer {token}
 [
   {
     "id": "node-1",
-    "workspaceId": "ws-789",
+    "spaceId": "ws-789",
     "title": "Root Folder",
     "slug": "root",
     "nodeType": "CONTEXT",
@@ -95,7 +95,7 @@ Authorization: Bearer {token}
   },
   {
     "id": "node-2",
-    "workspaceId": "ws-789",
+    "spaceId": "ws-789",
     "title": "Page 1",
     "slug": "page-1",
     "nodeType": "REGULAR",
@@ -122,7 +122,7 @@ Content-Type: application/json
 
 {
   "title": "New Page",
-  "workspaceId": "ws-789",
+  "spaceId": "ws-789",
   "nodeType": "REGULAR",
   "markdownContent": ""
 }
@@ -132,7 +132,7 @@ Content-Type: application/json
 ```json
 {
   "id": "node-new",
-  "workspaceId": "ws-789",
+  "spaceId": "ws-789",
   "title": "New Page",
   "slug": "new-page",
   "nodeType": "REGULAR",
@@ -181,7 +181,7 @@ Content-Type: application/json
 ```json
 {
   "id": "abc-123",
-  "workspaceId": "ws-789",
+  "spaceId": "ws-789",
   "title": "My Page",
   "slug": "my-page",
   "nodeType": "REGULAR",
@@ -345,13 +345,13 @@ Authorization: Bearer {token}
 
 ## 3. Search Endpoint (Existing)
 
-### GET /api/workspaces/{workspaceId}/search
+### GET /api/spaces/{spaceId}/search
 
 Search for nodes by title (case-insensitive) - used for wiki-link target resolution.
 
 **Request:**
 ```http
-GET /api/workspaces/ws-789/search?q=target+page HTTP/1.1
+GET /api/spaces/ws-789/search?q=target+page HTTP/1.1
 Authorization: Bearer {token}
 ```
 
@@ -395,9 +395,9 @@ class NodeService {
     return data;
   }
 
-  async getWorkspaceNodes(workspaceId: string): Promise<Node[]> {
+  async getSpaceNodes(spaceId: string): Promise<Node[]> {
     const { data } = await apiClient.get<Node[]>(
-      `/workspaces/${workspaceId}/nodes`,
+      `/spaces/${spaceId}/nodes`,
       { params: { size: 10000 } } // Get all nodes for hierarchy/graph
     );
     return data;
@@ -413,9 +413,9 @@ class NodeService {
     return data;
   }
 
-  async searchNodes(workspaceId: string, query: string): Promise<SearchResult[]> {
+  async searchNodes(spaceId: string, query: string): Promise<SearchResult[]> {
     const { data } = await apiClient.get<SearchResult[]>(
-      `/workspaces/${workspaceId}/search`,
+      `/spaces/${spaceId}/search`,
       { params: { q: query } }
     );
     return data;
@@ -478,7 +478,7 @@ const server = setupServer(
   http.get('http://localhost:3000/api/nodes/:id', () => {
     return HttpResponse.json({
       id: 'test-123',
-      workspaceId: 'ws-789',
+      spaceId: 'ws-789',
       title: 'Test Node',
       slug: 'test-node',
       nodeType: 'REGULAR',
@@ -501,7 +501,7 @@ describe('Node Service Contract', () => {
 
     expect(node).toMatchObject({
       id: expect.any(String),
-      workspaceId: expect.any(String),
+      spaceId: expect.any(String),
       title: expect.any(String),
       slug: expect.any(String),
       nodeType: expect.stringMatching(/^(REGULAR|CONTEXT)$/),

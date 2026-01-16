@@ -5,7 +5,7 @@ This guide demonstrates how to use the comprehensive UI component library create
 ## Table of Contents
 
 1. [UI Primitives](#ui-primitives)
-2. [Workspace Components](#workspace-components)
+2. [Space Components](#space-components)
 3. [Node Components](#node-components)
 4. [Graph Visualization Components](#graph-visualization-components)
 
@@ -130,22 +130,22 @@ export function BadgeExample() {
 
 ---
 
-## Workspace Components
+## Space Components
 
-### WorkspaceList
+### SpaceList
 
-Display a grid of workspace cards with loading and error states.
+Display a grid of space cards with loading and error states.
 
 ```typescript
 'use client';
 
-import { WorkspaceList } from '@/components/workspaces';
+import { SpaceList } from '@/components/spaces';
 
-export default function WorkspacesPage() {
+export default function SpacesPage() {
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">My Workspaces</h1>
-      <WorkspaceList />
+      <h1 className="text-3xl font-bold mb-6">My Spaces</h1>
+      <SpaceList />
     </div>
   );
 }
@@ -157,41 +157,41 @@ export default function WorkspacesPage() {
 - Empty state message
 - Responsive grid layout (1 column mobile, 2 tablet, 3 desktop)
 
-### WorkspaceCard
+### SpaceCard
 
-Display individual workspace information (used internally by WorkspaceList).
+Display individual space information (used internally by SpaceList).
 
 ```typescript
-import { WorkspaceCard } from '@/components/workspaces';
-import { Workspace } from '@/types/backend-dtos';
+import { SpaceCard } from '@/components/spaces';
+import { Space } from '@/types/backend-dtos';
 
-const workspace: Workspace = {
+const space: Space = {
   id: 1,
-  name: 'My Workspace',
-  slug: 'my-workspace',
-  description: 'A workspace for my notes',
+  name: 'My Space',
+  slug: 'my-space',
+  description: 'A space for my notes',
   ownerId: 1,
   createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2024-01-15T10:30:00Z',
 };
 
 export function Example() {
-  return <WorkspaceCard workspace={workspace} />;
+  return <SpaceCard space={space} />;
 }
 ```
 
-### CreateWorkspaceDialog
+### CreateSpaceDialog
 
-Dialog for creating new workspaces with form validation.
+Dialog for creating new spaces with form validation.
 
 ```typescript
-import { CreateWorkspaceDialog } from '@/components/workspaces';
+import { CreateSpaceDialog } from '@/components/spaces';
 
-export function WorkspacesPageHeader() {
+export function SpacesPageHeader() {
   return (
     <div className="flex justify-between items-center mb-6">
-      <h1 className="text-3xl font-bold">My Workspaces</h1>
-      <CreateWorkspaceDialog />
+      <h1 className="text-3xl font-bold">My Spaces</h1>
+      <CreateSpaceDialog />
     </div>
   );
 }
@@ -210,7 +210,7 @@ export function WorkspacesPageHeader() {
 
 ### NodeList
 
-Display a grid of node cards within a workspace.
+Display a grid of node cards within a space.
 
 ```typescript
 'use client';
@@ -221,7 +221,7 @@ export default function NodesPage({ params }: { params: { slug: string } }) {
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Nodes</h1>
-      <NodeList workspaceSlug={params.slug} />
+      <NodeList spaceSlug={params.slug} />
     </div>
   );
 }
@@ -237,7 +237,7 @@ import { Node, NodeType } from '@/types/backend-dtos';
 
 const node: Node = {
   id: 1,
-  workspaceId: 1,
+  spaceId: 1,
   title: 'My First Node',
   nodeType: NodeType.REGULAR,
   markdownContent: '# Hello World\n\nThis is my first node.',
@@ -247,7 +247,7 @@ const node: Node = {
 };
 
 export function Example() {
-  return <NodeCard node={node} workspaceSlug="my-workspace" />;
+  return <NodeCard node={node} spaceSlug="my-space" />;
 }
 ```
 
@@ -264,11 +264,11 @@ Dialog for creating new nodes with type selection.
 ```typescript
 import { CreateNodeDialog } from '@/components/nodes';
 
-export function NodesPageHeader({ workspaceSlug }: { workspaceSlug: string }) {
+export function NodesPageHeader({ spaceSlug }: { spaceSlug: string }) {
   return (
     <div className="flex justify-between items-center mb-6">
       <h1 className="text-3xl font-bold">Nodes</h1>
-      <CreateNodeDialog workspaceSlug={workspaceSlug} />
+      <CreateNodeDialog spaceSlug={spaceSlug} />
     </div>
   );
 }
@@ -297,7 +297,7 @@ import { GraphCanvas } from '@/components/graph';
 export default function GraphPage({ params }: { params: { slug: string } }) {
   return (
     <div className="h-screen">
-      <GraphCanvas workspaceSlug={params.slug} />
+      <GraphCanvas spaceSlug={params.slug} />
     </div>
   );
 }
@@ -335,37 +335,37 @@ const nodeTypes = {
 
 ## Complete Page Examples
 
-### Workspaces Page
+### Spaces Page
 
 ```typescript
 'use client';
 
-import { WorkspaceList, CreateWorkspaceDialog } from '@/components/workspaces';
+import { SpaceList, CreateSpaceDialog } from '@/components/spaces';
 
-export default function WorkspacesPage() {
+export default function SpacesPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">My Workspaces</h1>
-        <CreateWorkspaceDialog />
+        <h1 className="text-3xl font-bold">My Spaces</h1>
+        <CreateSpaceDialog />
       </div>
-      <WorkspaceList />
+      <SpaceList />
     </div>
   );
 }
 ```
 
-### Workspace Detail Page with Nodes
+### Space Detail Page with Nodes
 
 ```typescript
 'use client';
 
 import { NodeList, CreateNodeDialog } from '@/components/nodes';
-import { useWorkspace } from '@/hooks/api';
+import { useSpace } from '@/hooks/api';
 import { Spinner } from '@/components/ui/spinner';
 
-export default function WorkspaceDetailPage({ params }: { params: { slug: string } }) {
-  const { data: workspace, isLoading } = useWorkspace(params.slug);
+export default function SpaceDetailPage({ params }: { params: { slug: string } }) {
+  const { data: space, isLoading } = useSpace(params.slug);
 
   if (isLoading) {
     return (
@@ -378,16 +378,16 @@ export default function WorkspaceDetailPage({ params }: { params: { slug: string
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">{workspace?.name}</h1>
-        <p className="text-muted-foreground">{workspace?.description}</p>
+        <h1 className="text-3xl font-bold">{space?.name}</h1>
+        <p className="text-muted-foreground">{space?.description}</p>
       </div>
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold">Nodes</h2>
-        <CreateNodeDialog workspaceSlug={params.slug} />
+        <CreateNodeDialog spaceSlug={params.slug} />
       </div>
 
-      <NodeList workspaceSlug={params.slug} />
+      <NodeList spaceSlug={params.slug} />
     </div>
   );
 }
@@ -407,12 +407,12 @@ export default function GraphPage({ params }: { params: { slug: string } }) {
     <div className="h-screen flex flex-col">
       <div className="border-b p-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">Knowledge Graph</h1>
-        <Link href={`/workspaces/${params.slug}`}>
-          <Button variant="outline">Back to Workspace</Button>
+        <Link href={`/spaces/${params.slug}`}>
+          <Button variant="outline">Back to Space</Button>
         </Link>
       </div>
       <div className="flex-1">
-        <GraphCanvas workspaceSlug={params.slug} />
+        <GraphCanvas spaceSlug={params.slug} />
       </div>
     </div>
   );
@@ -438,10 +438,10 @@ src/
 │   │   ├── select.tsx
 │   │   ├── spinner.tsx
 │   │   └── textarea.tsx
-│   ├── workspaces/            # Workspace domain components
-│   │   ├── WorkspaceCard.tsx
-│   │   ├── WorkspaceList.tsx
-│   │   ├── CreateWorkspaceDialog.tsx
+│   ├── spaces/            # Space domain components
+│   │   ├── SpaceCard.tsx
+│   │   ├── SpaceList.tsx
+│   │   ├── CreateSpaceDialog.tsx
 │   │   └── index.ts
 │   ├── nodes/                 # Node domain components
 │   │   ├── NodeCard.tsx

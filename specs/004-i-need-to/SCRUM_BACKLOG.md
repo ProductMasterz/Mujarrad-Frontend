@@ -31,7 +31,7 @@
     - NodeDetailView component
     - React Query cache invalidation
   - ✅ Wave 7: Page Layouts (T069-T071)
-    - Workspace page with hierarchy sidebar + tabs
+    - Space page with hierarchy sidebar + tabs
     - Node detail page with full navigation
     - All navigation handlers implemented
   - ✅ Wave 8: Error Handling & Accessibility (T072-T078)
@@ -43,8 +43,8 @@
   - ✅ **Wave 8.5: P0 Navigation Improvements (NEW - 2025-10-08)**
     - Global Navbar component with branding, navigation, search trigger
     - Breadcrumb navigation (auto-generated + manual override)
-    - Command Palette search (⌘K/Ctrl+K) with workspace switcher
-    - Route cleanup (deprecated /workspace → /workspaces standard)
+    - Command Palette search (⌘K/Ctrl+K) with space switcher
+    - Route cleanup (deprecated /space → /spaces standard)
     - Dropdown menu UI component (Radix UI)
 - **In Progress**: None
 - **Blocked**: None
@@ -220,7 +220,7 @@
 **Skills**: Next.js routing, Playwright, performance optimization
 
 #### Sprint Backlog Items:
-- [ ] **T069** - Workspace page with hierarchy + graph
+- [ ] **T069** - Space page with hierarchy + graph
 - [ ] **T070** - Node detail page (/nodes/:id)
 - [ ] **T071** - Search page with results
 - [ ] **T079-T084** - E2E scenarios (Playwright)

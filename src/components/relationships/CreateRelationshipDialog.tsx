@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createAttributeSchema, type CreateAttributeFormData, attributeKeyLabels, attributeKeyDescriptions } from '@/schemas';
 import { useCreateAttribute, useNodes } from '@/hooks/api';
-import { AttributeKey } from '@/types/backend-dtos';
+import { AttributeKey, AttributeTypeMode } from '@/types/backend-dtos';
 import {
   Dialog,
   DialogContent,
@@ -22,18 +22,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { isApiError } from '@/lib/errors';
 
 interface CreateRelationshipDialogProps {
-  workspaceSlug: string;
+  spaceSlug: string;
   sourceNodeId: number;
   sourceNodeName: string;
 }
 
 export function CreateRelationshipDialog({
-  workspaceSlug,
+  spaceSlug,
   sourceNodeId,
   sourceNodeName
 }: CreateRelationshipDialogProps) {
   const [open, setOpen] = useState(false);
-  const { data: nodesData } = useNodes(workspaceSlug);
+  const { data: nodesData } = useNodes(spaceSlug);
   const { mutate: createAttribute, isPending: isLoading } = useCreateAttribute();
 
   const {
@@ -51,8 +51,18 @@ export function CreateRelationshipDialog({
   const selectedAttributeKey = watch('attributeKey');
 
   const onSubmit = (data: CreateAttributeFormData) => {
+    // Transform form data to API format
+    const apiData = {
+      sourceNodeId: sourceNodeId.toString(),
+      targetNodeId: data.targetNodeId.toString(),
+      attributeType: data.attributeKey,
+      attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+      attributeName: data.attributeKey,
+      attributeValue: data.attributeValue ? { label: data.attributeValue } : {},
+    };
+
     createAttribute(
-      { sourceNodeId: sourceNodeId.toString(), data },
+      { sourceNodeId: sourceNodeId.toString(), data: apiData },
       {
         onSuccess: () => {
           setOpen(false);
@@ -73,7 +83,7 @@ export function CreateRelationshipDialog({
     );
   };
 
-  const availableNodes = nodesData?.filter(node => node.id !== sourceNodeId) || [];
+  const availableNodes = nodesData?.filter(node => Number(node.id) !== sourceNodeId) || [];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

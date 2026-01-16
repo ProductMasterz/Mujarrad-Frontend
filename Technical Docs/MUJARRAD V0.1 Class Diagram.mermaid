@@ -18,7 +18,7 @@ classDiagram
     
     class Node {
         -UUID id
-        -UUID workspaceId
+        -UUID spaceId
         -NodeType nodeType
         -String title
         -String slug
@@ -30,7 +30,7 @@ classDiagram
         -Integer version
         -LocalDateTime createdAt
         -LocalDateTime updatedAt
-        +Workspace workspace
+        +Space space
         +User creator
         +NodeVersion currentVersion
         +List~NodeVersion~ versions
@@ -44,23 +44,23 @@ classDiagram
         +List~NodeMapping~ containedInMappings
     }
     
-    class Workspace {
+    class Space {
         -UUID id
         -String name
         -String slug
         -LocalDateTime createdAt
         -LocalDateTime updatedAt
-        +List~WorkspaceUser~ members
+        +List~SpaceUser~ members
         +List~Node~ nodes
     }
 
-    class WorkspaceUser {
+    class SpaceUser {
         -UUID id
-        -UUID workspaceId
+        -UUID spaceId
         -UUID userId
-        -WorkspaceRole role
+        -SpaceRole role
         -LocalDateTime joinedAt
-        +Workspace workspace
+        +Space space
         +User user
     }
 
@@ -198,7 +198,7 @@ classDiagram
         CUSTOM
     }
     
-    class WorkspaceRole {
+    class SpaceRole {
         <<enumeration>>
         OWNER
         ADMIN
@@ -213,7 +213,7 @@ classDiagram
         MAPPING
         CONDITIONAL
         USER
-        WORKSPACE
+        SPACE
     }
     
     class Operation {
@@ -478,19 +478,19 @@ classDiagram
         +Page~Node~ findByDetailsTagsContaining(String tag, Pageable pageable)
     }
     
-    class WorkspaceRepository {
+    class SpaceRepository {
         <<interface>>
-        +Optional~Workspace~ findBySlug(String slug)
-        +List~Workspace~ findByMemberId(UUID userId)
+        +Optional~Space~ findBySlug(String slug)
+        +List~Space~ findByMemberId(UUID userId)
         +UUID getIdBySlug(String slug)
     }
 
-    class WorkspaceUserRepository {
+    class SpaceUserRepository {
         <<interface>>
-        +List~WorkspaceUser~ findByWorkspaceId(UUID workspaceId)
-        +List~WorkspaceUser~ findByUserId(UUID userId)
-        +Optional~WorkspaceUser~ findByWorkspaceIdAndUserId(UUID workspaceId, UUID userId)
-        +Boolean existsByWorkspaceIdAndUserId(UUID workspaceId, UUID userId)
+        +List~SpaceUser~ findBySpaceId(UUID spaceId)
+        +List~SpaceUser~ findByUserId(UUID userId)
+        +Optional~SpaceUser~ findBySpaceIdAndUserId(UUID spaceId, UUID userId)
+        +Boolean existsBySpaceIdAndUserId(UUID spaceId, UUID userId)
     }
 
     class NodeVersionRepository {
@@ -570,20 +570,20 @@ classDiagram
     class NodeService {
         -NodeRepository nodeRepository
         -NodeVersionRepository nodeVersionRepository
-        -WorkspaceRepository workspaceRepository
+        -SpaceRepository spaceRepository
         -NodeMapper nodeMapper
         -SearchService searchService
         -AuditService auditService
-        +NodeResponse createNode(NodeCreateRequest request, UUID creatorId, UUID workspaceId)
+        +NodeResponse createNode(NodeCreateRequest request, UUID creatorId, UUID spaceId)
         +NodeDetailResponse getNode(UUID id)
         +NodeResponse updateNode(UUID id, NodeUpdateRequest request, UUID userId)
         +void deleteNode(UUID id, UUID userId)
-        +Page~NodeResponse~ getNodes(NodeType type, UUID workspaceId, Pageable pageable)
-        +Page~NodeResponse~ getNodesByTag(String tag, UUID workspaceId, Pageable pageable)
+        +Page~NodeResponse~ getNodes(NodeType type, UUID spaceId, Pageable pageable)
+        +Page~NodeResponse~ getNodesByTag(String tag, UUID spaceId, Pageable pageable)
         +List~NodeVersionResponse~ getNodeVersions(UUID nodeId)
         +NodeResponse restoreVersion(UUID nodeId, Integer versionNumber, UUID userId)
         -Node createVersion(Node node, String content, UUID userId)
-        -void validateSlugUnique(String slug, UUID workspaceId)
+        -void validateSlugUnique(String slug, UUID spaceId)
     }
     
     class AttributeService {
@@ -766,9 +766,9 @@ classDiagram
     %% RELATIONSHIPS - ENTITIES
     %% ===================================
     
-    Workspace "1" -- "*" WorkspaceUser : hasMembers
-    User "1" -- "*" WorkspaceUser : memberOf
-    Workspace "1" -- "*" Node : contains
+    Space "1" -- "*" SpaceUser : hasMembers
+    User "1" -- "*" SpaceUser : memberOf
+    Space "1" -- "*" Node : contains
 
     User "1" -- "*" Node : creates
     User "1" -- "*" NodeVersion : creates
@@ -795,8 +795,8 @@ classDiagram
     %% RELATIONSHIPS - REPOSITORIES
     %% ===================================
     
-    WorkspaceRepository ..> Workspace : manages
-    WorkspaceUserRepository ..> WorkspaceUser : manages
+    SpaceRepository ..> Space : manages
+    SpaceUserRepository ..> SpaceUser : manages
     UserRepository ..> User : manages
     NodeRepository ..> Node : manages
     NodeVersionRepository ..> NodeVersion : manages
@@ -817,7 +817,7 @@ classDiagram
     
     NodeService ..> NodeRepository : uses
     NodeService ..> NodeVersionRepository : uses
-    NodeService ..> WorkspaceRepository : uses
+    NodeService ..> SpaceRepository : uses
     NodeService ..> NodeMapper : uses
     NodeService ..> SearchService : uses
     NodeService ..> AuditService : uses

@@ -8,7 +8,7 @@ REST API for the Mujarrad/ISAAT knowledge graph platform.
 ## Table of Contents
 
 1. [Authentication](#authentication)
-2. [Workspaces](#workspaces)
+2. [Spaces](#spaces)
 3. [Nodes](#nodes)
 4. [Attributes (Relationships)](#attributes-relationships)
 5. [Versions](#versions)
@@ -107,13 +107,13 @@ Authenticate and receive JWT token.
 
 ---
 
-## Workspaces
+## Spaces
 
-Multi-tenant workspace management.
+Multi-tenant space management.
 
-### Create Workspace
+### Create Space
 
-**Endpoint**: `POST /workspaces`
+**Endpoint**: `POST /spaces`
 **Authentication**: Required (Bearer token)
 
 **Headers**:
@@ -144,11 +144,11 @@ Content-Type: application/json
 
 ---
 
-### List Workspaces
+### List Spaces
 
-Get all workspaces owned by the authenticated user.
+Get all spaces owned by the authenticated user.
 
-**Endpoint**: `GET /workspaces`
+**Endpoint**: `GET /spaces`
 **Authentication**: Required
 
 **Response** `200 OK`:
@@ -175,11 +175,11 @@ Get all workspaces owned by the authenticated user.
 
 ---
 
-### Get Workspace
+### Get Space
 
-Retrieve workspace by ID or slug.
+Retrieve space by ID or slug.
 
-**Endpoint**: `GET /workspaces/{id}` or `GET /workspaces/slug/{slug}`
+**Endpoint**: `GET /spaces/{id}` or `GET /spaces/slug/{slug}`
 **Authentication**: Required
 
 **Response** `200 OK`:
@@ -202,7 +202,7 @@ Node CRUD operations with versioning and graph support.
 
 ### Create Node
 
-**Endpoint**: `POST /workspaces/{workspaceSlug}/nodes`
+**Endpoint**: `POST /spaces/{spaceSlug}/nodes`
 **Authentication**: Required
 
 **Request Body**:
@@ -223,7 +223,7 @@ Node CRUD operations with versioning and graph support.
 ```json
 {
   "id": "880e8400-e29b-41d4-a716-446655440000",
-  "workspaceId": "660e8400-e29b-41d4-a716-446655440000",
+  "spaceId": "660e8400-e29b-41d4-a716-446655440000",
   "nodeType": "CONTEXT",
   "title": "Project Requirements",
   "slug": "project-requirements",
@@ -249,7 +249,7 @@ Node CRUD operations with versioning and graph support.
   "title": "Validation Failed",
   "detail": "Request validation failed with 2 error(s)",
   "timestamp": "2025-01-15T10:40:00Z",
-  "instance": "/api/workspaces/my-project/nodes",
+  "instance": "/api/spaces/my-project/nodes",
   "extensions": {
     "validationErrors": {
       "title": "Title is required",
@@ -263,9 +263,9 @@ Node CRUD operations with versioning and graph support.
 
 ### List Nodes
 
-Get all nodes in a workspace.
+Get all nodes in a space.
 
-**Endpoint**: `GET /workspaces/{workspaceSlug}/nodes`
+**Endpoint**: `GET /spaces/{spaceSlug}/nodes`
 **Authentication**: Required
 
 **Response** `200 OK`:
@@ -273,7 +273,7 @@ Get all nodes in a workspace.
 [
   {
     "id": "880e8400-e29b-41d4-a716-446655440000",
-    "workspaceId": "660e8400-e29b-41d4-a716-446655440000",
+    "spaceId": "660e8400-e29b-41d4-a716-446655440000",
     "nodeType": "CONTEXT",
     "title": "Project Requirements",
     "slug": "project-requirements",
@@ -291,7 +291,7 @@ Get all nodes in a workspace.
 
 Retrieve a specific node.
 
-**Endpoint**: `GET /workspaces/{workspaceSlug}/nodes/{nodeId}`
+**Endpoint**: `GET /spaces/{spaceSlug}/nodes/{nodeId}`
 **Authentication**: Required
 
 **Response** `200 OK`: (Same structure as Create Node response)
@@ -304,7 +304,7 @@ Retrieve a specific node.
   "title": "Resource Not Found",
   "detail": "Node with ID 880e8400-e29b-41d4-a716-446655440000 not found",
   "timestamp": "2025-01-15T10:45:00Z",
-  "instance": "/api/workspaces/my-project/nodes/880e8400-e29b-41d4-a716-446655440000"
+  "instance": "/api/spaces/my-project/nodes/880e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
@@ -312,7 +312,7 @@ Retrieve a specific node.
 
 ### Update Node
 
-**Endpoint**: `PUT /workspaces/{workspaceSlug}/nodes/{nodeId}`
+**Endpoint**: `PUT /spaces/{spaceSlug}/nodes/{nodeId}`
 **Authentication**: Required
 
 **Request Body**: (All fields optional)
@@ -346,7 +346,7 @@ Retrieve a specific node.
 
 Delete a node with optional smart cascade.
 
-**Endpoint**: `DELETE /workspaces/{workspaceSlug}/nodes/{nodeId}?force={true|false}`
+**Endpoint**: `DELETE /spaces/{spaceSlug}/nodes/{nodeId}?force={true|false}`
 **Authentication**: Required
 
 **Query Parameters**:
@@ -364,7 +364,7 @@ Delete a node with optional smart cascade.
   "title": "Invalid Operation",
   "detail": "Cannot delete context node 880e8400-e29b-41d4-a716-446655440000: has 5 children. Use force=true for cascade deletion.",
   "timestamp": "2025-01-15T11:05:00Z",
-  "instance": "/api/workspaces/my-project/nodes/880e8400-e29b-41d4-a716-446655440000"
+  "instance": "/api/spaces/my-project/nodes/880e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
@@ -406,7 +406,7 @@ Create and manage relationships between nodes.
 ```json
 {
   "id": "cc0e8400-e29b-41d4-a716-446655440000",
-  "workspaceId": "660e8400-e29b-41d4-a716-446655440000",
+  "spaceId": "660e8400-e29b-41d4-a716-446655440000",
   "sourceNodeId": "880e8400-e29b-41d4-a716-446655440000",
   "targetNodeId": "bb0e8400-e29b-41d4-a716-446655440000",
   "attributeName": "contains",
@@ -578,7 +578,7 @@ All errors follow **RFC 7807 Problem Details** format.
 | 204 | No Content | Delete successful (no response body) |
 | 400 | Bad Request | Validation error, invalid operation, circular containment |
 | 401 | Unauthorized | Missing or invalid JWT token |
-| 403 | Forbidden | Insufficient permissions (workspace access denied) |
+| 403 | Forbidden | Insufficient permissions (space access denied) |
 | 404 | Not Found | Resource not found |
 | 409 | Conflict | Duplicate resource (email, username, slug) |
 | 500 | Internal Server Error | Unexpected server error |
@@ -611,7 +611,7 @@ All errors follow **RFC 7807 Problem Details** format.
 ## Webhooks
 
 **Status**: Not implemented
-**Planned**: Workspace events, node creation/updates
+**Planned**: Space events, node creation/updates
 
 ---
 

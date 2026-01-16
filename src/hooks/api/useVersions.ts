@@ -3,53 +3,53 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { versionService } from '@/services/api';
 
-export function useNodeVersions(workspaceSlug: string, nodeId: number) {
+export function useNodeVersions(spaceSlug: string, nodeId: number) {
   return useQuery({
-    queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'versions'],
-    queryFn: () => versionService.getNodeVersions(workspaceSlug, nodeId),
-    enabled: !!workspaceSlug && !!nodeId,
+    queryKey: ['spaces', spaceSlug, 'nodes', nodeId, 'versions'],
+    queryFn: () => versionService.getNodeVersions(spaceSlug, nodeId),
+    enabled: !!spaceSlug && !!nodeId,
   });
 }
 
-export function useVersion(workspaceSlug: string, nodeId: number, versionId: number) {
+export function useVersion(spaceSlug: string, nodeId: number, versionId: number) {
   return useQuery({
-    queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'versions', versionId],
-    queryFn: () => versionService.getVersion(workspaceSlug, nodeId, versionId),
-    enabled: !!workspaceSlug && !!nodeId && !!versionId,
+    queryKey: ['spaces', spaceSlug, 'nodes', nodeId, 'versions', versionId],
+    queryFn: () => versionService.getVersion(spaceSlug, nodeId, versionId),
+    enabled: !!spaceSlug && !!nodeId && !!versionId,
   });
 }
 
-export function useRestoreVersion(workspaceSlug: string, nodeId: number) {
+export function useRestoreVersion(spaceSlug: string, nodeId: number) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (versionId: number) =>
-      versionService.restoreVersion(workspaceSlug, nodeId, versionId),
+      versionService.restoreVersion(spaceSlug, nodeId, versionId),
     onSuccess: () => {
       // Invalidate node data and versions list after restoration
       queryClient.invalidateQueries({
-        queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId]
+        queryKey: ['spaces', spaceSlug, 'nodes', nodeId]
       });
       queryClient.invalidateQueries({
-        queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'versions']
+        queryKey: ['spaces', spaceSlug, 'nodes', nodeId, 'versions']
       });
       queryClient.invalidateQueries({
-        queryKey: ['workspaces', workspaceSlug, 'graph']
+        queryKey: ['spaces', spaceSlug, 'graph']
       });
     },
   });
 }
 
-export function useDeleteVersion(workspaceSlug: string, nodeId: number) {
+export function useDeleteVersion(spaceSlug: string, nodeId: number) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (versionId: number) =>
-      versionService.deleteVersion(workspaceSlug, nodeId, versionId),
+      versionService.deleteVersion(spaceSlug, nodeId, versionId),
     onSuccess: () => {
       // Invalidate versions list after deletion
       queryClient.invalidateQueries({
-        queryKey: ['workspaces', workspaceSlug, 'nodes', nodeId, 'versions']
+        queryKey: ['spaces', spaceSlug, 'nodes', nodeId, 'versions']
       });
     },
   });

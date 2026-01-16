@@ -3,13 +3,13 @@ erDiagram
     %% Mujarrad Database Schema v1.0.0
     %% Constitutional Principles: Node Supremacy, Relationship-Driven Structure
 
-    USERS ||--o{ WORKSPACES : owns
+    USERS ||--o{ SPACES : owns
     USERS ||--o{ NODES : creates
     USERS ||--o{ ATTRIBUTES : creates
     USERS ||--o{ NODE_VERSIONS : creates
 
-    WORKSPACES ||--o{ NODES : contains
-    WORKSPACES ||--o{ ATTRIBUTES : contains
+    SPACES ||--o{ NODES : contains
+    SPACES ||--o{ ATTRIBUTES : contains
 
     NODES ||--o{ ATTRIBUTES : "source (outgoing)"
     NODES ||--o{ ATTRIBUTES : "target (incoming)"
@@ -25,10 +25,10 @@ erDiagram
         timestamp updated_at "Last update timestamp"
     }
 
-    WORKSPACES {
+    SPACES {
         uuid id PK "Primary key"
         uuid owner_id FK "References users(id)"
-        varchar name "Workspace name"
+        varchar name "Space name"
         varchar slug UK "URL-safe unique identifier"
         timestamp created_at "Creation timestamp"
         timestamp updated_at "Last update timestamp"
@@ -36,10 +36,10 @@ erDiagram
 
     NODES {
         uuid id PK "Primary key"
-        uuid workspace_id FK "References workspaces(id)"
+        uuid space_id FK "References spaces(id)"
         varchar node_type "REGULAR, CONTEXT, ASSUMPTION"
         varchar title "Node title"
-        varchar slug "URL-safe slug (unique within workspace)"
+        varchar slug "URL-safe slug (unique within space)"
         text content "Markdown content"
         jsonb node_details "Flexible metadata (category, tags, etc.)"
         uuid current_version_id FK "References node_versions(id)"
@@ -51,7 +51,7 @@ erDiagram
 
     ATTRIBUTES {
         uuid id PK "Primary key"
-        uuid workspace_id FK "References workspaces(id)"
+        uuid space_id FK "References spaces(id)"
         uuid source_node_id FK "Source node (parent/from)"
         uuid target_node_id FK "Target node (child/to)"
         varchar attribute_name "Relationship type: contains, depends_on, triggers, references, next, calls"
@@ -77,15 +77,15 @@ erDiagram
 
     %% Indexes (Performance)
     %% Users: username, email (unique)
-    %% Workspaces: owner_id, slug (unique)
-    %% Nodes: workspace_id, slug (composite unique), node_type, created_at
-    %% Attributes: workspace_id, source_node_id, target_node_id, attribute_name
+    %% Spaces: owner_id, slug (unique)
+    %% Nodes: space_id, slug (composite unique), node_type, created_at
+    %% Attributes: space_id, source_node_id, target_node_id, attribute_name
     %% NodeVersions: node_id, version_number (composite unique)
 
     %% Constraints
-    %% - ON DELETE CASCADE: workspace deletion cascades to nodes/attributes
+    %% - ON DELETE CASCADE: space deletion cascades to nodes/attributes
     %% - ON DELETE CASCADE: node deletion cascades to attributes/versions
-    %% - UNIQUE(workspace_id, slug): Nodes have unique slugs per workspace
+    %% - UNIQUE(space_id, slug): Nodes have unique slugs per space
     %% - UNIQUE(node_id, version_number): Version numbers unique per node
     %% - CHECK: node_type IN ('REGULAR', 'CONTEXT', 'ASSUMPTION')
     %% - CHECK: attribute_type_mode IN ('TYPED', 'SCHEMALESS')
@@ -101,7 +101,7 @@ erDiagram
 
 **Version Fidelity**: Immutable `node_versions` table with JSONB snapshots. Every node update creates new version.
 
-**Multi-Tenancy**: `workspace_id` FK on all major tables enforces isolation.
+**Multi-Tenancy**: `space_id` FK on all major tables enforces isolation.
 
 ### Cycle Detection Rules (FR-008)
 
@@ -166,8 +166,8 @@ erDiagram
 ### Performance Indexes
 
 **Primary Performance Indexes**:
-1. `nodes(workspace_id)` - Workspace-scoped queries
-2. `nodes(workspace_id, slug)` - Unique constraint + fast lookup
+1. `nodes(space_id)` - Space-scoped queries
+2. `nodes(space_id, slug)` - Unique constraint + fast lookup
 3. `attributes(source_node_id, attribute_name)` - Outgoing relationships
 4. `attributes(target_node_id, attribute_name)` - Incoming relationships
 5. `node_versions(node_id, version_number)` - Version history retrieval
@@ -175,13 +175,13 @@ erDiagram
 **Secondary Indexes**:
 - `nodes(node_type)` - Filter by type
 - `nodes(created_at)` - Chronological queries
-- `attributes(workspace_id)` - Workspace cleanup
+- `attributes(space_id)` - Space cleanup
 
 ### Cascade Behavior
 
-**Workspace Deletion**:
+**Space Deletion**:
 ```
-workspace → nodes → node_versions
+space → nodes → node_versions
          → attributes
 ```
 
@@ -198,7 +198,7 @@ node → node_versions (all versions deleted)
 
 ### Migration History
 
-- `V1__Initial_Schema.sql` - Users, Workspaces, Nodes
+- `V1__Initial_Schema.sql` - Users, Spaces, Nodes
 - `V2__Add_Attributes_Table.sql` - Attributes with JSONB
 - `V3__Add_Versions_Table.sql` - NodeVersions for immutability
 - `V4__Add_Indexes.sql` - Performance optimization
@@ -206,7 +206,7 @@ node → node_versions (all versions deleted)
 
 ### Future Enhancements
 
-- [ ] `workspace_collaborators` table (many-to-many)
+- [ ] `space_collaborators` table (many-to-many)
 - [ ] `node_comments` table (discussion threads)
 - [ ] Full-text search indexes on `nodes.content` (PostgreSQL tsvector)
 - [ ] Audit log table (track all modifications)

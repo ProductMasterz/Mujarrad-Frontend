@@ -36,7 +36,7 @@
 
 ## Summary
 
-Build a complete frontend React SPA that integrates with the Mujarrad Spring Boot backend API to provide a visual knowledge graph management system. Users will authenticate, create workspaces, manage nodes (with markdown content), establish typed relationships (edges mapped to backend attributes), visualize the graph, search content, and access version history. The system follows Clean Architecture with TypeScript strict mode, React Query for server state, Zustand for client state, React Flow for graph visualization, and comprehensive error handling with RFC 7807 Problem Details.
+Build a complete frontend React SPA that integrates with the Mujarrad Spring Boot backend API to provide a visual knowledge graph management system. Users will authenticate, create spaces, manage nodes (with markdown content), establish typed relationships (edges mapped to backend attributes), visualize the graph, search content, and access version history. The system follows Clean Architecture with TypeScript strict mode, React Query for server state, Zustand for client state, React Flow for graph visualization, and comprehensive error handling with RFC 7807 Problem Details.
 
 ## Technical Context
 **Language/Version**: TypeScript 5.0+ (strict mode enabled)
@@ -68,8 +68,8 @@ Build a complete frontend React SPA that integrates with the Mujarrad Spring Boo
   - MUST map frontend edges to backend attributes
   - MUST handle optimistic locking with version fields
 **Scale/Scope**:
-  - Multi-workspace support
-  - Concurrent users per workspace
+  - Multi-space support
+  - Concurrent users per space
   - Full CRUD for nodes and relationships
   - Version control and diff viewing
   - Search with full-text ranking
@@ -132,13 +132,13 @@ Types & Models (Domain)
 - Cycle-aware layout algorithms
 - Cycle detection visualization for containment
 
-### Principle VIII: Workspace Isolation
+### Principle VIII: Space Isolation
 **Status**: ✅ PASS
 **Rationale**:
-- All API calls workspace-scoped
-- URLs follow `/workspace/{slug}/nodes/{id}` pattern
-- Workspace switching clears cache
-- Search workspace-scoped by default
+- All API calls space-scoped
+- URLs follow `/space/{slug}/nodes/{id}` pattern
+- Space switching clears cache
+- Search space-scoped by default
 
 ### Principle IX: Version Awareness
 **Status**: ✅ PASS
@@ -170,7 +170,7 @@ specs/001-frontend-integration-analysis/
 ├── quickstart.md        # Phase 1 output (manual testing scenarios)
 ├── contracts/           # Phase 1 output (Zod schemas for API contracts)
 │   ├── auth.schema.ts
-│   ├── workspace.schema.ts
+│   ├── space.schema.ts
 │   ├── node.schema.ts
 │   ├── attribute.schema.ts
 │   └── version.schema.ts
@@ -182,16 +182,16 @@ specs/001-frontend-integration-analysis/
 mujarrad-frontend/
 ├── app/                          # Next.js 14 App Router
 │   ├── layout.tsx                # Root layout with providers
-│   ├── page.tsx                  # Home page (redirect to workspaces)
+│   ├── page.tsx                  # Home page (redirect to spaces)
 │   ├── login/
 │   │   └── page.tsx              # Login page
 │   ├── register/
 │   │   └── page.tsx              # Register page
-│   ├── workspaces/
-│   │   ├── page.tsx              # Workspace list
+│   ├── spaces/
+│   │   ├── page.tsx              # Space list
 │   │   └── [slug]/
-│   │       ├── layout.tsx        # Workspace layout
-│   │       ├── page.tsx          # Workspace home
+│   │       ├── layout.tsx        # Space layout
+│   │       ├── page.tsx          # Space home
 │   │       ├── nodes/
 │   │       │   └── page.tsx      # Node list view
 │   │       ├── graph/
@@ -226,14 +226,14 @@ mujarrad-frontend/
 │   │   │   ├── LoginForm.tsx
 │   │   │   ├── RegisterForm.tsx
 │   │   │   └── ProtectedRoute.tsx
-│   │   └── workspaces/
-│   │       ├── WorkspaceList.tsx
-│   │       └── WorkspaceCard.tsx
+│   │   └── spaces/
+│   │       ├── SpaceList.tsx
+│   │       └── SpaceCard.tsx
 │   │
 │   ├── hooks/
 │   │   ├── api/
 │   │   │   ├── useAuth.ts
-│   │   │   ├── useWorkspaces.ts
+│   │   │   ├── useSpaces.ts
 │   │   │   ├── useNodes.ts
 │   │   │   ├── useAttributes.ts
 │   │   │   ├── useVersions.ts
@@ -245,7 +245,7 @@ mujarrad-frontend/
 │   │   ├── api/
 │   │   │   └── client.ts         # Axios instance with interceptors
 │   │   ├── AuthService.ts
-│   │   ├── WorkspaceService.ts
+│   │   ├── SpaceService.ts
 │   │   ├── NodeService.ts
 │   │   ├── AttributeService.ts
 │   │   ├── VersionService.ts
@@ -253,7 +253,7 @@ mujarrad-frontend/
 │   │
 │   ├── stores/
 │   │   ├── authStore.ts          # Zustand: auth state
-│   │   ├── workspaceStore.ts     # Zustand: current workspace
+│   │   ├── spaceStore.ts     # Zustand: current space
 │   │   └── uiStore.ts            # Zustand: UI preferences
 │   │
 │   ├── types/
@@ -264,7 +264,7 @@ mujarrad-frontend/
 │   │
 │   ├── schemas/
 │   │   ├── auth.schema.ts        # Zod: login, register
-│   │   ├── workspace.schema.ts   # Zod: workspace CRUD
+│   │   ├── space.schema.ts   # Zod: space CRUD
 │   │   ├── node.schema.ts        # Zod: node CRUD
 │   │   └── attribute.schema.ts   # Zod: relationship CRUD
 │   │
@@ -283,7 +283,7 @@ mujarrad-frontend/
 │   └── e2e/
 │       └── flows/
 │           ├── auth.spec.ts
-│           ├── workspace.spec.ts
+│           ├── space.spec.ts
 │           ├── nodes.spec.ts
 │           └── graph.spec.ts
 │
@@ -330,7 +330,7 @@ Since the constitution already defines the technology stack and the spec has all
 
 2. **State Management Strategy**
    - Decision: **Zustand (client) + React Query (server)**
-   - Zustand for: auth state, current workspace, UI preferences
+   - Zustand for: auth state, current space, UI preferences
    - React Query for: all API data, caching, optimistic updates, invalidation
    - Rationale: Separation of concerns, React Query's built-in cache management
 
@@ -396,9 +396,9 @@ interface User {
 }
 ```
 
-**Workspace**
+**Space**
 ```typescript
-interface Workspace {
+interface Space {
   id: string;
   slug: string;
   name: string;
@@ -419,7 +419,7 @@ enum NodeType {
 
 interface Node {
   id: string;
-  workspaceId: string;
+  spaceId: string;
   nodeType: NodeType;
   title: string;
   slug: string;
@@ -527,7 +527,7 @@ export const createAttributeSchema = z.object({
 export type CreateAttributeInput = z.infer<typeof createAttributeSchema>;
 ```
 
-Similar schemas for workspaces and versions.
+Similar schemas for spaces and versions.
 
 ### 3. Contract Tests
 
@@ -573,11 +573,11 @@ Extract test scenarios from user stories in spec:
    - Logout and verify session cleared
    - Attempt login with invalid credentials (verify error)
 
-2. Workspace Management
-   - Create new workspace
-   - View workspace list
-   - Switch between workspaces (verify data cleared)
-   - Delete workspace (verify confirmation)
+2. Space Management
+   - Create new space
+   - View space list
+   - Switch between spaces (verify data cleared)
+   - Delete space (verify confirmation)
 
 3. Node CRUD
    - Create REGULAR node with markdown content
@@ -607,7 +607,7 @@ Extract test scenarios from user stories in spec:
    - Search by content
    - Filter by node type
    - Filter by date range
-   - Verify workspace-scoped results
+   - Verify space-scoped results
 
 7. Multi-Context Navigation
    - Create node with multiple parents
@@ -639,7 +639,7 @@ This will update `/CLAUDE.md` with:
 **Output**: Phase 1 artifacts created:
 - `data-model.md` (TypeScript type definitions)
 - `contracts/auth.schema.ts`
-- `contracts/workspace.schema.ts`
+- `contracts/space.schema.ts`
 - `contracts/node.schema.ts`
 - `contracts/attribute.schema.ts`
 - `contracts/version.schema.ts`

@@ -9,7 +9,7 @@
  */
 export interface Node {
   id: string;
-  workspaceId: string;
+  spaceId: string;
   title: string;
   slug: string;
   nodeType: 'REGULAR' | 'CONTEXT';
@@ -68,9 +68,9 @@ export interface AttributeMetadata {
 }
 
 /**
- * Workspace entity
+ * Space entity
  */
-export interface Workspace {
+export interface Space {
   id: string;
   slug: string;
   name: string;
@@ -108,7 +108,7 @@ export interface User {
  */
 export interface CreateNodePayload {
   title: string;
-  workspaceId: string;
+  spaceId: string;
   nodeType: 'REGULAR' | 'CONTEXT';
   markdownContent?: string;
   nodeDetails?: Record<string, any>;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useNode, useWorkspaceNodes } from '@/hooks/api';
+import { useNode, useSpaceNodes } from '@/hooks/api';
 import { NodeDetailView } from '@/components/nodes/NodeDetailView';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -22,10 +22,10 @@ export default function NodeDetailPage({ params }: NodeDetailPageProps) {
   const router = useRouter();
 
   // Fetch node data
-  const { data: node, isLoading, error } = useNode(id);
+  const { data: node, isLoading, error } = useNode(slug, id);
 
-  // Fetch all workspace nodes for wiki-link resolution
-  const { data: availableNodes = [] } = useWorkspaceNodes(slug);
+  // Fetch all space nodes for wiki-link resolution
+  const { data: availableNodes = [] } = useSpaceNodes(slug);
 
   // Handle wiki-link click - navigate to target node (T071)
   const handleWikiLinkClick = (targetTitle: string) => {
@@ -34,13 +34,13 @@ export default function NodeDetailPage({ params }: NodeDetailPageProps) {
     );
 
     if (targetNode) {
-      router.push(`/workspace/${slug}/node/${targetNode.id}`);
+      router.push(`/space/${slug}/node/${targetNode.id}`);
     }
   };
 
   // Handle back navigation
   const handleBack = () => {
-    router.push(`/workspace/${slug}`);
+    router.push(`/space/${slug}`);
   };
 
   if (isLoading) {
@@ -66,7 +66,7 @@ export default function NodeDetailPage({ params }: NodeDetailPageProps) {
           </p>
           <Button onClick={handleBack}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Workspace
+            Back to Space
           </Button>
         </div>
       </div>
@@ -79,7 +79,7 @@ export default function NodeDetailPage({ params }: NodeDetailPageProps) {
       <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3">
         <Button variant="ghost" size="sm" onClick={handleBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Workspace
+          Back to Space
         </Button>
       </div>
 
@@ -87,7 +87,7 @@ export default function NodeDetailPage({ params }: NodeDetailPageProps) {
       <div className="flex-1 overflow-hidden">
         <NodeDetailView
           node={node}
-          workspaceSlug={slug}
+          spaceSlug={slug}
           availableNodes={availableNodes}
           onWikiLinkClick={handleWikiLinkClick}
         />

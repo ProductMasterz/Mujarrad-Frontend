@@ -1,3 +1,5 @@
+'use client';
+
 // src/stores/ui.store.ts
 
 import { create } from 'zustand';
@@ -12,8 +14,8 @@ interface UIState {
   createNodeModalOpen: boolean;
   setCreateNodeModalOpen: (open: boolean) => void;
 
-  createWorkspaceModalOpen: boolean;
-  setCreateWorkspaceModalOpen: (open: boolean) => void;
+  createSpaceModalOpen: boolean;
+  setCreateSpaceModalOpen: (open: boolean) => void;
 
   // Theme
   theme: 'light' | 'dark' | 'system';
@@ -34,8 +36,8 @@ export const useUIStore = create<UIState>()((set) => ({
   createNodeModalOpen: false,
   setCreateNodeModalOpen: (open) => set({ createNodeModalOpen: open }),
 
-  createWorkspaceModalOpen: false,
-  setCreateWorkspaceModalOpen: (open) => set({ createWorkspaceModalOpen: open }),
+  createSpaceModalOpen: false,
+  setCreateSpaceModalOpen: (open) => set({ createSpaceModalOpen: open }),
 
   // Theme
   theme: 'system',

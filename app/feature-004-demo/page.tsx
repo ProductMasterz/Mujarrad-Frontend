@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { NodeType, AttributeKey, type Node, type Attribute } from '@/types/backend-dtos';
 import { HierarchyNavigator } from '@/components/hierarchy/HierarchyNavigator';
 import { GraphVisualization } from '@/components/graph/GraphVisualization';
-import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { MarkdownPreview } from '@/components/nodes/MarkdownPreview';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 
@@ -21,138 +21,167 @@ import { Card } from '@/components/ui/card';
 // Mock data for demonstration
 const mockNodes: Node[] = [
   {
-    id: 1,
+    id: '1',
+    spaceId: 'demo-space',
     title: 'Product Documentation',
+    slug: 'product-documentation',
     nodeType: NodeType.CONTEXT,
     content: '',
-    version: 1,
-    workspaceId: 1,
+    nodeDetails: {},
+    currentVersionId: 'v1',
+    createdBy: 'demo-user',
+    modifiedBy: 'demo-user',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 2,
+    id: '2',
+    spaceId: 'demo-space',
     title: 'Getting Started',
+    slug: 'getting-started',
     nodeType: NodeType.REGULAR,
     content: '# Getting Started\n\nWelcome to our product! Check out [[Installation Guide]] and [[Configuration]].\n\n## Prerequisites\n- Node.js 18+\n- npm or yarn',
-    version: 1,
-    workspaceId: 1,
+    nodeDetails: {},
+    currentVersionId: 'v1',
+    createdBy: 'demo-user',
+    modifiedBy: 'demo-user',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 3,
+    id: '3',
+    spaceId: 'demo-space',
     title: 'Installation Guide',
+    slug: 'installation-guide',
     nodeType: NodeType.REGULAR,
     content: '# Installation Guide\n\n```bash\nnpm install my-product\n```\n\nSee [[Configuration]] for next steps.',
-    version: 1,
-    workspaceId: 1,
+    nodeDetails: {},
+    currentVersionId: 'v1',
+    createdBy: 'demo-user',
+    modifiedBy: 'demo-user',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 4,
+    id: '4',
+    spaceId: 'demo-space',
     title: 'Configuration',
+    slug: 'configuration',
     nodeType: NodeType.REGULAR,
     content: '# Configuration\n\nCreate a `.env` file with:\n```\nAPI_KEY=your_key\nDATABASE_URL=postgres://...\n```',
-    version: 1,
-    workspaceId: 1,
+    nodeDetails: {},
+    currentVersionId: 'v1',
+    createdBy: 'demo-user',
+    modifiedBy: 'demo-user',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 5,
+    id: '5',
+    spaceId: 'demo-space',
     title: 'API Reference',
+    slug: 'api-reference',
     nodeType: NodeType.CONTEXT,
     content: '',
-    version: 1,
-    workspaceId: 1,
+    nodeDetails: {},
+    currentVersionId: 'v1',
+    createdBy: 'demo-user',
+    modifiedBy: 'demo-user',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 6,
+    id: '6',
+    spaceId: 'demo-space',
     title: 'Authentication',
+    slug: 'authentication',
     nodeType: NodeType.REGULAR,
     content: '# Authentication\n\nUse JWT tokens for authentication. See [[Getting Started]] for setup.',
-    version: 1,
-    workspaceId: 1,
+    nodeDetails: {},
+    currentVersionId: 'v1',
+    createdBy: 'demo-user',
+    modifiedBy: 'demo-user',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 7,
+    id: '7',
+    spaceId: 'demo-space',
     title: 'Security Assumptions',
+    slug: 'security-assumptions',
     nodeType: NodeType.ASSUMPTION,
     content: '# Security Assumptions\n\n- Users are authenticated via OAuth2\n- All data is encrypted at rest\n- Rate limiting is enforced',
-    version: 1,
-    workspaceId: 1,
+    nodeDetails: {},
+    currentVersionId: 'v1',
+    createdBy: 'demo-user',
+    modifiedBy: 'demo-user',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
 ];
 
-const mockAttributes: Attribute[] = [
+// Note: Mock data uses simplified structure for demo purposes
+const mockAttributes = [
   {
-    id: 1,
-    sourceNodeId: 1,
-    targetNodeId: 2,
+    id: '1',
+    sourceNodeId: '1',
+    targetNodeId: '2',
     attributeKey: AttributeKey.CONTAINS,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 2,
-    sourceNodeId: 1,
-    targetNodeId: 3,
+    id: '2',
+    sourceNodeId: '1',
+    targetNodeId: '3',
     attributeKey: AttributeKey.CONTAINS,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 3,
-    sourceNodeId: 1,
-    targetNodeId: 4,
+    id: '3',
+    sourceNodeId: '1',
+    targetNodeId: '4',
     attributeKey: AttributeKey.CONTAINS,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 4,
-    sourceNodeId: 5,
-    targetNodeId: 6,
+    id: '4',
+    sourceNodeId: '5',
+    targetNodeId: '6',
     attributeKey: AttributeKey.CONTAINS,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 5,
-    sourceNodeId: 2,
-    targetNodeId: 3,
+    id: '5',
+    sourceNodeId: '2',
+    targetNodeId: '3',
     attributeKey: AttributeKey.REFERENCES,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 6,
-    sourceNodeId: 2,
-    targetNodeId: 4,
+    id: '6',
+    sourceNodeId: '2',
+    targetNodeId: '4',
     attributeKey: AttributeKey.REFERENCES,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 7,
-    sourceNodeId: 3,
-    targetNodeId: 4,
+    id: '7',
+    sourceNodeId: '3',
+    targetNodeId: '4',
     attributeKey: AttributeKey.REFERENCES,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 8,
-    sourceNodeId: 6,
-    targetNodeId: 2,
+    id: '8',
+    sourceNodeId: '6',
+    targetNodeId: '2',
     attributeKey: AttributeKey.REFERENCES,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
@@ -198,7 +227,7 @@ export default function Feature004DemoPage() {
           <div className="flex-1 overflow-auto">
             <HierarchyNavigator
               nodes={mockNodes}
-              attributes={mockAttributes}
+              attributes={mockAttributes as any}
               onNodeSelect={handleNodeSelect}
             />
           </div>
@@ -234,16 +263,13 @@ export default function Feature004DemoPage() {
                         {selectedNode.nodeType}
                       </span>
                       <span>•</span>
-                      <span>v{selectedNode.version}</span>
+                      <span>v{selectedNode.currentVersionId}</span>
                     </div>
                   </div>
 
                   {selectedNode.content ? (
-                    <MarkdownRenderer
+                    <MarkdownPreview
                       content={selectedNode.content}
-                      workspaceSlug="demo"
-                      availableNodes={mockNodes}
-                      onWikiLinkClick={handleWikiLinkClick}
                     />
                   ) : (
                     <p className="text-gray-500 italic">
@@ -263,7 +289,7 @@ export default function Feature004DemoPage() {
               <div className="h-full">
                 <GraphVisualization
                   nodes={mockNodes}
-                  attributes={mockAttributes}
+                  attributes={mockAttributes as any}
                   onNodeClick={handleNodeSelect}
                 />
               </div>
@@ -323,7 +349,7 @@ export default function Feature004DemoPage() {
                         <li>CreateNodeDialog with hierarchy parent selection</li>
                         <li>EditNodeDialog with wiki-link processing on save</li>
                         <li>NodeDetailView with markdown rendering</li>
-                        <li>Workspace page with sidebar + 3 tabs</li>
+                        <li>Space page with sidebar + 3 tabs</li>
                         <li>Node detail page with navigation handlers</li>
                       </ul>
                     </div>

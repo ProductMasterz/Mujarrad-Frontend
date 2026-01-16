@@ -26,7 +26,7 @@ describe('Markdown Rendering Integration Tests', () => {
   describe('T043: MarkdownRenderer displays formatted content', () => {
     it('should render headings correctly', () => {
       const markdown = '# Heading 1\n## Heading 2\n### Heading 3';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       expect(screen.getByRole('heading', { level: 1, name: 'Heading 1' })).toBeInTheDocument();
       expect(screen.getByRole('heading', { level: 2, name: 'Heading 2' })).toBeInTheDocument();
@@ -35,7 +35,7 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render bold text', () => {
       const markdown = 'This is **bold text** here.';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       const boldElement = screen.getByText('bold text');
       expect(boldElement.tagName).toBe('STRONG');
@@ -43,7 +43,7 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render italic text', () => {
       const markdown = 'This is *italic text* here.';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       const italicElement = screen.getByText('italic text');
       expect(italicElement.tagName).toBe('EM');
@@ -51,7 +51,7 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render unordered lists', () => {
       const markdown = '- Item 1\n- Item 2\n- Item 3';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       expect(screen.getByRole('list')).toBeInTheDocument();
       expect(screen.getAllByRole('listitem')).toHaveLength(3);
@@ -62,7 +62,7 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render ordered lists', () => {
       const markdown = '1. First\n2. Second\n3. Third';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       const list = screen.getByRole('list');
       expect(list.tagName).toBe('OL');
@@ -71,7 +71,7 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render code blocks', () => {
       const markdown = '```javascript\nconst x = 42;\n```';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       const codeBlock = screen.getByText(/const x = 42/);
       expect(codeBlock.closest('pre')).toBeInTheDocument();
@@ -80,7 +80,7 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render inline code', () => {
       const markdown = 'Use the `console.log()` function.';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       const inlineCode = screen.getByText('console.log()');
       expect(inlineCode.tagName).toBe('CODE');
@@ -88,7 +88,7 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render blockquotes', () => {
       const markdown = '> This is a quote';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       const quote = screen.getByText('This is a quote');
       expect(quote.closest('blockquote')).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe('Markdown Rendering Integration Tests', () => {
       const markdown = `| Header 1 | Header 2 |
 |----------|----------|
 | Cell 1   | Cell 2   |`;
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       expect(screen.getByRole('table')).toBeInTheDocument();
       expect(screen.getByRole('row', { name: /Header 1 Header 2/ })).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render strikethrough (GFM)', () => {
       const markdown = 'This is ~~deleted~~ text.';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       const strikethrough = screen.getByText('deleted');
       expect(strikethrough.tagName).toBe('DEL');
@@ -115,7 +115,7 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render task lists (GFM)', () => {
       const markdown = '- [x] Completed task\n- [ ] Pending task';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       const checkboxes = screen.getAllByRole('checkbox');
       expect(checkboxes).toHaveLength(2);
@@ -125,7 +125,7 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render standard links', () => {
       const markdown = 'Visit [Google](https://google.com)';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       const link = screen.getByRole('link', { name: 'Google' });
       expect(link).toHaveAttribute('href', 'https://google.com');
@@ -133,7 +133,7 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render images', () => {
       const markdown = '![Alt text](https://example.com/image.png)';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       const image = screen.getByRole('img');
       expect(image).toHaveAttribute('alt', 'Alt text');
@@ -142,13 +142,13 @@ describe('Markdown Rendering Integration Tests', () => {
 
     it('should render horizontal rules', () => {
       const markdown = 'Above\n\n---\n\nBelow';
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       expect(screen.getByRole('separator')).toBeInTheDocument();
     });
 
     it('should handle empty content', () => {
-      render(<MarkdownRenderer content="" workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content="" spaceSlug="test-ws" />);
 
       expect(screen.getByTestId('markdown-renderer')).toBeEmptyDOMElement();
     });
@@ -174,7 +174,7 @@ const code = "example";
 |------|------|
 | Data | More |`;
 
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       expect(screen.getByRole('heading', { level: 1, name: 'Main Title' })).toBeInTheDocument();
       expect(screen.getByRole('heading', { level: 2, name: 'Section 1' })).toBeInTheDocument();
@@ -189,13 +189,13 @@ const code = "example";
         <WikiLink
           displayText="My Page"
           targetNodeId="node-123"
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
         />
       );
 
       const link = screen.getByText('My Page');
       expect(link).toBeInTheDocument();
-      expect(link.closest('a')).toHaveAttribute('href', '/workspace/test-ws/node/node-123');
+      expect(link.closest('a')).toHaveAttribute('href', '/space/test-ws/node/node-123');
     });
 
     it('should navigate to target node on click', () => {
@@ -208,14 +208,14 @@ const code = "example";
         <WikiLink
           displayText="Target Page"
           targetNodeId="node-456"
-          workspaceSlug="my-workspace"
+          spaceSlug="my-space"
         />
       );
 
       const link = screen.getByText('Target Page');
       fireEvent.click(link);
 
-      expect(pushMock).toHaveBeenCalledWith('/workspace/my-workspace/node/node-456');
+      expect(pushMock).toHaveBeenCalledWith('/space/my-space/node/node-456');
     });
 
     it('should have distinct styling for wiki-links', () => {
@@ -223,7 +223,7 @@ const code = "example";
         <WikiLink
           displayText="Wiki Link"
           targetNodeId="node-789"
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
         />
       );
 
@@ -236,7 +236,7 @@ const code = "example";
         <WikiLink
           displayText="Placeholder"
           targetNodeId="placeholder-123"
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
           isPlaceholder={true}
         />
       );
@@ -255,7 +255,7 @@ const code = "example";
         <WikiLink
           displayText="Page"
           targetNodeId="node-999"
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
         />
       );
 
@@ -279,14 +279,14 @@ const code = "example";
         <WikiLink
           displayText="Keyboard Nav"
           targetNodeId="node-kb"
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
         />
       );
 
       const link = screen.getByText('Keyboard Nav');
       fireEvent.keyDown(link, { key: 'Enter', code: 'Enter' });
 
-      expect(pushMock).toHaveBeenCalledWith('/workspace/test-ws/node/node-kb');
+      expect(pushMock).toHaveBeenCalledWith('/space/test-ws/node/node-kb');
     });
   });
 
@@ -296,20 +296,20 @@ const code = "example";
         <WikiLink
           displayText="click here"
           targetNodeId="target-node-id"
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
         />
       );
 
       const link = screen.getByText('click here');
       expect(link).toBeInTheDocument();
-      expect(link.closest('a')).toHaveAttribute('href', '/workspace/test-ws/node/target-node-id');
+      expect(link.closest('a')).toHaveAttribute('href', '/space/test-ws/node/target-node-id');
     });
 
     it('should handle wiki-link in markdown context', () => {
       const markdown = 'Read [[see this|Target Page]] for more info.';
 
       // Mock the remark plugin to transform wiki-links
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       // Wiki-link should be rendered as custom component
       expect(screen.getByText('see this')).toBeInTheDocument();
@@ -320,7 +320,7 @@ const code = "example";
         <WikiLink
           displayText="Page Title"
           targetNodeId="node-same"
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
         />
       );
 
@@ -333,7 +333,7 @@ const code = "example";
         <WikiLink
           displayText="Page: Notes & Ideas"
           targetNodeId="node-special"
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
         />
       );
 
@@ -343,7 +343,7 @@ const code = "example";
     it('should render multiple wiki-links with different aliases', () => {
       const markdown = 'See [[intro|Introduction]] and [[conclusion|Summary]].';
 
-      render(<MarkdownRenderer content={markdown} workspaceSlug="test-ws" />);
+      render(<MarkdownRenderer content={markdown} spaceSlug="test-ws" />);
 
       expect(screen.getByText(/intro/)).toBeInTheDocument();
       expect(screen.getByText(/conclusion/)).toBeInTheDocument();
@@ -354,7 +354,7 @@ const code = "example";
         <WikiLink
           displayText="This is a very long alias text that should not break the layout or cause overflow issues"
           targetNodeId="node-long"
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
         />
       );
 
@@ -369,7 +369,7 @@ const code = "example";
           displayText="alias"
           targetNodeId="node-tooltip"
           targetTitle="Actual Target Page"
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
         />
       );
 
@@ -385,7 +385,7 @@ const code = "example";
           displayText="alias"
           targetNodeId="node-aria"
           targetTitle="Real Page Title"
-          workspaceSlug="test-ws"
+          spaceSlug="test-ws"
         />
       );
 

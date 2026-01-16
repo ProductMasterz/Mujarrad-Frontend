@@ -11,15 +11,15 @@
 1. Parse user description from Input
    → Loaded analysis document with current vs required state ✓
 2. Extract key concepts from description
-   → Identified: users, knowledge graph visualization, workspace collaboration ✓
+   → Identified: users, knowledge graph visualization, space collaboration ✓
 3. For each unclear aspect:
    → Marked performance targets, user types, collaboration features ✓
 4. Fill User Scenarios & Testing section
    → Defined primary workflows for graph exploration ✓
 5. Generate Functional Requirements
-   → 30 testable requirements across authentication, nodes, graph, workspace ✓
+   → 30 testable requirements across authentication, nodes, graph, space ✓
 6. Identify Key Entities
-   → Nodes, Workspaces, Relationships, Versions ✓
+   → Nodes, Spaces, Relationships, Versions ✓
 7. Run Review Checklist
    → Contains implementation details - abstracted to user needs ✓
 8. Return: SUCCESS (spec ready for planning)
@@ -38,28 +38,28 @@
 
 ### Primary User Story
 
-A knowledge worker needs to create, organize, and visualize interconnected ideas (nodes) within a structured workspace. They should be able to:
+A knowledge worker needs to create, organize, and visualize interconnected ideas (nodes) within a structured space. They should be able to:
 
-1. Register and authenticate to access their workspaces
-2. Create workspaces to organize different projects or domains
+1. Register and authenticate to access their spaces
+2. Create spaces to organize different projects or domains
 3. Create nodes (concepts, contexts, assumptions) with rich markdown content
 4. Establish relationships between nodes (containment, dependencies, references, triggers, sequences, calls)
 5. Visualize the entire knowledge graph with different node types and relationship types clearly distinguished
 6. Navigate the graph by clicking on nodes and following relationships
-7. Search across all nodes in a workspace
+7. Search across all nodes in a space
 8. View version history of any node and restore previous versions
 9. Place nodes in multiple contexts (multi-context membership)
 10. Detect and prevent circular containment relationships while allowing cycles in other relationship types
 
 ### Acceptance Scenarios
 
-#### Authentication & Workspace Access
-1. **Given** a new user, **When** they register with email and password, **Then** they receive access to create workspaces
-2. **Given** an existing user, **When** they log in, **Then** they see their list of accessible workspaces
-3. **Given** a logged-in user, **When** they select a workspace, **Then** they see all nodes in that workspace
+#### Authentication & Space Access
+1. **Given** a new user, **When** they register with email and password, **Then** they receive access to create spaces
+2. **Given** an existing user, **When** they log in, **Then** they see their list of accessible spaces
+3. **Given** a logged-in user, **When** they select a space, **Then** they see all nodes in that space
 
 #### Node Management
-4. **Given** a user in a workspace, **When** they create a new node with title and content, **Then** the node appears in the workspace and graph
+4. **Given** a user in a space, **When** they create a new node with title and content, **Then** the node appears in the space and graph
 5. **Given** a user viewing a node, **When** they edit the title or content, **Then** changes are saved and a new version is created
 6. **Given** a user viewing a node, **When** they delete it, **Then** system warns about orphaned children or cascading deletion based on parent count
 7. **Given** a user, **When** they create a node with type CONTEXT, **Then** it can contain other nodes
@@ -90,7 +90,7 @@ A knowledge worker needs to create, organize, and visualize interconnected ideas
 - How does the system handle extremely large graphs (>1000 nodes)?
 - What happens when two users edit the same node simultaneously?
 - How does the system handle version conflicts during restoration?
-- What happens when a user is removed from a workspace?
+- What happens when a user is removed from a space?
 - How does search rank results when multiple nodes match the query?
 - What happens when a node belongs to a context that gets deleted?
 
@@ -103,16 +103,16 @@ A knowledge worker needs to create, organize, and visualize interconnected ideas
 #### Authentication & Authorization
 - **FR-001**: System MUST allow users to register with email and password
 - **FR-002**: System MUST authenticate users and maintain secure sessions using JWT tokens
-- **FR-003**: System MUST restrict access to workspaces based on user membership
+- **FR-003**: System MUST restrict access to spaces based on user membership
 - **FR-004**: System MUST log users out after session expiration or explicit logout action
 
-#### Workspace Management
-- **FR-005**: Users MUST be able to create new workspaces with unique names (slugs)
-- **FR-006**: Users MUST be able to view only workspaces they have access to
-- **FR-007**: Users MUST be able to switch between workspaces with workspace context clearing
-- **FR-008**: System MUST isolate data between different workspaces (no cross-workspace data leakage)
-- **FR-009**: Users MUST be able to delete workspaces they own
-- **FR-010**: System MUST support workspace ownership (creator is owner) with potential for future multi-user collaboration
+#### Space Management
+- **FR-005**: Users MUST be able to create new spaces with unique names (slugs)
+- **FR-006**: Users MUST be able to view only spaces they have access to
+- **FR-007**: Users MUST be able to switch between spaces with space context clearing
+- **FR-008**: System MUST isolate data between different spaces (no cross-space data leakage)
+- **FR-009**: Users MUST be able to delete spaces they own
+- **FR-010**: System MUST support space ownership (creator is owner) with potential for future multi-user collaboration
 
 #### Node Creation & Editing
 - **FR-011**: Users MUST be able to create nodes with a required title and optional markdown content
@@ -132,7 +132,7 @@ A knowledge worker needs to create, organize, and visualize interconnected ideas
 - **FR-023**: System MUST support nodes belonging to multiple parent contexts simultaneously (super position)
 
 #### Graph Visualization
-- **FR-024**: System MUST display all nodes in a workspace as a visual graph
+- **FR-024**: System MUST display all nodes in a space as a visual graph
 - **FR-025**: System MUST distinguish node types visually (different colors/shapes for CONTEXT, REGULAR, ASSUMPTION)
 - **FR-026**: System MUST distinguish relationship types visually (different line styles/colors for each relationship type)
 - **FR-027**: Users MUST be able to zoom, pan, and navigate the graph
@@ -143,7 +143,7 @@ A knowledge worker needs to create, organize, and visualize interconnected ideas
 #### Search & Discovery
 - **FR-031**: Users MUST be able to search nodes by title and markdown content
 - **FR-032**: System MUST highlight matching text in search results
-- **FR-033**: System MUST scope search to the current workspace by default
+- **FR-033**: System MUST scope search to the current space by default
 - **FR-034**: System MUST rank search results by relevance (using backend's full-text search)
 - **FR-035**: Users MUST be able to filter search by node type (REGULAR, CONTEXT, ASSUMPTION)
 - **FR-036**: Users MUST be able to filter search by date range (creation and/or modification dates)
@@ -164,7 +164,7 @@ A knowledge worker needs to create, organize, and visualize interconnected ideas
 #### Performance & Scalability
 - **FR-046**: System MUST load and display graphs with up to 1000 nodes efficiently (with progressive loading for larger graphs)
 - **FR-047**: System MUST respond to user interactions within 200ms for optimal user experience
-- **FR-048**: System MUST support multiple concurrent users per workspace (backend handles concurrent access)
+- **FR-048**: System MUST support multiple concurrent users per space (backend handles concurrent access)
 
 #### Error Handling
 - **FR-049**: System MUST display user-friendly error messages when operations fail (parsed from backend RFC 7807 format)
@@ -174,16 +174,16 @@ A knowledge worker needs to create, organize, and visualize interconnected ideas
 #### Security & Privacy
 - **FR-052**: System MUST protect user credentials during transmission and storage (JWT tokens, HTTPS)
 - **FR-053**: System MUST prevent cross-site scripting attacks in user-generated markdown content (sanitization)
-- **FR-054**: System MUST prevent unauthorized access to other users' workspaces (workspace-scoped API calls)
+- **FR-054**: System MUST prevent unauthorized access to other users' spaces (space-scoped API calls)
 - **FR-055**: System MUST support basic audit logging (track node creation, modification, deletion with timestamps and user IDs)
 
 ### Key Entities *(include if feature involves data)*
 
-- **User**: Represents a registered person with email, password, and access to multiple workspaces. Can create nodes, relationships, and workspaces.
+- **User**: Represents a registered person with email, password, and access to multiple spaces. Can create nodes, relationships, and spaces.
 
-- **Workspace**: A container that isolates sets of nodes and relationships. Has a unique name/slug, an owner, and potentially multiple members with different permission levels.
+- **Space**: A container that isolates sets of nodes and relationships. Has a unique name/slug, an owner, and potentially multiple members with different permission levels.
 
-- **Node**: The fundamental unit of knowledge. Has a unique ID, title, slug, markdown_content (stored markdown), node type (REGULAR, CONTEXT, ASSUMPTION), creator, timestamps, and optional metadata (nodeDetails). Belongs to exactly one workspace.
+- **Node**: The fundamental unit of knowledge. Has a unique ID, title, slug, markdown_content (stored markdown), node type (REGULAR, CONTEXT, ASSUMPTION), creator, timestamps, and optional metadata (nodeDetails). Belongs to exactly one space.
 
 - **Relationship (Edge/Attribute)**: A directed connection between two nodes, displayed as "edges" in the graph but stored as "attributes" in the backend. Has a type (attribute_key: contains, depends_on, references, triggers, next, calls), an optional value, and metadata about creation. Containment relationships must be acyclic, others may cycle. Frontend creates/deletes via attributes API endpoints.
 
@@ -211,7 +211,7 @@ A knowledge worker needs to create, organize, and visualize interconnected ideas
 
 **Clarifications Resolved (Iteration 2)**:
 1. Session timeout period (FR-004) → Session expiration handled by JWT
-2. Workspace collaboration roles (FR-010) → Owner-based with future collaboration support
+2. Space collaboration roles (FR-010) → Owner-based with future collaboration support
 3. Date filter scope (FR-036) → Both creation and modification dates
 4. Version retention policy (FR-041) → Indefinite append-only storage
 5. Orphaned node handling (FR-045) → User warning with cascading/orphaning choice
@@ -260,12 +260,12 @@ This ensures consistency between what users see in the graph and what is stored 
 ### Dependencies
 - Backend REST API must be available with all required endpoints:
   - Authentication: POST /api/users/register, POST /api/users/login
-  - Workspaces: POST /api/workspaces, GET /api/workspaces/{slug}, DELETE /api/workspaces/{slug}
-  - Nodes: POST/GET/PUT/DELETE /api/workspaces/{slug}/nodes/{id}
+  - Spaces: POST /api/spaces, GET /api/spaces/{slug}, DELETE /api/spaces/{slug}
+  - Nodes: POST/GET/PUT/DELETE /api/spaces/{slug}/nodes/{id}
   - Attributes (Edges): POST/GET/DELETE /api/nodes/{id}/attributes
   - Versions: GET /api/nodes/{id}/versions, POST /api/nodes/{id}/versions/{versionId}/restore
   - Search: GET /api/nodes/search
-- Backend must enforce workspace isolation and access control
+- Backend must enforce space isolation and access control
 - Backend must handle cycle detection for containment relationships
 - Backend must provide version control for all node changes
 - Backend must implement full-text search with ranking

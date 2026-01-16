@@ -10,12 +10,12 @@
    → Tech stack: Next.js 14, React 18, TypeScript, TanStack Query, Zustand, Zod
    → Structure: Frontend-only modifications (src/components/, src/services/, src/hooks/)
 2. Load optional design documents ✓
-   → Entities: Workspace, Node, Attribute, NodeVersion
+   → Entities: Space, Node, Attribute, NodeVersion
    → Components: 12 new + 15 to enhance
    → API services: 6 methods to add
 3. Generate tasks by category ✓
    → Foundation: Types, schemas, service methods
-   → Workspaces: CRUD dialogs + collaborator management
+   → Spaces: CRUD dialogs + collaborator management
    → Nodes: CRUD dialogs + markdown preview
    → Relationships: Create/delete dialogs
    → Versions: Comparison, restore, delete UI
@@ -52,11 +52,11 @@
 
 ### T001: [P] Add Collaborator types to backend DTOs
 **File**: `src/types/backend-dtos.ts`
-**Description**: Add TypeScript interfaces for workspace collaborators
+**Description**: Add TypeScript interfaces for space collaborators
 ```typescript
-export interface WorkspaceCollaborator {
+export interface SpaceCollaborator {
   id: string; // UUID
-  workspaceId: number;
+  spaceId: number;
   userId: string; // UUID
   role: 'owner' | 'editor';
   invitedBy: string; // UUID
@@ -84,8 +84,8 @@ export interface InviteCollaboratorRequest {
 
 ---
 
-### T002: [P] Enhance workspace schema with collaborator validation
-**File**: `src/schemas/workspace.schema.ts`
+### T002: [P] Enhance space schema with collaborator validation
+**File**: `src/schemas/space.schema.ts`
 **Description**: Add Zod schema for inviting collaborators
 ```typescript
 export const inviteCollaboratorSchema = z.object({
@@ -111,10 +111,10 @@ npm install --save-dev @types/react-markdown
 ---
 
 ### T003a: [P] Add input length validation constraints to schemas
-**File**: `src/schemas/workspace.schema.ts`, `src/schemas/node.schema.ts`
+**File**: `src/schemas/space.schema.ts`, `src/schemas/node.schema.ts`
 **Description**: Document and enforce maximum length constraints for text inputs
 ```typescript
-// workspace.schema.ts: name (100 chars), slug (50 chars), description (500 chars)
+// space.schema.ts: name (100 chars), slug (50 chars), description (500 chars)
 // node.schema.ts: title (200 chars), content (50000 chars for markdown)
 ```
 **Acceptance**: Schemas updated with max length constraints, validation error messages clear
@@ -127,7 +127,7 @@ npm install --save-dev @types/react-markdown
 **Description**: Create reusable EmptyState component for displaying when lists are empty
 ```typescript
 // Props: title, description, actionLabel?, onAction?
-// Used in: WorkspacesList, NodesList, CollaboratorsList, VersionHistoryList
+// Used in: SpacesList, NodesList, CollaboratorsList, VersionHistoryList
 ```
 **Acceptance**: Component displays helpful messaging, optional call-to-action button
 **Priority**: Medium (UX improvement)
@@ -137,12 +137,12 @@ npm install --save-dev @types/react-markdown
 ## Phase 3.2: Services Layer - API Methods
 
 ### T004: [P] Add collaborator service methods
-**File**: `src/services/api/workspace.service.ts`
+**File**: `src/services/api/space.service.ts`
 **Description**: Add API methods for collaborator management
 ```typescript
-async getCollaborators(workspaceId: number): Promise<WorkspaceCollaborator[]>
-async inviteCollaborator(workspaceId: number, data: InviteCollaboratorRequest): Promise<WorkspaceCollaborator>
-async removeCollaborator(workspaceId: number, userId: string): Promise<void>
+async getCollaborators(spaceId: number): Promise<SpaceCollaborator[]>
+async inviteCollaborator(spaceId: number, data: InviteCollaboratorRequest): Promise<SpaceCollaborator>
+async removeCollaborator(spaceId: number, userId: string): Promise<void>
 ```
 **Acceptance**: Methods use Axios client, return typed responses, handle errors
 
@@ -162,10 +162,10 @@ async deleteVersion(nodeId: number, versionNum: number): Promise<void>
 ## Phase 3.3: Hooks Layer - TanStack Query Custom Hooks
 
 ### T006: [P] Add collaborator management hooks
-**File**: `src/hooks/api/useWorkspaces.ts`
+**File**: `src/hooks/api/useSpaces.ts`
 **Description**: Add TanStack Query hooks for collaborators
 ```typescript
-export function useCollaborators(workspaceId: number)
+export function useCollaborators(spaceId: number)
 export function useInviteCollaborator()
 export function useRemoveCollaborator()
 ```
@@ -184,55 +184,55 @@ export function useDeleteVersion()
 
 ---
 
-## Phase 3.4: Workspace Components - CRUD & Collaborators
+## Phase 3.4: Space Components - CRUD & Collaborators
 
-### T008: Complete CreateWorkspaceDialog component (CRITICAL)
-**File**: `src/components/workspaces/CreateWorkspaceDialog.tsx`
-**Description**: Finish workspace creation dialog - currently blocking primary workflow
-- Use React Hook Form with `workspaceSchema` validation
+### T008: Complete CreateSpaceDialog component (CRITICAL)
+**File**: `src/components/spaces/CreateSpaceDialog.tsx`
+**Description**: Finish space creation dialog - currently blocking primary workflow
+- Use React Hook Form with `spaceSchema` validation
 - Handle slug uniqueness errors from backend
 - Show loading state during creation
 - Close dialog and invalidate query on success
-**Acceptance**: Dialog creates workspace, validates inputs, shows errors, closes on success
+**Acceptance**: Dialog creates space, validates inputs, shows errors, closes on success
 
 ---
 
-### T009: Complete EditWorkspaceDialog component
-**File**: `src/components/workspaces/EditWorkspaceDialog.tsx`
-**Description**: Finish workspace editing dialog
-- Pre-fill form with existing workspace data
+### T009: Complete EditSpaceDialog component
+**File**: `src/components/spaces/EditSpaceDialog.tsx`
+**Description**: Finish space editing dialog
+- Pre-fill form with existing space data
 - Handle optimistic updates
 - Validate name/description changes
-**Acceptance**: Dialog updates workspace, pre-fills data, validates inputs
+**Acceptance**: Dialog updates space, pre-fills data, validates inputs
 
 ---
 
-### T010: Complete DeleteWorkspaceDialog component
-**File**: `src/components/workspaces/DeleteWorkspaceDialog.tsx`
+### T010: Complete DeleteSpaceDialog component
+**File**: `src/components/spaces/DeleteSpaceDialog.tsx`
 **Description**: Add cascade delete warning and confirmation
 - Show warning: "This will delete X nodes, Y relationships, and Z versions"
-- Require explicit confirmation (type workspace name to confirm)
+- Require explicit confirmation (type space name to confirm)
 - Show loading state during deletion
-**Acceptance**: Dialog warns about cascade, requires confirmation, deletes workspace
+**Acceptance**: Dialog warns about cascade, requires confirmation, deletes space
 
 ---
 
-### T011: [P] Create WorkspaceSettings component (NEW)
-**File**: `src/components/workspaces/WorkspaceSettings.tsx`
-**Description**: Create workspace settings page container
-- Display workspace metadata (name, slug, owner, created date)
-- Show edit button (opens EditWorkspaceDialog)
-- Show delete button (opens DeleteWorkspaceDialog)
+### T011: [P] Create SpaceSettings component (NEW)
+**File**: `src/components/spaces/SpaceSettings.tsx`
+**Description**: Create space settings page container
+- Display space metadata (name, slug, owner, created date)
+- Show edit button (opens EditSpaceDialog)
+- Show delete button (opens DeleteSpaceDialog)
 - Embed CollaboratorList component
 - Restrict actions to owner/collaborators per FR-034
-**Acceptance**: Settings page shows workspace info, integrates dialogs, checks permissions
+**Acceptance**: Settings page shows space info, integrates dialogs, checks permissions
 
 ---
 
 ### T012: [P] Create CollaboratorList component (NEW)
-**File**: `src/components/workspaces/CollaboratorList.tsx`
-**Description**: Display list of workspace collaborators
-- Fetch collaborators via `useCollaborators(workspaceId)` hook
+**File**: `src/components/spaces/CollaboratorList.tsx`
+**Description**: Display list of space collaborators
+- Fetch collaborators via `useCollaborators(spaceId)` hook
 - Show user avatar, name, role, invited date
 - Show "Remove" button per collaborator (owner only)
 - Show "Invite" button (opens InviteCollaboratorDialog)
@@ -241,7 +241,7 @@ export function useDeleteVersion()
 ---
 
 ### T013: [P] Create InviteCollaboratorDialog component (NEW)
-**File**: `src/components/workspaces/InviteCollaboratorDialog.tsx`
+**File**: `src/components/spaces/InviteCollaboratorDialog.tsx`
 **Description**: Dialog to invite users as collaborators
 - Form with email OR username input (Zod validation)
 - Use `inviteCollaboratorSchema` from T002
@@ -298,7 +298,7 @@ export function useDeleteVersion()
 ### T018: Enhance NodeList with pagination/infinite scroll
 **File**: `src/components/nodes/NodeList.tsx`
 **Description**: Add infinite scroll to node list
-- Use `useNodesInfinite(workspaceId)` hook with TanStack Query
+- Use `useNodesInfinite(spaceId)` hook with TanStack Query
 - Show "Load More" button when `hasNextPage === true`
 - Display loading spinner while fetching
 **Acceptance**: List loads nodes in pages, shows load more button
@@ -418,28 +418,28 @@ const edgeStyles = {
 
 ## Phase 3.9: Pages & Integration
 
-### T028: Create workspace settings page
-**File**: `app/workspaces/[slug]/settings/page.tsx`
-**Description**: Page for workspace settings and collaborators
-- Render WorkspaceSettings component
+### T028: Create space settings page
+**File**: `app/spaces/[slug]/settings/page.tsx`
+**Description**: Page for space settings and collaborators
+- Render SpaceSettings component
 - Check user permissions (owner or collaborator)
 - Redirect if unauthorized (403)
 **Acceptance**: Page renders settings, checks permissions, handles auth
 
 ---
 
-### T029: Enhance workspaces list page with create button
-**File**: `app/workspaces/page.tsx`
-**Description**: Add prominent "Create Workspace" button (CRITICAL - FR-001)
-- Button opens CreateWorkspaceDialog
+### T029: Enhance spaces list page with create button
+**File**: `app/spaces/page.tsx`
+**Description**: Add prominent "Create Space" button (CRITICAL - FR-001)
+- Button opens CreateSpaceDialog
 - Show dialog state management
 - Refresh list on successful creation
-**Acceptance**: Button visible, opens dialog, creates workspace
+**Acceptance**: Button visible, opens dialog, creates space
 
 ---
 
 ### T030: Create node versions page
-**File**: `app/workspaces/[slug]/nodes/[id]/versions/page.tsx`
+**File**: `app/spaces/[slug]/nodes/[id]/versions/page.tsx`
 **Description**: Page displaying version history for a node
 - Render VersionHistory component
 - Show node title and current version
@@ -450,9 +450,9 @@ const edgeStyles = {
 
 ## Phase 3.10: Testing - Unit Tests
 
-### T031: [P] Unit test workspace service methods
-**File**: `tests/unit/services/workspace.service.test.ts`
-**Description**: Test workspace CRUD and collaborator methods
+### T031: [P] Unit test space service methods
+**File**: `tests/unit/services/space.service.test.ts`
+**Description**: Test space CRUD and collaborator methods
 - Mock Axios responses
 - Test getCollaborators, inviteCollaborator, removeCollaborator
 - Assert correct API calls and error handling
@@ -470,8 +470,8 @@ const edgeStyles = {
 
 ---
 
-### T033: [P] Unit test workspace hooks
-**File**: `tests/unit/hooks/useWorkspaces.test.ts`
+### T033: [P] Unit test space hooks
+**File**: `tests/unit/hooks/useSpaces.test.ts`
 **Description**: Test collaborator management hooks
 - Mock TanStack Query
 - Test useCollaborators, useInviteCollaborator, useRemoveCollaborator
@@ -490,10 +490,10 @@ const edgeStyles = {
 
 ---
 
-### T035: [P] Unit test CreateWorkspaceDialog component
-**File**: `tests/unit/components/CreateWorkspaceDialog.test.tsx`
-**Description**: Test workspace creation dialog
-- Mock useCreateWorkspace hook
+### T035: [P] Unit test CreateSpaceDialog component
+**File**: `tests/unit/components/CreateSpaceDialog.test.tsx`
+**Description**: Test space creation dialog
+- Mock useCreateSpace hook
 - Test form validation (Zod schema)
 - Test success/error handling
 - Test dialog open/close state
@@ -534,10 +534,10 @@ const edgeStyles = {
 
 ## Phase 3.11: Testing - Integration Tests
 
-### T039: [P] Integration test workspace CRUD flow
-**File**: `tests/integration/workspace-crud.test.ts`
-**Description**: Test complete workspace lifecycle
-- Create workspace → Edit → Invite collaborator → Remove collaborator → Delete
+### T039: [P] Integration test space CRUD flow
+**File**: `tests/integration/space-crud.test.ts`
+**Description**: Test complete space lifecycle
+- Create space → Edit → Invite collaborator → Remove collaborator → Delete
 - Use MSW to mock backend APIs
 - Assert UI updates correctly after each operation
 **Acceptance**: Test covers full flow, mocks API, assertions pass
@@ -569,18 +569,18 @@ const edgeStyles = {
 
 ## Phase 3.12: Testing - E2E Tests (Playwright)
 
-### T042: [P] E2E test workspace creation and collaborator management
-**File**: `tests/e2e/workspaces-collab.spec.ts`
-**Description**: End-to-end test for workspace and collaborators
+### T042: [P] E2E test space creation and collaborator management
+**File**: `tests/e2e/spaces-collab.spec.ts`
+**Description**: End-to-end test for space and collaborators
 1. Login as user1
-2. Create workspace "Test Workspace"
-3. Navigate to workspace settings
+2. Create space "Test Space"
+3. Navigate to space settings
 4. Invite user2 as collaborator
 5. Logout, login as user2
-6. Verify user2 can edit workspace
+6. Verify user2 can edit space
 7. Login as user1
 8. Remove user2 as collaborator
-9. Delete workspace
+9. Delete space
 **Acceptance**: E2E test completes, all assertions pass, real backend API calls
 
 ---
@@ -589,7 +589,7 @@ const edgeStyles = {
 **File**: `tests/e2e/nodes-markdown.spec.ts`
 **Description**: End-to-end test for node CRUD with markdown
 1. Login
-2. Create/select workspace
+2. Create/select space
 3. Click "Create Node"
 4. Enter markdown content with headings, lists, links
 5. Verify preview renders correctly
@@ -604,7 +604,7 @@ const edgeStyles = {
 ### T044: [P] E2E test version comparison and restoration
 **File**: `tests/e2e/versions.spec.ts`
 **Description**: End-to-end test for version history
-1. Login, create/select workspace
+1. Login, create/select space
 2. Create node with content "Version 1"
 3. Edit node to "Version 2"
 4. Edit again to "Version 3"
@@ -621,7 +621,7 @@ const edgeStyles = {
 ### T045: [P] E2E test graph edge styling and cycles
 **File**: `tests/e2e/graph-edges.spec.ts`
 **Description**: End-to-end test for graph visualization
-1. Login, create/select workspace
+1. Login, create/select space
 2. Create 3 nodes (A, B, C)
 3. Create relationships:
    - A --contains--> B (blue solid)
@@ -642,7 +642,7 @@ const edgeStyles = {
 ### Critical Path (Sequential)
 1. **T001-T003** (Foundation) → Blocks all component tasks
 2. **T004-T007** (Services/Hooks) → Blocks component tasks that use them
-3. **T008** (CreateWorkspaceDialog) → **HIGHEST PRIORITY** - Blocks primary workflow
+3. **T008** (CreateSpaceDialog) → **HIGHEST PRIORITY** - Blocks primary workflow
 4. **T014-T015** (Markdown preview) → Blocks node CRUD completion
 5. **T022-T025** (Version UI) → Blocks version history feature
 
@@ -650,7 +650,7 @@ const edgeStyles = {
 - **Foundation** [T001, T002, T003] → Can run in parallel
 - **Services** [T004, T005] → Can run in parallel
 - **Hooks** [T006, T007] → Can run in parallel (after services)
-- **Workspace Components** [T011, T012, T013] → Can run in parallel (after T008-T010)
+- **Space Components** [T011, T012, T013] → Can run in parallel (after T008-T010)
 - **Node Components** [T017] → Can run in parallel with other new components
 - **Relationship Components** [T020] → Can run in parallel with version components
 - **Version Components** [T022, T023, T024] → Can run in parallel
@@ -666,7 +666,7 @@ T004,T005 (Services)
     ↓
 T006,T007 (Hooks)
     ↓
-T008 (CreateWorkspaceDialog - CRITICAL) → T009,T010 (Edit/Delete)
+T008 (CreateSpaceDialog - CRITICAL) → T009,T010 (Edit/Delete)
     ↓
 T011,T012,T013 (Collaborator UI)
     ↓
@@ -698,7 +698,7 @@ T042-T048 (E2E tests)
 # Run T001, T001b, T002, T003, T003a, T003b in parallel (different files):
 Task: "Add Collaborator types to src/types/backend-dtos.ts"
 Task: "Audit User ID type references across codebase"
-Task: "Enhance workspace schema in src/schemas/workspace.schema.ts"
+Task: "Enhance space schema in src/schemas/space.schema.ts"
 Task: "Add markdown library to package.json"
 Task: "Add input length validation constraints to schemas"
 Task: "Create EmptyState component"
@@ -707,16 +707,16 @@ Task: "Create EmptyState component"
 ### Example 2: Service Layer
 ```bash
 # Run T004-T005 in parallel (different files):
-Task: "Add collaborator service methods to src/services/api/workspace.service.ts"
+Task: "Add collaborator service methods to src/services/api/space.service.ts"
 Task: "Add version restore/delete methods to src/services/api/version.service.ts"
 ```
 
 ### Example 3: New Components (After Prerequisites)
 ```bash
 # Run T011-T013 in parallel (all new files):
-Task: "Create WorkspaceSettings component in src/components/workspaces/WorkspaceSettings.tsx"
-Task: "Create CollaboratorList component in src/components/workspaces/CollaboratorList.tsx"
-Task: "Create InviteCollaboratorDialog component in src/components/workspaces/InviteCollaboratorDialog.tsx"
+Task: "Create SpaceSettings component in src/components/spaces/SpaceSettings.tsx"
+Task: "Create CollaboratorList component in src/components/spaces/CollaboratorList.tsx"
+Task: "Create InviteCollaboratorDialog component in src/components/spaces/InviteCollaboratorDialog.tsx"
 ```
 
 ### Example 4: Version Components
@@ -730,11 +730,11 @@ Task: "Create VersionDeleteDialog in src/components/versions/VersionDeleteDialog
 ### Example 5: Unit Tests
 ```bash
 # Run T031-T038 in parallel (all independent test files):
-Task: "Unit test workspace service in tests/unit/services/workspace.service.test.ts"
+Task: "Unit test space service in tests/unit/services/space.service.test.ts"
 Task: "Unit test version service in tests/unit/services/version.service.test.ts"
-Task: "Unit test workspace hooks in tests/unit/hooks/useWorkspaces.test.ts"
+Task: "Unit test space hooks in tests/unit/hooks/useSpaces.test.ts"
 Task: "Unit test version hooks in tests/unit/hooks/useVersions.test.ts"
-Task: "Unit test CreateWorkspaceDialog in tests/unit/components/CreateWorkspaceDialog.test.tsx"
+Task: "Unit test CreateSpaceDialog in tests/unit/components/CreateSpaceDialog.test.tsx"
 Task: "Unit test CollaboratorList in tests/unit/components/CollaboratorList.test.tsx"
 Task: "Unit test MarkdownPreview in tests/unit/components/MarkdownPreview.test.tsx"
 Task: "Unit test VersionCompareDialog in tests/unit/components/VersionCompareDialog.test.tsx"
@@ -747,7 +747,7 @@ Task: "Unit test VersionCompareDialog in tests/unit/components/VersionCompareDia
 ### Execution Guidelines
 - **[P] tasks**: Different files, no dependencies → Run in parallel for speed
 - **Non-[P] tasks**: Same file or sequential dependencies → Run one at a time
-- **Critical Path**: T008 (CreateWorkspaceDialog) is highest priority - blocks primary workflow
+- **Critical Path**: T008 (CreateSpaceDialog) is highest priority - blocks primary workflow
 - **TDD Approach**: Write tests as you implement (unit tests alongside components)
 - **Commit Frequency**: Commit after each task or logical group of parallel tasks
 - **Constitution Compliance**: All tasks respect Next.js 14 locked stack, Clean Architecture, and constitutional principles
@@ -761,8 +761,8 @@ Task: "Unit test VersionCompareDialog in tests/unit/components/VersionCompareDia
 
 ### Success Criteria
 - ✅ All 35 functional requirements implemented
-- ✅ Workspace creation dialog completed (unblocks workflow)
-- ✅ Full CRUD for all 4 entities (Workspace, Node, Attribute, NodeVersion)
+- ✅ Space creation dialog completed (unblocks workflow)
+- ✅ Full CRUD for all 4 entities (Space, Node, Attribute, NodeVersion)
 - ✅ Collaborator management functional
 - ✅ Markdown preview working
 - ✅ Version comparison, restore, delete operational
@@ -775,7 +775,7 @@ Task: "Unit test VersionCompareDialog in tests/unit/components/VersionCompareDia
 ## Validation Checklist
 *GATE: Verify before marking feature complete*
 
-- [x] All entities have CRUD components (Workspace, Node, Attribute, NodeVersion)
+- [x] All entities have CRUD components (Space, Node, Attribute, NodeVersion)
 - [x] All services have corresponding hooks
 - [x] All components have unit tests
 - [x] Integration tests cover full user flows

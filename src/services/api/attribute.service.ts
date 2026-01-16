@@ -49,12 +49,12 @@ export const attributeService = {
   },
 
   /**
-   * Get all edges for entire workspace graph
-   * API Contract: GET /api/workspaces/{id}/attributes
+   * Get all edges for entire space graph
+   * API Contract: GET /api/spaces/{id}/attributes
    */
-  async getWorkspaceAttributes(workspaceId: string): Promise<Attribute[]> {
+  async getSpaceAttributes(spaceId: string): Promise<Attribute[]> {
     const response = await apiClient.get<Attribute[]>(
-      `/workspaces/${workspaceId}/attributes`
+      `/spaces/${spaceId}/attributes`
     );
     return response.data;
   },
