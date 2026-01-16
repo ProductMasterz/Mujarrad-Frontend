@@ -1,10 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { LoginForm } from '@/components/auth/LoginForm';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AuthCard } from '@/components/auth/AuthCard';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -13,46 +12,23 @@ function LoginContent() {
   return (
     <>
       {registered && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
-          <p className="text-sm text-green-800">
+        <div className="mb-[24px] p-[12px] bg-green-50 border border-green-200 rounded-[8px]">
+          <p className="text-[13px] text-green-800 text-center tracking-[-0.08px]">
             Registration successful! Please sign in.
           </p>
         </div>
       )}
-
       <LoginForm />
-
-      <div className="mt-4 text-center text-sm">
-        <span className="text-muted-foreground">Don&apos;t have an account? </span>
-        <Link href="/register" className="text-primary hover:underline font-medium">
-          Create one
-        </Link>
-      </div>
     </>
   );
 }
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md space-y-4">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Mujarrad</h1>
-          <p className="text-gray-600">Knowledge Graph Management</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Sign in to your account</CardTitle>
-            <CardDescription>Enter your credentials to access your spaces</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Suspense fallback={<LoginForm />}>
-              <LoginContent />
-            </Suspense>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <AuthCard title="Welcome Back" subtitle="Sign in to your account">
+      <Suspense fallback={<LoginForm />}>
+        <LoginContent />
+      </Suspense>
+    </AuthCard>
   );
 }

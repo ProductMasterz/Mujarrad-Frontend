@@ -120,67 +120,68 @@ const mockNodes: Node[] = [
   },
 ];
 
-const mockAttributes: Attribute[] = [
+// Note: Mock data uses simplified structure for demo purposes
+const mockAttributes = [
   {
-    id: 1,
-    sourceNodeId: 1,
-    targetNodeId: 2,
+    id: '1',
+    sourceNodeId: '1',
+    targetNodeId: '2',
     attributeKey: AttributeKey.CONTAINS,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 2,
-    sourceNodeId: 1,
-    targetNodeId: 3,
+    id: '2',
+    sourceNodeId: '1',
+    targetNodeId: '3',
     attributeKey: AttributeKey.CONTAINS,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 3,
-    sourceNodeId: 1,
-    targetNodeId: 4,
+    id: '3',
+    sourceNodeId: '1',
+    targetNodeId: '4',
     attributeKey: AttributeKey.CONTAINS,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 4,
-    sourceNodeId: 5,
-    targetNodeId: 6,
+    id: '4',
+    sourceNodeId: '5',
+    targetNodeId: '6',
     attributeKey: AttributeKey.CONTAINS,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 5,
-    sourceNodeId: 2,
-    targetNodeId: 3,
+    id: '5',
+    sourceNodeId: '2',
+    targetNodeId: '3',
     attributeKey: AttributeKey.REFERENCES,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 6,
-    sourceNodeId: 2,
-    targetNodeId: 4,
+    id: '6',
+    sourceNodeId: '2',
+    targetNodeId: '4',
     attributeKey: AttributeKey.REFERENCES,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 7,
-    sourceNodeId: 3,
-    targetNodeId: 4,
+    id: '7',
+    sourceNodeId: '3',
+    targetNodeId: '4',
     attributeKey: AttributeKey.REFERENCES,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
   },
   {
-    id: 8,
-    sourceNodeId: 6,
-    targetNodeId: 2,
+    id: '8',
+    sourceNodeId: '6',
+    targetNodeId: '2',
     attributeKey: AttributeKey.REFERENCES,
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
@@ -226,7 +227,7 @@ export default function Feature004DemoPage() {
           <div className="flex-1 overflow-auto">
             <HierarchyNavigator
               nodes={mockNodes}
-              attributes={mockAttributes}
+              attributes={mockAttributes as any}
               onNodeSelect={handleNodeSelect}
             />
           </div>
@@ -288,7 +289,7 @@ export default function Feature004DemoPage() {
               <div className="h-full">
                 <GraphVisualization
                   nodes={mockNodes}
-                  attributes={mockAttributes}
+                  attributes={mockAttributes as any}
                   onNodeClick={handleNodeSelect}
                 />
               </div>

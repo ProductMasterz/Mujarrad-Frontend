@@ -183,6 +183,22 @@ export interface LoginResponse {
 }
 
 /**
+ * Google OAuth login request
+ */
+export interface GoogleOAuthRequest {
+  idToken: string;
+}
+
+/**
+ * Google OAuth login response
+ */
+export interface GoogleOAuthResponse {
+  token: string;
+  user: User;
+  isNewUser: boolean;
+}
+
+/**
  * Request body for creating a new space
  * Backend: SpaceCreateRequest for POST /api/spaces
  */

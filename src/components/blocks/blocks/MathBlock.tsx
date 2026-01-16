@@ -130,11 +130,11 @@ export function MathBlock({
   };
 
   return (
-    <div className="group relative rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+    <div className="group relative rounded-lg border border-gray-200 bg-white overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
         <div className="flex items-center gap-2">
-          <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+          <span className="text-gray-500 text-sm font-medium">
             ∑ Math
           </span>
           {error && !isFocused && (
@@ -144,7 +144,7 @@ export function MathBlock({
 
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-700 transition-colors"
           title="Copy LaTeX"
         >
           {copied ? (
@@ -182,12 +182,12 @@ export function MathBlock({
               onKeyDown={handleKeyDown}
               onFocus={handleFocus}
               onBlur={handleBlur}
-              className="w-full min-h-[60px] p-2 font-mono text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full min-h-[60px] p-2 font-mono text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="E = mc^2"
               spellCheck={false}
             />
             <div className="mt-2 text-xs text-gray-500">
-              Press <kbd className="px-1 bg-gray-100 dark:bg-gray-800 rounded">Esc</kbd> to preview or click outside
+              Press <kbd className="px-1 bg-gray-100 rounded">Esc</kbd> to preview or click outside
             </div>
           </div>
         ) : (
@@ -195,7 +195,7 @@ export function MathBlock({
           <div
             ref={previewRef}
             onClick={handlePreviewClick}
-            className="min-h-[40px] flex items-center justify-center cursor-pointer overflow-x-auto hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded transition-colors"
+            className="min-h-[40px] flex items-center justify-center cursor-pointer overflow-x-auto hover:bg-gray-50 rounded transition-colors"
           >
             {/* KaTeX renders here */}
           </div>
@@ -203,7 +203,7 @@ export function MathBlock({
 
         {/* Error display */}
         {error && !isFocused && (
-          <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-600 dark:text-red-400 text-sm">
+          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
             Click to edit: {error}
           </div>
         )}

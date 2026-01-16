@@ -102,8 +102,8 @@ export function TodoBlock({
           flex-shrink-0 w-4 h-4 mt-1 rounded border-2
           transition-colors duration-150
           ${isChecked
-            ? 'bg-blue-500 border-blue-500 dark:bg-blue-600 dark:border-blue-600'
-            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+            ? 'bg-blue-500 border-blue-500'
+            : 'border-gray-300 hover:border-gray-400'
           }
           ${readOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
         `}
@@ -133,10 +133,7 @@ export function TodoBlock({
         suppressContentEditableWarning
         className={`
           flex-1 outline-none min-h-[1.5em]
-          ${isChecked
-            ? 'text-gray-400 dark:text-gray-500 line-through'
-            : 'text-gray-900 dark:text-gray-100'
-          }
+          ${isChecked ? 'line-through' : ''}
         `}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
@@ -144,6 +141,8 @@ export function TodoBlock({
         data-placeholder="To-do..."
         style={{
           wordBreak: 'break-word',
+          color: isChecked ? '#9ca3af' : '#111827',
+          caretColor: '#111827',
         }}
       />
     </div>

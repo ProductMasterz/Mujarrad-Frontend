@@ -127,8 +127,8 @@ export function SlashCommandMenu({
       ref={menuRef}
       className="
         fixed z-50 w-72 max-h-80 overflow-auto
-        bg-white dark:bg-gray-800
-        border border-gray-200 dark:border-gray-700
+        bg-white
+        border border-gray-200
         rounded-lg shadow-lg
       "
       style={{
@@ -138,7 +138,7 @@ export function SlashCommandMenu({
       onKeyDown={handleKeyDown}
     >
       {/* Search input */}
-      <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-2 border-b border-gray-200">
         <input
           type="text"
           value={query}
@@ -146,11 +146,11 @@ export function SlashCommandMenu({
           placeholder="Filter blocks..."
           className="
             w-full px-2 py-1 text-sm
-            bg-gray-100 dark:bg-gray-700
+            bg-gray-100
             border-none rounded
             outline-none focus:ring-2 focus:ring-blue-500
-            text-gray-900 dark:text-gray-100
-            placeholder-gray-500 dark:placeholder-gray-400
+            text-gray-900
+            placeholder-gray-500
           "
           autoFocus
         />
@@ -159,7 +159,7 @@ export function SlashCommandMenu({
       {/* Menu items */}
       <div className="py-1">
         {filteredItems.length === 0 ? (
-          <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+          <div className="px-4 py-3 text-sm text-gray-500">
             No blocks found
           </div>
         ) : (
@@ -174,8 +174,8 @@ export function SlashCommandMenu({
                 transition-colors duration-100
                 ${
                   index === selectedIndex
-                    ? 'bg-blue-50 dark:bg-blue-900/30'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? 'bg-blue-50'
+                    : 'hover:bg-gray-100'
                 }
               `}
             >
@@ -186,8 +186,8 @@ export function SlashCommandMenu({
                   text-lg rounded
                   ${
                     index === selectedIndex
-                      ? 'bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                      ? 'bg-blue-100 text-blue-600'
+                      : 'bg-gray-100 text-gray-600'
                   }
                 `}
               >
@@ -201,14 +201,14 @@ export function SlashCommandMenu({
                     text-sm font-medium
                     ${
                       index === selectedIndex
-                        ? 'text-blue-700 dark:text-blue-300'
-                        : 'text-gray-900 dark:text-gray-100'
+                        ? 'text-blue-700'
+                        : 'text-gray-900'
                     }
                   `}
                 >
                   {item.label}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                <div className="text-xs text-gray-500 truncate">
                   {item.description}
                 </div>
               </div>
@@ -218,7 +218,7 @@ export function SlashCommandMenu({
       </div>
 
       {/* Footer hint */}
-      <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400">
+      <div className="px-3 py-2 border-t border-gray-200 text-xs text-gray-400">
         ↑↓ navigate • Enter select • Esc close
       </div>
     </div>

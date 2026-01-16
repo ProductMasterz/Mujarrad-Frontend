@@ -170,11 +170,11 @@ export function MermaidBlock({
   };
 
   return (
-    <div className="group relative rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+    <div className="group relative rounded-lg border border-gray-200 bg-white overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
         <div className="flex items-center gap-2">
-          <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+          <span className="text-gray-500 text-sm font-medium">
             ◇ Diagram
           </span>
           {error && !isFocused && (
@@ -189,21 +189,21 @@ export function MermaidBlock({
               <button
                 type="button"
                 onClick={() => insertTemplate('graph TD\n    A[Start] --> B[End]')}
-                className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-colors"
+                className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors text-gray-700"
               >
                 Flow
               </button>
               <button
                 type="button"
                 onClick={() => insertTemplate('sequenceDiagram\n    Alice->>Bob: Hello\n    Bob->>Alice: Hi!')}
-                className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-colors"
+                className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors text-gray-700"
               >
                 Seq
               </button>
               <button
                 type="button"
                 onClick={() => insertTemplate('pie title Distribution\n    "A" : 40\n    "B" : 30\n    "C" : 30')}
-                className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded transition-colors"
+                className="px-2 py-0.5 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors text-gray-700"
               >
                 Pie
               </button>
@@ -212,7 +212,7 @@ export function MermaidBlock({
 
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-700 transition-colors"
             title="Copy Mermaid code"
           >
             {copied ? (
@@ -255,13 +255,13 @@ export function MermaidBlock({
               onKeyDown={handleKeyDown}
               onFocus={handleFocus}
               onBlur={handleBlur}
-              className="w-full min-h-[150px] p-3 font-mono text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full min-h-[150px] p-3 font-mono text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder={DEFAULT_DIAGRAM}
               spellCheck={false}
             />
             <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
               <span>
-                Press <kbd className="px-1 bg-gray-100 dark:bg-gray-800 rounded">Esc</kbd> to preview
+                Press <kbd className="px-1 bg-gray-100 rounded">Esc</kbd> to preview
               </span>
               <a
                 href="https://mermaid.js.org/syntax/flowchart.html"
@@ -278,7 +278,7 @@ export function MermaidBlock({
           <div
             ref={previewRef}
             onClick={handlePreviewClick}
-            className="min-h-[100px] flex items-center justify-center cursor-pointer overflow-x-auto hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded transition-colors [&>svg]:max-w-full"
+            className="min-h-[100px] flex items-center justify-center cursor-pointer overflow-x-auto hover:bg-gray-50 rounded transition-colors [&>svg]:max-w-full"
           >
             {/* Mermaid diagram renders here */}
           </div>

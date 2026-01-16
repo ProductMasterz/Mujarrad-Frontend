@@ -2,28 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Roboto font */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
+
 @layer base {
   :root {
+    /* Scratchup Design Tokens */
+    --font-family: 'Roboto', system-ui, sans-serif;
+
+    /* Colors - Light Mode */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 0 0% 20%; /* #333 */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 0 0% 20%;
+
+    /* Primary - Blue accent */
+    --primary: 211 89% 55%; /* #248bf2 */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 211 75% 44%; /* #1a6bc4 */
+
+    /* Secondary */
+    --secondary: 220 14% 96%; /* #f3f3f5 */
+    --secondary-foreground: 240 10% 4%; /* #030213 */
+
+    /* Muted */
+    --muted: 240 5% 93%; /* #ececf0 */
+    --muted-foreground: 240 5% 47%; /* #717182 / #828282 */
+
+    /* Accent */
+    --accent: 220 13% 93%; /* #e9ebef */
+    --accent-foreground: 240 10% 4%;
+
+    /* Destructive */
+    --destructive: 348 82% 46%; /* #d4183d */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders & Inputs */
+    --border: 0 0% 88%; /* #e0e0e0 */
+    --input: 0 0% 0% / 0%; /* transparent */
+    --input-background: 216 10% 85% / 0.24; /* rgba(201, 204, 209, 0.24) */
+    --ring: 211 89% 55%; /* #248bf2 */
+
+    /* Layout dimensions */
+    --header-height: 76px;
+    --tabs-bar-height: 33px;
+    --nav-bar-height: 43px;
+    --sidebar-width: 276px;
+    --card-width: 215px;
+    --card-height: 113px;
+    --grid-gap: 19px;
+
+    /* Border radius */
+    --radius: 0.625rem; /* 10px */
+    --radius-sm: 0.5rem; /* 8px */
+    --radius-lg: 0.75rem; /* 12px */
+    --radius-xl: 1rem; /* 16px */
+    --radius-pill: 100px;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-border: 0 0% 95%; /* #f2f2f2 */
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 20%;
+
+    /* Header */
+    --tabs-bar-bg: 0 0% 95%; /* #f2f2f2 */
+
+    /* Text colors */
+    --text-primary: #333333;
+    --text-muted: #828282;
+    --text-placeholder: #9d9fa3;
+    --text-light: #bdbdbd;
+
+    /* Icon colors */
+    --icon-default: #828282;
+    --icon-hover: #4f4f4f;
+
+    /* Auth page */
+    --auth-bg: #f8f9fa;
   }
 }
 
@@ -33,6 +92,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-family);
   }
 
   /* T078: Focus indicators for keyboard navigation */
@@ -54,6 +114,28 @@
   /* Focus for tree navigation */
   [role="treeitem"]:focus-visible {
     @apply bg-accent/50;
+  }
+}
+
+/* Block Editor Styles */
+@layer components {
+  /* ContentEditable placeholder styling */
+  [contenteditable="true"]:empty:before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    pointer-events: none;
+  }
+
+  /* Ensure block text is always visible in light mode */
+  [contenteditable="true"] {
+    color: #111827 !important;
+    caret-color: #111827;
+  }
+
+  /* Block editor container */
+  .block-editor [contenteditable="true"] {
+    min-height: 1.5em;
+    outline: none;
   }
 }
 

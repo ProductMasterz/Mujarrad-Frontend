@@ -85,13 +85,15 @@ export function TextBlock({
       ref={contentRef}
       contentEditable={!readOnly}
       suppressContentEditableWarning
-      className="outline-none min-h-[1.5em] text-gray-900 dark:text-gray-100 leading-relaxed"
+      className="outline-none min-h-[1.5em] leading-relaxed"
       onInput={handleInput}
       onKeyDown={handleKeyDown}
       onFocus={onFocus}
       data-placeholder="Type '/' for commands..."
       style={{
         wordBreak: 'break-word',
+        color: '#111827',
+        caretColor: '#111827',
       }}
     />
   );

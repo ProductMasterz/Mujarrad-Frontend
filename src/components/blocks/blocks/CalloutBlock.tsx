@@ -15,8 +15,6 @@ const CALLOUT_CONFIG: Record<CalloutType, {
   bgColor: string;
   borderColor: string;
   textColor: string;
-  darkBgColor: string;
-  darkBorderColor: string;
 }> = {
   [CALLOUT_TYPES.INFO]: {
     icon: 'ℹ️',
@@ -24,8 +22,6 @@ const CALLOUT_CONFIG: Record<CalloutType, {
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-400',
     textColor: 'text-blue-800',
-    darkBgColor: 'dark:bg-blue-900/20',
-    darkBorderColor: 'dark:border-blue-500',
   },
   [CALLOUT_TYPES.WARNING]: {
     icon: '⚠️',
@@ -33,8 +29,6 @@ const CALLOUT_CONFIG: Record<CalloutType, {
     bgColor: 'bg-yellow-50',
     borderColor: 'border-yellow-400',
     textColor: 'text-yellow-800',
-    darkBgColor: 'dark:bg-yellow-900/20',
-    darkBorderColor: 'dark:border-yellow-500',
   },
   [CALLOUT_TYPES.ERROR]: {
     icon: '❌',
@@ -42,8 +36,6 @@ const CALLOUT_CONFIG: Record<CalloutType, {
     bgColor: 'bg-red-50',
     borderColor: 'border-red-400',
     textColor: 'text-red-800',
-    darkBgColor: 'dark:bg-red-900/20',
-    darkBorderColor: 'dark:border-red-500',
   },
   [CALLOUT_TYPES.SUCCESS]: {
     icon: '✅',
@@ -51,8 +43,6 @@ const CALLOUT_CONFIG: Record<CalloutType, {
     bgColor: 'bg-green-50',
     borderColor: 'border-green-400',
     textColor: 'text-green-800',
-    darkBgColor: 'dark:bg-green-900/20',
-    darkBorderColor: 'dark:border-green-500',
   },
 };
 
@@ -151,8 +141,8 @@ export function CalloutBlock({
     <div
       className={`
         relative rounded-lg border-l-4 p-4
-        ${config.bgColor} ${config.darkBgColor}
-        ${config.borderColor} ${config.darkBorderColor}
+        ${config.bgColor}
+        ${config.borderColor}
       `}
     >
       {/* Header with icon and type selector */}
@@ -171,21 +161,21 @@ export function CalloutBlock({
         </button>
 
         {/* Type label */}
-        <span className={`text-sm font-medium ${config.textColor} dark:text-gray-200`}>
+        <span className={`text-sm font-medium ${config.textColor}`}>
           {config.label}
         </span>
 
         {/* Type selector dropdown */}
         {showTypeSelector && (
-          <div className="absolute top-12 left-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 min-w-[120px]">
+          <div className="absolute top-12 left-4 z-10 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px]">
             {Object.entries(CALLOUT_CONFIG).map(([type, typeConfig]) => (
               <button
                 key={type}
                 onClick={() => handleTypeChange(type as CalloutType)}
                 className={`
-                  w-full px-3 py-2 text-left text-sm flex items-center gap-2
-                  hover:bg-gray-100 dark:hover:bg-gray-700
-                  ${type === calloutType ? 'bg-gray-50 dark:bg-gray-700' : ''}
+                  w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-gray-900
+                  hover:bg-gray-100
+                  ${type === calloutType ? 'bg-gray-50' : ''}
                 `}
               >
                 <span>{typeConfig.icon}</span>
@@ -203,7 +193,7 @@ export function CalloutBlock({
         suppressContentEditableWarning
         className={`
           outline-none min-h-[1.5em] leading-relaxed
-          ${config.textColor} dark:text-gray-100
+          ${config.textColor}
         `}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
@@ -217,7 +207,7 @@ export function CalloutBlock({
 
       {/* Placeholder when empty */}
       {block.content === '' && !readOnly && (
-        <div className={`absolute left-14 top-[52px] pointer-events-none text-gray-400 dark:text-gray-500`}>
+        <div className={`absolute left-14 top-[52px] pointer-events-none text-gray-400`}>
           Type your callout content...
         </div>
       )}

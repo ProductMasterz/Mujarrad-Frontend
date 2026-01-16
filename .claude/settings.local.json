@@ -104,7 +104,8 @@
       "SlashCommand(/plan)",
       "mcp__local-models__list_local_models",
       "mcp__local-models__parallel_inference",
-      "Bash(PORT=3002 npm run dev:*)"
+      "Bash(PORT=3002 npm run dev:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": []

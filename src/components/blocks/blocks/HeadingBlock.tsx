@@ -111,13 +111,15 @@ export function HeadingBlock({
       ref={contentRef}
       contentEditable={!readOnly}
       suppressContentEditableWarning
-      className={`outline-none min-h-[1.5em] text-gray-900 dark:text-gray-100 ${getHeadingStyles()}`}
+      className={`outline-none min-h-[1.5em] ${getHeadingStyles()}`}
       onInput={handleInput}
       onKeyDown={handleKeyDown}
       onFocus={onFocus}
       data-placeholder={getPlaceholder()}
       style={{
         wordBreak: 'break-word',
+        color: '#111827',
+        caretColor: '#111827',
       }}
     />
   );

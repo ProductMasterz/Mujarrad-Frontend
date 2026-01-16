@@ -19,7 +19,7 @@ interface UseBlockEditorOptions {
   pageId: string;
   spaceSlug: string;
   spaceId: string;
-  autoSaveDelay?: number;
+  autoSaveDelay?: number; // Default reduced to 500ms for faster saving
   onSaveStatusChange?: (isSaving: boolean) => void;
 }
 
@@ -44,7 +44,7 @@ export function useBlockEditor({
   pageId,
   spaceSlug,
   spaceId,
-  autoSaveDelay = 1500,
+  autoSaveDelay = 500, // Reduced from 1500ms for faster saving
   onSaveStatusChange,
 }: UseBlockEditorOptions) {
   const queryClient = useQueryClient();
@@ -84,7 +84,18 @@ export function useBlockEditor({
 
       // Filter nodes to get only blocks (children of this page with blockType)
       const blockNodes = allNodes.filter((node) => {
-        const details = node.nodeDetails as unknown as BlockNodeDetails | undefined;
+        // Handle nodeDetails being a string (JSON) or object
+        let details: BlockNodeDetails | undefined;
+        if (typeof node.nodeDetails === 'string') {
+          try {
+            details = JSON.parse(node.nodeDetails);
+          } catch {
+            details = undefined;
+          }
+        } else {
+          details = node.nodeDetails as unknown as BlockNodeDetails | undefined;
+        }
+
         const hasBlockType = details?.blockType;
         const isChild = orderMap.has(node.id.toString());
         return hasBlockType && isChild;
@@ -188,18 +199,25 @@ export function useBlockEditor({
       const block = blocksRef.current.find((b) => b.id === blockId);
       if (!block) throw new Error('Block not found');
 
-      const nodeDetails: Partial<BlockNodeDetails> = {};
-      if (updates.type) nodeDetails.blockType = updates.type;
-      if (updates.checked !== undefined) nodeDetails.checked = updates.checked;
-      if (updates.language) nodeDetails.language = updates.language;
-      if (updates.calloutType) nodeDetails.calloutType = updates.calloutType;
+      const nodeDetailsUpdates: Partial<BlockNodeDetails> = {};
+      if (updates.type) nodeDetailsUpdates.blockType = updates.type;
+      if (updates.checked !== undefined) nodeDetailsUpdates.checked = updates.checked;
+      if (updates.language) nodeDetailsUpdates.language = updates.language;
+      if (updates.calloutType) nodeDetailsUpdates.calloutType = updates.calloutType;
 
       const updateData: { content?: string; nodeDetails?: Record<string, unknown> } = {};
       if (updates.content !== undefined) updateData.content = updates.content;
-      if (Object.keys(nodeDetails).length > 0) {
+      if (Object.keys(nodeDetailsUpdates).length > 0) {
+        // Preserve existing nodeDetails properties (blockType, showInSpaceList) and merge updates
         updateData.nodeDetails = {
-          ...(block as any),
-          ...nodeDetails,
+          blockType: block.type,
+          showInSpaceList: false,
+          checked: block.checked,
+          language: block.language,
+          imageUrl: block.imageUrl,
+          caption: block.caption,
+          calloutType: block.calloutType,
+          ...nodeDetailsUpdates,
         };
       }
 
@@ -528,7 +546,18 @@ export function useBlockEditor({
  * Convert a Node to a Block
  */
 function nodeToBlock(node: Node, order: number): Block {
-  const details = node.nodeDetails as unknown as BlockNodeDetails | undefined;
+  // Handle nodeDetails being a string (JSON) or object
+  let details: BlockNodeDetails | undefined;
+  if (typeof node.nodeDetails === 'string') {
+    try {
+      details = JSON.parse(node.nodeDetails);
+    } catch {
+      details = undefined;
+    }
+  } else {
+    details = node.nodeDetails as unknown as BlockNodeDetails | undefined;
+  }
+
   return {
     id: node.id,
     type: details?.blockType ?? BLOCK_TYPES.TEXT,

@@ -1,7 +1,7 @@
 // src/services/api/auth.service.ts
 
 import apiClient, { setAuthToken, clearAuthToken } from './client';
-import type { User, LoginRequest, CreateUserRequest, LoginResponse } from '@/types/backend-dtos';
+import type { User, LoginRequest, CreateUserRequest, LoginResponse, GoogleOAuthResponse } from '@/types/backend-dtos';
 
 export const authService = {
   /**
@@ -50,5 +50,20 @@ export const authService = {
       setAuthToken(response.data.token);
     }
     return response.data.token;
+  },
+
+  /**
+   * Login with Google OAuth
+   * @param idToken - The Google ID token from Google Sign-In
+   */
+  async loginWithGoogle(idToken: string): Promise<GoogleOAuthResponse> {
+    const response = await apiClient.post<GoogleOAuthResponse>('/auth/oauth/google', { idToken });
+
+    // Store token in localStorage
+    if (response.data.token) {
+      setAuthToken(response.data.token);
+    }
+
+    return response.data;
   },
 };

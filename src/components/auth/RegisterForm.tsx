@@ -1,18 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { registerSchema, type RegisterFormData } from '@/schemas';
 import { useRegister } from '@/hooks/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { isApiError } from '@/lib/errors';
+import { SocialLoginButtons } from './SocialLoginButtons';
+import { AuthInput } from './AuthInput';
 
 export function RegisterForm() {
   const router = useRouter();
   const { mutate: registerUser, isPending } = useRegister();
+  const [socialError, setSocialError] = useState<string | null>(null);
 
   const {
     register,
@@ -52,61 +54,82 @@ export function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="username">Username</Label>
-        <Input
-          id="username"
+    <div>
+      {/* Social Login */}
+      <SocialLoginButtons
+        onGoogleError={(error) => setSocialError(error)}
+        onGoogleSuccess={() => setSocialError(null)}
+      />
+      {socialError && (
+        <p className="mb-[16px] text-[13px] text-[#d4183d] text-center tracking-[-0.08px]">
+          {socialError}
+        </p>
+      )}
+
+      {/* Registration Form */}
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <AuthInput
+          label="Username"
+          type="text"
           placeholder="johndoe"
+          disabled={isPending}
+          error={errors.username?.message}
           {...register('username')}
-          disabled={isPending}
         />
-        {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
+        <AuthInput
+          label="Email"
           type="email"
-          placeholder="you@example.com"
+          placeholder="your@email.com"
+          disabled={isPending}
+          error={errors.email?.message}
           {...register('email')}
-          disabled={isPending}
         />
-        {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
+        <AuthInput
+          label="Password"
           type="password"
           placeholder="••••••••"
+          disabled={isPending}
+          error={errors.password?.message}
           {...register('password')}
-          disabled={isPending}
         />
-        {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm Password</Label>
-        <Input
-          id="confirmPassword"
+        <AuthInput
+          label="Confirm Password"
           type="password"
           placeholder="••••••••"
-          {...register('confirmPassword')}
           disabled={isPending}
+          error={errors.confirmPassword?.message}
+          {...register('confirmPassword')}
         />
-        {errors.confirmPassword && (
-          <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+
+        {errors.root && (
+          <p className="mb-[16px] text-[13px] text-[#d4183d] text-center tracking-[-0.08px]">
+            {errors.root.message}
+          </p>
         )}
-      </div>
 
-      {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
+        <button
+          type="submit"
+          disabled={isPending}
+          className="w-full h-[48px] bg-[#248bf2] rounded-[100px] font-semibold text-[15px] text-white tracking-[-0.24px] hover:bg-[#1a6bc4] transition-colors mb-[16px] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isPending ? 'Creating account...' : 'Create Account'}
+        </button>
 
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? 'Creating account...' : 'Create account'}
-      </Button>
-    </form>
+        <div className="text-center">
+          <span className="font-normal text-[13px] text-[#828282] tracking-[-0.08px]">
+            Already have an account?{' '}
+          </span>
+          <Link
+            href="/login"
+            className="font-medium text-[13px] text-[#248bf2] tracking-[-0.08px] hover:underline"
+          >
+            Sign in
+          </Link>
+        </div>
+      </form>
+    </div>
   );
 }

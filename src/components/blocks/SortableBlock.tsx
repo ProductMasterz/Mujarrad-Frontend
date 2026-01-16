@@ -83,7 +83,7 @@ export function SortableBlock({
       className={`
         group relative flex items-start gap-1 py-1
         ${isDragging ? 'opacity-50 z-50' : ''}
-        ${isActive ? 'bg-gray-50 dark:bg-gray-800/50 -mx-2 px-2 rounded' : ''}
+        ${isActive ? 'bg-gray-50 -mx-2 px-2 rounded' : ''}
       `}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -100,11 +100,8 @@ export function SortableBlock({
         <button
           type="button"
           onClick={onPlusClick}
-          className="
-            p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700
-            text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
-            transition-colors
-          "
+          className="p-1 rounded hover:bg-gray-200 transition-colors"
+          style={{ color: '#9ca3af' }}
           title="Add block or change type"
         >
           <Plus className="w-4 h-4" />
@@ -113,12 +110,8 @@ export function SortableBlock({
         {/* Drag handle */}
         <button
           type="button"
-          className="
-            p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700
-            text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
-            cursor-grab active:cursor-grabbing
-            transition-colors
-          "
+          className="p-1 rounded hover:bg-gray-200 cursor-grab active:cursor-grabbing transition-colors"
+          style={{ color: '#9ca3af' }}
           title="Drag to reorder"
           {...attributes}
           {...listeners}
@@ -160,11 +153,8 @@ export function SortableBlock({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="
-                p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700
-                text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
-                transition-colors
-              "
+              className="p-1 rounded hover:bg-gray-200 transition-colors"
+              style={{ color: '#9ca3af' }}
               title="Block options"
             >
               <MoreHorizontal className="w-4 h-4" />

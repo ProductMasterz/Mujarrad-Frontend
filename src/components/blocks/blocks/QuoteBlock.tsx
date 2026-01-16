@@ -79,18 +79,20 @@ export function QuoteBlock({
   };
 
   return (
-    <div className="border-l-4 border-gray-300 dark:border-gray-600 pl-4">
+    <div className="border-l-4 pl-4" style={{ borderColor: '#d1d5db' }}>
       <div
         ref={contentRef}
         contentEditable={!readOnly}
         suppressContentEditableWarning
-        className="outline-none min-h-[1.5em] text-gray-600 dark:text-gray-400 italic"
+        className="outline-none min-h-[1.5em] italic"
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onFocus={onFocus}
         data-placeholder="Quote..."
         style={{
           wordBreak: 'break-word',
+          color: '#4b5563',
+          caretColor: '#4b5563',
         }}
       />
     </div>

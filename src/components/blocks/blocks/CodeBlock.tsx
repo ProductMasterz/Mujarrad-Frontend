@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState, KeyboardEvent, useCallback } from 'react';
 import hljs from 'highlight.js';
-import 'highlight.js/styles/github-dark.css';
+import 'highlight.js/styles/github.css';
 import type { BlockProps } from '../types';
 
 // Common programming languages for the dropdown
@@ -181,17 +181,17 @@ export function CodeBlock({
   };
 
   return (
-    <div className="group relative rounded-lg bg-gray-900 dark:bg-gray-950 overflow-hidden">
+    <div className="group relative rounded-lg bg-gray-50 border border-gray-200 overflow-hidden">
       {/* Header with language selector and copy button */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-800 dark:bg-gray-900 border-b border-gray-700">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-100 border-b border-gray-200">
         <select
           value={language}
           onChange={(e) => onLanguageChange?.(e.target.value)}
           disabled={readOnly}
-          className="bg-transparent text-gray-400 text-sm focus:outline-none cursor-pointer hover:text-gray-200 disabled:cursor-not-allowed"
+          className="bg-transparent text-gray-600 text-sm focus:outline-none cursor-pointer hover:text-gray-900 disabled:cursor-not-allowed"
         >
           {LANGUAGES.map((lang) => (
-            <option key={lang.value} value={lang.value} className="bg-gray-800">
+            <option key={lang.value} value={lang.value} className="bg-white">
               {lang.label}
             </option>
           ))}
@@ -199,7 +199,7 @@ export function CodeBlock({
 
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-900 transition-colors"
           title="Copy to clipboard"
         >
           {copied ? (
@@ -250,14 +250,14 @@ export function CodeBlock({
           onBlur={handleBlur}
           disabled={readOnly}
           className={`
-            absolute inset-0 w-full h-full p-4 font-mono text-sm text-gray-100 bg-transparent
+            absolute inset-0 w-full h-full p-4 font-mono text-sm text-gray-900 bg-transparent
             resize-none focus:outline-none
             ${isFocused ? 'opacity-100' : 'opacity-0'}
           `}
           style={{
             tabSize: 2,
             lineHeight: '1.5',
-            caretColor: '#fff',
+            caretColor: '#333',
           }}
           spellCheck={false}
           placeholder="// Enter your code here..."

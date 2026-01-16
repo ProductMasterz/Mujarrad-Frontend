@@ -1,33 +1,90 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { useAuthStore } from '@/stores';
-import { useLogout } from '@/hooks/api';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { CreateSpaceDialog } from '@/components/spaces/CreateSpaceDialog';
-import { SpaceCard } from '@/components/spaces/SpaceCard';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { Header } from '@/scratchup/components/Header';
+import { Sidebar } from '@/scratchup/components/Sidebar';
+import { ProjectCard } from '@/scratchup/components/ProjectCard';
+import { ContextMenu } from '@/scratchup/components/ContextMenu';
+import { NewNodeModal } from '@/scratchup/components/NewNodeModal';
+import { ShareModal } from '@/scratchup/components/ShareModal';
+import { FeedbackModal } from '@/scratchup/components/FeedbackModal';
+import { Tab } from '@/scratchup/components/TabsBar';
+import { CardType, Card } from '@/scratchup/data/projects';
 import { spaceService } from '@/services/api';
 import type { Space } from '@/types/backend-dtos';
+import { NodeType } from '@/types/backend-dtos';
+import { useAuthStore } from '@/stores/auth.store';
+
+// Convert Space to Scratchup Card format
+function spaceToCard(space: Space): Card {
+  return {
+    id: space.id,
+    title: space.name,
+    color: '#248bf2', // Default blue color for spaces
+    type: CardType.FULFILLED_CONTEXT,
+  };
+}
+
+// Convert spaces to sidebar data format
+function spacesToSidebarData(spaces: Space[]): Card[] {
+  return spaces.map((space) => ({
+    id: space.id,
+    title: space.name,
+    color: '#248bf2',
+    type: CardType.FULFILLED_CONTEXT,
+  }));
+}
+
+type SpaceItem = {
+  id: string;
+  name: string;
+};
 
 export default function SpacesPage() {
-  const user = useAuthStore((state) => state.user);
   const router = useRouter();
-  const { mutate: logout } = useLogout();
+  const { logout } = useAuthStore();
 
-  // Direct API call instead of React Query
-  const [spaces, setSpaces] = useState<Space[]>([]);
+  // UI State
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showNewNodeModal, setShowNewNodeModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState('');
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    cardId: string;
+  } | null>(null);
+
+  // Navigation state
+  const [navigationPath, setNavigationPath] = useState<string[]>([]);
+  const [currentSpace, setCurrentSpace] = useState('void');
+  const [spaces, setSpaces] = useState<SpaceItem[]>([{ id: 'void', name: 'Void' }]);
+
+  // Tabs state
+  const [tabs, setTabs] = useState<Tab[]>([
+    {
+      id: 'tab-1',
+      title: 'Spaces',
+      navigationPath: [],
+      spaceId: 'void',
+    },
+  ]);
+  const [activeTabId, setActiveTabId] = useState('tab-1');
+
+  // Data state
+  const [apiSpaces, setApiSpaces] = useState<Space[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // Fetch spaces on mount
   useEffect(() => {
-    console.log('[SpacesPage] useEffect running, fetching spaces...');
-    spaceService.getSpaces()
+    spaceService
+      .getSpaces()
       .then((data) => {
-        console.log('[SpacesPage] Spaces fetched:', data);
-        // Backend returns plain array, not PaginatedResponse
-        setSpaces(Array.isArray(data) ? data : []);
+        setApiSpaces(Array.isArray(data) ? data : []);
         setIsLoading(false);
       })
       .catch((err) => {
@@ -37,103 +94,281 @@ export default function SpacesPage() {
       });
   }, []);
 
-  const handleLogout = () => {
-    logout(undefined, {
-      onSuccess: () => {
-        router.push('/login');
-      },
+  // Convert API spaces to card format
+  const cards = useMemo(() => apiSpaces.map(spaceToCard), [apiSpaces]);
+
+  // Build breadcrumb
+  const breadcrumbPath = useMemo(() => {
+    return [{ id: 'home', title: 'Spaces' }];
+  }, []);
+
+  // Handlers
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+  const handleCardClick = (cardId: string) => {
+    const space = apiSpaces.find((s) => s.id === cardId);
+    if (space) {
+      router.push(`/spaces/${space.slug}`);
+    }
+  };
+
+  const handleSidebarNavigate = (path: string[]) => {
+    if (path.length > 0) {
+      const spaceId = path[0];
+      const space = apiSpaces.find((s) => s.id === spaceId);
+      if (space) {
+        router.push(`/spaces/${space.slug}`);
+      }
+    }
+  };
+
+  const handleHomeClick = () => {
+    router.push('/spaces');
+  };
+
+  const handleBackClick = () => {
+    router.back();
+  };
+
+  const handleBreadcrumbClick = (index: number) => {
+    if (index === -1 || index === 0) {
+      router.push('/spaces');
+    }
+  };
+
+  const handleAddClick = () => {
+    setShowNewNodeModal(true);
+  };
+
+  const handleCardContextMenu = (e: React.MouseEvent, cardId: string) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      cardId,
     });
   };
 
+  const handleContextMenuAction = (action: string) => {
+    if (!contextMenu) return;
+
+    const space = apiSpaces.find((s) => s.id === contextMenu.cardId);
+
+    switch (action) {
+      case 'openNewTab':
+        if (space) {
+          window.open(`/spaces/${space.slug}`, '_blank');
+        }
+        break;
+      case 'openAsNode':
+        if (space) {
+          router.push(`/spaces/${space.slug}`);
+        }
+        break;
+      case 'share':
+        setSelectedCardId(contextMenu.cardId);
+        setShowShareModal(true);
+        break;
+      case 'delete':
+        // TODO: Implement delete functionality
+        console.log('Delete space:', contextMenu.cardId);
+        break;
+    }
+    setContextMenu(null);
+  };
+
+  const handleShareClick = () => {
+    setSelectedCardId('current-project');
+    setShowShareModal(true);
+  };
+
+  const handleFeedback = () => {
+    setShowFeedbackModal(true);
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
+
+  // Tab management
+  const handleTabClick = (tabId: string) => {
+    setActiveTabId(tabId);
+  };
+
+  const handleTabClose = (tabId: string) => {
+    if (tabs.length === 1) return;
+    const newTabs = tabs.filter((t) => t.id !== tabId);
+    setTabs(newTabs);
+    if (activeTabId === tabId) {
+      setActiveTabId(newTabs[0].id);
+    }
+  };
+
+  const handleNewTab = () => {
+    const newTab: Tab = {
+      id: `tab-${Date.now()}`,
+      title: 'Spaces',
+      navigationPath: [],
+      spaceId: 'void',
+    };
+    setTabs([...tabs, newTab]);
+    setActiveTabId(newTab.id);
+  };
+
+  const handleOpenInNewTab = () => {
+    handleNewTab();
+  };
+
+  const handleSpaceChange = (spaceId: string) => {
+    setCurrentSpace(spaceId);
+  };
+
+  const handleAddSpace = (spaceName: string) => {
+    const newSpace: SpaceItem = {
+      id: spaceName.toLowerCase().replace(/\s+/g, '-'),
+      name: spaceName,
+    };
+    setSpaces([...spaces, newSpace]);
+    setCurrentSpace(newSpace.id);
+  };
+
+  // Build sidebar data from API spaces
+  const sidebarData = useMemo(() => spacesToSidebarData(apiSpaces), [apiSpaces]);
+
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Mujarrad</h1>
-              <p className="text-sm text-gray-600">Knowledge Graph Management</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-700">
-                Welcome, <span className="font-medium">{user?.username}</span>
-              </span>
-              <Button variant="outline" onClick={handleLogout}>
-                Sign out
-              </Button>
-            </div>
-          </div>
-        </header>
+      <div className="bg-white min-h-screen relative">
+        <Header
+          onMenuClick={toggleSidebar}
+          onBackClick={handleBackClick}
+          showBackButton={false}
+          breadcrumbPath={breadcrumbPath}
+          onAddClick={handleAddClick}
+          onNotificationClick={() => {}}
+          onSearchClick={() => {}}
+          onMoreClick={() => {}}
+          onHomeClick={handleHomeClick}
+          onBreadcrumbClick={handleBreadcrumbClick}
+          onShare={handleShareClick}
+          onOpenInNewTab={handleOpenInNewTab}
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onTabClick={handleTabClick}
+          onTabClose={handleTabClose}
+          onNewTab={handleNewTab}
+          onFeedback={handleFeedback}
+        />
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Your Spaces</h2>
-                <p className="text-gray-600 text-sm mt-1">
-                  Manage your knowledge graphs and collaborate with others
-                </p>
-              </div>
-              <CreateSpaceDialog />
-            </div>
+        <Sidebar
+          isOpen={sidebarOpen}
+          onItemClick={(id) => handleSidebarNavigate([id])}
+          selectedItem={null}
+          onNavigate={handleSidebarNavigate}
+          onLogout={handleLogout}
+          items={sidebarData}
+        />
 
-            {isLoading ? (
-              <div className="flex items-center justify-center p-12">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-              </div>
-            ) : error ? (
-              <div className="border-2 border-red-300 rounded-lg p-12 text-center bg-red-50">
-                <div className="text-red-400">
-                  <svg
-                    className="mx-auto h-12 w-12 mb-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                  <p className="text-lg font-medium text-red-900 mb-2">Error loading spaces</p>
-                  <p className="text-sm text-red-600">
-                    {error.message || 'An unknown error occurred'}
-                  </p>
-                </div>
-              </div>
-            ) : spaces.length === 0 ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-                <div className="text-gray-400">
-                  <svg
-                    className="mx-auto h-12 w-12 mb-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                    />
-                  </svg>
-                  <p className="text-lg font-medium text-gray-900 mb-2">No spaces yet</p>
-                  <p className="text-sm text-gray-500">
-                    Get started by clicking the &quot;Create Space&quot; button above
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {spaces.map((space) => (
-                  <SpaceCard key={space.id} space={space} />
-                ))}
-              </div>
-            )}
-          </div>
-        </main>
+        {/* Main content */}
+        <div
+          className="pt-[76px] px-[14px] transition-all duration-300"
+          style={{
+            marginLeft: sidebarOpen ? '276px' : '0',
+          }}
+        >
+          {isLoading ? (
+            <div className="flex items-center justify-center h-[400px]">
+              <div className="animate-spin h-8 w-8 border-4 border-[#248bf2] border-t-transparent rounded-full" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-[400px] text-center">
+              <p
+                className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-[#d4183d] tracking-[-0.24px]"
+                style={{ fontVariationSettings: "'wdth' 100" }}
+              >
+                Error loading spaces
+              </p>
+              <p
+                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] mt-2 tracking-[-0.24px]"
+                style={{ fontVariationSettings: "'wdth' 100" }}
+              >
+                {error.message || 'An unknown error occurred'}
+              </p>
+            </div>
+          ) : cards.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[400px] text-center">
+              <p
+                className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] tracking-[-0.24px]"
+                style={{ fontVariationSettings: "'wdth' 100" }}
+              >
+                No spaces yet
+              </p>
+              <p
+                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-[#bdbdbd] mt-2 tracking-[-0.24px]"
+                style={{ fontVariationSettings: "'wdth' 100" }}
+              >
+                Click the + button to create your first space
+              </p>
+            </div>
+          ) : (
+            <div className="flex gap-[19px] flex-wrap pt-[15px]">
+              {cards.map((card) => (
+                <ProjectCard
+                  key={card.id}
+                  title={card.title}
+                  color={card.color}
+                  type={card.type}
+                  onClick={() => handleCardClick(card.id)}
+                  onContextMenu={(e) => handleCardContextMenu(e, card.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* New Node Modal */}
+        <NewNodeModal
+          isOpen={showNewNodeModal}
+          onClose={() => setShowNewNodeModal(false)}
+          currentPath={navigationPath}
+          currentSpace={currentSpace}
+          spaces={spaces}
+          onAddSpace={handleAddSpace}
+          onSpaceChange={handleSpaceChange}
+        />
+
+        {/* Context Menu */}
+        {contextMenu && (
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            onClose={() => setContextMenu(null)}
+            onOpenNewTab={() => handleContextMenuAction('openNewTab')}
+            onOpenAsNode={() => handleContextMenuAction('openAsNode')}
+            onRename={() => handleContextMenuAction('rename')}
+            onDuplicate={() => handleContextMenuAction('duplicate')}
+            onShare={() => handleContextMenuAction('share')}
+            onDelete={() => handleContextMenuAction('delete')}
+          />
+        )}
+
+        {/* Share Modal */}
+        {showShareModal && (
+          <ShareModal
+            isOpen={showShareModal}
+            onClose={() => setShowShareModal(false)}
+            cardId={selectedCardId}
+            cardType={CardType.FULFILLED_CONTEXT}
+          />
+        )}
+
+        {/* Feedback Modal */}
+        {showFeedbackModal && (
+          <FeedbackModal
+            isOpen={showFeedbackModal}
+            onClose={() => setShowFeedbackModal(false)}
+          />
+        )}
       </div>
     </ProtectedRoute>
   );

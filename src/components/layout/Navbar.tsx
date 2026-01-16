@@ -27,6 +27,12 @@ export function Navbar({ className }: NavbarProps) {
   // Get current space slug from URL if available
   const currentSpaceSlug = params?.slug as string | undefined;
 
+  // Hide navbar on auth pages
+  const authPages = ['/login', '/register'];
+  if (authPages.includes(pathname)) {
+    return null;
+  }
+
   const isActive = (path: string) => {
     return pathname.startsWith(path);
   };

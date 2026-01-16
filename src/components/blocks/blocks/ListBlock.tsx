@@ -89,7 +89,7 @@ export function ListBlock({
   return (
     <div className="flex items-start gap-2">
       {/* List indicator */}
-      <span className="flex-shrink-0 text-gray-500 dark:text-gray-400 select-none w-6 text-right">
+      <span className="flex-shrink-0 select-none w-6 text-right" style={{ color: '#6b7280' }}>
         {isBullet ? '•' : `${listNumber}.`}
       </span>
 
@@ -98,13 +98,15 @@ export function ListBlock({
         ref={contentRef}
         contentEditable={!readOnly}
         suppressContentEditableWarning
-        className="flex-1 outline-none min-h-[1.5em] text-gray-900 dark:text-gray-100"
+        className="flex-1 outline-none min-h-[1.5em]"
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onFocus={onFocus}
         data-placeholder="List item..."
         style={{
           wordBreak: 'break-word',
+          color: '#111827',
+          caretColor: '#111827',
         }}
       />
     </div>

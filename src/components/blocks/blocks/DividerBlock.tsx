@@ -62,7 +62,7 @@ export function DividerBlock({
       role="separator"
       aria-label="Divider"
     >
-      <hr className="border-t-2 border-gray-200 dark:border-gray-700" />
+      <hr className="border-t-2 border-gray-200" />
     </div>
   );
 }

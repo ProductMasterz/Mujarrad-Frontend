@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useCallback, useRef, useEffect, KeyboardEvent, forwardRef, useImperativeHandle } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -29,6 +29,15 @@ interface BlockEditorProps {
   spaceId: string;
   readOnly?: boolean;
   onSaveStatusChange?: (isSaving: boolean) => void;
+  onBlocksChange?: (blocks: Block[]) => void;
+  onFocusChange?: (blockId: string | null) => void;
+}
+
+export interface BlockEditorRef {
+  saveNow: () => Promise<void>;
+  scrollToBlock: (blockId: string) => void;
+  getBlocks: () => Block[];
+  getFocusedBlockId: () => string | null;
 }
 
 interface SlashMenuState {
@@ -48,13 +57,15 @@ interface SlashMenuState {
  * - Keyboard shortcuts for navigation and editing
  * - Auto-save with status indicator
  */
-export function BlockEditor({
+export const BlockEditor = forwardRef<BlockEditorRef, BlockEditorProps>(function BlockEditor({
   pageId,
   spaceSlug,
   spaceId,
   readOnly = false,
   onSaveStatusChange,
-}: BlockEditorProps) {
+  onBlocksChange,
+  onFocusChange,
+}, ref) {
   const {
     blocks,
     isLoading,
@@ -91,6 +102,37 @@ export function BlockEditor({
 
   const editorRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Scroll to a specific block
+  const scrollToBlock = useCallback((blockId: string) => {
+    const blockElement = blockRefs.current.get(blockId);
+    if (blockElement) {
+      blockElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setFocusedBlockId(blockId);
+    }
+  }, []);
+
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    saveNow,
+    scrollToBlock,
+    getBlocks: () => blocks,
+    getFocusedBlockId: () => focusedBlockId,
+  }), [saveNow, scrollToBlock, blocks, focusedBlockId]);
+
+  // Notify parent when blocks change
+  useEffect(() => {
+    if (onBlocksChange) {
+      onBlocksChange(blocks);
+    }
+  }, [blocks, onBlocksChange]);
+
+  // Notify parent when focus changes
+  useEffect(() => {
+    if (onFocusChange) {
+      onFocusChange(focusedBlockId);
+    }
+  }, [focusedBlockId, onFocusChange]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -286,7 +328,7 @@ export function BlockEditor({
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+            className="h-6 bg-gray-200 rounded animate-pulse"
             style={{ width: `${60 + Math.random() * 30}%` }}
           />
         ))}
@@ -307,7 +349,7 @@ export function BlockEditor({
     <div ref={editorRef} className="relative min-h-[200px] py-4">
       {/* Save status indicator */}
       {isSaving && (
-        <div className="absolute top-2 right-2 text-xs text-gray-500 dark:text-gray-400">
+        <div className="absolute top-2 right-2 text-xs text-gray-500">
           Saving...
         </div>
       )}
@@ -357,8 +399,8 @@ export function BlockEditor({
 
       {/* Empty state */}
       {blocks.length === 0 && !readOnly && (
-        <div className="text-gray-400 dark:text-gray-500 text-center py-8">
-          Start typing or press <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">/</kbd> for commands
+        <div className="text-gray-500 text-center py-8">
+          Start typing or press <kbd className="px-2 py-1 bg-gray-100 rounded text-gray-700">/</kbd> for commands
         </div>
       )}
 
@@ -373,6 +415,6 @@ export function BlockEditor({
       />
     </div>
   );
-}
+});
 
 export default BlockEditor;
