@@ -4,7 +4,8 @@ const nextConfig = {
   swcMinify: true,
   async rewrites() {
     // Proxy all /api requests to the backend server
-    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+    // Use NEXT_PUBLIC_API_URL for Render deployment
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
     console.log('Next.js rewrites configured to proxy /api/* to:', backendUrl);
 
     return [
