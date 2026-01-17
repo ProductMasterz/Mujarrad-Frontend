@@ -413,6 +413,8 @@ export default function App() {
       <NewNodeModal
         isOpen={showNewNodeModal}
         onClose={handleCloseNewNodeModal}
+        spaceSlug={currentSpace}
+        spaceId={currentSpace}
         currentPath={navigationPath}
         currentSpace={currentSpace}
         spaces={spaces}

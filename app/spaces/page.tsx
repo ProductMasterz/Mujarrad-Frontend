@@ -330,6 +330,8 @@ export default function SpacesPage() {
         <NewNodeModal
           isOpen={showNewNodeModal}
           onClose={() => setShowNewNodeModal(false)}
+          spaceSlug={currentSpace}
+          spaceId={currentSpace}
           currentPath={navigationPath}
           currentSpace={currentSpace}
           spaces={spaces}

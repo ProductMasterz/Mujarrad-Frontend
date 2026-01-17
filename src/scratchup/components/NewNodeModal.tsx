@@ -269,7 +269,7 @@ export function NewNodeModal({
             className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#bdbdbd] tracking-[-0.08px] leading-[18px] mb-[24px]"
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
-            Press '/' for commands
+            Press &apos;/&apos; for commands
           </p>
 
           {/* Block Editor - only show if node is created */}

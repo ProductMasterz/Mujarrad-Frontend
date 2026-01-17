@@ -29,9 +29,7 @@ export function Navbar({ className }: NavbarProps) {
 
   // Hide navbar on auth pages
   const authPages = ['/login', '/register'];
-  if (authPages.includes(pathname)) {
-    return null;
-  }
+  const isAuthPage = authPages.includes(pathname);
 
   const isActive = (path: string) => {
     return pathname.startsWith(path);
@@ -39,6 +37,8 @@ export function Navbar({ className }: NavbarProps) {
 
   // Keyboard shortcut for command palette (⌘K or Ctrl+K)
   useEffect(() => {
+    if (isAuthPage) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
@@ -48,7 +48,11 @@ export function Navbar({ className }: NavbarProps) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isAuthPage]);
+
+  if (isAuthPage) {
+    return null;
+  }
 
   return (
     <>
