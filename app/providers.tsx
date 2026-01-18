@@ -5,8 +5,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { useState } from 'react';
 
-// Use environment variable for Google Client ID (for production deployment)
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '523814926177-bke0eauod4590u64sedvjt453l837kvc.apps.googleusercontent.com';
+// Use environment variable for Google Client ID (required for production)
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
