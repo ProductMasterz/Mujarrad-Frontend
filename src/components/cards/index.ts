@@ -1,4 +1,3 @@
-export { NodeCard } from './NodeCard';
 export { CardGrid } from './CardGrid';
 export { EmptyState } from './EmptyState';
 export { CardTypeIcon } from './CardTypeIcon';

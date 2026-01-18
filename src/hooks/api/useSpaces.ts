@@ -49,7 +49,6 @@ export function useCreateSpace() {
     mutationFn: (data: CreateSpaceRequest) => spaceService.createSpace(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
-      queryClient.invalidateQueries({ queryKey: ['spaces'] });
     },
   });
 }
@@ -62,7 +61,6 @@ export function useUpdateSpace(id: string) {
     mutationFn: (data: UpdateSpaceRequest) => spaceService.updateSpace(Number(id), data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
-      queryClient.invalidateQueries({ queryKey: ['spaces'] });
     },
   });
 }
@@ -74,7 +72,6 @@ export function useDeleteSpace() {
   return useMutation({
     mutationFn: (id: string) => spaceService.deleteSpace(Number(id)),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['spaces'] });
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
     },
   });
