@@ -58,7 +58,10 @@ This an early version of MindStone, which mean there are bugs and issues. Below 
 - Transclusion is not working yet.
 
 ----
-
+### Some Videos To Watch
+- [Mujarrad | Data Architecture and Application Discussion](https://drive.google.com/file/d/1z0X-ECfx_Bsc8z3FQ0DM4z5Z6EuOhtG8/view?usp=drive_link)
+- [Mujarrad Workshop](https://drive.google.com/file/d/1ii430KhscCPA6KctkE8b6QdO79Acnp_L/view?usp=drive_link)
+----
 ### Open Source Project Based Resources
 - [QUD & Abstract Logic Experience Frontend](https://github.com/pixlcore/xyops)
 - [Abstract Logic Frontend](https://github.com/DayuanJiang/next-ai-draw-io)
