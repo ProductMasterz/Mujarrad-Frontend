@@ -1,3 +1,4 @@
+export { AddMenuDropdown } from "./AddMenuDropdown";
 export { Breadcrumb } from "./Breadcrumb";
 export { ContextMenu } from "./ContextMenu";
 export { FeedbackModal } from "./FeedbackModal";
@@ -7,6 +8,7 @@ export { MoreMenuDropdown } from "./MoreMenuDropdown";
 export { NewNodeModal } from "./NewNodeModal";
 export { NotificationsDropdown } from "./NotificationsDropdown";
 export { ProjectCard } from "./ProjectCard";
+export { RenameModal } from "./RenameModal";
 export { SearchModal } from "./SearchModal";
 export { ShareModal } from "./ShareModal";
 export { ShortcutsModal } from "./ShortcutsModal";
@@ -16,3 +18,4 @@ export { SpacesDropdown } from "./SpacesDropdown";
 export { TabsBar } from "./TabsBar";
 export { UserMenu } from "./UserMenu";
 export type { Tab } from "./TabsBar";
+export type { EntityType } from "./NewNodeModal";
