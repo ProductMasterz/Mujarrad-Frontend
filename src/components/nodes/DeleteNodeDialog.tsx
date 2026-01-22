@@ -1,43 +1,42 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useDeleteNode } from '@/hooks/api';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { isApiError } from '@/lib/errors';
+import { DeleteNodeModal } from './DeleteNodeModal';
 
 interface DeleteNodeDialogProps {
   spaceSlug: string;
   nodeId: string;
   nodeName: string;
+  parentId?: string | null;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSuccess?: () => void;
   showTrigger?: boolean;
 }
 
+/**
+ * DeleteNodeDialog - Wrapper component for backwards compatibility
+ *
+ * Uses the new DeleteNodeModal which includes dependency checking
+ * and cascade/orphan delete options.
+ */
 export function DeleteNodeDialog({
   spaceSlug,
   nodeId,
   nodeName,
+  parentId,
   open: externalOpen,
   onOpenChange: externalOnOpenChange,
   onSuccess,
   showTrigger = true,
 }: DeleteNodeDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const { mutate: deleteNode, isPending: isLoading } = useDeleteNode();
 
   // Use external state if provided, otherwise use internal state
   const isControlled = externalOpen !== undefined;
@@ -51,50 +50,39 @@ export function DeleteNodeDialog({
     }
   };
 
-  const handleDelete = () => {
-    deleteNode({ spaceSlug: spaceSlug, nodeId: nodeId }, {
-      onSuccess: () => {
-        setOpen(false);
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          router.push(`/spaces/${spaceSlug}`);
-        }
-      },
-      onError: (err) => {
-        if (isApiError(err)) {
-          setError(err.getUserMessage());
-        } else {
-          setError('Failed to delete node');
-        }
-      },
-    });
-  };
+  // If using trigger button, wrap in Dialog for trigger functionality
+  if (showTrigger) {
+    return (
+      <>
+        <Dialog open={false} onOpenChange={() => setOpen(true)}>
+          <DialogTrigger asChild>
+            <Button variant="destructive">Delete Node</Button>
+          </DialogTrigger>
+          <DialogContent className="hidden" />
+        </Dialog>
+        <DeleteNodeModal
+          spaceSlug={spaceSlug}
+          nodeId={nodeId}
+          nodeName={nodeName}
+          parentId={parentId}
+          open={open}
+          onOpenChange={setOpen}
+          onSuccess={onSuccess}
+        />
+      </>
+    );
+  }
 
+  // Controlled mode - just render the modal
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      {showTrigger && (
-        <DialogTrigger asChild>
-          <Button variant="destructive">Delete Node</Button>
-        </DialogTrigger>
-      )}
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Delete Node</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete <strong>{nodeName}</strong>? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
-            {isLoading ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <DeleteNodeModal
+      spaceSlug={spaceSlug}
+      nodeId={nodeId}
+      nodeName={nodeName}
+      parentId={parentId}
+      open={open}
+      onOpenChange={setOpen}
+      onSuccess={onSuccess}
+    />
   );
 }

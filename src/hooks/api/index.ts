@@ -16,3 +16,4 @@ export * from './useAttributes';
 export * from './useGraph';
 export * from './useVersions';
 export * from './useSearchNodes';
+export * from './useNodeDependencies';
