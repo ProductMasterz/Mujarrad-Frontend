@@ -8,11 +8,13 @@ import { Sidebar } from '@/shell/components/Sidebar';
 import { ProjectCard } from '@/shell/components/ProjectCard';
 import { ContextMenu } from '@/shell/components/ContextMenu';
 import { NewNodeModal } from '@/shell/components/NewNodeModal';
+import { RenameModal } from '@/shell/components/RenameModal';
 import { ShareModal } from '@/shell/components/ShareModal';
 import { FeedbackModal } from '@/shell/components/FeedbackModal';
 import { Tab } from '@/shell/components/TabsBar';
 import { CardType, Card } from '@/shell/data/projects';
 import { spaceService } from '@/services/api';
+import { useRenameSpace } from '@/hooks/api';
 import type { Space } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
 import { useAuthStore } from '@/stores/auth.store';
@@ -47,6 +49,7 @@ export default function SpacesPage() {
   const router = useRouter();
   const { logout } = useAuthStore();
   const navigateToSpaces = useNavigationStore((state) => state.navigateToSpaces);
+  const { rename: renameSpace } = useRenameSpace();
 
   // Set navigation scope on mount
   useEffect(() => {
@@ -58,6 +61,8 @@ export default function SpacesPage() {
   const [showNewNodeModal, setShowNewNodeModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [spaceToRename, setSpaceToRename] = useState<Space | null>(null);
   const [selectedCardId, setSelectedCardId] = useState('');
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -172,6 +177,12 @@ export default function SpacesPage() {
           router.push(`/spaces/${space.slug}`);
         }
         break;
+      case 'rename':
+        if (space) {
+          setSpaceToRename(space);
+          setShowRenameModal(true);
+        }
+        break;
       case 'share':
         setSelectedCardId(contextMenu.cardId);
         setShowShareModal(true);
@@ -240,6 +251,34 @@ export default function SpacesPage() {
     setCurrentSpace(newSpace.id);
   };
 
+  // Quick create space from sidebar - creates "Untitled" space immediately
+  const handleQuickCreateSpace = async () => {
+    try {
+      const space = await spaceService.createSpace({ name: 'Untitled' });
+      // Refresh the spaces list
+      const updatedSpaces = await spaceService.getSpaces();
+      setApiSpaces(Array.isArray(updatedSpaces) ? updatedSpaces : []);
+      // Navigate to the new space
+      router.push(`/spaces/${space.slug}`);
+    } catch (error) {
+      console.error('Failed to quick create space:', error);
+    }
+  };
+
+  // Handle space rename using shared hook
+  const handleRename = async (newName: string) => {
+    if (!spaceToRename) return;
+
+    const result = await renameSpace(spaceToRename.id, newName);
+    if (result.success) {
+      // Refresh the spaces list
+      const updatedSpaces = await spaceService.getSpaces();
+      setApiSpaces(Array.isArray(updatedSpaces) ? updatedSpaces : []);
+    } else {
+      throw new Error(result.error || 'Failed to rename space');
+    }
+  };
+
   // Build sidebar data from API spaces
   const sidebarData = useMemo(() => spacesToSidebarData(apiSpaces), [apiSpaces]);
 
@@ -275,6 +314,8 @@ export default function SpacesPage() {
           onNavigate={handleSidebarNavigate}
           onLogout={handleLogout}
           items={sidebarData}
+          isSpacesLevel={true}
+          onQuickCreateSpace={handleQuickCreateSpace}
         />
 
         {/* Main content */}
@@ -334,17 +375,17 @@ export default function SpacesPage() {
           )}
         </div>
 
-        {/* New Node Modal */}
+        {/* New Node Modal - at spaces level, default to space creation */}
         <NewNodeModal
           isOpen={showNewNodeModal}
           onClose={() => setShowNewNodeModal(false)}
-          spaceSlug={currentSpace}
-          spaceId={currentSpace}
           currentPath={navigationPath}
           currentSpace={currentSpace}
           spaces={spaces}
           onAddSpace={handleAddSpace}
           onSpaceChange={handleSpaceChange}
+          defaultType="space"
+          availableTypes={['space']}
         />
 
         {/* Context Menu */}
@@ -377,6 +418,20 @@ export default function SpacesPage() {
           <FeedbackModal
             isOpen={showFeedbackModal}
             onClose={() => setShowFeedbackModal(false)}
+          />
+        )}
+
+        {/* Rename Modal */}
+        {spaceToRename && (
+          <RenameModal
+            isOpen={showRenameModal}
+            onClose={() => {
+              setShowRenameModal(false);
+              setSpaceToRename(null);
+            }}
+            currentName={spaceToRename.name}
+            onRename={handleRename}
+            entityLabel="Space"
           />
         )}
       </div>

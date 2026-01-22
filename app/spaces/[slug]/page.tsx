@@ -7,13 +7,14 @@ import { Header } from '@/shell/components/Header';
 import { Sidebar } from '@/shell/components/Sidebar';
 import { ProjectCard } from '@/shell/components/ProjectCard';
 import { ContextMenu } from '@/shell/components/ContextMenu';
-import { NewNodeModal } from '@/shell/components/NewNodeModal';
+import { NewNodeModal, EntityType } from '@/shell/components/NewNodeModal';
 import { ShareModal } from '@/shell/components/ShareModal';
 import { FeedbackModal } from '@/shell/components/FeedbackModal';
 import { Tab } from '@/shell/components/TabsBar';
 import { CardType, Card } from '@/shell/data/projects';
 import { DeleteNodeDialog } from '@/components/nodes/DeleteNodeDialog';
-import { useSpace, nodeKeys } from '@/hooks/api';
+import { RenameModal } from '@/shell/components/RenameModal';
+import { useSpace, nodeKeys, useRenameNodeSimple } from '@/hooks/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
 import { useAuthStore } from '@/stores/auth.store';
@@ -51,6 +52,7 @@ export default function SpaceDetailPage() {
   const { logout } = useAuthStore();
   const navigateToSpace = useNavigationStore((state) => state.navigateToSpace);
   const slug = params.slug as string;
+  const { rename: renameNode } = useRenameNodeSimple(slug);
 
   // Fetch space data
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(slug);
@@ -72,12 +74,15 @@ export default function SpaceDetailPage() {
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showNewNodeModal, setShowNewNodeModal] = useState(false);
+  const [modalDefaultType, setModalDefaultType] = useState<EntityType>('node');
   const [showShareModal, setShowShareModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
   const [showClearSpaceDialog, setShowClearSpaceDialog] = useState(false);
   const [isClearingSpace, setIsClearingSpace] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<Node | null>(null);
+  const [nodeToRename, setNodeToRename] = useState<Node | null>(null);
   const [selectedCardId, setSelectedCardId] = useState('');
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -181,7 +186,13 @@ export default function SpaceDetailPage() {
     }
   };
 
-  const handleAddClick = () => {
+  const handleAddNode = () => {
+    setModalDefaultType('node');
+    setShowNewNodeModal(true);
+  };
+
+  const handleAddContext = () => {
+    setModalDefaultType('context');
     setShowNewNodeModal(true);
   };
 
@@ -208,6 +219,12 @@ export default function SpaceDetailPage() {
       case 'openAsNode':
         if (node) {
           router.push(`/spaces/${slug}/node/${node.id}`);
+        }
+        break;
+      case 'rename':
+        if (node) {
+          setNodeToRename(node);
+          setShowRenameModal(true);
         }
         break;
       case 'share':
@@ -295,6 +312,19 @@ export default function SpaceDetailPage() {
     queryClient.invalidateQueries({ queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }) });
   };
 
+  // Handle node rename using shared hook
+  const handleRename = async (newName: string) => {
+    if (!nodeToRename) return;
+
+    const result = await renameNode(nodeToRename.id, newName);
+    if (result.success) {
+      // Refresh the nodes list
+      queryClient.invalidateQueries({ queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }) });
+    } else {
+      throw new Error(result.error || 'Failed to rename node');
+    }
+  };
+
   const handleClearSpace = () => {
     setShowClearSpaceDialog(true);
   };
@@ -362,8 +392,8 @@ export default function SpaceDetailPage() {
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
           // Add menu actions - create node/context at space level
-          onCreateNode={handleAddClick}
-          onCreateContext={handleAddClick}
+          onCreateNode={handleAddNode}
+          onCreateContext={handleAddContext}
           // More menu actions
           onShare={handleShareClick}
           onOpenInNewTab={handleOpenInNewTab}
@@ -429,7 +459,7 @@ export default function SpaceDetailPage() {
           )}
         </div>
 
-        {/* New Node Modal */}
+        {/* New Node Modal - at space level, default based on which action was triggered */}
         {space && (
           <NewNodeModal
             isOpen={showNewNodeModal}
@@ -441,6 +471,8 @@ export default function SpaceDetailPage() {
             spaces={spaces}
             onAddSpace={handleAddSpace}
             onSpaceChange={handleSpaceChange}
+            defaultType={modalDefaultType}
+            availableTypes={['node', 'context']}
           />
         )}
 
@@ -487,6 +519,20 @@ export default function SpaceDetailPage() {
           <FeedbackModal
             isOpen={showFeedbackModal}
             onClose={() => setShowFeedbackModal(false)}
+          />
+        )}
+
+        {/* Rename Modal */}
+        {nodeToRename && (
+          <RenameModal
+            isOpen={showRenameModal}
+            onClose={() => {
+              setShowRenameModal(false);
+              setNodeToRename(null);
+            }}
+            currentName={nodeToRename.title}
+            onRename={handleRename}
+            entityLabel={nodeToRename.nodeType === NodeType.CONTEXT ? 'Context' : 'Node'}
           />
         )}
 
