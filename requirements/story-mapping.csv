@@ -1,0 +1,93 @@
+Journey,Step,Story,Priority,Status
+Authentication,Register,As a new user I want to register with email/password so that I can create an account,Must Have,Implemented
+Authentication,Register,As a new user I want to register with Google OAuth so that I can quickly create an account,Must Have,Implemented
+Authentication,Login,As a returning user I want to login with email/password so that I can access my spaces,Must Have,Implemented
+Authentication,Login,As a returning user I want to login with Google OAuth so that I can quickly access my account,Must Have,Implemented
+Authentication,Logout,As a logged-in user I want to logout so that I can secure my account,Must Have,Implemented
+Authentication,Session,As a user I want my session to persist so that I don't have to login repeatedly,Should Have,Implemented
+Space Management,View Spaces,As a user I want to see all my spaces in a dashboard so that I can navigate to them,Must Have,Implemented
+Space Management,Create Space,As a user I want to create a new space via modal so that I can organize my content,Must Have,Implemented
+Space Management,Create Space,As a user I want to quick-create a space from sidebar so that I can rapidly add spaces,Should Have,Implemented
+Space Management,Rename Space,As a user I want to rename a space via context menu so that I can update its name,Must Have,Implemented
+Space Management,Delete Space,As a user I want to delete a space so that I can remove unused content,Must Have,Partial
+Space Management,Share Space,As a user I want to share a space with collaborators so that we can work together,Should Have,Implemented
+Space Management,Navigate Space,As a user I want to click a space card to enter it so that I can view its contents,Must Have,Implemented
+Node Management,View Nodes,As a user I want to see all nodes in a space so that I can navigate my content,Must Have,Implemented
+Node Management,Create Node,As a user I want to create a new node via modal so that I can add content,Must Have,Implemented
+Node Management,Create Context,As a user I want to create a context so that I can group related content,Must Have,Implemented
+Node Management,Edit Node,As a user I want to edit a node's title so that I can update its name,Must Have,Implemented
+Node Management,Edit Node,As a user I want to edit a node's content with blocks so that I can add rich content,Must Have,Implemented
+Node Management,Delete Node,As a user I want to delete a node so that I can remove unwanted content,Must Have,Implemented
+Node Management,Rename Node,As a user I want to rename a node via context menu so that I can update its name,Should Have,Partial
+Node Management,Navigate Node,As a user I want to click a node card to open the editor so that I can view/edit content,Must Have,Implemented
+Content Editing,Add Block,As a user I want to add content blocks using slash commands so that I can structure my content,Must Have,Implemented
+Content Editing,Edit Block,As a user I want to edit block content inline so that I can modify my content,Must Have,Implemented
+Content Editing,Delete Block,As a user I want to delete a block so that I can remove unwanted content,Must Have,Implemented
+Content Editing,Reorder Blocks,As a user I want to drag and drop blocks so that I can reorganize my content,Should Have,Implemented
+Content Editing,Auto-save,As a user I want my changes to auto-save so that I don't lose my work,Must Have,Implemented
+Content Editing,Add Heading,As a user I want to add heading blocks so that I can create document structure,Must Have,Implemented
+Content Editing,Add List,As a user I want to add bullet/numbered lists so that I can organize items,Must Have,Implemented
+Content Editing,Add Code,As a user I want to add code blocks with syntax highlighting so that I can document code,Should Have,Implemented
+Content Editing,Add Image,As a user I want to add images so that I can include visual content,Should Have,Implemented
+Content Editing,Add Quote,As a user I want to add quote blocks so that I can highlight important text,Should Have,Implemented
+Content Editing,Add Divider,As a user I want to add dividers so that I can separate content sections,Should Have,Implemented
+Content Editing,Add Callout,As a user I want to add callout blocks so that I can highlight information,Should Have,Implemented
+Content Editing,Add Math,As a user I want to add math equations so that I can include formulas,Could Have,Implemented
+Content Editing,Add Mermaid,As a user I want to add Mermaid diagrams so that I can create flowcharts,Could Have,Implemented
+Navigation,Breadcrumb,As a user I want to see breadcrumb navigation so that I know my current location,Must Have,Implemented
+Navigation,Back Button,As a user I want a back button so that I can return to previous pages,Must Have,Implemented
+Navigation,Home Button,As a user I want a home button so that I can return to the spaces dashboard,Must Have,Implemented
+Navigation,Sidebar,As a user I want a sidebar with tree navigation so that I can see content hierarchy,Must Have,Implemented
+Navigation,Sidebar Toggle,As a user I want to toggle sidebar visibility so that I can maximize content area,Should Have,Implemented
+Navigation,Tabs,As a user I want to open multiple tabs so that I can work on multiple items,Should Have,Implemented
+Navigation,New Tab,As a user I want to open items in new tabs so that I can keep context,Should Have,Implemented
+Search,Global Search,As a user I want to search across all content so that I can find specific items,Must Have,Implemented
+Search,Filter Search,As a user I want to filter search by type so that I can narrow results,Should Have,Implemented
+Search,Search Results,As a user I want to see search results with paths so that I can identify items,Must Have,Implemented
+Search,Navigate Result,As a user I want to click search results to navigate so that I can access found items,Must Have,Implemented
+Collaboration,Share Modal,As a user I want to share via modal so that I can invite collaborators,Should Have,Implemented
+Collaboration,Invite by Email,As a user I want to invite by email so that I can add team members,Should Have,Implemented
+Collaboration,Set Permissions,As a user I want to set permissions so that I can control access levels,Should Have,Implemented
+Collaboration,View Collaborators,As a user I want to see current collaborators so that I know who has access,Should Have,Implemented
+Collaboration,Remove Collaborator,As a user I want to remove collaborators so that I can revoke access,Should Have,Implemented
+Collaboration,Copy Link,As a user I want to copy share link so that I can share via other channels,Should Have,Implemented
+Whiteboard,View Whiteboard,As a user I want to view the whiteboard canvas so that I can see visual content,Should Have,Implemented
+Whiteboard,Draw on Whiteboard,As a user I want to draw on the canvas so that I can create diagrams,Should Have,Implemented
+Whiteboard,Add Shapes,As a user I want to add shapes so that I can create structured visuals,Should Have,Implemented
+Whiteboard,Add Text,As a user I want to add text elements so that I can label diagrams,Should Have,Implemented
+Whiteboard,Link to Node,As a user I want to link elements to nodes so that I can connect visual and text content,Could Have,Implemented
+Whiteboard,Sync Hierarchy,As a user I want whiteboard to sync with node hierarchy so that visuals stay current,Could Have,Partial
+Whiteboard,Save Whiteboard,As a user I want whiteboard to auto-save so that I don't lose my work,Should Have,Implemented
+Context Menu,Open New Tab,As a user I want to open items in new tab via context menu so that I can multitask,Should Have,Implemented
+Context Menu,Rename,As a user I want to rename via context menu so that I can quickly update names,Should Have,Implemented
+Context Menu,Duplicate,As a user I want to duplicate via context menu so that I can copy items,Could Have,Partial
+Context Menu,Delete,As a user I want to delete via context menu so that I can quickly remove items,Must Have,Implemented
+Context Menu,Share,As a user I want to share via context menu so that I can quickly share items,Should Have,Implemented
+Help & Support,View Shortcuts,As a user I want to view keyboard shortcuts so that I can work efficiently,Should Have,Implemented
+Help & Support,Send Feedback,As a user I want to send feedback so that I can report issues,Should Have,Implemented
+Help & Support,Help Center,As a user I want to access help center so that I can learn how to use the app,Could Have,Partial
+User Profile,View Profile,As a user I want to view my profile so that I can see my account info,Should Have,Partial
+User Profile,Logout,As a user I want to logout from profile menu so that I can sign out,Must Have,Implemented
+Node Management,Delete with Dependencies,As a user I want to see a warning when deleting nodes with children so that I can avoid accidental data loss,Must Have,Planned
+Node Management,Delete Cascade,As a user I want to delete a node and all its children so that I can clean up entire branches,Must Have,Planned
+Node Management,Delete Orphan,As a user I want to delete a node and keep its children so that I can restructure without losing content,Should Have,Planned
+Node Management,Duplicate Detection,As a user I want to be warned about duplicate node names so that I can avoid confusion,Must Have,Planned
+Node Management,Duplicate Merge,As a user I want to merge duplicate nodes so that I can consolidate content,Should Have,Planned
+Context Management,Super Position,As a user I want to add a node to multiple contexts so that I can organize content flexibly,Should Have,Planned
+Context Management,Context Badge,As a user I want to see which contexts a node belongs to so that I understand its relationships,Should Have,Planned
+Context Management,Remove from Context,As a user I want to remove a node from a context without deleting it so that I can reorganize,Should Have,Planned
+Relationship Management,Relationship Types,As a user I want to choose relationship types when connecting nodes so that I can express different meanings,Should Have,Planned
+Relationship Management,Type Colors,As a user I want to see different colors for relationship types in graph view so that I can distinguish them,Could Have,Planned
+Application Modes,Mode Selector,As a user I want to switch between view modes so that I can focus on different tasks,Must Have,Planned
+Application Modes,Scoped View,As a user I want to filter to current context so that I can focus on relevant content,Must Have,Planned
+Application Modes,Edit Mode Toggle,As a user I want to toggle edit controls so that I can avoid accidental changes,Should Have,Planned
+Templates,Mark as Template,As a user I want to mark a context as a template so that I can reuse its structure,Should Have,Planned
+Templates,Template List,As a user I want to see available templates so that I can apply them to new contexts,Should Have,Planned
+Templates,Apply Template,As a user I want to apply a template to create a new context so that I can start with predefined structure,Should Have,Planned
+Developer Platform,API Key Create,As a developer I want to create API keys so that I can access the API programmatically,Should Have,Planned
+Developer Platform,API Key Manage,As a developer I want to manage my API keys so that I can control access,Should Have,Planned
+Developer Platform,SDK Usage,As a developer I want a TypeScript SDK so that I can build apps on Mujarrad easily,Should Have,Planned
+Agent Integration,MCP Resources,As an AI agent I want to list and read nodes via MCP so that I can access Mujarrad content,Should Have,Planned
+Agent Integration,MCP Tools,As an AI agent I want to create and update nodes via MCP so that I can manage Mujarrad content,Should Have,Planned
+Whiteboard,Sync on Rename,As a user I want whiteboard elements to update when I rename linked nodes so that visuals stay current,Should Have,Planned
+Whiteboard,Create Node from Element,As a user I want to create a node from a whiteboard element so that I can connect visual and text content,Could Have,Planned
