@@ -21,82 +21,82 @@ Tasks are organized into 3 phases with clear dependencies. Each task is small en
 
 ## Phase 1: Stabilization (Sprint 1-2)
 
-### 1.1 Node Delete with Dependencies
+### 1.1 Node Delete with Dependencies ✅
 
-| # | Task | Type | Depends On | Estimate |
-|---|------|------|------------|----------|
-| 1.1.1 | Create `useNodeDependencies` hook to fetch children and referencing nodes | [FE] | - | 2h |
-| 1.1.2 | Create `DeleteNodeModal` component with dependency warning UI | [FE] | 1.1.1 | 3h |
-| 1.1.3 | Add "Delete All" cascade delete logic to hook | [FE] | 1.1.2 | 2h |
-| 1.1.4 | Add "Delete Only This" orphan/unlink logic to hook | [FE] | 1.1.2 | 2h |
-| 1.1.5 | Integrate modal into `DeleteNodeDialog` component | [FE] | 1.1.3, 1.1.4 | 1h |
-| 1.1.6 | Write unit tests for `useNodeDependencies` | [TEST] | 1.1.5 | 2h |
-| 1.1.7 | Write E2E test for delete with children flow | [TEST] | 1.1.5 | 2h |
+| # | Task | Type | Depends On | Estimate | Status |
+|---|------|------|------------|----------|--------|
+| 1.1.1 | Create `useNodeDependencies` hook to fetch children and referencing nodes | [FE] | - | 2h | ✅ Done |
+| 1.1.2 | Create `DeleteNodeModal` component with dependency warning UI | [FE] | 1.1.1 | 3h | ✅ Done |
+| 1.1.3 | Add "Delete All" cascade delete logic to hook | [FE] | 1.1.2 | 2h | ✅ Done |
+| 1.1.4 | Add "Delete Only This" orphan/unlink logic to hook | [FE] | 1.1.2 | 2h | ✅ Done |
+| 1.1.5 | Integrate modal into `DeleteNodeDialog` component | [FE] | 1.1.3, 1.1.4 | 1h | ✅ Done |
+| 1.1.6 | Write unit tests for `useNodeDependencies` | [TEST] | 1.1.5 | 2h | ⏳ Pending |
+| 1.1.7 | Write E2E test for delete with children flow | [TEST] | 1.1.5 | 2h | ⏳ Pending |
 
 **Acceptance Criteria:**
-- [ ] Deleting node with children shows warning modal
-- [ ] "Delete All" removes node and all descendants
-- [ ] "Delete Only This" moves children to parent context or space root
+- [x] Deleting node with children shows warning modal
+- [x] "Delete All" removes node and all descendants
+- [x] "Delete Only This" moves children to parent context or space root
 - [ ] References show broken link indicator after deletion
 
 ---
 
-### 1.2 Duplicate Detection
+### 1.2 Duplicate Detection ✅
 
-| # | Task | Type | Depends On | Estimate |
-|---|------|------|------------|----------|
-| 1.2.1 | Create `useDuplicateCheck` hook | [FE] | - | 2h |
-| 1.2.2 | Create `DuplicateNodeModal` component | [FE] | 1.2.1 | 2h |
-| 1.2.3 | Add merge node logic to hook | [FE] | 1.2.2 | 3h |
-| 1.2.4 | Integrate into `NewNodeModal` create flow | [FE] | 1.2.3 | 1h |
-| 1.2.5 | Integrate into sidebar quick-create flow | [FE] | 1.2.3 | 1h |
-| 1.2.6 | Write unit tests for duplicate detection | [TEST] | 1.2.5 | 2h |
+| # | Task | Type | Depends On | Estimate | Status |
+|---|------|------|------------|----------|--------|
+| 1.2.1 | Create `useDuplicateCheck` hook | [FE] | - | 2h | ✅ Done |
+| 1.2.2 | Create `DuplicateNodeModal` component | [FE] | 1.2.1 | 2h | ✅ Done |
+| 1.2.3 | Add merge node logic to hook | [FE] | 1.2.2 | 3h | ✅ Done |
+| 1.2.4 | Integrate into `NewNodeModal` create flow | [FE] | 1.2.3 | 1h | ✅ Done |
+| 1.2.5 | Integrate into sidebar quick-create flow | [FE] | 1.2.3 | 1h | ✅ Done (uses NewNodeModal) |
+| 1.2.6 | Write unit tests for duplicate detection | [TEST] | 1.2.5 | 2h | ⏳ Pending |
 
 **Acceptance Criteria:**
-- [ ] Creating node with existing title in same context shows modal
-- [ ] User can choose "Merge", "Create Anyway", or "Rename"
-- [ ] Merge appends content and merges attributes
-- [ ] Different context allows duplicates without prompt
+- [x] Creating node with existing title in same context shows modal
+- [x] User can choose "Merge", "Create Anyway", or "Rename"
+- [ ] Merge appends content and merges attributes (navigates to existing)
+- [x] Different context allows duplicates without prompt
 
 ---
 
-### 1.3 Node Rename Consistency
+### 1.3 Node Rename Consistency ✅
 
-| # | Task | Type | Depends On | Estimate |
-|---|------|------|------------|----------|
-| 1.3.1 | Audit all rename entry points (context menu, modal, inline) | [FE] | - | 1h |
-| 1.3.2 | Create shared `useRenameNode` hook | [FE] | 1.3.1 | 2h |
-| 1.3.3 | Refactor `RenameModal` to use shared hook | [FE] | 1.3.2 | 1h |
-| 1.3.4 | Fix context menu rename to use shared hook | [FE] | 1.3.2 | 1h |
-| 1.3.5 | Add inline rename in sidebar tree | [FE] | 1.3.2 | 2h |
-| 1.3.6 | Write E2E test for all rename paths | [TEST] | 1.3.5 | 2h |
+| # | Task | Type | Depends On | Estimate | Status |
+|---|------|------|------------|----------|--------|
+| 1.3.1 | Audit all rename entry points (context menu, modal, inline) | [FE] | - | 1h | ✅ Done |
+| 1.3.2 | Create shared `useRenameNode` hook | [FE] | 1.3.1 | 2h | ✅ Done |
+| 1.3.3 | Refactor `RenameModal` to use shared hook | [FE] | 1.3.2 | 1h | ✅ Done |
+| 1.3.4 | Fix context menu rename to use shared hook | [FE] | 1.3.2 | 1h | ✅ Done |
+| 1.3.5 | Add inline rename in sidebar tree | [FE] | 1.3.2 | 2h | ⏳ Pending |
+| 1.3.6 | Write E2E test for all rename paths | [TEST] | 1.3.5 | 2h | ⏳ Pending |
 
 **Acceptance Criteria:**
-- [ ] Rename works from context menu
-- [ ] Rename works from RenameModal
+- [x] Rename works from context menu
+- [x] Rename works from RenameModal
 - [ ] Rename works inline in sidebar (double-click)
-- [ ] All paths trigger whiteboard sync
+- [x] All paths trigger whiteboard sync
 
 ---
 
-### 1.4 Whiteboard-Hierarchy Sync
+### 1.4 Whiteboard-Hierarchy Sync ✅
 
-| # | Task | Type | Depends On | Estimate |
-|---|------|------|------------|----------|
-| 1.4.1 | Audit existing `whiteboardSyncService.ts` implementation | [FE] | - | 1h |
-| 1.4.2 | Implement node rename → element text sync | [FE] | 1.4.1 | 2h |
-| 1.4.3 | Implement node delete → element unlink indicator | [FE] | 1.4.1 | 2h |
-| 1.4.4 | Implement element create → "Create as node?" prompt | [FE] | 1.4.1 | 3h |
-| 1.4.5 | Add visual indicator for linked elements | [FE] | 1.4.4 | 2h |
-| 1.4.6 | Add context menu "View in Hierarchy" for linked elements | [FE] | 1.4.4 | 1h |
-| 1.4.7 | Write integration tests for sync scenarios | [TEST] | 1.4.6 | 3h |
+| # | Task | Type | Depends On | Estimate | Status |
+|---|------|------|------------|----------|--------|
+| 1.4.1 | Audit existing `whiteboardSyncService.ts` implementation | [FE] | - | 1h | ✅ Done (robust impl exists) |
+| 1.4.2 | Implement node rename → element text sync | [FE] | 1.4.1 | 2h | ✅ Done (already impl) |
+| 1.4.3 | Implement node delete → element unlink indicator | [FE] | 1.4.1 | 2h | ✅ Done (already impl) |
+| 1.4.4 | Implement element create → "Create as node?" prompt | [FE] | 1.4.1 | 3h | ⏳ Enhancement (auto-creates) |
+| 1.4.5 | Add visual indicator for linked elements | [FE] | 1.4.4 | 2h | ✅ Done (light blue bg) |
+| 1.4.6 | Add context menu "View in Hierarchy" for linked elements | [FE] | 1.4.4 | 1h | ✅ Done (already impl) |
+| 1.4.7 | Write integration tests for sync scenarios | [TEST] | 1.4.6 | 3h | ⏳ Pending |
 
 **Acceptance Criteria:**
-- [ ] Renaming node updates linked whiteboard element text
-- [ ] Deleting node shows "unlinked" indicator on element
-- [ ] Creating text element prompts to create as node
-- [ ] Linked elements show small badge/indicator
-- [ ] Context menu on element navigates to node in hierarchy
+- [x] Renaming node updates linked whiteboard element text
+- [x] Deleting node shows "unlinked" indicator on element
+- [ ] Creating text element prompts to create as node (auto-creates instead)
+- [x] Linked elements show small badge/indicator (light blue background)
+- [x] Context menu on element navigates to node in hierarchy
 
 ---
 
