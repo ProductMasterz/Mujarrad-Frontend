@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
+import { nodeKeys } from '@/hooks/api/useNodes';
 import { attributeService } from '@/services/api/attribute.service';
 import { wikiLinkService } from '@/services/api/wikilink.service';
 import { NodeType, AttributeKey, AttributeTypeMode } from '@/types/backend-dtos';
@@ -61,8 +62,11 @@ export function useBlockEditor({
   const blocksQueryKey = ['blocks', spaceSlug, pageId];
 
   // Fetch blocks for the page
+  // Use longer staleTime to prevent refetching while user is editing
   const { data: fetchedBlocks, isLoading } = useQuery({
     queryKey: blocksQueryKey,
+    staleTime: 5 * 60 * 1000, // 5 minutes - blocks are user-edited, don't need frequent refetch
+    refetchOnWindowFocus: false, // Don't refetch on tab switch while editing
     queryFn: async () => {
       // Get all nodes in the space
       const allNodes = await nodeService.getNodes(spaceSlug);
@@ -112,8 +116,14 @@ export function useBlockEditor({
   });
 
   // Sync local state with fetched data
+  // IMPORTANT: Only sync when there are no pending changes to avoid overwriting user's typing
   useEffect(() => {
     if (fetchedBlocks !== undefined) {
+      // Don't overwrite local state if user has pending changes (typing in progress)
+      if (pendingChangesRef.current.size > 0) {
+        // Only update blocksRef for new block detection, don't overwrite user's state
+        return;
+      }
       setBlocks(fetchedBlocks);
       blocksRef.current = fetchedBlocks;
     }
@@ -468,8 +478,7 @@ export function useBlockEditor({
       });
 
       // Invalidate queries to refresh the space list
-      queryClient.invalidateQueries({ queryKey: ['space-nodes', spaceSlug] });
-      queryClient.invalidateQueries({ queryKey: ['nodes'] });
+      queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
     },
     [spaceSlug, queryClient]
   );

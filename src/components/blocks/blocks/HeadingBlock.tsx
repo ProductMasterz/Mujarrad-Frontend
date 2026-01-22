@@ -38,8 +38,12 @@ export function HeadingBlock({
   };
 
   // Sync content with DOM
+  // IMPORTANT: Only sync if not focused (user not actively typing) to avoid cursor reset
   useEffect(() => {
     if (contentRef.current && contentRef.current.innerText !== block.content) {
+      if (document.activeElement === contentRef.current) {
+        return;
+      }
       contentRef.current.innerText = block.content;
     }
   }, [block.content]);

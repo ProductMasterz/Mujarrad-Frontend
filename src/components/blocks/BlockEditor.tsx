@@ -102,6 +102,7 @@ export const BlockEditor = forwardRef<BlockEditorRef, BlockEditorProps>(function
 
   const editorRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const pendingFocusRef = useRef<string | null>(null);
 
   // Scroll to a specific block
   const scrollToBlock = useCallback((blockId: string) => {
@@ -256,12 +257,36 @@ export const BlockEditor = forwardRef<BlockEditorRef, BlockEditorProps>(function
     async (type: BlockType) => {
       if (!slashMenu.blockId) return;
 
+      const blockIdToFocus = slashMenu.blockId;
+
       // Clear the slash command text and change block type
-      updateBlockContent(slashMenu.blockId, '');
-      await updateBlockType(slashMenu.blockId, type);
+      updateBlockContent(blockIdToFocus, '');
+      await updateBlockType(blockIdToFocus, type);
 
       setSlashMenu((prev) => ({ ...prev, isOpen: false }));
-      setFocusedBlockId(slashMenu.blockId);
+
+      // Set pending focus - will be applied after render
+      pendingFocusRef.current = blockIdToFocus;
+      setFocusedBlockId(blockIdToFocus);
+
+      // Force focus after a brief delay to ensure DOM is updated
+      setTimeout(() => {
+        const blockElement = blockRefs.current.get(blockIdToFocus);
+        if (blockElement) {
+          const editableElement = blockElement.querySelector('[contenteditable="true"]') as HTMLElement;
+          if (editableElement) {
+            editableElement.focus();
+            // Move cursor to end
+            const range = document.createRange();
+            const selection = window.getSelection();
+            range.selectNodeContents(editableElement);
+            range.collapse(false);
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+          }
+        }
+        pendingFocusRef.current = null;
+      }, 50);
     },
     [slashMenu.blockId, updateBlockContent, updateBlockType]
   );
@@ -284,6 +309,41 @@ export const BlockEditor = forwardRef<BlockEditorRef, BlockEditorProps>(function
       }
     },
     []
+  );
+
+  // Handle double-click on empty area to create new block
+  const handleEditorDoubleClick = useCallback(
+    async (e: React.MouseEvent<HTMLDivElement>) => {
+      if (readOnly) return;
+
+      // Only handle clicks on the editor container itself, not on blocks
+      const target = e.target as HTMLElement;
+      const isOnBlock = target.closest('[data-block-id]') !== null;
+      const isOnBlockContent = target.closest('[contenteditable]') !== null;
+
+      if (isOnBlock || isOnBlockContent) {
+        return; // Let the block handle the click
+      }
+
+      // Create a new block at the end
+      const lastBlock = blocks[blocks.length - 1];
+      const newBlock = await createBlock(BLOCK_TYPES.TEXT, '', lastBlock?.id);
+
+      if (newBlock) {
+        // Focus the new block after a brief delay
+        setTimeout(() => {
+          const blockElement = blockRefs.current.get(newBlock.id);
+          if (blockElement) {
+            const editableElement = blockElement.querySelector('[contenteditable="true"]') as HTMLElement;
+            if (editableElement) {
+              editableElement.focus();
+            }
+          }
+          setFocusedBlockId(newBlock.id);
+        }, 50);
+      }
+    },
+    [readOnly, blocks, createBlock]
   );
 
   // Global keyboard shortcuts
@@ -346,7 +406,11 @@ export const BlockEditor = forwardRef<BlockEditorRef, BlockEditorProps>(function
   }
 
   return (
-    <div ref={editorRef} className="relative min-h-[200px] py-4">
+    <div
+      ref={editorRef}
+      className="relative min-h-[200px] py-4 cursor-text"
+      onDoubleClick={handleEditorDoubleClick}
+    >
       {/* Save status indicator */}
       {isSaving && (
         <div className="absolute top-2 right-2 text-xs text-gray-500">
@@ -368,6 +432,7 @@ export const BlockEditor = forwardRef<BlockEditorRef, BlockEditorProps>(function
             {blocks.map((block, index) => (
               <div
                 key={block.id}
+                data-block-id={block.id}
                 ref={(el) => {
                   if (el) blockRefs.current.set(block.id, el);
                 }}

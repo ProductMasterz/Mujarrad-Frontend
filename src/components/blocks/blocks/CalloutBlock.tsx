@@ -74,8 +74,12 @@ export function CalloutBlock({
   const config = CALLOUT_CONFIG[calloutType];
 
   // Sync content with DOM when block content changes externally
+  // IMPORTANT: Only sync if not focused (user not actively typing) to avoid cursor reset
   useEffect(() => {
     if (contentRef.current && contentRef.current.innerText !== block.content) {
+      if (document.activeElement === contentRef.current) {
+        return;
+      }
       contentRef.current.innerText = block.content;
     }
   }, [block.content]);

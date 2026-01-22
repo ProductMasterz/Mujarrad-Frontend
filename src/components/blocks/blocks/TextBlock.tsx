@@ -24,8 +24,13 @@ export function TextBlock({
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Sync content with DOM when block content changes externally
+  // IMPORTANT: Only sync if not focused (user not actively typing) to avoid cursor reset
   useEffect(() => {
     if (contentRef.current && contentRef.current.innerText !== block.content) {
+      // Don't update DOM if user is actively typing in this element
+      if (document.activeElement === contentRef.current) {
+        return;
+      }
       contentRef.current.innerText = block.content;
     }
   }, [block.content]);
