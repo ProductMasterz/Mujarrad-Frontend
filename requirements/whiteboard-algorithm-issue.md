@@ -116,43 +116,51 @@ STEP 7: Update Client State
 
 **Fix**: Changed to `Map<oldNodeId, WhiteboardNode>` (recreatedMap). Now each recreated node is directly keyed by the old ID it replaced, making the lookup O(1) and order-independent.
 
-### Issue 3: Only One Node Persists (Under Investigation)
+### Issue 3: Only One Node Persists (Fixed)
 
 **Symptom**: User creates node A, then node B. On refresh, only one node appears.
 
-**Possible Causes**:
+**Root Causes**: Two bugs working together — Theory C + Theory D confirmed.
 
-#### Theory A: Backend Not Persisting Nodes
-- Backend on Render free tier may sleep/restart, losing data
-- Nodes are created successfully but lost before next read
-- Evidence: The original 404 errors suggest nodes disappear from the server
+#### Root Cause A: useEffect Overwrites existingNodesRef with Stale Query Data
 
-#### Theory B: Context Content Saved with Missing Elements
-- Line 187-188 in `useWhiteboardMutations.ts`:
-  ```typescript
-  const nodeId = updatedMap.get(element.id) || '';
-  if (nodeId) { // Elements without nodeId are EXCLUDED from context
-  ```
-- If an element doesn't get a nodeId in `updatedMap`, it's silently dropped from the context content
-- On refresh, that element won't be loaded
+In `WhiteboardCanvas.tsx`, the `useEffect` that syncs `initialNodeMap` to `existingNodesRef` fires on **every parent re-render** because `useWhiteboardState()` creates a new `Map` instance on each render (reference inequality):
 
-#### Theory C: Query Invalidation Race Condition
-- After save, `onSuccess` invalidates the whiteboard query
-- The query refetches and creates a new `nodeMap`
-- `useEffect` in WhiteboardCanvas overwrites `existingNodesRef` with the refetched data
-- If the refetch returns stale data (before backend commits), the ref gets old data
-- Next save uses stale data → incorrect categorization
+```typescript
+// In useWhiteboard.ts - new Map on EVERY render
+const nodeMap = new Map<string, string>();
+content.elements.forEach(entry => { nodeMap.set(...); });
 
-#### Theory D: Debounce + Concurrent Save Skip
-- If save A is in progress when debounce fires for save B:
-  ```typescript
-  if (isSavingRef.current) {
-    console.log('[WhiteboardCanvas] Save already in progress, skipping');
-    return;
+// In WhiteboardCanvas.tsx - fires on every parent re-render
+useEffect(() => {
+  if (initialNodeMap) {
+    existingNodesRef.current = initialNodeMap; // OVERWRITES save result!
   }
-  ```
-- Save B is skipped entirely
-- If no subsequent onChange fires, the new elements never get saved
+}, [initialNodeMap]);
+```
+
+After a successful save:
+1. `existingNodesRef.current = result.nodeMap` (correct: `{A: id1, B: id2}`)
+2. `markSaved()` → Zustand store update → parent re-renders
+3. Parent re-renders → `useWhiteboardState` creates new nodeMap from stale query data (only `{A: id1}`)
+4. useEffect fires → `existingNodesRef.current = {A: id1}` (B's mapping LOST!)
+
+**Fix**: Guard the useEffect with a `hasSavedRef` flag. After the first save, the ref is authoritatively managed by `performSave` and should never be overwritten by query data.
+
+#### Root Cause B: Concurrent Save Guard Discards Elements Without Retry
+
+When `isSavingRef.current` is true, `performSave` returned immediately with no retry mechanism:
+
+```typescript
+if (isSavingRef.current) {
+  console.log('[WhiteboardCanvas] Save already in progress, skipping');
+  return; // Elements are LOST forever!
+}
+```
+
+On Render free tier, saves take 3+ API calls (check/create context, batch save, update context). If this takes > 5 seconds (the debounce period), the next debounce fires while the previous save is running, and new elements are permanently skipped.
+
+**Fix**: Added `pendingSaveRef` flag. When a save is skipped, the flag is set. After the current save completes, if the flag is set, it retries with the latest `lastElementsRef` (which always contains ALL current canvas elements).
 
 ---
 

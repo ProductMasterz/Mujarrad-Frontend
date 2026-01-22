@@ -60,13 +60,18 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
     const contextNodeIdRef = useRef<string | null>(initialContextNodeId || null);
     const isSavingRef = useRef<boolean>(false);
     const isMountedRef = useRef<boolean>(true);
+    const hasSavedRef = useRef<boolean>(false); // Tracks if a save has occurred this session
+    const pendingSaveRef = useRef<boolean>(false); // Tracks if a save was skipped due to concurrency
     const lastElementsRef = useRef<ExcalidrawElement[]>(initialElements);
     const lastAppStateRef = useRef<any>(initialAppState);
     const lastFilesRef = useRef<Record<string, BinaryFileData>>(initialFiles || {});
 
-    // Sync refs when props change to prevent stale data
+    // Sync refs when props change - but ONLY if we haven't saved yet this session.
+    // After a save, existingNodesRef is authoritatively managed by performSave.
+    // The query refetch creates new Map instances on every render, which would
+    // overwrite the save result with stale data if we always synced.
     useEffect(() => {
-      if (initialNodeMap) {
+      if (initialNodeMap && !hasSavedRef.current) {
         existingNodesRef.current = initialNodeMap;
       }
     }, [initialNodeMap]);
@@ -124,9 +129,10 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
         return;
       }
 
-      // Prevent concurrent saves
+      // Prevent concurrent saves - but mark that a retry is needed
       if (isSavingRef.current) {
-        console.log('[WhiteboardCanvas] Save already in progress, skipping');
+        console.log('[WhiteboardCanvas] Save already in progress, marking pending retry');
+        pendingSaveRef.current = true;
         return;
       }
 
@@ -165,6 +171,7 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
           contextNodeId: result.contextNodeId,
         });
 
+        hasSavedRef.current = true;
         markSaved();
       } catch (error) {
         console.error('[WhiteboardCanvas] Save failed:', error);
@@ -174,6 +181,18 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
       } finally {
         isSavingRef.current = false;
         setSaving(false);
+
+        // If a save was skipped while we were saving, retry with latest state
+        if (pendingSaveRef.current && isMountedRef.current) {
+          pendingSaveRef.current = false;
+          console.log('[WhiteboardCanvas] Retrying skipped save with latest elements');
+          // Use setTimeout to avoid synchronous recursion and allow React to process
+          setTimeout(() => {
+            if (isMountedRef.current) {
+              performSave(lastElementsRef.current, lastAppStateRef.current, lastFilesRef.current);
+            }
+          }, 100);
+        }
       }
     }, [readOnly, setSaving, setError, markSaved, onError]);
 
