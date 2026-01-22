@@ -123,6 +123,7 @@ export function useSaveWhiteboard(spaceSlug: string) {
 
       // Batch create/update/delete shape nodes
       let created: WhiteboardNode[] = [];
+      let recreated: WhiteboardNode[] = [];
 
       try {
         const result = await whiteboardService.batchSaveShapeNodes(
@@ -132,6 +133,7 @@ export function useSaveWhiteboard(spaceSlug: string) {
           toDelete
         );
         created = result.created;
+        recreated = result.recreated || [];
       } catch (error) {
         console.error('[useSaveWhiteboard] Failed to batch save shape nodes:', error);
         throw error;
@@ -149,6 +151,31 @@ export function useSaveWhiteboard(spaceSlug: string) {
           whiteboardSyncService.linkFrameToNode(elementId, node.id);
         }
       });
+
+      // Handle recreated nodes (nodes that got 404 on update and were recreated)
+      // Find the element IDs that had stale node IDs and update them
+      if (recreated.length > 0) {
+        console.log('[useSaveWhiteboard] Handling recreated nodes:', recreated.map(n => n.id));
+        // The recreated nodes are in the same order as toUpdate items that failed
+        // We need to find which elements had stale IDs and update them
+        let recreatedIndex = 0;
+        for (const { id: oldNodeId } of toUpdate) {
+          // Check if this old ID still exists in our map
+          for (const [elementId, nodeId] of updatedMap) {
+            if (nodeId === oldNodeId) {
+              // Check if this was recreated (the old ID is no longer valid)
+              if (recreatedIndex < recreated.length) {
+                const newNode = recreated[recreatedIndex];
+                updatedMap.set(elementId, newNode.id);
+                whiteboardSyncService.linkFrameToNode(elementId, newNode.id);
+                console.log(`[useSaveWhiteboard] Updated stale mapping: ${elementId} -> ${newNode.id} (was ${oldNodeId})`);
+                recreatedIndex++;
+              }
+              break;
+            }
+          }
+        }
+      }
 
       // Remove deleted elements from map and sync service
       toDelete.forEach(nodeId => {

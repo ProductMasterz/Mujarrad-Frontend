@@ -282,21 +282,60 @@ export const whiteboardService = {
   /**
    * Batch save shape nodes (create/update/delete)
    * Handles titles and content - element data is stored in context node
+   *
+   * Note: If an update fails with 404 (node doesn't exist), we create it instead.
+   * This handles cases where the node was deleted on the server but the client
+   * still has a stale reference.
    */
   async batchSaveShapeNodes(
     spaceSlug: string,
     toCreate: { title: string; content?: string }[],
     toUpdate: { id: string; title: string; content?: string }[],
     toDelete: string[]
-  ): Promise<{ created: WhiteboardNode[] }> {
-    // Execute all operations in parallel
-    const [createdNodes] = await Promise.all([
-      Promise.all(toCreate.map(({ title, content }) => this.createShapeNode(spaceSlug, title, content))),
-      Promise.all(toUpdate.map(({ id, title, content }) => this.updateShapeNode(spaceSlug, id, title, content))),
-      Promise.all(toDelete.map((id) => this.deleteWhiteboardNode(spaceSlug, id))),
-    ]);
+  ): Promise<{ created: WhiteboardNode[]; recreated: WhiteboardNode[] }> {
+    // Track nodes that need to be recreated (404 on update)
+    const recreatedNodes: WhiteboardNode[] = [];
 
-    return { created: createdNodes };
+    // Update nodes, falling back to create if 404
+    await Promise.all(
+      toUpdate.map(async ({ id, title, content }) => {
+        try {
+          await this.updateShapeNode(spaceSlug, id, title, content);
+        } catch (error: any) {
+          // If 404, the node doesn't exist - create a new one
+          if (error?.statusCode === 404 || error?.message?.includes('404') || error?.message?.includes('Not Found')) {
+            console.warn(`[whiteboardService] Node ${id} not found (404), creating new node`);
+            const newNode = await this.createShapeNode(spaceSlug, title, content);
+            recreatedNodes.push(newNode);
+            return;
+          }
+          throw error;
+        }
+      })
+    );
+
+    // Delete nodes, ignoring 404 errors (already deleted)
+    await Promise.all(
+      toDelete.map(async (id) => {
+        try {
+          await this.deleteWhiteboardNode(spaceSlug, id);
+        } catch (error: any) {
+          // Ignore 404 on delete - node already doesn't exist
+          if (error?.statusCode === 404 || error?.message?.includes('404') || error?.message?.includes('Not Found')) {
+            console.warn(`[whiteboardService] Node ${id} already deleted (404), ignoring`);
+            return;
+          }
+          throw error;
+        }
+      })
+    );
+
+    // Create new nodes
+    const createdNodes = await Promise.all(
+      toCreate.map(({ title, content }) => this.createShapeNode(spaceSlug, title, content))
+    );
+
+    return { created: createdNodes, recreated: recreatedNodes };
   },
 };
 
