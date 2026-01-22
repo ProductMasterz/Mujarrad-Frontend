@@ -1,34 +1,57 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Minimize2, Maximize2, ChevronDown } from "lucide-react";
+import { X, Maximize2, ChevronDown, FolderPlus, FilePlus, Box } from "lucide-react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { nodeService } from "@/services/api/node.service";
+import { spaceService } from "@/services/api/space.service";
 import { nodeKeys } from "@/hooks/api/useNodes";
-import { NodeType as BackendNodeType } from "@/types/backend-dtos";
+import { spaceKeys } from "@/hooks/api/useSpaces";
+import { useDuplicateCheck, type DuplicateAction } from "@/hooks/api/useDuplicateCheck";
+import { NodeType as BackendNodeType, type Node as NodeDTO } from "@/types/backend-dtos";
 import { BlockEditor, BlockEditorRef } from "@/components/blocks/BlockEditor";
+import { DuplicateNodeModal } from "@/components/nodes/DuplicateNodeModal";
+import { useNavigationStore } from "@/stores/navigationStore";
 
-type NodeType = "node" | "context";
+// Entity types that can be created
+export type EntityType = "space" | "node" | "context";
 
-type Space = {
+type SpaceItem = {
   id: string;
   name: string;
+};
+
+// Icons for each entity type
+const ENTITY_ICONS: Record<EntityType, React.ReactNode> = {
+  space: <FolderPlus className="size-4" />,
+  node: <FilePlus className="size-4" />,
+  context: <Box className="size-4" />,
+};
+
+const ENTITY_LABELS: Record<EntityType, string> = {
+  space: "Space",
+  node: "Node",
+  context: "Context",
 };
 
 type NewNodeModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  spaceSlug: string;
-  spaceId: string;
+  spaceSlug?: string;
+  spaceId?: string;
   currentPath?: string[];
   currentSpace?: string;
-  spaces?: Space[];
+  spaces?: SpaceItem[];
   onAddSpace?: (spaceName: string) => void;
   onSpaceChange?: (spaceId: string) => void;
   parentPath?: string[];
   insertPosition?: number;
+  /** Default entity type to pre-select when modal opens */
+  defaultType?: EntityType;
+  /** Available entity types based on current navigation scope */
+  availableTypes?: EntityType[];
 };
 
 export function NewNodeModal({
@@ -42,24 +65,51 @@ export function NewNodeModal({
   onAddSpace,
   onSpaceChange,
   parentPath,
-  insertPosition
+  insertPosition,
+  defaultType = "node",
+  availableTypes,
 }: NewNodeModalProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const blockEditorRef = useRef<BlockEditorRef>(null);
 
-  const [nodeType, setNodeType] = useState<NodeType>("node");
+  // Get current scope from navigation store to determine available types
+  const scope = useNavigationStore((state) => state.scope);
+
+  // Determine available types based on scope if not explicitly provided
+  const resolvedAvailableTypes = availableTypes ?? (
+    scope === 'spaces'
+      ? ['space', 'node', 'context'] as EntityType[]
+      : ['node', 'context'] as EntityType[]
+  );
+
+  const [entityType, setEntityType] = useState<EntityType>(defaultType);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [title, setTitle] = useState("");
-  const [createdNodeId, setCreatedNodeId] = useState<string | null>(null);
+  const [createdEntityId, setCreatedEntityId] = useState<string | null>(null);
+  const [createdEntitySlug, setCreatedEntitySlug] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Duplicate detection state
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [duplicateNode, setDuplicateNode] = useState<NodeDTO | null>(null);
+  const [pendingTitle, setPendingTitle] = useState<string>("");
+
   const typeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Duplicate check hook
+  const { checkDuplicate, generateUniqueTitle } = useDuplicateCheck({
+    spaceSlug: spaceSlug || "",
+  });
+
+  // Check if we're creating a space (no block editor needed)
+  const isSpaceMode = entityType === "space";
 
   // Create node mutation
   const createNodeMutation = useMutation({
     mutationFn: async (data: { title: string; nodeType: BackendNodeType }) => {
+      if (!spaceSlug) throw new Error("spaceSlug is required for node creation");
       return nodeService.createNode(spaceSlug, {
         title: data.title || "Untitled",
         nodeType: data.nodeType,
@@ -67,8 +117,23 @@ export function NewNodeModal({
       });
     },
     onSuccess: (node) => {
-      setCreatedNodeId(node.id);
+      setCreatedEntityId(node.id);
       queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
+    },
+  });
+
+  // Create space mutation
+  const createSpaceMutation = useMutation({
+    mutationFn: async (data: { name: string }) => {
+      return spaceService.createSpace({
+        name: data.name || "Untitled",
+      });
+    },
+    onSuccess: (space) => {
+      setCreatedEntityId(space.id);
+      setCreatedEntitySlug(space.slug);
+      queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['spaces'] });
     },
   });
 
@@ -81,13 +146,21 @@ export function NewNodeModal({
 
   // Reset state when modal opens/closes
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      // Set default type when modal opens
+      setEntityType(defaultType);
+    } else {
+      // Reset everything when modal closes
       setTitle("");
-      setCreatedNodeId(null);
-      setNodeType("node");
+      setCreatedEntityId(null);
+      setCreatedEntitySlug(null);
+      setEntityType(defaultType);
       setIsCreating(false);
+      setShowDuplicateModal(false);
+      setDuplicateNode(null);
+      setPendingTitle("");
     }
-  }, [isOpen]);
+  }, [isOpen, defaultType]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -101,79 +174,182 @@ export function NewNodeModal({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Create node when user starts typing (if not already created)
-  const ensureNodeCreated = useCallback(async () => {
-    if (createdNodeId || isCreating) return createdNodeId;
+  // Create entity when user starts typing (if not already created)
+  const ensureEntityCreated = useCallback(async (overrideTitle?: string) => {
+    if (createdEntityId || isCreating) return createdEntityId;
+
+    const titleToUse = overrideTitle || title || "Untitled";
 
     setIsCreating(true);
     try {
-      const backendType = nodeType === "context" ? BackendNodeType.CONTEXT : BackendNodeType.REGULAR;
-      const node = await createNodeMutation.mutateAsync({
-        title: title || "Untitled",
-        nodeType: backendType,
-      });
-      return node.id;
+      if (entityType === "space") {
+        // Create space
+        const space = await createSpaceMutation.mutateAsync({
+          name: titleToUse,
+        });
+        return space.id;
+      } else {
+        // Create node or context
+        const backendType = entityType === "context" ? BackendNodeType.CONTEXT : BackendNodeType.REGULAR;
+        const node = await createNodeMutation.mutateAsync({
+          title: titleToUse,
+          nodeType: backendType,
+        });
+        return node.id;
+      }
     } catch (error) {
-      console.error("Failed to create node:", error);
+      console.error(`Failed to create ${entityType}:`, error);
       return null;
     } finally {
       setIsCreating(false);
     }
-  }, [createdNodeId, isCreating, nodeType, title, createNodeMutation]);
+  }, [createdEntityId, isCreating, entityType, title, createNodeMutation, createSpaceMutation]);
 
-  // Handle title change - create node on first keystroke
+  // Handle duplicate action from modal
+  const handleDuplicateAction = useCallback(async (action: DuplicateAction, renamedTitle?: string) => {
+    setShowDuplicateModal(false);
+
+    switch (action) {
+      case 'merge':
+        // Navigate to existing node
+        if (duplicateNode && spaceSlug) {
+          onClose();
+          router.push(`/spaces/${spaceSlug}/node/${duplicateNode.id}`);
+        }
+        break;
+
+      case 'create-anyway':
+        // Create with the duplicate title
+        setTitle(pendingTitle);
+        await ensureEntityCreated(pendingTitle);
+        break;
+
+      case 'rename':
+        // Create with the new title
+        if (renamedTitle) {
+          setTitle(renamedTitle);
+          await ensureEntityCreated(renamedTitle);
+        }
+        break;
+
+      case 'cancel':
+        // Just close the duplicate modal, keep the main modal open
+        setPendingTitle("");
+        break;
+    }
+
+    setDuplicateNode(null);
+    setPendingTitle("");
+  }, [duplicateNode, spaceSlug, onClose, router, pendingTitle, ensureEntityCreated]);
+
+  // Handle title change - create entity on first keystroke (with duplicate check)
   const handleTitleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
 
-    // Create node on first character if not created
-    if (!createdNodeId && newTitle.length === 1) {
-      await ensureNodeCreated();
+    // For spaces, we don't create on first keystroke - wait for submission
+    if (isSpaceMode) {
+      return;
+    }
+
+    // Create node/context on first character if not created
+    if (!createdEntityId && newTitle.length === 1) {
+      // Check for duplicates before creating
+      const duplicateResult = checkDuplicate(newTitle);
+      if (duplicateResult.isDuplicate && duplicateResult.existingNode) {
+        // Show duplicate modal
+        setDuplicateNode(duplicateResult.existingNode);
+        setPendingTitle(newTitle);
+        setShowDuplicateModal(true);
+        return; // Don't create yet - wait for user decision
+      }
+
+      await ensureEntityCreated();
     }
 
     // Update title if node exists
-    if (createdNodeId && newTitle) {
-      nodeService.updateNode(spaceSlug, createdNodeId, { title: newTitle }).catch(console.error);
+    if (createdEntityId && newTitle && spaceSlug) {
+      nodeService.updateNode(spaceSlug, createdEntityId, { title: newTitle }).catch(console.error);
     }
   };
 
-  // Handle expand to full page
+  // Check for duplicates when title loses focus (for longer titles typed quickly)
+  const handleTitleBlur = async () => {
+    if (isSpaceMode || createdEntityId || !title.trim()) {
+      return;
+    }
+
+    const duplicateResult = checkDuplicate(title);
+    if (duplicateResult.isDuplicate && duplicateResult.existingNode) {
+      setDuplicateNode(duplicateResult.existingNode);
+      setPendingTitle(title);
+      setShowDuplicateModal(true);
+    }
+  };
+
+  // Handle expand to full page (or create and navigate for spaces)
   const handleExpand = async () => {
-    let nodeId = createdNodeId;
-
-    // Create node if not exists
-    if (!nodeId) {
-      nodeId = await ensureNodeCreated();
+    if (isSpaceMode) {
+      // Create space and navigate to it
+      try {
+        const space = await createSpaceMutation.mutateAsync({
+          name: title || "Untitled",
+        });
+        onClose();
+        router.push(`/spaces/${space.slug}`);
+      } catch (error) {
+        console.error("Failed to create space:", error);
+      }
+      return;
     }
 
-    if (nodeId) {
+    // For nodes/contexts
+    let entityId = createdEntityId;
+
+    // Create entity if not exists
+    if (!entityId) {
+      entityId = await ensureEntityCreated();
+    }
+
+    if (entityId && spaceSlug) {
       onClose();
-      router.push(`/spaces/${spaceSlug}/node/${nodeId}`);
+      router.push(`/spaces/${spaceSlug}/node/${entityId}`);
     }
   };
 
-  // Handle close - save and navigate to node if created
+  // Handle close - save and close
   const handleClose = async () => {
-    // Save any pending content before closing
-    if (blockEditorRef.current) {
+    // Save any pending content before closing (only for nodes/contexts)
+    if (!isSpaceMode && blockEditorRef.current) {
       await blockEditorRef.current.saveNow();
     }
-    if (createdNodeId) {
-      queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
+    if (createdEntityId) {
+      if (isSpaceMode) {
+        queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: ['spaces'] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
+      }
     }
     onClose();
   };
 
-  if (!isOpen) return null;
-
-  const getNodeTypeLabel = () => {
-    switch (nodeType) {
-      case "node":
-        return "Node";
-      case "context":
-        return "Context";
+  // Handle create button click (for spaces, which don't auto-create)
+  const handleCreate = async () => {
+    if (isSpaceMode) {
+      try {
+        const space = await createSpaceMutation.mutateAsync({
+          name: title || "Untitled",
+        });
+        onClose();
+        router.push(`/spaces/${space.slug}`);
+      } catch (error) {
+        console.error("Failed to create space:", error);
+      }
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -194,50 +370,46 @@ export function NewNodeModal({
               <Maximize2 className="size-5" strokeWidth={1.5} />
             </button>
 
-            {/* Node Type Dropdown */}
+            {/* Entity Type Dropdown */}
             <div className="relative" ref={typeDropdownRef}>
               <button
                 onClick={() => setShowTypeDropdown(!showTypeDropdown)}
                 className="bg-[#e4f1ff] h-[32px] px-[12px] rounded-[100px] flex items-center gap-[8px] hover:bg-[#d5e8ff] transition-colors"
               >
+                <span className="text-[#248bf2]">{ENTITY_ICONS[entityType]}</span>
                 <span
                   className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#248bf2] tracking-[-0.08px]"
                   style={{ fontVariationSettings: "'wdth' 100" }}
                 >
-                  {getNodeTypeLabel()}
+                  {ENTITY_LABELS[entityType]}
                 </span>
                 <ChevronDown className="size-4 text-[#248bf2]" strokeWidth={1.5} />
               </button>
 
               {/* Type Dropdown Menu */}
               {showTypeDropdown && (
-                <div className="absolute left-0 top-[38px] bg-white rounded-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] w-[188px] py-[15px] px-[12px] z-10">
-                  <button
-                    onClick={() => {
-                      setNodeType("node");
-                      setShowTypeDropdown(false);
-                    }}
-                    className={clsx(
-                      "w-full text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] tracking-[-0.08px] py-[4.5px]",
-                      nodeType === "node" ? "text-[#248bf2]" : "text-[#828282] hover:text-[#333]"
-                    )}
-                    style={{ fontVariationSettings: "'wdth' 100" }}
-                  >
-                    Node
-                  </button>
-                  <button
-                    onClick={() => {
-                      setNodeType("context");
-                      setShowTypeDropdown(false);
-                    }}
-                    className={clsx(
-                      "w-full text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] tracking-[-0.08px] py-[4.5px]",
-                      nodeType === "context" ? "text-[#248bf2]" : "text-[#828282] hover:text-[#333]"
-                    )}
-                    style={{ fontVariationSettings: "'wdth' 100" }}
-                  >
-                    Context
-                  </button>
+                <div className="absolute left-0 top-[38px] bg-white rounded-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] w-[188px] py-[12px] px-[12px] z-10">
+                  {resolvedAvailableTypes.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        setEntityType(type);
+                        setShowTypeDropdown(false);
+                      }}
+                      className={clsx(
+                        "w-full text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] tracking-[-0.08px] py-[6px] px-[8px] rounded-[6px] flex items-center gap-[8px] transition-colors",
+                        entityType === type
+                          ? "text-[#248bf2] bg-[#e4f1ff]"
+                          : "text-[#828282] hover:text-[#333] hover:bg-[#f5f5f5]"
+                      )}
+                      style={{ fontVariationSettings: "'wdth' 100" }}
+                    >
+                      <span className={entityType === type ? "text-[#248bf2]" : "text-[#828282]"}>
+                        {ENTITY_ICONS[type]}
+                      </span>
+                      {ENTITY_LABELS[type]}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -260,44 +432,99 @@ export function NewNodeModal({
             type="text"
             value={title}
             onChange={handleTitleChange}
+            onBlur={handleTitleBlur}
+            onKeyDown={(e) => {
+              // For spaces, create on Enter
+              if (e.key === "Enter" && isSpaceMode) {
+                e.preventDefault();
+                handleCreate();
+              }
+            }}
             placeholder="Untitled"
             className="w-full text-[32px] font-['Roboto:Bold',sans-serif] font-bold text-[#333] mb-2 outline-none border-none bg-transparent placeholder:text-[#bdbdbd]"
             style={{ fontVariationSettings: "'wdth' 100" }}
           />
 
-          {/* Subtitle hint */}
-          <p
-            className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#bdbdbd] tracking-[-0.08px] leading-[18px] mb-[24px]"
-            style={{ fontVariationSettings: "'wdth' 100" }}
-          >
-            Press &apos;/&apos; for commands
-          </p>
+          {isSpaceMode ? (
+            // Space mode - simple form with description and create button
+            <>
+              <p
+                className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#bdbdbd] tracking-[-0.08px] leading-[18px] mb-[24px]"
+                style={{ fontVariationSettings: "'wdth' 100" }}
+              >
+                Enter a name for your new space
+              </p>
 
-          {/* Block Editor - only show if node is created */}
-          {createdNodeId ? (
-            <BlockEditor
-              ref={blockEditorRef}
-              pageId={createdNodeId}
-              spaceSlug={spaceSlug}
-              spaceId={spaceId}
-            />
+              <div className="flex flex-col items-center justify-center min-h-[200px]">
+                <div className="text-center mb-[24px]">
+                  <div className="size-16 mx-auto mb-4 rounded-[16px] bg-[#e4f1ff] flex items-center justify-center">
+                    <FolderPlus className="size-8 text-[#248bf2]" />
+                  </div>
+                  <p
+                    className="font-['Roboto:Regular',sans-serif] font-normal text-[15px] text-[#828282] tracking-[-0.08px]"
+                    style={{ fontVariationSettings: "'wdth' 100" }}
+                  >
+                    A space is a container for your nodes and contexts
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleCreate}
+                  disabled={createSpaceMutation.isPending}
+                  className="h-[40px] px-[24px] bg-[#248bf2] rounded-[100px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[14px] text-white tracking-[-0.24px] hover:bg-[#1a6bc4] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-[8px]"
+                  style={{ fontVariationSettings: "'wdth' 100" }}
+                >
+                  {createSpaceMutation.isPending ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <FolderPlus className="size-4" />
+                      Create Space
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
           ) : (
-            <div
-              className="min-h-[200px] text-[#9ca3af] cursor-text"
-              onClick={async () => {
-                const nodeId = await ensureNodeCreated();
-                if (nodeId) {
-                  // Focus will be handled by BlockEditor
-                }
-              }}
-            >
-              <p className="text-[15px]">Click here or start typing a title to begin editing...</p>
-            </div>
+            // Node/Context mode - block editor
+            <>
+              <p
+                className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#bdbdbd] tracking-[-0.08px] leading-[18px] mb-[24px]"
+                style={{ fontVariationSettings: "'wdth' 100" }}
+              >
+                Press &apos;/&apos; for commands
+              </p>
+
+              {/* Block Editor - only show if node is created */}
+              {createdEntityId && spaceSlug && spaceId ? (
+                <BlockEditor
+                  ref={blockEditorRef}
+                  pageId={createdEntityId}
+                  spaceSlug={spaceSlug}
+                  spaceId={spaceId}
+                />
+              ) : (
+                <div
+                  className="min-h-[200px] text-[#9ca3af] cursor-text"
+                  onClick={async () => {
+                    const entityId = await ensureEntityCreated();
+                    if (entityId) {
+                      // Focus will be handled by BlockEditor
+                    }
+                  }}
+                >
+                  <p className="text-[15px]">Click here or start typing a title to begin editing...</p>
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {/* Status bar */}
-        {createdNodeId && (
+        {/* Status bar - only for nodes/contexts */}
+        {!isSpaceMode && createdEntityId && (
           <div className="px-[24px] py-[12px] border-t border-[#f2f2f2] flex items-center justify-between">
             <span
               className="font-['Roboto:Regular',sans-serif] font-normal text-[12px] text-[#bdbdbd] tracking-[-0.08px]"
@@ -315,6 +542,18 @@ export function NewNodeModal({
           </div>
         )}
       </div>
+
+      {/* Duplicate Node Modal */}
+      {duplicateNode && (
+        <DuplicateNodeModal
+          open={showDuplicateModal}
+          onOpenChange={setShowDuplicateModal}
+          existingNode={duplicateNode}
+          newTitle={pendingTitle}
+          suggestedTitle={generateUniqueTitle(pendingTitle)}
+          onAction={handleDuplicateAction}
+        />
+      )}
     </div>
   );
 }
