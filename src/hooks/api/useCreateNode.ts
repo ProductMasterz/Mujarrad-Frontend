@@ -6,6 +6,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
+import { whiteboardSyncService } from '@/services/whiteboardSyncService';
 import type { CreateNodeRequest } from '@/types/backend-dtos';
 import { nodeKeys } from './useNodes';
 import { spaceKeys } from './useSpaces';
@@ -24,9 +25,14 @@ export const useCreateNode = () => {
     },
 
     // On success, invalidate all node queries to refetch
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: nodeKeys.all });
       queryClient.invalidateQueries({ queryKey: spaceKeys.all });
+
+      // Notify sync service of node creation (for Node→Frame sync)
+      if (data?.id && data?.title) {
+        whiteboardSyncService.onNodeCreated({ id: data.id, title: data.title });
+      }
     },
   });
 };

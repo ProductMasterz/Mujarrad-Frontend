@@ -17,7 +17,6 @@ export const useNode = (spaceSlug: string, nodeId: string | null) => {
       return await nodeService.getNode(spaceSlug, nodeId);
     },
     enabled: !!nodeId && !!spaceSlug, // Only fetch if both are provided
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Cache for 10 minutes
+    // Use default staleTime (0) for real-time updates
   });
 };

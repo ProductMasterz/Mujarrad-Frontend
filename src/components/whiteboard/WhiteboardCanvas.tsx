@@ -17,7 +17,9 @@ import {
 import { useWhiteboardStore } from '@/stores/whiteboardStore';
 import { useSaveWhiteboard } from '@/hooks/api/useWhiteboardMutations';
 import { useUpdateNode } from '@/hooks/api/useUpdateNode';
+import { useWhiteboardSync } from '@/hooks/useWhiteboardSync';
 import { WhiteboardContextMenu } from './WhiteboardContextMenu';
+import { SyncStatusIndicator } from './SyncStatusIndicator';
 
 /**
  * Ref handle for WhiteboardCanvas - exposed methods
@@ -96,6 +98,12 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
 
     // Update node mutation (for promoting to space list)
     const updateNode = useUpdateNode();
+
+    // Enable bidirectional sync with hierarchy
+    const { isFrameLinked, getLinkedNodeId, unlinkFrame } = useWhiteboardSync({
+      spaceSlug,
+      excalidrawAPIRef: excalidrawAPIRef,
+    });
 
     // Save mutation
     const saveWhiteboard = useSaveWhiteboard(spaceSlug);
@@ -248,8 +256,39 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
       }
     }, [contextMenu, spaceSlug, updateNode, onError]);
 
+    // Handle "View in Hierarchy" action
+    const handleViewInHierarchy = useCallback(() => {
+      if (!contextMenu) return;
+      const nodeId = getLinkedNodeId(contextMenu.elementId);
+      if (nodeId) {
+        // Dispatch event to notify hierarchy to select this node
+        window.dispatchEvent(
+          new CustomEvent('whiteboard:view-in-hierarchy', {
+            detail: { nodeId },
+          })
+        );
+      }
+    }, [contextMenu, getLinkedNodeId]);
+
+    // Handle "Unlink from Node" action
+    const handleUnlink = useCallback(() => {
+      if (!contextMenu) return;
+      unlinkFrame(contextMenu.elementId);
+    }, [contextMenu, unlinkFrame]);
+
+    // Check if current context menu element is linked
+    const isContextMenuElementLinked = contextMenu
+      ? isFrameLinked(contextMenu.elementId)
+      : false;
+
+    // Handle retry on sync error
+    const handleRetry = useCallback(() => {
+      debouncedSave.cancel();
+      performSave(lastElementsRef.current, lastAppStateRef.current, lastFilesRef.current);
+    }, [debouncedSave, performSave]);
+
     return (
-      <div className="w-full h-full" style={{ minHeight: '600px' }}>
+      <div className="w-full h-full relative" style={{ minHeight: '600px' }}>
         <ExcalidrawWrapper
           initialElements={initialElements}
           initialAppState={initialAppState}
@@ -259,12 +298,19 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
           onContextMenu={handleContextMenu}
           readOnly={readOnly}
         />
+        {/* Sync status indicator in top-right corner */}
+        <div className="absolute top-4 right-4 z-10">
+          <SyncStatusIndicator onRetry={handleRetry} />
+        </div>
         {/* Custom context menu */}
         {contextMenu && (
           <WhiteboardContextMenu
             x={contextMenu.x}
             y={contextMenu.y}
+            isLinked={isContextMenuElementLinked}
             onShowInSpaceList={handleShowInSpaceList}
+            onViewInHierarchy={handleViewInHierarchy}
+            onUnlink={handleUnlink}
             onClose={() => setContextMenu(null)}
           />
         )}

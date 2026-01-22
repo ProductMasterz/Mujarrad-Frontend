@@ -36,6 +36,13 @@ export interface BoundElement {
   type: 'arrow' | 'text';
 }
 
+/**
+ * Custom data stored in Excalidraw elements for sync purposes
+ */
+export interface ElementCustomData {
+  nodeId?: string; // Links this element to a hierarchy node
+}
+
 export interface ExcalidrawElement {
   // Core identity
   id: string;
@@ -71,6 +78,9 @@ export interface ExcalidrawElement {
 
   // Container binding (for text inside shapes)
   containerId?: string | null;
+
+  // Custom data for sync (nodeId linking)
+  customData?: ElementCustomData;
 
   // Type-specific properties
   text?: string;
@@ -239,6 +249,40 @@ export interface ElementTypeConfig {
 }
 
 // =============================================================================
+// Sync Types
+// =============================================================================
+
+export type SyncOperationType =
+  | 'frame_created'
+  | 'frame_updated'
+  | 'frame_deleted'
+  | 'node_created'
+  | 'node_updated'
+  | 'node_deleted';
+
+export type SyncOrigin = 'whiteboard' | 'hierarchy';
+
+export interface SyncOperation {
+  id: string;
+  type: SyncOperationType;
+  origin: SyncOrigin;
+  frameId?: string;
+  nodeId?: string;
+  payload?: unknown;
+  timestamp: number;
+}
+
+export type SyncStatus = 'idle' | 'syncing' | 'error';
+
+export interface WhiteboardSyncState {
+  syncStatus: SyncStatus;
+  lastSyncError: string | null;
+  lastSyncTime: Date | null;
+  nodeFrameMap: Map<string, string>; // nodeId -> frameId
+  frameNodeMap: Map<string, string>; // frameId -> nodeId
+}
+
+// =============================================================================
 // Store Types
 // =============================================================================
 
@@ -250,6 +294,12 @@ export interface WhiteboardStoreState {
   isSaving: boolean;
   lastSaved: Date | null;
   error: string | null;
+  // Sync state
+  syncStatus: SyncStatus;
+  lastSyncError: string | null;
+  lastSyncTime: Date | null;
+  nodeFrameMap: Map<string, string>;
+  frameNodeMap: Map<string, string>;
 }
 
 export interface WhiteboardStoreActions {
@@ -261,6 +311,15 @@ export interface WhiteboardStoreActions {
   setSaving: (isSaving: boolean) => void;
   setError: (error: string | null) => void;
   reset: () => void;
+  // Sync actions
+  setSyncStatus: (status: SyncStatus) => void;
+  setSyncError: (error: string | null) => void;
+  updateNodeFrameMap: (nodeId: string, frameId: string) => void;
+  removeNodeFrameMapping: (nodeId: string) => void;
+  setNodeFrameMaps: (
+    nodeFrameMap: Map<string, string>,
+    frameNodeMap: Map<string, string>
+  ) => void;
 }
 
 export type WhiteboardStore = WhiteboardStoreState & WhiteboardStoreActions;

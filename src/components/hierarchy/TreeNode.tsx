@@ -5,14 +5,18 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { TreeNode as TreeNodeType } from '@/types/hierarchy';
 import { NodeIcon } from './NodeIcon';
+import { TreeNodeContextMenu } from './TreeNodeContextMenu';
 
 interface TreeNodeProps {
   treeNode: TreeNodeType;
   onSelect: (nodeId: string) => void;
   onToggleExpand: (nodeId: string) => void;
+  isLinkedToWhiteboard?: boolean;
+  onViewOnWhiteboard?: (nodeId: string) => void;
+  onCreateFrameOnWhiteboard?: (nodeId: string) => void;
 }
 
 /**
@@ -20,9 +24,24 @@ interface TreeNodeProps {
  * Displays a single tree node with children
  * Memoized for performance with large trees (T085)
  */
-export const TreeNode = React.memo(function TreeNode({ treeNode, onSelect, onToggleExpand }: TreeNodeProps) {
+export const TreeNode = React.memo(function TreeNode({
+  treeNode,
+  onSelect,
+  onToggleExpand,
+  isLinkedToWhiteboard,
+  onViewOnWhiteboard,
+  onCreateFrameOnWhiteboard,
+}: TreeNodeProps) {
   const { node, children, level, isExpanded, isSelected } = treeNode;
   const hasChildren = children.length > 0;
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
 
   const handleClick = () => {
     onSelect(node.id.toString());
@@ -74,6 +93,7 @@ export const TreeNode = React.memo(function TreeNode({ treeNode, onSelect, onTog
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
+        onContextMenu={handleContextMenu}
       >
         {/* Expand/collapse button */}
         <button
@@ -119,9 +139,25 @@ export const TreeNode = React.memo(function TreeNode({ treeNode, onSelect, onTog
               treeNode={child}
               onSelect={onSelect}
               onToggleExpand={onToggleExpand}
+              isLinkedToWhiteboard={isLinkedToWhiteboard}
+              onViewOnWhiteboard={onViewOnWhiteboard}
+              onCreateFrameOnWhiteboard={onCreateFrameOnWhiteboard}
             />
           ))}
         </div>
+      )}
+
+      {/* Context menu */}
+      {contextMenu && (
+        <TreeNodeContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          nodeId={node.id.toString()}
+          isLinkedToWhiteboard={isLinkedToWhiteboard}
+          onViewOnWhiteboard={onViewOnWhiteboard}
+          onCreateFrameOnWhiteboard={onCreateFrameOnWhiteboard}
+          onClose={() => setContextMenu(null)}
+        />
       )}
     </div>
   );

@@ -6,6 +6,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
+import { whiteboardSyncService } from '@/services/whiteboardSyncService';
 import { nodeKeys } from './useNodes';
 
 export interface DeleteNodeVariables {
@@ -22,9 +23,12 @@ export const useDeleteNode = () => {
       return await nodeService.deleteNode(spaceSlug, nodeId, force);
     },
 
-    onSuccess: () => {
+    onSuccess: (_, { nodeId }) => {
       // Invalidate all nodes queries to refresh the lists
       queryClient.invalidateQueries({ queryKey: nodeKeys.all });
+
+      // Notify sync service of node deletion (for Node→Frame sync)
+      whiteboardSyncService.onNodeDeleted(nodeId);
     },
   });
 };

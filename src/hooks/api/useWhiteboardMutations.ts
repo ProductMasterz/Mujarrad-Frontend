@@ -4,6 +4,8 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { whiteboardService } from '@/services/api/whiteboard.service';
+import { whiteboardSyncService } from '@/services/whiteboardSyncService';
+import { nodeKeys } from './useNodes';
 import {
   ExcalidrawElement,
   WhiteboardElementEntry,
@@ -138,19 +140,23 @@ export function useSaveWhiteboard(spaceSlug: string) {
       // Build updated node map
       const updatedMap = new Map(existingNodes);
 
-      // Add created nodes to map
+      // Add created nodes to map and sync service
       created.forEach((node, index) => {
         const elementId = toCreate[index]?.elementId;
         if (elementId) {
           updatedMap.set(elementId, node.id);
+          // Register mapping in sync service
+          whiteboardSyncService.linkFrameToNode(elementId, node.id);
         }
       });
 
-      // Remove deleted elements from map
+      // Remove deleted elements from map and sync service
       toDelete.forEach(nodeId => {
         for (const [elementId, nId] of updatedMap) {
           if (nId === nodeId) {
             updatedMap.delete(elementId);
+            // Remove mapping from sync service
+            whiteboardSyncService.unlinkFrame(elementId);
             break;
           }
         }
@@ -158,15 +164,19 @@ export function useSaveWhiteboard(spaceSlug: string) {
 
       // Build element entries for context node content
       // Include both shapes and their bound text elements
+      // Also embed nodeId in customData for bidirectional sync
       const elementEntries: WhiteboardElementEntry[] = [];
 
       validShapes.forEach(element => {
         const nodeId = updatedMap.get(element.id) || '';
         if (nodeId) {
-          // Add the shape element
+          // Add the shape element with customData.nodeId for sync
           elementEntries.push({
             node_id: nodeId,
-            excalidraw_element: element,
+            excalidraw_element: {
+              ...element,
+              customData: { ...element.customData, nodeId },
+            },
           });
 
           // If this shape has bound text, include it too
@@ -240,8 +250,7 @@ export function useSaveWhiteboard(spaceSlug: string) {
       if (hasNodeChanges) {
         // Use a small delay to prevent race conditions with ongoing operations
         setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'nodes'] });
-          queryClient.invalidateQueries({ queryKey: ['space-nodes', spaceSlug] });
+          queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
         }, 100);
       }
     },

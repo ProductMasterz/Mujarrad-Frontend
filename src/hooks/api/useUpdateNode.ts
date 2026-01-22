@@ -6,6 +6,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
+import { whiteboardSyncService } from '@/services/whiteboardSyncService';
 import type { UpdateNodeRequest, Node } from '@/types/backend-dtos';
 import { nodeKeys } from './useNodes';
 
@@ -59,6 +60,11 @@ export const useUpdateNode = () => {
     onSuccess: (data, { spaceSlug, nodeId }) => {
       queryClient.invalidateQueries({ queryKey: nodeKeys.detail(spaceSlug, nodeId) });
       queryClient.invalidateQueries({ queryKey: nodeKeys.all });
+
+      // Notify sync service of node update (for Node→Frame sync)
+      if (data?.id && data?.title) {
+        whiteboardSyncService.onNodeUpdated({ id: data.id, title: data.title });
+      }
     },
   });
 };
