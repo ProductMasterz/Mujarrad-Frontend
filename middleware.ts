@@ -91,8 +91,11 @@ export function middleware(request: NextRequest) {
     return new NextResponse('Forbidden', { status: 403 });
   }
 
-  // Rate limiting
-  if (isRateLimited(clientIp)) {
+  // Skip rate limiting in development
+  const isDev = process.env.NODE_ENV === 'development';
+
+  // Rate limiting (production only)
+  if (!isDev && isRateLimited(clientIp)) {
     console.log(`[Security] Rate limited IP: ${clientIp}`);
     return new NextResponse('Too Many Requests', {
       status: 429,

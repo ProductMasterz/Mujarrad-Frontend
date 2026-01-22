@@ -32,27 +32,6 @@ function shouldRetry(error: AxiosError): boolean {
   return false;
 }
 
-/**
- * Simple request throttler to prevent rate limiting
- */
-class RequestThrottler {
-  private lastRequestTime = 0;
-  private minInterval = 100; // Minimum 100ms between requests
-
-  async throttle(): Promise<void> {
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-
-    if (timeSinceLastRequest < this.minInterval) {
-      const waitTime = this.minInterval - timeSinceLastRequest;
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-    }
-
-    this.lastRequestTime = Date.now();
-  }
-}
-
-const throttler = new RequestThrottler();
 
 /**
  * Base API URL - using relative URLs to leverage Next.js rewrites
@@ -78,14 +57,11 @@ export const apiClient: AxiosInstance = axios.create({
 });
 
 /**
- * Request interceptor: Inject JWT Bearer token and throttle requests
+ * Request interceptor: Inject JWT Bearer token
  * Retrieves token from localStorage and adds to Authorization header
  */
 apiClient.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig) => {
-    // Throttle requests to prevent rate limiting
-    await throttler.throttle();
-
+  (config: InternalAxiosRequestConfig) => {
     // Get token from localStorage (only in browser context)
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
 
