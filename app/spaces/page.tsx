@@ -3,19 +3,20 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { Header } from '@/scratchup/components/Header';
-import { Sidebar } from '@/scratchup/components/Sidebar';
-import { ProjectCard } from '@/scratchup/components/ProjectCard';
-import { ContextMenu } from '@/scratchup/components/ContextMenu';
-import { NewNodeModal } from '@/scratchup/components/NewNodeModal';
-import { ShareModal } from '@/scratchup/components/ShareModal';
-import { FeedbackModal } from '@/scratchup/components/FeedbackModal';
-import { Tab } from '@/scratchup/components/TabsBar';
-import { CardType, Card } from '@/scratchup/data/projects';
+import { Header } from '@/shell/components/Header';
+import { Sidebar } from '@/shell/components/Sidebar';
+import { ProjectCard } from '@/shell/components/ProjectCard';
+import { ContextMenu } from '@/shell/components/ContextMenu';
+import { NewNodeModal } from '@/shell/components/NewNodeModal';
+import { ShareModal } from '@/shell/components/ShareModal';
+import { FeedbackModal } from '@/shell/components/FeedbackModal';
+import { Tab } from '@/shell/components/TabsBar';
+import { CardType, Card } from '@/shell/data/projects';
 import { spaceService } from '@/services/api';
 import type { Space } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
 import { useAuthStore } from '@/stores/auth.store';
+import { useNavigationStore } from '@/stores/navigationStore';
 
 // Convert Space to Scratchup Card format
 function spaceToCard(space: Space): Card {
@@ -45,6 +46,12 @@ type SpaceItem = {
 export default function SpacesPage() {
   const router = useRouter();
   const { logout } = useAuthStore();
+  const navigateToSpaces = useNavigationStore((state) => state.navigateToSpaces);
+
+  // Set navigation scope on mount
+  useEffect(() => {
+    navigateToSpaces();
+  }, [navigateToSpaces]);
 
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -244,12 +251,13 @@ export default function SpacesPage() {
           onBackClick={handleBackClick}
           showBackButton={false}
           breadcrumbPath={breadcrumbPath}
-          onAddClick={handleAddClick}
           onNotificationClick={() => {}}
           onSearchClick={() => {}}
-          onMoreClick={() => {}}
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
+          // Add menu actions - only create space at spaces level
+          onCreateSpace={handleAddClick}
+          // More menu actions
           onShare={handleShareClick}
           onOpenInNewTab={handleOpenInNewTab}
           tabs={tabs}

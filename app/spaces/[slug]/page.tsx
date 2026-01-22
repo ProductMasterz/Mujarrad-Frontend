@@ -3,20 +3,21 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { Header } from '@/scratchup/components/Header';
-import { Sidebar } from '@/scratchup/components/Sidebar';
-import { ProjectCard } from '@/scratchup/components/ProjectCard';
-import { ContextMenu } from '@/scratchup/components/ContextMenu';
-import { NewNodeModal } from '@/scratchup/components/NewNodeModal';
-import { ShareModal } from '@/scratchup/components/ShareModal';
-import { FeedbackModal } from '@/scratchup/components/FeedbackModal';
-import { Tab } from '@/scratchup/components/TabsBar';
-import { CardType, Card } from '@/scratchup/data/projects';
+import { Header } from '@/shell/components/Header';
+import { Sidebar } from '@/shell/components/Sidebar';
+import { ProjectCard } from '@/shell/components/ProjectCard';
+import { ContextMenu } from '@/shell/components/ContextMenu';
+import { NewNodeModal } from '@/shell/components/NewNodeModal';
+import { ShareModal } from '@/shell/components/ShareModal';
+import { FeedbackModal } from '@/shell/components/FeedbackModal';
+import { Tab } from '@/shell/components/TabsBar';
+import { CardType, Card } from '@/shell/data/projects';
 import { DeleteNodeDialog } from '@/components/nodes/DeleteNodeDialog';
-import { useSpace } from '@/hooks/api';
+import { useSpace, nodeKeys } from '@/hooks/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
 import { useAuthStore } from '@/stores/auth.store';
+import { useNavigationStore } from '@/stores/navigationStore';
 import type { Node } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
 
@@ -48,14 +49,22 @@ export default function SpaceDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { logout } = useAuthStore();
+  const navigateToSpace = useNavigationStore((state) => state.navigateToSpace);
   const slug = params.slug as string;
 
   // Fetch space data
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(slug);
 
-  // Fetch nodes for this space
+  // Set navigation scope when space loads
+  useEffect(() => {
+    if (space) {
+      navigateToSpace(slug, space.id);
+    }
+  }, [space, slug, navigateToSpace]);
+
+  // Fetch nodes for this space using standardized query keys
   const { data: nodes, isLoading: nodesLoading } = useQuery({
-    queryKey: ['space-nodes', slug],
+    queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }),
     queryFn: () => nodeService.getNodes(slug, { page: 1, size: 1000 }),
     enabled: !!space,
   });
@@ -283,7 +292,7 @@ export default function SpaceDetailPage() {
   const handleDeleteSuccess = () => {
     setShowDeleteDialog(false);
     setNodeToDelete(null);
-    queryClient.invalidateQueries({ queryKey: ['space-nodes', slug] });
+    queryClient.invalidateQueries({ queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }) });
   };
 
   const handleClearSpace = () => {
@@ -300,7 +309,7 @@ export default function SpaceDetailPage() {
     try {
       // Delete all nodes in the space
       await Promise.all(nodes.map((node) => nodeService.deleteNode(slug, node.id)));
-      queryClient.invalidateQueries({ queryKey: ['space-nodes', slug] });
+      queryClient.invalidateQueries({ queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }) });
     } catch (error) {
       console.error('Failed to clear space:', error);
     } finally {
@@ -348,12 +357,14 @@ export default function SpaceDetailPage() {
           onBackClick={handleBackClick}
           showBackButton={true}
           breadcrumbPath={breadcrumbPath}
-          onAddClick={handleAddClick}
           onNotificationClick={() => {}}
           onSearchClick={() => {}}
-          onMoreClick={() => {}}
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
+          // Add menu actions - create node/context at space level
+          onCreateNode={handleAddClick}
+          onCreateContext={handleAddClick}
+          // More menu actions
           onShare={handleShareClick}
           onOpenInNewTab={handleOpenInNewTab}
           onWhiteboard={handleWhiteboardClick}

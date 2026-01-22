@@ -11,6 +11,8 @@ import { WhiteboardCanvas, WhiteboardCanvasRef } from '@/components/whiteboard/W
 import { useWhiteboardState } from '@/hooks/api/useWhiteboard';
 import { useWhiteboardStore } from '@/stores/whiteboardStore';
 import { useSpace } from '@/hooks/api/useSpaces';
+import { useNavigationStore } from '@/stores/navigationStore';
+import { nodeKeys } from '@/hooks/api/useNodes';
 import { nodeService } from '@/services/api/node.service';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -20,11 +22,19 @@ export default function WhiteboardPage() {
   const router = useRouter();
   const spaceSlug = params.slug as string;
   const queryClient = useQueryClient();
+  const navigateToWhiteboard = useNavigationStore((state) => state.navigateToWhiteboard);
   const [isResetting, setIsResetting] = useState(false);
   const canvasRef = useRef<WhiteboardCanvasRef>(null);
 
   // Fetch space info
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(spaceSlug);
+
+  // Set navigation scope when space loads
+  useEffect(() => {
+    if (space) {
+      navigateToWhiteboard(spaceSlug, space.id);
+    }
+  }, [space, spaceSlug, navigateToWhiteboard]);
 
   // Handle manual save
   const handleSave = useCallback(async () => {
@@ -64,7 +74,7 @@ export default function WhiteboardPage() {
 
       // Invalidate queries and reload
       queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug] });
-      queryClient.invalidateQueries({ queryKey: ['space-nodes', spaceSlug] });
+      queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
       window.location.reload();
     } catch (error) {
       console.error('Failed to reset workspace:', error);

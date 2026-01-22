@@ -4,15 +4,16 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { Header } from '@/scratchup/components/Header';
-import { BlockOutlineSidebar } from '@/scratchup/components/BlockOutlineSidebar';
-import { Tab } from '@/scratchup/components/TabsBar';
-import { FeedbackModal } from '@/scratchup/components/FeedbackModal';
-import { ShareModal } from '@/scratchup/components/ShareModal';
-import { CardType } from '@/scratchup/data/projects';
-import { useSpace } from '@/hooks/api';
+import { Header } from '@/shell/components/Header';
+import { BlockOutlineSidebar } from '@/shell/components/BlockOutlineSidebar';
+import { Tab } from '@/shell/components/TabsBar';
+import { FeedbackModal } from '@/shell/components/FeedbackModal';
+import { ShareModal } from '@/shell/components/ShareModal';
+import { CardType } from '@/shell/data/projects';
+import { useSpace, nodeKeys } from '@/hooks/api';
 import { nodeService } from '@/services/api/node.service';
 import { useAuthStore } from '@/stores/auth.store';
+import { useNavigationStore } from '@/stores/navigationStore';
 import { BlockEditor, BlockEditorRef } from '@/components/blocks/BlockEditor';
 import type { Block } from '@/components/blocks/types';
 import type { UpdateNodeRequest } from '@/types/backend-dtos';
@@ -22,18 +23,26 @@ export default function NodeDetailPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { logout } = useAuthStore();
+  const navigateToNode = useNavigationStore((state) => state.navigateToNode);
   const slug = params.slug as string;
   const nodeId = params.id as string;
 
   // Fetch space data
   const { data: space, isLoading: spaceLoading } = useSpace(slug);
 
-  // Fetch the current node
+  // Fetch the current node using standardized query keys
   const { data: node, isLoading: nodeLoading, error: nodeError } = useQuery({
-    queryKey: ['node', slug, nodeId],
+    queryKey: nodeKeys.detail(slug, nodeId),
     queryFn: () => nodeService.getNode(slug, nodeId),
     enabled: !!space,
   });
+
+  // Set navigation scope when node loads
+  useEffect(() => {
+    if (space && node) {
+      navigateToNode(slug, space.id, node.id);
+    }
+  }, [space, node, slug, navigateToNode]);
 
   // BlockEditor ref for scrolling to blocks
   const blockEditorRef = useRef<BlockEditorRef>(null);
@@ -46,8 +55,10 @@ export default function NodeDetailPage() {
   const updateNodeMutation = useMutation({
     mutationFn: (data: UpdateNodeRequest) => nodeService.updateNode(slug, nodeId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['node', slug, nodeId] });
-      queryClient.invalidateQueries({ queryKey: ['space-nodes', slug] });
+      // Invalidate the specific node query
+      queryClient.invalidateQueries({ queryKey: nodeKeys.detail(slug, nodeId) });
+      // Invalidate all node lists to ensure cards update when navigating back
+      queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
     },
   });
 
@@ -224,16 +235,21 @@ export default function NodeDetailPage() {
           onBackClick={handleBackClick}
           showBackButton={true}
           breadcrumbPath={breadcrumbPath}
-          onAddClick={() => {}}
           onNotificationClick={() => {}}
           onSearchClick={() => {}}
-          onMoreClick={() => {}}
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
+          // Add menu actions - create node/context at node level
+          onCreateNode={() => {}}
+          onCreateContext={() => {}}
+          // More menu actions
           onShare={handleShareClick}
           onOpenInNewTab={handleNewTab}
+          onOpenAsNode={() => {}}
+          onLock={() => {}}
           onWhiteboard={handleWhiteboardClick}
           onDelete={() => {}}
+          onMoveTo={() => {}}
           tabs={tabs}
           activeTabId={activeTabId}
           onTabClick={handleTabClick}
