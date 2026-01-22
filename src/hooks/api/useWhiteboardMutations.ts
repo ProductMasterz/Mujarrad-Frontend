@@ -123,7 +123,7 @@ export function useSaveWhiteboard(spaceSlug: string) {
 
       // Batch create/update/delete shape nodes
       let created: WhiteboardNode[] = [];
-      let recreated: WhiteboardNode[] = [];
+      let recreatedMap = new Map<string, WhiteboardNode>();
 
       try {
         const result = await whiteboardService.batchSaveShapeNodes(
@@ -133,7 +133,7 @@ export function useSaveWhiteboard(spaceSlug: string) {
           toDelete
         );
         created = result.created;
-        recreated = result.recreated || [];
+        recreatedMap = result.recreatedMap || new Map();
       } catch (error) {
         console.error('[useSaveWhiteboard] Failed to batch save shape nodes:', error);
         throw error;
@@ -152,27 +152,16 @@ export function useSaveWhiteboard(spaceSlug: string) {
         }
       });
 
-      // Handle recreated nodes (nodes that got 404 on update and were recreated)
-      // Find the element IDs that had stale node IDs and update them
-      if (recreated.length > 0) {
-        console.log('[useSaveWhiteboard] Handling recreated nodes:', recreated.map(n => n.id));
-        // The recreated nodes are in the same order as toUpdate items that failed
-        // We need to find which elements had stale IDs and update them
-        let recreatedIndex = 0;
-        for (const { id: oldNodeId } of toUpdate) {
-          // Check if this old ID still exists in our map
-          for (const [elementId, nodeId] of updatedMap) {
-            if (nodeId === oldNodeId) {
-              // Check if this was recreated (the old ID is no longer valid)
-              if (recreatedIndex < recreated.length) {
-                const newNode = recreated[recreatedIndex];
-                updatedMap.set(elementId, newNode.id);
-                whiteboardSyncService.linkFrameToNode(elementId, newNode.id);
-                console.log(`[useSaveWhiteboard] Updated stale mapping: ${elementId} -> ${newNode.id} (was ${oldNodeId})`);
-                recreatedIndex++;
-              }
-              break;
-            }
+      // Handle recreated nodes: replace stale old node IDs with new ones
+      // recreatedMap is a Map<oldNodeId, newNode> so we can directly find and replace
+      if (recreatedMap.size > 0) {
+        console.log('[useSaveWhiteboard] Handling recreated nodes:', [...recreatedMap.entries()].map(([old, n]) => `${old} -> ${n.id}`));
+        for (const [elementId, nodeId] of updatedMap) {
+          const newNode = recreatedMap.get(nodeId);
+          if (newNode) {
+            updatedMap.set(elementId, newNode.id);
+            whiteboardSyncService.linkFrameToNode(elementId, newNode.id);
+            console.log(`[useSaveWhiteboard] Updated stale mapping: ${elementId} -> ${newNode.id} (was ${nodeId})`);
           }
         }
       }
@@ -244,19 +233,19 @@ export function useSaveWhiteboard(spaceSlug: string) {
       } catch (error) {
         console.error('[useSaveWhiteboard] Failed to update context node:', error);
 
-        // CLEANUP: Delete any nodes we just created to prevent orphaned duplicates
-        if (created.length > 0) {
-          console.warn('[useSaveWhiteboard] Rolling back created nodes:', created.map(n => n.id));
+        // CLEANUP: Delete any nodes we just created/recreated to prevent orphaned duplicates
+        const allNewNodes = [...created, ...[...recreatedMap.values()]];
+        if (allNewNodes.length > 0) {
+          console.warn('[useSaveWhiteboard] Rolling back created/recreated nodes:', allNewNodes.map(n => n.id));
           try {
             await Promise.all(
-              created.map(node =>
+              allNewNodes.map(node =>
                 whiteboardService.deleteWhiteboardNode(spaceSlug, node.id)
               )
             );
-            console.log('[useSaveWhiteboard] Successfully rolled back created nodes');
+            console.log('[useSaveWhiteboard] Successfully rolled back nodes');
           } catch (cleanupError) {
             console.error('[useSaveWhiteboard] Failed to cleanup nodes:', cleanupError);
-            // Throw the original error, not the cleanup error
           }
         }
 
