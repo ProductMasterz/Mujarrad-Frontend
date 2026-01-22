@@ -28,8 +28,31 @@ function shouldRetry(error: AxiosError): boolean {
   }
 
   // Don't retry client errors (4xx) or authentication errors
+  // Specifically don't retry 429 (Too Many Requests) - it makes it worse
   return false;
 }
+
+/**
+ * Simple request throttler to prevent rate limiting
+ */
+class RequestThrottler {
+  private lastRequestTime = 0;
+  private minInterval = 100; // Minimum 100ms between requests
+
+  async throttle(): Promise<void> {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+
+    if (timeSinceLastRequest < this.minInterval) {
+      const waitTime = this.minInterval - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+
+    this.lastRequestTime = Date.now();
+  }
+}
+
+const throttler = new RequestThrottler();
 
 /**
  * Base API URL - using relative URLs to leverage Next.js rewrites
@@ -55,26 +78,19 @@ export const apiClient: AxiosInstance = axios.create({
 });
 
 /**
- * Request interceptor: Inject JWT Bearer token
+ * Request interceptor: Inject JWT Bearer token and throttle requests
  * Retrieves token from localStorage and adds to Authorization header
  */
 apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
+    // Throttle requests to prevent rate limiting
+    await throttler.throttle();
+
     // Get token from localStorage (only in browser context)
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
 
-    console.log('[Request Interceptor]', {
-      url: config.url,
-      method: config.method,
-      hasToken: !!token,
-      tokenPreview: token ? token.substring(0, 20) + '...' : 'none'
-    });
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('[Request Interceptor] Authorization header added');
-    } else {
-      console.warn('[Request Interceptor] No auth token found in localStorage');
     }
 
     return config;
@@ -146,6 +162,20 @@ apiClient.interceptors.response.use(
           hasAuthHeader: !!error.config?.headers?.Authorization,
           data
         });
+      }
+
+      // Handle 429 Too Many Requests - wait and retry once
+      if (status === 429 && config) {
+        const retryAfter = error.response.headers['retry-after'];
+        const waitTime = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000;
+
+        // Only retry 429 once
+        if (!config._retryCount || config._retryCount === 0) {
+          config._retryCount = 1;
+          console.log(`[Rate Limited] Waiting ${waitTime}ms before retry for ${config.url}`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          return apiClient(config);
+        }
       }
 
       // Check if response is RFC 7807 Problem Detail
