@@ -3,26 +3,35 @@ import { Breadcrumb } from "./Breadcrumb";
 import { useState } from "react";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { MoreMenuDropdown } from "./MoreMenuDropdown";
+import { AddMenuDropdown } from "./AddMenuDropdown";
 import { SearchModal } from "./SearchModal";
 import { TabsBar, Tab } from "./TabsBar";
 import { HelpDropdown } from "./HelpDropdown";
+import { useNavigationStore } from "@/stores/navigationStore";
 
 type HeaderProps = {
   onMenuClick: () => void;
   onBackClick: () => void;
   showBackButton: boolean;
   breadcrumbPath: Array<{ id: string; title: string }>;
-  onAddClick: () => void;
   onNotificationClick: () => void;
   onSearchClick: () => void;
-  onMoreClick: () => void;
   onHomeClick: () => void;
   onBreadcrumbClick: (index: number) => void;
+  // Add menu actions
+  onCreateSpace?: () => void;
+  onCreateNode?: () => void;
+  onCreateContext?: () => void;
+  // More menu actions
   onShare?: () => void;
   onOpenInNewTab?: () => void;
+  onOpenAsNode?: () => void;
+  onLock?: () => void;
   onWhiteboard?: () => void;
   onDelete?: () => void;
   onClearSpace?: () => void;
+  onMoveTo?: () => void;
+  // Tabs
   tabs: Tab[];
   activeTabId: string;
   onTabClick: (tabId: string) => void;
@@ -36,17 +45,24 @@ export function Header({
   onBackClick,
   showBackButton,
   breadcrumbPath,
-  onAddClick,
   onNotificationClick,
   onSearchClick,
-  onMoreClick,
   onHomeClick,
   onBreadcrumbClick,
+  // Add menu actions
+  onCreateSpace,
+  onCreateNode,
+  onCreateContext,
+  // More menu actions
   onShare,
   onOpenInNewTab,
+  onOpenAsNode,
+  onLock,
   onWhiteboard,
   onDelete,
   onClearSpace,
+  onMoveTo,
+  // Tabs
   tabs,
   activeTabId,
   onTabClick,
@@ -56,12 +72,20 @@ export function Header({
 }: HeaderProps) {
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const [notificationAnchor, setNotificationAnchor] = useState<HTMLElement | null>(null);
+  const [addMenuAnchor, setAddMenuAnchor] = useState<HTMLElement | null>(null);
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<HTMLElement | null>(null);
   const [helpAnchor, setHelpAnchor] = useState<HTMLElement | null>(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
+  // Get tooltip from navigation store
+  const addButtonTooltip = useNavigationStore((state) => state.addButtonTooltip);
+
   const handleNotificationClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setNotificationAnchor(event.currentTarget);
+  };
+
+  const handleAddClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAddMenuAnchor(event.currentTarget);
   };
 
   const handleMoreClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -143,7 +167,7 @@ export function Header({
         <div className="flex items-center gap-[15px]">
           <div className="relative">
             <button
-              onClick={onAddClick}
+              onClick={handleAddClick}
               onMouseEnter={() => setHoveredButton("add")}
               onMouseLeave={() => setHoveredButton(null)}
               className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
@@ -151,9 +175,9 @@ export function Header({
             >
               <Plus className="size-6" strokeWidth={1.5} />
             </button>
-            {hoveredButton === "add" && (
+            {hoveredButton === "add" && !addMenuAnchor && (
               <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-[#333] text-white text-[11px] px-[8px] py-[4px] rounded whitespace-nowrap font-['Roboto:Regular',sans-serif]">
-                Add new node
+                {addButtonTooltip}
               </div>
             )}
           </div>
@@ -236,6 +260,17 @@ export function Header({
         />
       )}
 
+      {/* Add Menu Dropdown */}
+      {addMenuAnchor && (
+        <AddMenuDropdown
+          onClose={() => setAddMenuAnchor(null)}
+          anchorEl={addMenuAnchor}
+          onCreateSpace={onCreateSpace}
+          onCreateNode={onCreateNode}
+          onCreateContext={onCreateContext}
+        />
+      )}
+
       {/* More Menu Dropdown */}
       {moreMenuAnchor && (
         <MoreMenuDropdown
@@ -243,9 +278,12 @@ export function Header({
           anchorEl={moreMenuAnchor}
           onShare={onShare}
           onOpenInNewTab={onOpenInNewTab}
+          onOpenAsNode={onOpenAsNode}
+          onLock={onLock}
           onWhiteboard={onWhiteboard}
           onDelete={onDelete}
           onClearSpace={onClearSpace}
+          onMoveTo={onMoveTo}
         />
       )}
 

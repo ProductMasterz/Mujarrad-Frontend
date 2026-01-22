@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { nodeService } from "@/services/api/node.service";
+import { nodeKeys } from "@/hooks/api/useNodes";
 import { NodeType as BackendNodeType } from "@/types/backend-dtos";
 import { BlockEditor, BlockEditorRef } from "@/components/blocks/BlockEditor";
 
@@ -67,7 +68,7 @@ export function NewNodeModal({
     },
     onSuccess: (node) => {
       setCreatedNodeId(node.id);
-      queryClient.invalidateQueries({ queryKey: ["space-nodes", spaceSlug] });
+      queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
     },
   });
 
@@ -158,7 +159,7 @@ export function NewNodeModal({
       await blockEditorRef.current.saveNow();
     }
     if (createdNodeId) {
-      queryClient.invalidateQueries({ queryKey: ["space-nodes", spaceSlug] });
+      queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
     }
     onClose();
   };

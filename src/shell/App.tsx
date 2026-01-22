@@ -343,12 +343,15 @@ export default function App() {
         onBackClick={handleBackClickWithTab}
         showBackButton={navigationPath.length > 0}
         breadcrumbPath={breadcrumbPath}
-        onAddClick={handleAddClick}
         onNotificationClick={handleNotificationClick}
         onSearchClick={handleSearchClick}
-        onMoreClick={handleMoreClick}
         onHomeClick={handleHomeClickWithTab}
         onBreadcrumbClick={handleBreadcrumbClickWithTab}
+        // Add menu actions
+        onCreateSpace={handleAddClick}
+        onCreateNode={handleAddClick}
+        onCreateContext={handleAddClick}
+        // More menu actions
         onShare={handleShareClick}
         onOpenInNewTab={handleOpenInNewTab}
         tabs={tabs}
