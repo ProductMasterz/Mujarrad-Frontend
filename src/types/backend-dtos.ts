@@ -288,3 +288,59 @@ export interface InviteCollaboratorRequest {
   email?: string;
   username?: string;
 }
+
+// ============================================================
+// API Key Management DTOs
+// ============================================================
+
+/**
+ * Response when creating or rotating an API key (includes secret, shown once)
+ * Backend: ApiKeyResponse from POST /api/api-keys and POST /api/api-keys/{keyId}/rotate
+ */
+export interface ApiKeyResponse {
+  id: string;
+  publicKey: string;
+  secretKey: string;
+  name: string;
+  description: string;
+  spaceId: string | null;
+  isActive: boolean;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Response when listing API keys (secret NOT included)
+ * Backend: ApiKeyListResponse from GET /api/api-keys
+ */
+export interface ApiKeyListResponse {
+  id: string;
+  publicKey: string;
+  name: string;
+  spaceId: string | null;
+  isActive: boolean;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+/**
+ * Request body for creating a new API key
+ * Backend: ApiKeyCreateRequest for POST /api/api-keys
+ */
+export interface ApiKeyCreateRequest {
+  name: string;
+  description?: string;
+  spaceId?: string;
+  expiresAt?: string;
+}
+
+/**
+ * Request body for rotating an API key's secret
+ * Backend: ApiKeyRotateRequest for POST /api/api-keys/{keyId}/rotate
+ */
+export interface ApiKeyRotateRequest {
+  currentSecretKey: string;
+}

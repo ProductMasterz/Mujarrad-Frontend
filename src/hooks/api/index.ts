@@ -19,3 +19,4 @@ export * from './useSearchNodes';
 export * from './useNodeDependencies';
 export * from './useDuplicateCheck';
 export * from './useRenameNode';
+export * from './useApiKeys';

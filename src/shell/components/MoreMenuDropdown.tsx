@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { ChevronRight, PenTool, Trash2, Share2, ExternalLink, Maximize2, Lock, MoveRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronRight, PenTool, Trash2, Share2, ExternalLink, Maximize2, Lock, MoveRight, Settings } from "lucide-react";
 import { useNavigationStore, MoreAction, MORE_ACTION_LABELS } from "@/stores/navigationStore";
 
 type MoreMenuDropdownProps = {
@@ -25,6 +26,7 @@ const ACTION_ICONS: Partial<Record<MoreAction, React.ReactNode>> = {
   delete: <Trash2 className="size-[14px]" />,
   clear_space: <Trash2 className="size-[14px]" />,
   move_to: <MoveRight className="size-[14px]" />,
+  settings: <Settings className="size-[14px]" />,
 };
 
 export function MoreMenuDropdown({
@@ -39,6 +41,7 @@ export function MoreMenuDropdown({
   onClearSpace,
   onMoveTo,
 }: MoreMenuDropdownProps) {
+  const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
   const moreActions = useNavigationStore((state) => state.moreActions);
 
@@ -52,6 +55,7 @@ export function MoreMenuDropdown({
     delete: onDelete,
     clear_space: onClearSpace,
     move_to: onMoveTo,
+    settings: () => router.push('/settings'),
   };
 
   // Special styling for dangerous actions

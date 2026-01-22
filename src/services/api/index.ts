@@ -7,3 +7,4 @@ export * from './space.service'; // @deprecated - kept for backward compatibilit
 export * from './node.service';
 export * from './attribute.service';
 export * from './version.service';
+export * from './api-key.service';

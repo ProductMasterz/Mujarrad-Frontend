@@ -34,7 +34,8 @@ export type MoreAction =
   | 'whiteboard'
   | 'delete'
   | 'clear_space'
-  | 'move_to';
+  | 'move_to'
+  | 'settings';
 
 // Configuration for each scope
 interface ScopeConfig {
@@ -47,7 +48,7 @@ interface ScopeConfig {
 const SCOPE_CONFIGS: Record<NavigationScope, ScopeConfig> = {
   spaces: {
     addActions: ['create_space'],
-    moreActions: ['share'],
+    moreActions: ['share', 'settings'],
     addButtonTooltip: 'Create new space',
   },
   space: {
@@ -83,6 +84,7 @@ export const MORE_ACTION_LABELS: Record<MoreAction, string> = {
   delete: 'Delete',
   clear_space: 'Clear Space',
   move_to: 'Move to',
+  settings: 'Settings',
 };
 
 // ============================================================================

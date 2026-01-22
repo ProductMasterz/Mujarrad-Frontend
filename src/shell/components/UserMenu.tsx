@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { ChevronRight, Plus, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronRight, Plus, LogOut, Settings } from "lucide-react";
 
 type UserMenuProps = {
   onClose: () => void;
@@ -8,6 +9,7 @@ type UserMenuProps = {
 };
 
 export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
+  const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -100,6 +102,23 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
           style={{ fontVariationSettings: "'wdth' 100" }}
         >
           Add account
+        </span>
+      </button>
+
+      {/* Settings */}
+      <button
+        className="w-full px-[10px] py-[8px] flex items-center gap-[10px] hover:bg-[#f5f5f5] transition-colors"
+        onClick={() => {
+          router.push('/settings');
+          onClose();
+        }}
+      >
+        <Settings className="size-[14px] text-[#e0e0e0]" strokeWidth={2} />
+        <span
+          className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#828282] tracking-[-0.08px] leading-[18px]"
+          style={{ fontVariationSettings: "'wdth' 100" }}
+        >
+          Settings
         </span>
       </button>
 
