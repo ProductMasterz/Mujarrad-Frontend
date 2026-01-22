@@ -40,7 +40,7 @@ export const spaceService = {
   /**
    * Get space by ID
    */
-  async getSpace(id: number): Promise<Space> {
+  async getSpace(id: string | number): Promise<Space> {
     const response = await apiClient.get<Space>(`/spaces/${id}`);
     return response.data;
   },
@@ -56,7 +56,7 @@ export const spaceService = {
   /**
    * Update space
    */
-  async updateSpace(id: number, data: UpdateSpaceRequest): Promise<Space> {
+  async updateSpace(id: string | number, data: UpdateSpaceRequest): Promise<Space> {
     const response = await apiClient.put<Space>(`/spaces/${id}`, data);
     return response.data;
   },
@@ -64,7 +64,7 @@ export const spaceService = {
   /**
    * Delete space
    */
-  async deleteSpace(id: number): Promise<void> {
+  async deleteSpace(id: string | number): Promise<void> {
     await apiClient.delete(`/spaces/${id}`);
   },
 

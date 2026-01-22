@@ -15,6 +15,10 @@ type SidebarProps = {
   onAddNode?: (parentPath: string[], position?: number) => void;
   onLogout: () => void;
   items?: Card[];
+  /** When true (at spaces level), hover add button creates a new space instead of node */
+  isSpacesLevel?: boolean;
+  /** Quick create a new space - called when at spaces level */
+  onQuickCreateSpace?: () => void;
 };
 
 // Function to render the appropriate icon based on CardType
@@ -100,6 +104,8 @@ function SidebarItem({
   onAddChild,
   onAddSibling,
   index = 0,
+  isSpacesLevel = false,
+  onQuickCreateSpace,
 }: {
   item: Card;
   level?: number;
@@ -109,6 +115,8 @@ function SidebarItem({
   onAddChild?: (itemPath: string[]) => void;
   onAddSibling?: (itemPath: string[], position: number) => void;
   index?: number;
+  isSpacesLevel?: boolean;
+  onQuickCreateSpace?: () => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(level === 0);
   const [isHoveringItem, setIsHoveringItem] = useState(false);
@@ -119,6 +127,12 @@ function SidebarItem({
 
   const handleAddChild = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // At spaces level, clicking + creates a new space directly
+    if (isSpacesLevel && onQuickCreateSpace) {
+      onQuickCreateSpace();
+      return;
+    }
+    // Otherwise, add a child node
     if (onAddChild) {
       onAddChild(currentPath);
       setIsExpanded(true); // Auto-expand to show new child
@@ -229,6 +243,8 @@ function SidebarItem({
               onAddChild={onAddChild}
               onAddSibling={onAddSibling}
               index={idx}
+              isSpacesLevel={false}
+              onQuickCreateSpace={onQuickCreateSpace}
             />
           ))}
         </div>
@@ -237,7 +253,7 @@ function SidebarItem({
   );
 }
 
-export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNode, onLogout, items }: SidebarProps) {
+export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNode, onLogout, items, isSpacesLevel = false, onQuickCreateSpace }: SidebarProps) {
   // Use provided items or fall back to static projectsData
   const sidebarItems = items || projectsData;
   const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(null);
@@ -279,6 +295,8 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
                 onAddChild={handleAddNode}
                 onAddSibling={handleAddNode}
                 index={idx}
+                isSpacesLevel={isSpacesLevel}
+                onQuickCreateSpace={onQuickCreateSpace}
               />
             ))}
           </div>

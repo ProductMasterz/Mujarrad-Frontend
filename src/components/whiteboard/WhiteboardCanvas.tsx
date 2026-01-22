@@ -181,7 +181,7 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
     const debouncedSave = useRef(
       debounce((elements: ExcalidrawElement[], appState: any, files: Record<string, BinaryFileData>) => {
         performSave(elements, appState, files);
-      }, 2000)
+      }, 5000) // 5 seconds debounce to reduce API calls
     ).current;
 
     // Cleanup debounced save on unmount to prevent stale saves after navigation
