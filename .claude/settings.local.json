@@ -124,7 +124,16 @@
       "Bash(xargs:*)",
       "Bash(ls:*)",
       "Bash(wc:*)",
-      "Bash(openspec validate:*)"
+      "Bash(openspec validate:*)",
+      "Bash(rm:*)",
+      "Bash(npx openspec --help:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\ndocs: add MVP behavioral requirements and OpenSpec proposal\n\n- Add BEHAVIORAL_REQUIREMENTS.md with exact PRD behaviors\n- Add MVP_TRACKING.md for implementation status tracking\n- Add OPEN_SOURCE_RESOURCES.md cataloging useful libraries\n- Update story-mapping.csv with 24 new user stories\n- Create OpenSpec proposal implement-mvp-behaviors with:\n  - 3 spec deltas (node-dependencies, duplicate-detection, application-modes)\n  - 76 tasks across 3 phases\n  - Architecture design document\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: add node delete with dependency checking\n\n- Add useNodeDependencies hook to fetch children and references\n- Add useNodeDescendants hook for cascade delete operations\n- Create DeleteNodeModal with dependency warning UI\n- Support cascade delete (delete all descendants)\n- Support orphan delete (move children to parent)\n- Update DeleteNodeDialog to use new modal\n\nPhase 1.1 of implement-mvp-behaviors\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: implement duplicate node detection (Phase 1.2)\n\n- Add useDuplicateCheck hook to detect existing nodes with same title\n- Add DuplicateNodeModal component with merge/create-anyway/rename options\n- Integrate duplicate detection into NewNodeModal create flow\n- Export new components and hooks from their respective index files\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(npm run dev:*)",
+      "Bash(npm run start)",
+      "Bash(npx next build:*)",
+      "Bash(npx openspec:*)"
     ],
     "deny": [],
     "ask": []
