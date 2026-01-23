@@ -51,8 +51,7 @@ export function HelpDropdown({ onClose, anchorEl, onFeedback }: HelpDropdownProp
         window.open("mailto:support@example.com", "_blank");
         break;
       case "help":
-        // Open help center (could be external documentation)
-        alert("Opening help center...");
+        window.location.href = '/docs';
         break;
       case "about":
         alert("About this application...");
