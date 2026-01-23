@@ -169,7 +169,7 @@ export default function DocsPage() {
             <ArrowLeft className="size-4" />
             Back
           </button>
-          <MarkdownRenderer content={apiKeyDocs} className="markdown-content" />
+          <MarkdownRenderer content={apiKeyDocs} className="docs-content" />
         </div>
       </div>
     </ProtectedRoute>

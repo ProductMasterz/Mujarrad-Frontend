@@ -14,3 +14,85 @@
 .markdown-content code {
   @apply text-sm;
 }
+
+/* Documentation page styling - light theme with high contrast */
+.docs-content {
+  @apply prose prose-lg max-w-none;
+  --tw-prose-body: #1f2937;
+  --tw-prose-headings: #111827;
+  --tw-prose-bold: #111827;
+  --tw-prose-links: #2563eb;
+  --tw-prose-code: #111827;
+  --tw-prose-counters: #4b5563;
+  --tw-prose-bullets: #4b5563;
+  --tw-prose-hr: #e5e7eb;
+  --tw-prose-quotes: #374151;
+  --tw-prose-quote-borders: #d1d5db;
+  --tw-prose-th-borders: #d1d5db;
+  --tw-prose-td-borders: #e5e7eb;
+}
+
+.docs-content h1 {
+  @apply text-[28px] font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200;
+}
+
+.docs-content h2 {
+  @apply text-[20px] font-semibold text-gray-900 mt-10 mb-4;
+}
+
+.docs-content h3 {
+  @apply text-[16px] font-semibold text-gray-800 mt-6 mb-3;
+}
+
+.docs-content p {
+  @apply text-[15px] leading-7 text-gray-700 mb-4;
+}
+
+.docs-content ul,
+.docs-content ol {
+  @apply text-[15px] text-gray-700 mb-4;
+}
+
+.docs-content li {
+  @apply mb-1;
+}
+
+.docs-content strong {
+  @apply text-gray-900 font-semibold;
+}
+
+.docs-content pre {
+  @apply rounded-lg border border-gray-200 bg-gray-900 text-gray-100 p-4 my-4 overflow-x-auto text-[13px] leading-6;
+}
+
+.docs-content code {
+  @apply text-[13px];
+}
+
+.docs-content :not(pre) > code {
+  @apply bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded font-mono text-[13px] border border-gray-200;
+}
+
+.docs-content blockquote {
+  @apply border-l-4 border-blue-400 bg-blue-50 px-4 py-3 my-4 rounded-r-lg;
+}
+
+.docs-content blockquote p {
+  @apply text-gray-800 m-0;
+}
+
+.docs-content table {
+  @apply w-full text-[14px] my-4;
+}
+
+.docs-content th {
+  @apply bg-gray-50 text-left font-semibold text-gray-900 px-4 py-2 border border-gray-200;
+}
+
+.docs-content td {
+  @apply px-4 py-2 border border-gray-200 text-gray-700;
+}
+
+.docs-content hr {
+  @apply border-gray-200 my-8;
+}

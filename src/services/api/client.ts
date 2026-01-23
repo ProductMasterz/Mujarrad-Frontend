@@ -113,20 +113,16 @@ apiClient.interceptors.response.use(
       // Server responded with error status
       const { status, data } = error.response;
 
-      // Handle 401 Unauthorized - redirect to login
+      // Handle 401 Unauthorized - redirect to login (but not if already on login page)
       if (status === 401) {
-        // Clear auth token
         if (typeof window !== 'undefined') {
           localStorage.removeItem('auth_token');
 
-          // Save current location for redirect after login
           const currentPath = window.location.pathname;
           if (currentPath !== '/login') {
             localStorage.setItem('redirect_after_login', currentPath);
+            window.location.href = '/login';
           }
-
-          // Redirect to login page
-          window.location.href = '/login';
         }
       }
 
