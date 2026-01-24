@@ -133,9 +133,9 @@ export interface WhiteboardElementEntry {
   excalidraw_element: ExcalidrawElement;
 }
 
-// Content structure for whiteboard context node
+// Content structure for whiteboard context node (flat element format)
 export interface WhiteboardContextContent {
-  elements: WhiteboardElementEntry[];
+  elements: ExcalidrawElement[];
   app_state?: Partial<WhiteboardAppState>;
   files?: Record<string, BinaryFileData>;
 }
@@ -333,9 +333,7 @@ export interface WhiteboardCanvasProps {
   initialElements?: ExcalidrawElement[];
   initialAppState?: Partial<WhiteboardAppState>;
   initialFiles?: Record<string, BinaryFileData>;
-  initialNodeMap?: Map<string, string>; // excalidraw element ID -> node ID
-  initialContextNodeId?: string | null; // whiteboard context node ID
-  onSave?: (elements: ExcalidrawElement[], appState: WhiteboardAppState) => void;
+  initialContextNodeId?: string | null;
   onError?: (error: Error) => void;
   readOnly?: boolean;
 }

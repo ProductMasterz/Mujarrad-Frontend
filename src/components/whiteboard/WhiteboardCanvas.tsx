@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * WhiteboardCanvas - Excalidraw wrapper component with save functionality
+ * WhiteboardCanvas - Excalidraw wrapper with simplified single-PUT persistence
  */
 
-import React, { useCallback, useRef, useImperativeHandle, forwardRef, useState, useEffect } from 'react';
+import React, { useCallback, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import debounce from 'lodash/debounce';
 
@@ -16,9 +16,9 @@ import {
 } from '@/types/whiteboard';
 import { useWhiteboardStore } from '@/stores/whiteboardStore';
 import { useSaveWhiteboard } from '@/hooks/api/useWhiteboardMutations';
-import { useUpdateNode } from '@/hooks/api/useUpdateNode';
-import { useWhiteboardSync } from '@/hooks/useWhiteboardSync';
-import { WhiteboardContextMenu } from './WhiteboardContextMenu';
+import { whiteboardService } from '@/services/api/whiteboard.service';
+import { diffArrows } from '@/lib/whiteboard/arrowDiff';
+import { syncArrowAttributes, SyncedArrowsMap } from '@/lib/whiteboard/arrowSync';
 import { SyncStatusIndicator } from './SyncStatusIndicator';
 
 /**
@@ -48,7 +48,6 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
       initialElements = [],
       initialAppState = {},
       initialFiles = {},
-      initialNodeMap,
       initialContextNodeId,
       onError,
       readOnly = false,
@@ -56,91 +55,75 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
     ref
   ) {
     const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
-    const existingNodesRef = useRef<Map<string, string>>(initialNodeMap || new Map());
     const contextNodeIdRef = useRef<string | null>(initialContextNodeId || null);
     const isSavingRef = useRef<boolean>(false);
     const isMountedRef = useRef<boolean>(true);
-    const hasSavedRef = useRef<boolean>(false); // Tracks if a save has occurred this session
-    const pendingSaveRef = useRef<boolean>(false); // Tracks if a save was skipped due to concurrency
-    const lastElementsRef = useRef<ExcalidrawElement[]>(initialElements);
-    const lastAppStateRef = useRef<any>(initialAppState);
-    const lastFilesRef = useRef<Record<string, BinaryFileData>>(initialFiles || {});
+    const lastStateRef = useRef<{
+      elements: ExcalidrawElement[];
+      appState: any;
+      files: Record<string, BinaryFileData>;
+    }>({ elements: initialElements, appState: initialAppState, files: initialFiles || {} });
+    const pendingSaveRef = useRef<boolean>(false);
+    const previousElementsRef = useRef<ExcalidrawElement[]>(initialElements);
+    const syncedArrowsRef = useRef<SyncedArrowsMap>(new Map());
 
-    // Sync refs when props change - but ONLY if we haven't saved yet this session.
-    // After a save, existingNodesRef is authoritatively managed by performSave.
-    // The query refetch creates new Map instances on every render, which would
-    // overwrite the save result with stale data if we always synced.
-    useEffect(() => {
-      if (initialNodeMap && !hasSavedRef.current) {
-        existingNodesRef.current = initialNodeMap;
-      }
-    }, [initialNodeMap]);
-
+    // Sync contextNodeId ref when prop changes
     useEffect(() => {
       if (initialContextNodeId) {
         contextNodeIdRef.current = initialContextNodeId;
       }
     }, [initialContextNodeId]);
 
-    // Cleanup on unmount - cancel pending saves to prevent stale data saves
+    // Cleanup on unmount
     useEffect(() => {
       isMountedRef.current = true;
-      return () => {
-        isMountedRef.current = false;
-        // Note: debouncedSave.cancel() is called in the debounced save's cleanup
-      };
+      return () => { isMountedRef.current = false; };
     }, []);
 
-    // Context menu state
-    const [contextMenu, setContextMenu] = useState<{
-      elementId: string;
-      x: number;
-      y: number;
-    } | null>(null);
+    // Hydrate syncedArrowsRef on load — match existing attributes to arrows
+    useEffect(() => {
+      if (!initialElements.length || !initialContextNodeId) return;
+
+      const hydrateArrows = async () => {
+        try {
+          const { attributeService } = await import('@/services/api/attribute.service');
+          // Fetch all connects_to attributes in the space
+          const spaceAttrs = await attributeService.getSpaceAttributes(spaceSlug);
+          const connectsToAttrs = spaceAttrs.filter(a => a.attributeType === 'connects_to');
+
+          for (const attr of connectsToAttrs) {
+            const elementId = (attr.attributeValue as any)?.excalidraw_element_id;
+            if (elementId) {
+              syncedArrowsRef.current.set(elementId, attr.id);
+            }
+          }
+        } catch {
+          // Non-critical — worst case we re-create attributes on next save
+        }
+      };
+
+      hydrateArrows();
+    }, [spaceSlug, initialContextNodeId, initialElements.length]);
 
     // Zustand store
     const { setSaving, setError, markSaved } = useWhiteboardStore();
-
-    // Update node mutation (for promoting to space list)
-    const updateNode = useUpdateNode();
-
-    // Enable bidirectional sync with hierarchy
-    const { isFrameLinked, getLinkedNodeId, unlinkFrame } = useWhiteboardSync({
-      spaceSlug,
-      excalidrawAPIRef: excalidrawAPIRef,
-    });
 
     // Save mutation
     const saveWhiteboard = useSaveWhiteboard(spaceSlug);
     const saveWhiteboardRef = useRef(saveWhiteboard);
     saveWhiteboardRef.current = saveWhiteboard;
 
-    // Internal save function (used by both debounced and immediate save)
-    const performSave = useCallback(async (
-      elements: ExcalidrawElement[],
-      appState: any,
-      files: Record<string, BinaryFileData>
-    ) => {
-      if (readOnly) return;
+    // Internal save function — single atomic PUT
+    const performSave = useCallback(async () => {
+      if (readOnly || !isMountedRef.current) return;
 
-      // Don't save if component has unmounted (prevents stale saves after navigation)
-      if (!isMountedRef.current) {
-        console.log('[WhiteboardCanvas] Component unmounted, skipping save');
-        return;
-      }
-
-      // Prevent concurrent saves - but mark that a retry is needed
+      // Prevent concurrent saves
       if (isSavingRef.current) {
-        console.log('[WhiteboardCanvas] Save already in progress, marking pending retry');
         pendingSaveRef.current = true;
         return;
       }
 
-      console.log('[WhiteboardCanvas] Saving whiteboard...', {
-        elementCount: elements.length,
-        contextNodeId: contextNodeIdRef.current,
-        existingNodesCount: existingNodesRef.current.size,
-      });
+      const { elements, appState, files } = lastStateRef.current;
 
       try {
         isSavingRef.current = true;
@@ -149,7 +132,6 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
 
         const result = await saveWhiteboardRef.current.mutateAsync({
           elements,
-          existingNodes: existingNodesRef.current,
           contextNodeId: contextNodeIdRef.current,
           appState: appState ? {
             viewBackgroundColor: appState.viewBackgroundColor,
@@ -160,21 +142,44 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
           files,
         });
 
-        // Update refs with new IDs
-        existingNodesRef.current = result.nodeMap;
+        // Cache context node ID for subsequent saves
         if (result.contextNodeId) {
           contextNodeIdRef.current = result.contextNodeId;
         }
 
-        console.log('[WhiteboardCanvas] Save successful!', {
-          nodeMapSize: result.nodeMap.size,
-          contextNodeId: result.contextNodeId,
-        });
-
-        hasSavedRef.current = true;
         markSaved();
+
+        // Arrow-to-attribute sync (post-save, best-effort)
+        try {
+          const arrowDiff = diffArrows(previousElementsRef.current, elements);
+          const hasChanges = arrowDiff.added.length > 0 || arrowDiff.removed.length > 0 || arrowDiff.changed.length > 0 || arrowDiff.labelChanged.length > 0;
+
+          if (hasChanges) {
+            const syncResult = await syncArrowAttributes(
+              spaceSlug,
+              arrowDiff,
+              elements,
+              syncedArrowsRef.current
+            );
+
+            // Update elements with newly promoted node IDs
+            if (syncResult.promoted.size > 0) {
+              const updatedElements = lastStateRef.current.elements.map(el => {
+                const nodeId = syncResult.promoted.get(el.id);
+                if (nodeId) {
+                  return { ...el, customData: { ...el.customData, nodeId } };
+                }
+                return el;
+              });
+              lastStateRef.current.elements = updatedElements;
+            }
+          }
+
+          previousElementsRef.current = [...elements];
+        } catch {
+          // Arrow sync failures are non-blocking — retry on next save
+        }
       } catch (error) {
-        console.error('[WhiteboardCanvas] Save failed:', error);
         const message = error instanceof Error ? error.message : 'Failed to save';
         setError(message);
         onError?.(error instanceof Error ? error : new Error(message));
@@ -182,56 +187,43 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
         isSavingRef.current = false;
         setSaving(false);
 
-        // If a save was skipped while we were saving, retry with latest state
+        // If a save was deferred, retry with latest state
         if (pendingSaveRef.current && isMountedRef.current) {
           pendingSaveRef.current = false;
-          console.log('[WhiteboardCanvas] Retrying skipped save with latest elements');
-          // Use setTimeout to avoid synchronous recursion and allow React to process
-          setTimeout(() => {
-            if (isMountedRef.current) {
-              performSave(lastElementsRef.current, lastAppStateRef.current, lastFilesRef.current);
-            }
-          }, 100);
+          setTimeout(() => { if (isMountedRef.current) performSave(); }, 100);
         }
       }
     }, [readOnly, setSaving, setError, markSaved, onError]);
 
-    // Debounced save function
+    // Debounced save — 3 seconds
     const debouncedSave = useRef(
-      debounce((elements: ExcalidrawElement[], appState: any, files: Record<string, BinaryFileData>) => {
-        performSave(elements, appState, files);
-      }, 5000) // 5 seconds debounce to reduce API calls
+      debounce(() => { performSave(); }, 3000)
     ).current;
 
-    // Cleanup debounced save on unmount to prevent stale saves after navigation
+    // Cancel on unmount
     useEffect(() => {
-      return () => {
-        debouncedSave.cancel();
-        console.log('[WhiteboardCanvas] Cancelled pending saves on unmount');
-      };
+      return () => { debouncedSave.cancel(); };
     }, [debouncedSave]);
 
     // Expose saveNow method via ref
     useImperativeHandle(ref, () => ({
       saveNow: async () => {
-        // Cancel any pending debounced save
         debouncedSave.cancel();
-        // Perform immediate save with current state
-        await performSave(lastElementsRef.current, lastAppStateRef.current, lastFilesRef.current);
+        await performSave();
       },
     }), [debouncedSave, performSave]);
 
     // Handle changes from Excalidraw
     const handleChange = useCallback(
       (elements: readonly ExcalidrawElement[], appState: any, files: Record<string, BinaryFileData>) => {
-        // Store current state for immediate save
-        lastElementsRef.current = [...elements] as ExcalidrawElement[];
-        lastAppStateRef.current = appState;
-        lastFilesRef.current = files;
+        lastStateRef.current = {
+          elements: [...elements] as ExcalidrawElement[],
+          appState,
+          files,
+        };
 
-        // Only save if there are actual elements (avoid saving on initial load)
         if (elements.length > 0) {
-          debouncedSave([...elements] as ExcalidrawElement[], appState, files);
+          debouncedSave();
         }
       },
       [debouncedSave]
@@ -242,68 +234,52 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
       excalidrawAPIRef.current = api;
     }, []);
 
-    // Handle context menu open
-    const handleContextMenu = useCallback((elementId: string, x: number, y: number) => {
-      setContextMenu({ elementId, x, y });
-    }, []);
+    // Handle "Show in Space List" — lazy node creation
+    const handleShowInSpaceList = useCallback(async (elementId: string) => {
+      const { elements } = lastStateRef.current;
+      const element = elements.find(el => el.id === elementId);
+      if (!element) return;
 
-    // Handle "Show in Space List" action
-    const handleShowInSpaceList = useCallback(async () => {
-      if (!contextMenu) return;
-
-      // Find the node ID for this element
-      const nodeId = existingNodesRef.current.get(contextMenu.elementId);
-      if (!nodeId) {
-        console.warn('[WhiteboardCanvas] No node found for element:', contextMenu.elementId);
+      // If already linked, just update showInSpaceList
+      const existingNodeId = element.customData?.nodeId;
+      if (existingNodeId) {
+        try {
+          // Update the existing node to show in space list
+          const { apiClient } = await import('@/services/api/client');
+          await apiClient.put(`/spaces/${spaceSlug}/nodes/${existingNodeId}`, {
+            nodeDetails: { showInSpaceList: true },
+          });
+        } catch (error) {
+          onError?.(error instanceof Error ? error : new Error('Failed to promote element'));
+        }
         return;
       }
 
+      // Create a new node for this shape
+      const title = element.text || element.type.charAt(0).toUpperCase() + element.type.slice(1);
       try {
-        await updateNode.mutateAsync({
-          spaceSlug,
-          nodeId,
-          data: {
-            nodeDetails: {
-              showInSpaceList: true,
-            },
-          },
-        });
-        console.log('[WhiteboardCanvas] Promoted element to space list:', nodeId);
+        const node = await whiteboardService.createShapeNode(spaceSlug, title);
+
+        // Store nodeId in element's customData
+        const updatedElements = lastStateRef.current.elements.map(el =>
+          el.id === elementId
+            ? { ...el, customData: { ...el.customData, nodeId: node.id } }
+            : el
+        );
+        lastStateRef.current.elements = updatedElements;
+
+        // Trigger a save to persist the updated customData
+        debouncedSave.cancel();
+        await performSave();
       } catch (error) {
-        console.error('[WhiteboardCanvas] Failed to promote element:', error);
         onError?.(error instanceof Error ? error : new Error('Failed to promote element'));
       }
-    }, [contextMenu, spaceSlug, updateNode, onError]);
-
-    // Handle "View in Hierarchy" action
-    const handleViewInHierarchy = useCallback(() => {
-      if (!contextMenu) return;
-      const nodeId = getLinkedNodeId(contextMenu.elementId);
-      if (nodeId) {
-        // Dispatch event to notify hierarchy to select this node
-        window.dispatchEvent(
-          new CustomEvent('whiteboard:view-in-hierarchy', {
-            detail: { nodeId },
-          })
-        );
-      }
-    }, [contextMenu, getLinkedNodeId]);
-
-    // Handle "Unlink from Node" action
-    const handleUnlink = useCallback(() => {
-      if (!contextMenu) return;
-      unlinkFrame(contextMenu.elementId);
-    }, [contextMenu, unlinkFrame]);
-
-    // Check if current context menu element is linked
-    const isContextMenuElementLinked = contextMenu
-      ? isFrameLinked(contextMenu.elementId)
-      : false;
+    }, [spaceSlug, debouncedSave, performSave, onError]);
 
     // Handle retry on sync error
     const handleRetry = useCallback(() => {
       debouncedSave.cancel();
-      performSave(lastElementsRef.current, lastAppStateRef.current, lastFilesRef.current);
+      performSave();
     }, [debouncedSave, performSave]);
 
     return (
@@ -314,25 +290,12 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
           initialFiles={initialFiles}
           onChange={handleChange}
           onMount={handleMount}
-          onContextMenu={handleContextMenu}
           readOnly={readOnly}
         />
-        {/* Sync status indicator in top-right corner */}
+        {/* Sync status indicator */}
         <div className="absolute top-4 right-4 z-10">
           <SyncStatusIndicator onRetry={handleRetry} />
         </div>
-        {/* Custom context menu */}
-        {contextMenu && (
-          <WhiteboardContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            isLinked={isContextMenuElementLinked}
-            onShowInSpaceList={handleShowInSpaceList}
-            onViewInHierarchy={handleViewInHierarchy}
-            onUnlink={handleUnlink}
-            onClose={() => setContextMenu(null)}
-          />
-        )}
       </div>
     );
   }

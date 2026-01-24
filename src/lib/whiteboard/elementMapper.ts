@@ -126,6 +126,21 @@ export function getElementSubtype(type: ExcalidrawElementType): WhiteboardElemen
 }
 
 /**
+ * Finds the bound text content for an element (rectangle, arrow, etc.)
+ * In Excalidraw, text inside shapes/arrows is a separate element with containerId.
+ */
+export function getBoundText(
+  element: ExcalidrawElement,
+  allElements: ExcalidrawElement[]
+): string | undefined {
+  const textBinding = element.boundElements?.find(b => b.type === 'text');
+  if (!textBinding) return undefined;
+
+  const textElement = allElements.find(el => el.id === textBinding.id && !el.isDeleted);
+  return textElement?.text || undefined;
+}
+
+/**
  * Checks if an element has bindings (is connected to other elements)
  */
 export function hasBindings(element: ExcalidrawElement): boolean {

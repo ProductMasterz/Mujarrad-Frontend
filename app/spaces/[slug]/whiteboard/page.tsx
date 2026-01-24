@@ -84,10 +84,9 @@ export default function WhiteboardPage() {
     }
   };
 
-  // Fetch whiteboard state (elements and node mapping from context node content)
+  // Fetch whiteboard state from context node
   const {
     elements,
-    nodeMap,
     contextNodeId,
     appState,
     files,
@@ -225,7 +224,6 @@ export default function WhiteboardPage() {
           initialElements={elements}
           initialAppState={appState}
           initialFiles={files}
-          initialNodeMap={nodeMap}
           initialContextNodeId={contextNodeId}
           onError={(err) => console.error('Whiteboard error:', err)}
         />
