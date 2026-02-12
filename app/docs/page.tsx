@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ChevronRight, ChevronDown, Book, Rocket, Layout, Code, Layers, Shield } from 'lucide-react';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { SwaggerEmbed } from '@/components/docs/SwaggerEmbed';
 import { cn } from '@/lib/utils';
 
 // Documentation content organized by sections
@@ -1257,6 +1258,27 @@ http://localhost:3000/swagger-ui.html
 `,
 };
 
+// Swagger tags mapping for each documentation section
+const swaggerTags: Record<string, { tag: string; title: string }[]> = {
+  'spaces': [{ tag: 'space', title: 'Space' }],
+  'nodes': [{ tag: 'node', title: 'Node' }],
+  'attributes': [{ tag: 'attribute', title: 'Attribute' }],
+  'auth-overview': [
+    { tag: 'authentication', title: 'Authentication' },
+    { tag: 'oauth', title: 'OAuth2' },
+  ],
+  'api-keys': [{ tag: 'api-key', title: 'API Key' }],
+  'api-reference': [
+    { tag: 'space', title: 'Space' },
+    { tag: 'node', title: 'Node' },
+    { tag: 'attribute', title: 'Attribute' },
+    { tag: 'authentication', title: 'Authentication' },
+    { tag: 'api-key', title: 'API Key' },
+    { tag: 'health', title: 'Health' },
+    { tag: 'template', title: 'Templates' },
+  ],
+};
+
 // Navigation structure
 const navSections = [
   {
@@ -1409,6 +1431,26 @@ export default function DocsPage() {
             content={docsContent[activeSection] || '# Page not found\n\nThis documentation page does not exist.'}
             className="docs-content"
           />
+
+          {/* Live API Documentation from Swagger */}
+          {swaggerTags[activeSection] && (
+            <div className="mt-10 space-y-4">
+              <h2 className="text-xl font-semibold text-[#333] border-b border-[#e5e5e5] pb-2">
+                Live API Reference
+              </h2>
+              <p className="text-sm text-[#828282] mb-4">
+                Interactive API endpoints fetched from the live Swagger documentation.
+              </p>
+              {swaggerTags[activeSection].map((swagger) => (
+                <SwaggerEmbed
+                  key={swagger.tag}
+                  tag={swagger.tag}
+                  title={swagger.title}
+                  className="mb-4"
+                />
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>
