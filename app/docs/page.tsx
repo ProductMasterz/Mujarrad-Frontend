@@ -55,7 +55,7 @@ cd Backend
 ./gradlew bootRun
 
 # Access Swagger UI
-open http://localhost:3000/swagger-ui.html
+open https://mujarrad.onrender.com/swagger-ui/index.html
 \`\`\`
 `,
 
@@ -225,7 +225,7 @@ cd Backend
 ### Health Check
 
 \`\`\`bash
-curl http://localhost:3000/api/health
+curl https://mujarrad.onrender.com/api/health
 \`\`\`
 
 Expected response:
@@ -238,12 +238,12 @@ Expected response:
 
 ### Swagger UI
 
-Open in browser: http://localhost:3000/swagger-ui.html
+Open in browser: https://mujarrad.onrender.com/swagger-ui/index.html
 
 ### Register a Test User
 
 \`\`\`bash
-curl -X POST http://localhost:3000/api/users/register \\
+curl -X POST https://mujarrad.onrender.com/api/users/register \\
   -H "Content-Type: application/json" \\
   -d '{
     "email": "test@example.com",
@@ -343,7 +343,7 @@ This guide walks you through making your first API calls to verify your setup is
 Verify the application is running:
 
 \`\`\`bash
-curl http://localhost:3000/api/health
+curl https://mujarrad.onrender.com/api/health
 \`\`\`
 
 Expected response:
@@ -360,7 +360,7 @@ Expected response:
 Create a new user account:
 
 \`\`\`bash
-curl -X POST http://localhost:3000/api/users/register \\
+curl -X POST https://mujarrad.onrender.com/api/users/register \\
   -H "Content-Type: application/json" \\
   -d '{
     "email": "developer@example.com",
@@ -372,7 +372,7 @@ curl -X POST http://localhost:3000/api/users/register \\
 ## 3. Login and Get JWT Token
 
 \`\`\`bash
-curl -X POST http://localhost:3000/api/users/login \\
+curl -X POST https://mujarrad.onrender.com/api/users/login \\
   -H "Content-Type: application/json" \\
   -d '{
     "email": "developer@example.com",
@@ -388,7 +388,7 @@ export TOKEN="eyJhbGciOiJIUzI1NiJ9..."
 ## 4. Create a Space
 
 \`\`\`bash
-curl -X POST http://localhost:3000/api/spaces \\
+curl -X POST https://mujarrad.onrender.com/api/spaces \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer $TOKEN" \\
   -d '{
@@ -402,7 +402,7 @@ curl -X POST http://localhost:3000/api/spaces \\
 \`\`\`bash
 export SPACE_SLUG="my-first-space"
 
-curl -X POST "http://localhost:3000/api/spaces/$SPACE_SLUG/nodes" \\
+curl -X POST "https://mujarrad.onrender.com/api/spaces/$SPACE_SLUG/nodes" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer $TOKEN" \\
   -d '{
@@ -418,7 +418,7 @@ curl -X POST "http://localhost:3000/api/spaces/$SPACE_SLUG/nodes" \\
 ## 6. List Nodes
 
 \`\`\`bash
-curl "http://localhost:3000/api/spaces/$SPACE_SLUG/nodes" \\
+curl "https://mujarrad.onrender.com/api/spaces/$SPACE_SLUG/nodes" \\
   -H "Authorization: Bearer $TOKEN"
 \`\`\`
 
@@ -427,13 +427,15 @@ curl "http://localhost:3000/api/spaces/$SPACE_SLUG/nodes" \\
 Open your browser and navigate to:
 
 \`\`\`
-http://localhost:3000/swagger-ui.html
+https://mujarrad.onrender.com/swagger-ui/index.html
 \`\`\`
 
 This provides interactive API documentation where you can:
 - Explore all endpoints
 - Try API calls directly
 - View request/response schemas
+
+> **Note:** All API examples in this documentation use the production URL \`https://mujarrad.onrender.com\`. For local development, replace with \`https://mujarrad.onrender.com\`.
 `,
 
   // Architecture Overview
@@ -557,7 +559,7 @@ For personal use, note-taking, knowledge bases:
 - Ideal for end-users
 
 \`\`\`bash
-curl -X POST http://localhost:3000/api/spaces \\
+curl -X POST https://mujarrad.onrender.com/api/spaces \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -575,7 +577,7 @@ For applications using Mujarrad as their backend:
 - Ideal for developers building on Mujarrad
 
 \`\`\`bash
-curl -X POST http://localhost:3000/api/spaces \\
+curl -X POST https://mujarrad.onrender.com/api/spaces \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -647,7 +649,7 @@ A node represents any piece of content or concept:
 Standard content nodes:
 
 \`\`\`bash
-curl -X POST "http://localhost:3000/api/spaces/{spaceSlug}/nodes" \\
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceSlug}/nodes" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -662,7 +664,7 @@ curl -X POST "http://localhost:3000/api/spaces/{spaceSlug}/nodes" \\
 Category or grouping nodes:
 
 \`\`\`bash
-curl -X POST "http://localhost:3000/api/spaces/{spaceSlug}/nodes" \\
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceSlug}/nodes" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -676,7 +678,7 @@ curl -X POST "http://localhost:3000/api/spaces/{spaceSlug}/nodes" \\
 Hypothesis or assumption nodes:
 
 \`\`\`bash
-curl -X POST "http://localhost:3000/api/spaces/{spaceSlug}/nodes" \\
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceSlug}/nodes" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -695,7 +697,7 @@ Promoted relationship nodes (cannot be created directly, use attribute promotion
 The \`nodeDetails\` JSONB field allows flexible custom properties:
 
 \`\`\`bash
-curl -X POST "http://localhost:3000/api/spaces/{spaceSlug}/nodes" \\
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceSlug}/nodes" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -715,7 +717,7 @@ curl -X POST "http://localhost:3000/api/spaces/{spaceSlug}/nodes" \\
 Each update creates a version:
 
 \`\`\`bash
-curl "http://localhost:3000/api/nodes/{nodeId}/versions" \\
+curl "https://mujarrad.onrender.com/api/nodes/{nodeId}/versions" \\
   -H "Authorization: Bearer $TOKEN"
 \`\`\`
 `,
@@ -755,7 +757,7 @@ An attribute connects a **source node** to a **target node** with a typed relati
 Hierarchical containment (parent-child). Creates a DAG (Directed Acyclic Graph). Cycles are prevented.
 
 \`\`\`bash
-curl -X POST "http://localhost:3000/api/nodes/{documentId}/attributes" \\
+curl -X POST "https://mujarrad.onrender.com/api/nodes/{documentId}/attributes" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -770,7 +772,7 @@ curl -X POST "http://localhost:3000/api/nodes/{documentId}/attributes" \\
 Soft link or citation:
 
 \`\`\`bash
-curl -X POST "http://localhost:3000/api/nodes/{nodeId}/attributes" \\
+curl -X POST "https://mujarrad.onrender.com/api/nodes/{nodeId}/attributes" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -793,7 +795,7 @@ Generic connection between nodes.
 Attributes can store values:
 
 \`\`\`bash
-curl -X POST "http://localhost:3000/api/nodes/{nodeId}/attributes" \\
+curl -X POST "https://mujarrad.onrender.com/api/nodes/{nodeId}/attributes" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -821,7 +823,7 @@ curl -X POST "http://localhost:3000/api/nodes/{nodeId}/attributes" \\
 Attributes can be "promoted" to become first-class nodes:
 
 \`\`\`bash
-curl -X POST "http://localhost:3000/api/spaces/{spaceSlug}/attributes/{attributeId}/promote" \\
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceSlug}/attributes/{attributeId}/promote" \\
   -H "Authorization: Bearer $TOKEN"
 \`\`\`
 
@@ -849,7 +851,7 @@ Context Types are only available for **BACKEND** project type spaces and are typ
 ## Creating a Context Type
 
 \`\`\`bash
-curl -X POST "http://localhost:3000/api/spaces/{spaceId}/context-types" \\
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceId}/context-types" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -937,7 +939,7 @@ Mujarrad supports three authentication mechanisms to accommodate different use c
 
 \`\`\`bash
 # 1. Login
-curl -X POST http://localhost:3000/api/users/login \\
+curl -X POST https://mujarrad.onrender.com/api/users/login \\
   -H "Content-Type: application/json" \\
   -d '{
     "email": "user@example.com",
@@ -945,14 +947,14 @@ curl -X POST http://localhost:3000/api/users/login \\
   }'
 
 # 2. Use token
-curl -X GET http://localhost:3000/api/spaces \\
+curl -X GET https://mujarrad.onrender.com/api/spaces \\
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
 \`\`\`
 
 ## API Key Authentication
 
 \`\`\`bash
-curl -X GET http://localhost:3000/api/spaces \\
+curl -X GET https://mujarrad.onrender.com/api/spaces \\
   -H "X-API-Key: pk_live_abc123..." \\
   -H "X-API-Secret: sk_live_xyz789..."
 \`\`\`
@@ -1010,7 +1012,7 @@ API keys provide programmatic access for B2B integrations, automation scripts, a
 Requires JWT authentication:
 
 \`\`\`bash
-curl -X POST http://localhost:3000/api/api-keys \\
+curl -X POST https://mujarrad.onrender.com/api/api-keys \\
   -H "Authorization: Bearer $JWT_TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -1040,7 +1042,7 @@ Response:
 ### Option 1: Separate Headers (Recommended)
 
 \`\`\`bash
-curl -X GET http://localhost:3000/api/spaces \\
+curl -X GET https://mujarrad.onrender.com/api/spaces \\
   -H "X-API-Key: pk_live_abc123def456ghi789jkl012mno345pqr" \\
   -H "X-API-Secret: sk_live_xyz789..."
 \`\`\`
@@ -1048,7 +1050,7 @@ curl -X GET http://localhost:3000/api/spaces \\
 ### Option 2: Combined Authorization Header
 
 \`\`\`bash
-curl -X GET http://localhost:3000/api/spaces \\
+curl -X GET https://mujarrad.onrender.com/api/spaces \\
   -H "Authorization: ApiKey pk_live_abc123...:sk_live_xyz789..."
 \`\`\`
 
@@ -1057,7 +1059,7 @@ curl -X GET http://localhost:3000/api/spaces \\
 ### List Keys
 
 \`\`\`bash
-curl -X GET http://localhost:3000/api/api-keys \\
+curl -X GET https://mujarrad.onrender.com/api/api-keys \\
   -H "Authorization: Bearer $JWT_TOKEN"
 \`\`\`
 
@@ -1066,7 +1068,7 @@ curl -X GET http://localhost:3000/api/api-keys \\
 Zero-downtime rotation:
 
 \`\`\`bash
-curl -X POST http://localhost:3000/api/api-keys/{keyId}/rotate \\
+curl -X POST https://mujarrad.onrender.com/api/api-keys/{keyId}/rotate \\
   -H "Authorization: Bearer $JWT_TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -1077,7 +1079,7 @@ curl -X POST http://localhost:3000/api/api-keys/{keyId}/rotate \\
 ### Revoke Key
 
 \`\`\`bash
-curl -X DELETE http://localhost:3000/api/api-keys/{keyId} \\
+curl -X DELETE https://mujarrad.onrender.com/api/api-keys/{keyId} \\
   -H "Authorization: Bearer $JWT_TOKEN"
 \`\`\`
 
@@ -1086,7 +1088,7 @@ curl -X DELETE http://localhost:3000/api/api-keys/{keyId} \\
 API keys can be scoped to a specific space:
 
 \`\`\`bash
-curl -X POST http://localhost:3000/api/api-keys \\
+curl -X POST https://mujarrad.onrender.com/api/api-keys \\
   -H "Authorization: Bearer $JWT_TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -1128,8 +1130,8 @@ This section provides comprehensive documentation for the Mujarrad REST API.
 
 | Environment | URL |
 |-------------|-----|
-| Local | \`http://localhost:3000/api\` |
 | Production | \`https://mujarrad.onrender.com/api\` |
+| Local Dev | \`http://localhost:3000/api\` |
 
 ## Authentication
 
@@ -1188,7 +1190,7 @@ Most list endpoints support pagination:
 
 Example:
 \`\`\`bash
-curl "http://localhost:3000/api/spaces/my-space/nodes?page=1&size=50&sort=createdAt&direction=DESC"
+curl "https://mujarrad.onrender.com/api/spaces/my-space/nodes?page=1&size=50&sort=createdAt&direction=DESC"
 \`\`\`
 
 ## Rate Limiting
@@ -1253,7 +1255,7 @@ X-RateLimit-Reset: 1739536800
 
 Swagger UI is available at:
 \`\`\`
-http://localhost:3000/swagger-ui.html
+https://mujarrad.onrender.com/swagger-ui/index.html
 \`\`\`
 `,
 };
