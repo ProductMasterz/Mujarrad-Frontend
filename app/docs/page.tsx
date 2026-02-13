@@ -604,6 +604,44 @@ curl -X POST https://mujarrad.onrender.com/api/spaces \\
 - Schema-defined relationships get cardinality validation
 - Cannot create/modify/delete Context Types
 
+## Switching Modes
+
+### Switch to PRODUCTION (Lock Schema)
+
+\`\`\`bash
+curl -X PATCH "https://mujarrad.onrender.com/api/spaces/{spaceId}" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "mode": "PRODUCTION"
+  }'
+\`\`\`
+
+### Switch to CONFIGURATION (Unlock Schema)
+
+\`\`\`bash
+curl -X PATCH "https://mujarrad.onrender.com/api/spaces/{spaceId}" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "mode": "CONFIGURATION"
+  }'
+\`\`\`
+
+### Response
+
+\`\`\`json
+{
+  "id": "uuid",
+  "name": "My App",
+  "projectType": "BACKEND",
+  "mode": "PRODUCTION",
+  "updatedAt": "2025-02-12T12:00:00Z"
+}
+\`\`\`
+
+> **Note:** Only the space owner can switch modes.
+
 ## Space Membership
 
 | Role | Read | Write | Admin | Manage Members |
