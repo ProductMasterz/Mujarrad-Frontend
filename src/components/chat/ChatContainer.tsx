@@ -7,12 +7,13 @@ import { processText } from "@/services/agentService";
 
 export type Message = {
   id: string;
-  role: "user" | "agent";
+  role: "user" | "agent" | "system";
   content: string;
 };
 
 export default function ChatContainer() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const handleSend = async (text: string) => {
     const userMessage: Message = {
@@ -21,30 +22,35 @@ export default function ChatContainer() {
         content: text,
     };
 
-    // Show message immediately
+    // Show message immediately after loading
     setMessages((prev) => [...prev, userMessage]);
+    setLoading(true);
 
     try {
 
-        const result = await processText(text, "demo-space");
+    const result = await processText(text, "demo-space");
 
-        const agentMessage: Message = {
+    const agentMessage: Message = {
         id: crypto.randomUUID(),
         role: "agent",
         content: result.report || "Processing complete.",
-        };
+    };
 
-        setMessages((prev) => [...prev, agentMessage]);
+    setMessages((prev) => [...prev, agentMessage]);
 
     } catch (error) {
 
-        const errorMessage: Message = {
+    const errorMessage: Message = {
         id: crypto.randomUUID(),
         role: "agent",
         content: "⚠️ Agent service unavailable.",
-        };
+    };
 
-        setMessages((prev) => [...prev, errorMessage]);
+    setMessages((prev) => [...prev, errorMessage]);
+
+    } finally {
+
+    setLoading(false);
 
     }
     };
@@ -57,6 +63,13 @@ export default function ChatContainer() {
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
+        {loading && (
+        <div className="flex justify-center">
+            <div className="text-xs text-gray-400 italic animate-pulse">
+            Agent is analyzing...
+            </div>
+        </div>
+        )}
       </div>
 
       {/* Input */}
