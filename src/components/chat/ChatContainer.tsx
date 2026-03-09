@@ -3,6 +3,7 @@
 import { useState } from "react";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
+import { processText } from "@/services/agentService";
 
 export type Message = {
   id: string;
@@ -13,27 +14,40 @@ export type Message = {
 export default function ChatContainer() {
   const [messages, setMessages] = useState<Message[]>([]);
 
-  const handleSend = (text: string) => {
+  const handleSend = async (text: string) => {
     const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: text,
+        id: crypto.randomUUID(),
+        role: "user",
+        content: text,
     };
 
-    // Immediate optimistic UI update
+    // Show message immediately
     setMessages((prev) => [...prev, userMessage]);
 
-    // Temporary simulated agent response
-    setTimeout(() => {
-      const agentMessage: Message = {
+    try {
+
+        const result = await processText(text, "demo-space");
+
+        const agentMessage: Message = {
         id: crypto.randomUUID(),
         role: "agent",
-        content: "Agent response placeholder.",
-      };
+        content: result.report || "Processing complete.",
+        };
 
-      setMessages((prev) => [...prev, agentMessage]);
-    }, 600);
-  };
+        setMessages((prev) => [...prev, agentMessage]);
+
+    } catch (error) {
+
+        const errorMessage: Message = {
+        id: crypto.randomUUID(),
+        role: "agent",
+        content: "⚠️ Agent service unavailable.",
+        };
+
+        setMessages((prev) => [...prev, errorMessage]);
+
+    }
+    };
 
   return (
     <div className="flex h-full w-full flex-col">
