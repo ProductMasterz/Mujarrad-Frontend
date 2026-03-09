@@ -17,14 +17,18 @@ export default function ChatInput({
   };
 
   return (
-    <div className="border-t p-3 flex gap-2">
-      <input
-        className="flex-1 rounded border px-3 py-2 text-sm focus:outline-none focus:ring"
+    <div className="border-t p-3 flex gap-2 items-end">
+      <textarea
+        className="flex-1 rounded border px-3 py-2 text-sm resize-none focus:outline-none focus:ring"
         placeholder="Type a message..."
+        rows={1}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") sendMessage();
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+            e.preventDefault();
+            sendMessage();
+          }
         }}
       />
 
