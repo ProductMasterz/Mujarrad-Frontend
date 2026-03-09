@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
-import { Search, Home, Network, Settings, User } from 'lucide-react';
+import { Search, Home, Network, Settings, User, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -79,6 +79,17 @@ export function Navbar({ className }: NavbarProps) {
             >
               <Home className="h-4 w-4" />
               Spaces
+            </Button>
+          </Link>
+
+          <Link href="/chat">
+            <Button
+              variant={isActive('/chat') ? 'secondary' : 'ghost'}
+              size="sm"
+              className="gap-2"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Chat
             </Button>
           </Link>
         </div>
