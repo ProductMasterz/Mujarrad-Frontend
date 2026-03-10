@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -12,11 +13,14 @@ import { ShareModal } from '@/shell/components/ShareModal';
 import { CardType } from '@/shell/data/projects';
 import { useSpace, nodeKeys } from '@/hooks/api';
 import { nodeService } from '@/services/api/node.service';
+import { attributeService } from '@/services/api/attribute.service';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { BlockEditor, BlockEditorRef } from '@/components/blocks/BlockEditor';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import type { Block } from '@/components/blocks/types';
-import type { UpdateNodeRequest } from '@/types/backend-dtos';
+import type { UpdateNodeRequest, Attribute } from '@/types/backend-dtos';
 
 export default function NodeDetailPage() {
   const params = useParams();
@@ -27,48 +31,37 @@ export default function NodeDetailPage() {
   const slug = params.slug as string;
   const nodeId = params.id as string;
 
-  // Fetch space data
   const { data: space, isLoading: spaceLoading } = useSpace(slug);
 
-  // Fetch the current node using standardized query keys
   const { data: node, isLoading: nodeLoading, error: nodeError } = useQuery({
     queryKey: nodeKeys.detail(slug, nodeId),
     queryFn: () => nodeService.getNode(slug, nodeId),
     enabled: !!space,
   });
 
-  // Set navigation scope when node loads
   useEffect(() => {
     if (space && node) {
       navigateToNode(slug, space.id, node.id);
     }
   }, [space, node, slug, navigateToNode]);
 
-  // BlockEditor ref for scrolling to blocks
   const blockEditorRef = useRef<BlockEditorRef>(null);
-
-  // State for blocks (from BlockEditor)
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
 
-  // Update node mutation (for title changes)
   const updateNodeMutation = useMutation({
     mutationFn: (data: UpdateNodeRequest) => nodeService.updateNode(slug, nodeId, data),
     onSuccess: () => {
-      // Invalidate the specific node query
       queryClient.invalidateQueries({ queryKey: nodeKeys.detail(slug, nodeId) });
-      // Invalidate all node lists to ensure cards update when navigating back
       queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
     },
   });
 
-  // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [title, setTitle] = useState('');
 
-  // Tabs state
   const [tabs, setTabs] = useState<Tab[]>([
     {
       id: 'tab-1',
@@ -79,36 +72,31 @@ export default function NodeDetailPage() {
   ]);
   const [activeTabId, setActiveTabId] = useState('tab-1');
 
-  // Initialize title when node loads
   useEffect(() => {
     if (node) {
       setTitle(node.title || '');
-      setTabs(prevTabs =>
-        prevTabs.map(tab =>
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
           tab.id === 'tab-1' ? { ...tab, title: node.title } : tab
         )
       );
     }
   }, [node]);
 
-  // Handle blocks change from BlockEditor
   const handleBlocksChange = useCallback((newBlocks: Block[]) => {
     setBlocks(newBlocks);
   }, []);
 
-  // Handle focus change from BlockEditor
   const handleFocusChange = useCallback((blockId: string | null) => {
     setFocusedBlockId(blockId);
   }, []);
 
-  // Handle block click in sidebar - scroll to block
   const handleBlockClick = useCallback((blockId: string) => {
     if (blockEditorRef.current) {
       blockEditorRef.current.scrollToBlock(blockId);
     }
   }, []);
 
-  // Build breadcrumb
   const breadcrumbPath = useMemo(() => {
     const path = [{ id: 'spaces', title: 'Spaces' }];
     if (space) {
@@ -120,22 +108,18 @@ export default function NodeDetailPage() {
     return path;
   }, [space, node]);
 
-  // Loading state
   const isLoading = spaceLoading || nodeLoading;
 
-  // Handle title change
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
   }, []);
 
-  // Save title on blur
   const handleSave = useCallback(() => {
     if (title && title !== node?.title) {
       updateNodeMutation.mutate({ title });
     }
   }, [title, node?.title, updateNodeMutation]);
 
-  // Handlers
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const handleHomeClick = () => {
@@ -171,14 +155,13 @@ export default function NodeDetailPage() {
     router.push('/login');
   };
 
-  // Tab management
   const handleTabClick = (tabId: string) => {
     setActiveTabId(tabId);
   };
 
   const handleTabClose = (tabId: string) => {
     if (tabs.length === 1) return;
-    const newTabs = tabs.filter(t => t.id !== tabId);
+    const newTabs = tabs.filter((t) => t.id !== tabId);
     setTabs(newTabs);
     if (activeTabId === tabId) {
       setActiveTabId(newTabs[0].id);
@@ -196,7 +179,37 @@ export default function NodeDetailPage() {
     setActiveTabId(newTab.id);
   };
 
-  // Error state
+  // Task 8: origin traceability
+  const { data: attributes, isLoading: isLoadingAttributes } = useQuery({
+    queryKey: ['spaces', slug, 'nodes', nodeId, 'attributes', 'origin'],
+    queryFn: () => attributeService.getNodeAttributes(nodeId),
+    enabled: !!nodeId,
+  });
+
+  const originAttribute =
+    attributes?.find((attr: Attribute) => {
+      const typeValue =
+        attr.attributeValue &&
+        typeof attr.attributeValue === 'object' &&
+        'type' in attr.attributeValue
+          ? String(attr.attributeValue.type)
+          : undefined;
+
+      return (
+        attr.attributeName === 'extracted_from' ||
+        attr.attributeType === 'references' ||
+        typeValue === 'references'
+      );
+    }) ?? null;
+
+  const originNodeId = originAttribute?.targetNodeId;
+
+  const { data: originNode, isLoading: isLoadingOriginNode } = useQuery({
+    queryKey: ['spaces', slug, 'nodes', originNodeId, 'origin-node'],
+    queryFn: () => nodeService.getNode(slug, originNodeId as string),
+    enabled: !!originNodeId,
+  });
+
   if (nodeError) {
     return (
       <ProtectedRoute>
@@ -239,10 +252,8 @@ export default function NodeDetailPage() {
           onSearchClick={() => {}}
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
-          // Add menu actions - create node/context at node level
           onCreateNode={() => {}}
           onCreateContext={() => {}}
-          // More menu actions
           onShare={handleShareClick}
           onOpenInNewTab={handleNewTab}
           onOpenAsNode={() => {}}
@@ -266,7 +277,6 @@ export default function NodeDetailPage() {
           onLogout={handleLogout}
         />
 
-        {/* Main content */}
         <div
           className="pt-[76px] transition-all duration-300"
           style={{
@@ -279,7 +289,6 @@ export default function NodeDetailPage() {
             </div>
           ) : node && space ? (
             <div className="max-w-4xl mx-auto py-8 px-6">
-              {/* Page Title - Editable */}
               <input
                 type="text"
                 value={title}
@@ -290,7 +299,6 @@ export default function NodeDetailPage() {
                 style={{ fontVariationSettings: "'wdth' 100" }}
               />
 
-              {/* Metadata */}
               <p
                 className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-[#bdbdbd] mb-8"
                 style={{ fontVariationSettings: "'wdth' 100" }}
@@ -298,7 +306,52 @@ export default function NodeDetailPage() {
                 Last edited {node.updatedAt ? new Date(node.updatedAt).toLocaleDateString() : 'recently'}
               </p>
 
-              {/* Notion-like Block Editor */}
+              <div className="mb-8 rounded-[16px] border border-[#e6e6e6] bg-[#fafafa] p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <h2
+                    className="text-[18px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[#333]"
+                    style={{ fontVariationSettings: "'wdth' 100" }}
+                  >
+                    Source / Origin
+                  </h2>
+                  {originAttribute && (
+                    <Badge variant="outline">Extracted From</Badge>
+                  )}
+                </div>
+
+                {isLoadingAttributes || (originNodeId && isLoadingOriginNode) ? (
+                  <p className="text-[14px] text-[#828282]">Loading source information...</p>
+                ) : originAttribute && originNode ? (
+                  <div className="space-y-4">
+                    <div className="text-[14px] text-[#333]">
+                      <span className="font-semibold">Source node:</span> {originNode.title}
+                    </div>
+
+                    <div className="rounded-[12px] border border-[#e6e6e6] bg-white p-4">
+                      <p className="mb-2 text-[12px] uppercase tracking-wide text-[#828282]">
+                        Original Text
+                      </p>
+                      <p className="whitespace-pre-wrap text-[14px] text-[#333]">
+                        {originNode.content || 'No original text found.'}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Link href={`/spaces/${slug}/node/${originNode.id}`}>
+                        <Button variant="outline">Open Source Input</Button>
+                      </Link>
+                      <span className="text-[12px] text-[#828282] break-all">
+                        {originNode.id}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[14px] text-[#828282]">
+                    No source input linked to this node.
+                  </p>
+                )}
+              </div>
+
               <BlockEditor
                 ref={blockEditorRef}
                 pageId={node.id}
@@ -311,7 +364,6 @@ export default function NodeDetailPage() {
           ) : null}
         </div>
 
-        {/* Share Modal */}
         {showShareModal && (
           <ShareModal
             isOpen={showShareModal}
@@ -321,7 +373,6 @@ export default function NodeDetailPage() {
           />
         )}
 
-        {/* Feedback Modal */}
         {showFeedbackModal && (
           <FeedbackModal
             isOpen={showFeedbackModal}
