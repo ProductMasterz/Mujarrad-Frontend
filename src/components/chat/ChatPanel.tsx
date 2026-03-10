@@ -1,5 +1,4 @@
 'use client';
-
 import { useRef, useState } from 'react';
 import {
   AssistantRuntimeProvider,
@@ -14,6 +13,7 @@ import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
 import { Button } from '@/components/ui/button';
 import { AttributeTypeMode, NodeType } from '@/types/backend-dtos';
+import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 
 type AgentProcessResponse = {
   nodes?: unknown[];
@@ -50,8 +50,16 @@ function UserMessage() {
 function AssistantMessage() {
   return (
     <MessagePrimitive.Root className="flex justify-start">
-      <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-3 text-sm text-foreground">
-        <MessagePrimitive.Parts />
+      <div className="max-w-[85%] rounded-2xl bg-gray-200 px-4 py-3 !text-black">
+        <MessagePrimitive.Content
+          components={{
+            Text: ({ text }) => (
+              <div className="!text-black [&_*]:!text-black [&_p]:my-2 [&_h1]:my-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:my-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:my-2 [&_h3]:font-semibold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-black [&_pre]:p-3 [&_pre]:!text-white [&_code]:rounded [&_code]:bg-gray-300 [&_code]:px-1 [&_code]:py-0.5 [&_code]:!text-black [&_a]:!text-blue-700 [&_a]:underline">
+                <MarkdownRenderer content={text} />
+              </div>
+            ),
+          }}
+        />
       </div>
     </MessagePrimitive.Root>
   );
