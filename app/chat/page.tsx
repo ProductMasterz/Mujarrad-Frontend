@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { SendHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -12,31 +13,90 @@ type Message = {
   content: string;
 };
 
+type AgentProcessResponse = {
+  nodes?: unknown[];
+  relationships?: unknown[];
+  report?: string;
+  error?: boolean;
+  message?: string;
+  code?: string;
+};
+
 export default function ChatPage() {
+  const searchParams = useSearchParams();
   const [input, setInput] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      content:
-        'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+      content: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
     },
   ]);
 
-  const handleSend = () => {
-    const trimmed = input.trim();
-    if (!trimmed) return;
+  const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
+  const spaceSlug = searchParams.get('space_slug') || 'demo-space';
 
+  const appendMessage = (role: 'user' | 'assistant', content: string) => {
     setMessages((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
-        role: 'user',
-        content: trimmed,
+        role,
+        content,
       },
     ]);
+  };
 
+  const handleSend = async () => {
+    const trimmed = input.trim();
+    if (!trimmed || isSending) return;
+
+    appendMessage('user', trimmed);
     setInput('');
+    setIsSending(true);
+
+    if (!agentServiceUrl) {
+      appendMessage('assistant', 'Agent service URL is not configured.');
+      setIsSending(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${agentServiceUrl}/api/agents/process`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: trimmed,
+          space_slug: spaceSlug,
+        }),
+      });
+
+      const data: AgentProcessResponse = await response.json();
+
+      if (!response.ok || data.error) {
+        appendMessage(
+          'assistant',
+          data.message || 'The agent service returned an error.',
+        );
+        return;
+      }
+
+      appendMessage(
+        'assistant',
+        data.report || 'Your message was processed successfully.',
+      );
+    } catch {
+      appendMessage(
+        'assistant',
+        'Could not reach the agent service. Please try again.',
+      );
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -46,10 +106,13 @@ export default function ChatPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Interact with Mujarrad through text.
         </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Space: {spaceSlug}
+        </p>
       </div>
 
       <Card className="flex h-[calc(100vh-220px)] min-h-[500px] flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 space-y-4 overflow-y-auto p-4">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -66,6 +129,14 @@ export default function ChatPage() {
               </div>
             </div>
           ))}
+
+          {isSending && (
+            <div className="flex justify-start">
+              <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-sm text-foreground">
+                Processing...
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="border-t p-4">
@@ -75,16 +146,17 @@ export default function ChatPage() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
               className="min-h-[60px] resize-none"
+              disabled={isSending}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  handleSend();
+                  void handleSend();
                 }
               }}
             />
-            <Button onClick={handleSend} className="gap-2">
+            <Button onClick={() => void handleSend()} className="gap-2" disabled={isSending}>
               <SendHorizontal className="h-4 w-4" />
-              Send
+              {isSending ? 'Sending...' : 'Send'}
             </Button>
           </div>
         </div>
