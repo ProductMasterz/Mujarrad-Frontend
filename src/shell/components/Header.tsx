@@ -1,6 +1,7 @@
-import { Menu, ArrowLeft, Plus, Bell, Search, MoreVertical, HelpCircle } from "lucide-react";
+import { Menu, MessageSquare,ArrowLeft, Plus, Bell, Search, MoreVertical, HelpCircle } from "lucide-react";
 import { Breadcrumb } from "./Breadcrumb";
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { MoreMenuDropdown } from "./MoreMenuDropdown";
 import { AddMenuDropdown } from "./AddMenuDropdown";
@@ -8,6 +9,7 @@ import { SearchModal } from "./SearchModal";
 import { TabsBar, Tab } from "./TabsBar";
 import { HelpDropdown } from "./HelpDropdown";
 import { useNavigationStore } from "@/stores/navigationStore";
+import { ChatPanel } from "@/components/chat/ChatPanel";
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -76,6 +78,10 @@ export function Header({
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<HTMLElement | null>(null);
   const [helpAnchor, setHelpAnchor] = useState<HTMLElement | null>(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  
+  const params = useParams();
+  const currentSlug = params?.slug as string | undefined;
+  const [chatOpen, setChatOpen] = useState(false);
 
   // Get tooltip from navigation store
   const addButtonTooltip = useNavigationStore((state) => state.addButtonTooltip);
@@ -101,6 +107,10 @@ export function Header({
     onSearchClick();
   };
 
+  const handleChatClick = () => {
+    setChatOpen(true);
+  };
+  
   return (
     <div className="fixed top-0 left-0 right-0 z-50">
       {/* Top gray bar with tabs */}
@@ -181,7 +191,7 @@ export function Header({
               </div>
             )}
           </div>
-
+          
           <div className="relative">
             <button
               onClick={handleNotificationClick}
@@ -198,6 +208,25 @@ export function Header({
               </div>
             )}
           </div>
+
+          
+          <div className="relative">
+            <button
+              onClick={handleChatClick}
+              onMouseEnter={() => setHoveredButton("chat")}
+              onMouseLeave={() => setHoveredButton(null)}
+              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              aria-label="Open Chat"
+            >
+              <MessageSquare className="size-6" strokeWidth={1.5} />
+            </button>
+            {hoveredButton === "chat" && (
+              <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-[#333] text-white text-[11px] px-[8px] py-[4px] rounded whitespace-nowrap font-['Roboto:Regular',sans-serif]">
+                Open Chat
+              </div>
+            )}
+          </div>
+          
 
           <div className="relative">
             <button
@@ -301,6 +330,18 @@ export function Header({
         <SearchModal
           onClose={() => setSearchModalOpen(false)}
         />
+      )}
+
+      {/* Chat Drawer */}
+      {chatOpen && (
+        <div className="fixed right-0 top-[76px] z-[60] h-[calc(100vh-76px)] w-[420px] border-l border-[#e6e6e6] bg-white shadow-2xl">
+          <ChatPanel
+            spaceSlug={currentSlug}
+            title="Chat"
+            embedded={true}
+            onClose={() => setChatOpen(false)}
+          />
+        </div>
       )}
     </div>
   );
