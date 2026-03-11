@@ -15,6 +15,8 @@ import { attributeService } from '@/services/api/attribute.service';
 import { Button } from '@/components/ui/button';
 import { AttributeTypeMode, NodeType, type Node } from '@/types/backend-dtos';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { useQueryClient } from '@tanstack/react-query';
+import { nodeKeys } from '@/hooks/api';
 
 type AgentProcessResponse = {
   nodes?: unknown[];
@@ -182,7 +184,6 @@ function ChatPanelShell({
   const sendButtonRef = useRef<HTMLButtonElement | null>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const panelRef = useRef<HTMLDivElement | null>(null);
-
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   };
@@ -414,7 +415,7 @@ export function ChatPanel({
   onClose,
 }: ChatPanelProps) {
   const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
-
+  const queryClient = useQueryClient();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -640,6 +641,7 @@ export function ChatPanel({
     ]);
 
     await createConversationSession();
+    await refreshWorkspaceViews();
   };
   const renameSession = async (sessionId: string, newTitle: string) => {
     await nodeService.updateNode(spaceSlug, sessionId, {
@@ -651,10 +653,35 @@ export function ChatPanel({
         session.id === sessionId ? { ...session, title: newTitle } : session
       )
     );
+    await refreshWorkspaceViews();
   };
   useEffect(() => {
     bootstrapSessions();
   }, [spaceSlug]);
+
+
+  const refreshWorkspaceViews = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: nodeKeys.list(spaceSlug, { page: 1, size: 1000 }),
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: ['spaces', spaceSlug, 'graph-page', 'nodes'],
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: ['spaces', spaceSlug, 'graph-page', 'node-attributes'],
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: ['spaces', spaceSlug, 'graph-page', 'selected-node'],
+    });
+
+    await queryClient.invalidateQueries({
+      queryKey: ['spaces', spaceSlug, 'graph-page', 'selected-node-attributes'],
+    });
+  };
+
 
   const runtime = useExternalStoreRuntime<ChatMessage>({
     messages,
@@ -727,6 +754,7 @@ export function ChatPanel({
 
         setMessages((current) => [...current, assistantMessage]);
         await persistMessageNode(conversationNodeId, 'assistant', assistantText);
+        await refreshWorkspaceViews();
       } finally {
         setIsRunning(false);
       }
