@@ -136,6 +136,7 @@ function ChatPanelShell({
 }) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const sendButtonRef = useRef<HTMLButtonElement | null>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const scrollToBottom = () => {
@@ -156,7 +157,8 @@ function ChatPanelShell({
     if (shouldAutoScroll) {
       scrollToBottom();
     }
-  }, [messageCount,shouldAutoScroll, isRunning]);
+  }, [messageCount, shouldAutoScroll, isRunning]);
+
 
   return (
     <div className={`flex h-full flex-col ${embedded ? 'bg-white' : ''}`}>
@@ -204,11 +206,44 @@ function ChatPanelShell({
         <div className="border-t p-4">
           <ComposerPrimitive.Root className="flex items-end gap-3">
             <ComposerPrimitive.Input
+              onKeyDownCapture={(event) => {
+                if (event.key !== 'Enter') return;
+
+                const target = event.currentTarget as HTMLTextAreaElement;
+
+                if (event.shiftKey) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  sendButtonRef.current?.click();
+                  return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                const start = target.selectionStart ?? 0;
+                const end = target.selectionEnd ?? 0;
+                const value = target.value ?? '';
+                const nextValue = value.slice(0, start) + '\n' + value.slice(end);
+
+                const nativeSetter = Object.getOwnPropertyDescriptor(
+                  window.HTMLTextAreaElement.prototype,
+                  'value'
+                )?.set;
+
+                nativeSetter?.call(target, nextValue);
+
+                target.dispatchEvent(new Event('input', { bubbles: true }));
+
+                requestAnimationFrame(() => {
+                  target.selectionStart = target.selectionEnd = start + 1;
+                });
+              }}
               placeholder="Type your message..."
               className="min-h-[56px] flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm outline-none"
             />
             <ComposerPrimitive.Send asChild>
-              <Button className="gap-2">
+              <Button ref={sendButtonRef} className="gap-2">
                 <SendHorizontal className="h-4 w-4" />
                 Send
               </Button>
