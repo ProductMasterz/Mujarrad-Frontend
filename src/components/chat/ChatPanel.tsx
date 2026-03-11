@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AssistantRuntimeProvider,
   ComposerPrimitive,
@@ -70,12 +70,38 @@ function ChatPanelShell({
   title,
   embedded,
   onClose,
+  messageCount,
 }: {
   isRunning: boolean;
   title: string;
   embedded: boolean;
   onClose?: () => void;
+  messageCount: number;
 }) {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
+  const scrollToBottom = () => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  };
+
+  const handleScroll = () => {
+    const el = viewportRef.current;
+    if (!el) return;
+
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const isNearBottom = distanceFromBottom < 40;
+
+    setShouldAutoScroll(isNearBottom);
+  };
+
+  useEffect(() => {
+    if (shouldAutoScroll) {
+      scrollToBottom();
+    }
+  }, [messageCount,shouldAutoScroll, isRunning]);
+
   return (
     <div className={`flex h-full flex-col ${embedded ? 'bg-white' : ''}`}>
       <div className="flex items-center justify-between border-b px-4 py-3">
@@ -96,7 +122,11 @@ function ChatPanelShell({
       </div>
 
       <ThreadPrimitive.Root className="flex h-full flex-col overflow-hidden">
-        <ThreadPrimitive.Viewport className="flex-1 space-y-4 overflow-y-auto p-4">
+        <ThreadPrimitive.Viewport
+          ref={viewportRef}
+          onScroll={handleScroll}
+          className="flex-1 space-y-4 overflow-y-auto p-4"
+        >
           <ThreadPrimitive.Messages
             components={{
               UserMessage,
@@ -111,6 +141,8 @@ function ChatPanelShell({
               </div>
             </div>
           )}
+
+          <div ref={bottomRef} />
         </ThreadPrimitive.Viewport>
 
         <div className="border-t p-4">
@@ -192,7 +224,7 @@ export function ChatPanel({
     await attributeService.createAttribute(conversationNodeId, {
       sourceNodeId: conversationNodeId,
       targetNodeId: createdMessage.id,
-      attributeType: 'contains',
+      attributeType: 'CUSTOM',
       attributeTypeMode: AttributeTypeMode.SCHEMALESS,
       attributeName: 'contains',
       attributeValue: {
@@ -288,6 +320,7 @@ export function ChatPanel({
         title={title}
         embedded={embedded}
         onClose={onClose}
+        messageCount={messages.length}
       />
     </AssistantRuntimeProvider>
   );
