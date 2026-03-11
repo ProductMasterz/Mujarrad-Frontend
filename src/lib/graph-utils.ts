@@ -128,17 +128,39 @@ export function buildGraphData(
   // Detect bidirectional edges
   const bidirectionalSet = detectBidirectionalEdges(filteredAttributes);
 
+
   // Transform nodes to GraphNodes
-  const graphNodes: GraphNode[] = filteredNodes.map((node, index) => ({
-    id: node.id.toString(),
-    type: node.nodeType.toLowerCase() === 'context' ? 'context' : 'regular',
-    data: {
-      node,
-      label: node.title,
-      isSelected: node.id.toString() === selectedNodeId,
-    },
-    position: calculateNodePosition(index, filteredNodes.length),
-  }));
+  const graphNodes: GraphNode[] = filteredNodes.map((node, index) => {
+    let details: Record<string, unknown> | undefined;
+
+    if (typeof node.nodeDetails === 'string') {
+      try {
+        details = JSON.parse(node.nodeDetails);
+      } catch {
+        details = undefined;
+      }
+    } else {
+      details = node.nodeDetails as Record<string, unknown> | undefined;
+    }
+
+    const entityType =
+      typeof details?.entityType === 'string'
+        ? details.entityType
+        : undefined;
+
+    return {
+      id: node.id.toString(),
+      type: 'custom',
+      data: {
+        node,
+        label: node.title,
+        isSelected: node.id.toString() === selectedNodeId,
+        nodeType: node.nodeType,
+        entityType,
+      },
+      position: calculateNodePosition(index, filteredNodes.length),
+    };
+  });
 
   // Transform attributes to GraphEdges
   const graphEdges: GraphEdge[] = filteredAttributes.map(attr => {

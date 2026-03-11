@@ -24,8 +24,7 @@ interface GraphVisualizationProps {
 }
 
 const nodeTypes = {
-  context: CustomNode,
-  regular: CustomNode,
+  custom: CustomNode,
 };
 
 export function GraphVisualization({

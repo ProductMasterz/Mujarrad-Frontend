@@ -8,11 +8,13 @@ import type { Node, Attribute } from './backend-dtos';
  */
 export interface GraphNode extends ReactFlowNode {
   id: string; // ReactFlow requires string IDs
-  type: 'context' | 'regular'; // Custom node types for CONTEXT/REGULAR
+  type: string;
   data: {
     node: Node; // Backend node entity
     label: string; // Display label
     isSelected: boolean;
+    nodeType: Node['nodeType'];
+    entityType?: string;
   };
   position: { x: number; y: number };
 }
