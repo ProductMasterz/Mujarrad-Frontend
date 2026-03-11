@@ -275,6 +275,12 @@ export default function SpaceDetailPage() {
     router.push(`/spaces/${slug}/whiteboard`);
   };
 
+
+  const handleGraphClick = () => {
+    router.push(`/spaces/${slug}/graph`);
+  };
+
+
   const handleDeleteClick = () => {
     // Show clear all confirmation
     console.log('Delete current context');
@@ -422,6 +428,7 @@ export default function SpaceDetailPage() {
           // More menu actions
           onShare={handleShareClick}
           onOpenInNewTab={handleOpenInNewTab}
+          onGraph={handleGraphClick}
           onWhiteboard={handleWhiteboardClick}
           onDelete={handleDeleteClick}
           onClearSpace={handleClearSpace}

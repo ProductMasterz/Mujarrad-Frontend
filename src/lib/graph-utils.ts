@@ -67,10 +67,39 @@ export function buildGraphData(
 ): GraphData {
 
   // Filter nodes based on view mode
-  const filteredNodes = nodes.filter(node => {
+  const filteredNodes = nodes.filter((node) => {
+    let details: Record<string, unknown> | undefined;
+
+    if (typeof node.nodeDetails === 'string') {
+      try {
+        details = JSON.parse(node.nodeDetails);
+      } catch {
+        details = undefined;
+      }
+    } else {
+      details = node.nodeDetails as Record<string, unknown> | undefined;
+    }
+
+    const isConversation =
+      details?.chatNodeType === 'conversation' ||
+      String(node.title || '').startsWith('Conversation ');
+
+    const isMessage =
+      details?.chatNodeType === 'message' ||
+      String(node.title || '').startsWith('User Message ') ||
+      String(node.title || '').startsWith('Assistant Message ');
+
+    const isBlock =
+      !!details?.blockType ||
+      String(node.title || '').startsWith('Block ');
+
+    if ((isConversation || isMessage) && !viewMode.showConversation) return false;
+    if (isBlock && !viewMode.showBlocks) return false;
+
     const nodeTypeStr = node.nodeType.toString().toUpperCase();
     if (nodeTypeStr === 'CONTEXT' && !viewMode.showContext) return false;
     if (nodeTypeStr === 'REGULAR' && !viewMode.showRegular) return false;
+
     return true;
   });
 
@@ -78,15 +107,20 @@ export function buildGraphData(
   const visibleNodeIds = new Set(filteredNodes.map(n => n.id.toString()));
 
   // Filter attributes based on view mode and visible nodes
-  const filteredAttributes = attributes.filter(attr => {
-    // Only show edges between visible nodes
+  const filteredAttributes = attributes.filter((attr) => {
     if (!visibleNodeIds.has(attr.sourceNodeId.toString())) return false;
     if (!visibleNodeIds.has(attr.targetNodeId.toString())) return false;
 
-    // Filter by edge type (check both attributeName and attributeType)
     const attrTypeStr = (attr.attributeName || attr.attributeType || '').toString().toLowerCase();
+
     if (attrTypeStr === 'contains' && !viewMode.showContains) return false;
     if (attrTypeStr === 'references' && !viewMode.showReferences) return false;
+
+    const isCustomRelation =
+      attrTypeStr !== 'contains' &&
+      attrTypeStr !== 'references';
+
+    if (isCustomRelation && !viewMode.showCustomRelations) return false;
 
     return true;
   });
@@ -192,4 +226,7 @@ export const DEFAULT_GRAPH_VIEW_MODE: GraphViewMode = {
   showRegular: true,
   showContains: true,
   showReferences: true,
+  showConversation: false,
+  showCustomRelations: true,
+  showBlocks: false,
 };

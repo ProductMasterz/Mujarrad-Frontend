@@ -55,6 +55,9 @@ export interface GraphViewMode {
   showRegular: boolean;    // Show REGULAR nodes
   showContains: boolean;   // Show hierarchy edges
   showReferences: boolean; // Show wiki-link edges
+  showConversation: boolean;
+  showCustomRelations: boolean;
+  showBlocks: boolean;
 }
 
 /**

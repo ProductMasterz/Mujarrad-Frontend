@@ -31,6 +31,7 @@ export type MoreAction =
   | 'open_new_tab'
   | 'open_as_node'
   | 'lock'
+  | 'graph'
   | 'whiteboard'
   | 'delete'
   | 'clear_space'
@@ -51,14 +52,14 @@ const SCOPE_CONFIGS: Record<NavigationScope, ScopeConfig> = {
     moreActions: ['share', 'settings'],
     addButtonTooltip: 'Create new space',
   },
-  space: {
+    space: {
     addActions: ['create_node', 'create_context'],
-    moreActions: ['share', 'open_new_tab', 'whiteboard', 'clear_space'],
+    moreActions: ['share', 'open_new_tab', 'graph', 'whiteboard', 'clear_space'],
     addButtonTooltip: 'Create new node',
   },
   node: {
     addActions: ['create_node', 'create_context'],
-    moreActions: ['share', 'open_new_tab', 'open_as_node', 'lock', 'whiteboard', 'delete', 'move_to'],
+    moreActions: ['share', 'open_new_tab', 'open_as_node', 'lock', 'graph', 'whiteboard', 'delete', 'move_to'],
     addButtonTooltip: 'Create new node',
   },
   whiteboard: {
@@ -80,6 +81,7 @@ export const MORE_ACTION_LABELS: Record<MoreAction, string> = {
   open_new_tab: 'Open in New Tab',
   open_as_node: 'Open as Node',
   lock: 'Lock',
+  graph: 'Graph View',
   whiteboard: 'Whiteboard',
   delete: 'Delete',
   clear_space: 'Clear Space',

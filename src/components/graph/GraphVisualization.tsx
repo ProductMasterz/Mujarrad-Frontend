@@ -1,8 +1,3 @@
-/**
- * GraphVisualization component
- * React Flow wrapper for graph display
- */
-
 'use client';
 
 import React, { useMemo, useCallback } from 'react';
@@ -13,7 +8,6 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   Node as ReactFlowNode,
-  Edge as ReactFlowEdge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -21,6 +15,7 @@ import type { Node, Attribute } from '@/types/backend-dtos';
 import { buildGraphData } from '@/lib/graph-utils';
 import { useGraphStore } from '@/stores/graphStore';
 import { GraphControls } from './GraphControls';
+import { CustomNode } from './CustomNode';
 
 interface GraphVisualizationProps {
   nodes: Node[];
@@ -28,66 +23,84 @@ interface GraphVisualizationProps {
   onNodeClick?: (nodeId: string) => void;
 }
 
-/**
- * GraphVisualization component
- * Displays nodes and edges using React Flow
- */
+const nodeTypes = {
+  context: CustomNode,
+  regular: CustomNode,
+};
+
 export function GraphVisualization({
   nodes,
   attributes,
   onNodeClick,
 }: GraphVisualizationProps) {
-  const viewMode = useGraphStore(state => state.viewMode);
-  const selectedNodeId = useGraphStore(state => state.selectedNodeId);
-  const setSelectedNode = useGraphStore(state => state.setSelectedNode);
+  const viewMode = useGraphStore((state) => state.viewMode);
+  const selectedNodeId = useGraphStore((state) => state.selectedNodeId);
+  const setSelectedNode = useGraphStore((state) => state.setSelectedNode);
 
-  // Build graph data based on view mode
   const graphData = useMemo(() => {
-    return buildGraphData(
-      nodes,
-      attributes,
-      viewMode,
-      selectedNodeId
-    );
+    return buildGraphData(nodes, attributes, viewMode, selectedNodeId);
   }, [nodes, attributes, viewMode, selectedNodeId]);
 
-  // Convert to ReactFlow format
   const [flowNodes, setFlowNodes, onNodesChange] = useNodesState(
-    graphData.nodes.map(node => ({
+    graphData.nodes.map((node) => ({
       ...node,
       data: {
         ...node.data,
         label: node.data.label,
+        nodeType: node.data.node.nodeType,
       },
     }))
   );
 
   const [flowEdges, setFlowEdges, onEdgesChange] = useEdgesState(
-    graphData.edges.map(edge => ({
+    graphData.edges.map((edge) => ({
       ...edge,
       label: edge.data.label,
+      animated: edge.animated,
+      style: edge.style,
+      labelStyle: {
+        fontSize: 12,
+        fontWeight: 600,
+      },
+      labelBgStyle: {
+        fill: '#fff',
+        fillOpacity: 0.9,
+      },
+      labelBgPadding: [6, 3] as [number, number],
+      labelBgBorderRadius: 4,
     }))
   );
 
-  // Update flow nodes when graph data changes
   React.useEffect(() => {
     setFlowNodes(
-      graphData.nodes.map(node => ({
+      graphData.nodes.map((node) => ({
         ...node,
         data: {
           ...node.data,
           label: node.data.label,
+          nodeType: node.data.node.nodeType,
         },
       }))
     );
   }, [graphData.nodes, setFlowNodes]);
 
-  // Update flow edges when graph data changes
   React.useEffect(() => {
     setFlowEdges(
-      graphData.edges.map(edge => ({
+      graphData.edges.map((edge) => ({
         ...edge,
         label: edge.data.label,
+        animated: edge.animated,
+        style: edge.style,
+        labelStyle: {
+          fontSize: 12,
+          fontWeight: 600,
+        },
+        labelBgStyle: {
+          fill: '#fff',
+          fillOpacity: 0.9,
+        },
+        labelBgPadding: [6, 3] as [number, number],
+        labelBgBorderRadius: 4,
       }))
     );
   }, [graphData.edges, setFlowEdges]);
@@ -95,19 +108,16 @@ export function GraphVisualization({
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: ReactFlowNode) => {
       setSelectedNode(node.id);
-      if (onNodeClick) {
-        onNodeClick(node.id);
-      }
+      onNodeClick?.(node.id);
     },
     [onNodeClick, setSelectedNode]
   );
 
-  // View mode change handler for GraphControls
   const handleViewModeChange = useCallback((mode: Partial<typeof viewMode>) => {
-    useGraphStore.setState(state => ({
-      viewMode: { ...state.viewMode, ...mode }
+    useGraphStore.setState((state) => ({
+      viewMode: { ...state.viewMode, ...mode },
     }));
-  }, []);
+  }, [viewMode]);
 
   if (nodes.length === 0) {
     return (
@@ -128,6 +138,7 @@ export function GraphVisualization({
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeClick={handleNodeClick}
+          nodeTypes={nodeTypes}
           fitView
         >
           <Background />

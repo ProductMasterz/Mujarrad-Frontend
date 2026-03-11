@@ -29,6 +29,7 @@ type HeaderProps = {
   onOpenInNewTab?: () => void;
   onOpenAsNode?: () => void;
   onLock?: () => void;
+  onGraph?: () => void;
   onWhiteboard?: () => void;
   onDelete?: () => void;
   onClearSpace?: () => void;
@@ -51,20 +52,18 @@ export function Header({
   onSearchClick,
   onHomeClick,
   onBreadcrumbClick,
-  // Add menu actions
   onCreateSpace,
   onCreateNode,
   onCreateContext,
-  // More menu actions
   onShare,
   onOpenInNewTab,
   onOpenAsNode,
   onLock,
+  onGraph,
   onWhiteboard,
   onDelete,
   onClearSpace,
   onMoveTo,
-  // Tabs
   tabs,
   activeTabId,
   onTabClick,
@@ -309,6 +308,7 @@ export function Header({
           onOpenInNewTab={onOpenInNewTab}
           onOpenAsNode={onOpenAsNode}
           onLock={onLock}
+          onGraph={onGraph}
           onWhiteboard={onWhiteboard}
           onDelete={onDelete}
           onClearSpace={onClearSpace}

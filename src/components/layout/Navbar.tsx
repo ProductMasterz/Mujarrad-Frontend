@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
-import { Search, Home, Network, MessageSquare, Settings, User } from 'lucide-react';
+import { Search, Home,MessageSquare, Network, Settings, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +24,7 @@ export function Navbar({ className }: NavbarProps) {
   const pathname = usePathname();
   const params = useParams();
   const [searchOpen, setSearchOpen] = useState(false);
-
+  const [chatOpen, setChatOpen] = useState(false);
   // Get current space slug from URL if available
   const currentSpaceSlug = params?.slug as string | undefined;
 
@@ -82,16 +83,15 @@ export function Navbar({ className }: NavbarProps) {
             </Button>
           </Link>
 
-          <Link href="/chat">
-            <Button
-              variant={isActive('/chat') ? 'secondary' : 'ghost'}
-              size="sm"
-              className="gap-2"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Chat
-            </Button>
-          </Link>
+          <Button
+            variant={chatOpen ? 'secondary' : 'ghost'}
+            size="sm"
+            className="gap-2"
+            onClick={() => setChatOpen(true)}
+          >
+            <MessageSquare className="h-4 w-4" />
+            Chat
+          </Button>
         </div>
 
         {/* Search */}
@@ -133,6 +133,16 @@ export function Navbar({ className }: NavbarProps) {
         </DropdownMenu>
       </div>
     </nav>
+    {chatOpen && (
+      <div className="fixed right-0 top-16 z-[80] h-[calc(100vh-64px)] w-[620px] border-l border-[#e6e6e6] bg-white shadow-2xl">
+        <ChatPanel
+          spaceSlug={currentSpaceSlug}
+          title="Chat"
+          embedded={true}
+          onClose={() => setChatOpen(false)}
+        />
+      </div>
+    )}
     </>
   );
 }

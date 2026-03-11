@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, PenTool, Trash2, Share2, ExternalLink, Maximize2, Lock, MoveRight, Settings } from "lucide-react";
+import { ChevronRight, PenTool, Trash2, Share2, ExternalLink, Maximize2, Lock, MoveRight, Settings, GitBranch } from "lucide-react";
 import { useNavigationStore, MoreAction, MORE_ACTION_LABELS } from "@/stores/navigationStore";
 
 type MoreMenuDropdownProps = {
@@ -11,6 +11,7 @@ type MoreMenuDropdownProps = {
   onOpenAsNode?: () => void;
   onLock?: () => void;
   onWhiteboard?: () => void;
+  onGraph?: () => void;
   onDelete?: () => void;
   onClearSpace?: () => void;
   onMoveTo?: () => void;
@@ -22,6 +23,7 @@ const ACTION_ICONS: Partial<Record<MoreAction, React.ReactNode>> = {
   open_new_tab: <ExternalLink className="size-[14px]" />,
   open_as_node: <Maximize2 className="size-[14px]" />,
   lock: <Lock className="size-[14px]" />,
+  graph: <GitBranch className="size-[14px]" />,
   whiteboard: <PenTool className="size-[14px]" />,
   delete: <Trash2 className="size-[14px]" />,
   clear_space: <Trash2 className="size-[14px]" />,
@@ -37,6 +39,7 @@ export function MoreMenuDropdown({
   onOpenAsNode,
   onLock,
   onWhiteboard,
+  onGraph,
   onDelete,
   onClearSpace,
   onMoveTo,
@@ -51,6 +54,7 @@ export function MoreMenuDropdown({
     open_new_tab: onOpenInNewTab,
     open_as_node: onOpenAsNode,
     lock: onLock,
+    graph: onGraph,
     whiteboard: onWhiteboard,
     delete: onDelete,
     clear_space: onClearSpace,
