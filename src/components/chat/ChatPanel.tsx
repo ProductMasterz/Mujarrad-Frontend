@@ -8,7 +8,7 @@ import {
   useExternalStoreRuntime,
   type AppendMessage,
 } from '@assistant-ui/react'; 
-import { SendHorizontal, X } from 'lucide-react';
+import { Copy, Check, SendHorizontal, X } from 'lucide-react';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
 import { Button } from '@/components/ui/button';
@@ -37,26 +37,82 @@ interface ChatPanelProps {
   onClose?: () => void;
 }
 
+
+function CopyMessageButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="ml-2 inline-flex items-center gap-1 rounded-md border bg-white/80 px-2 py-1 text-xs text-gray-700 transition hover:bg-white"
+      aria-label="Copy message"
+      title={copied ? 'Copied' : 'Copy'}
+      type="button"
+    >
+      {copied ? (
+        <>
+          <Check className="h-3.5 w-3.5" />
+          Copied
+        </>
+      ) : (
+        <>
+          <Copy className="h-3.5 w-3.5" />
+          Copy
+        </>
+      )}
+    </button>
+  );
+}
+
+
+
 function UserMessage() {
   return (
     <MessagePrimitive.Root className="flex justify-end">
-      <div className="max-w-[85%] rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground">
-        <MessagePrimitive.Parts />
+      <div className="flex max-w-[85%] items-start gap-2">
+        <MessagePrimitive.Content
+          components={{
+            Text: ({ text }) => (
+              <>
+                <div className="rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground">
+                  {text}
+                </div>
+                <CopyMessageButton text={text} />
+              </>
+            ),
+          }}
+        />
       </div>
     </MessagePrimitive.Root>
   );
 }
 
+
 function AssistantMessage() {
   return (
     <MessagePrimitive.Root className="flex justify-start">
-      <div className="max-w-[85%] rounded-2xl bg-gray-200 px-4 py-3 !text-black">
+      <div className="flex max-w-[85%] items-start gap-2">
         <MessagePrimitive.Content
           components={{
             Text: ({ text }) => (
-              <div className="!text-black [&_*]:!text-black [&_p]:my-2 [&_h1]:my-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:my-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:my-2 [&_h3]:font-semibold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-black [&_pre]:p-3 [&_pre]:!text-white [&_code]:rounded [&_code]:bg-gray-300 [&_code]:px-1 [&_code]:py-0.5 [&_code]:!text-black [&_a]:!text-blue-700 [&_a]:underline">
-                <MarkdownRenderer content={text} />
-              </div>
+              <>
+                <div className="rounded-2xl bg-gray-200 px-4 py-3 !text-black">
+                  <div className="!text-black [&_*]:!text-black [&_p]:my-2 [&_h1]:my-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:my-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:my-2 [&_h3]:font-semibold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-black [&_pre]:p-3 [&_pre]:!text-white [&_code]:rounded [&_code]:bg-gray-300 [&_code]:px-1 [&_code]:py-0.5 [&_code]:!text-black [&_a]:!text-blue-700 [&_a]:underline">
+                    <MarkdownRenderer content={text} />
+                  </div>
+                </div>
+                <CopyMessageButton text={text} />
+              </>
             ),
           }}
         />
