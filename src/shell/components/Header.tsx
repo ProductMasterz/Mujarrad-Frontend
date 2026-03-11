@@ -334,7 +334,7 @@ export function Header({
 
       {/* Chat Drawer */}
       {chatOpen && (
-        <div className="fixed right-0 top-[76px] z-[60] h-[calc(100vh-76px)] w-[420px] border-l border-[#e6e6e6] bg-white shadow-2xl">
+        <div className="fixed right-0 top-[76px] z-[60] h-[calc(100vh-76px)] w-[620px] border-l border-[#e6e6e6] bg-white shadow-2xl">
           <ChatPanel
             spaceSlug={currentSlug}
             title="Chat"
