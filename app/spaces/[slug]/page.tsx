@@ -22,6 +22,31 @@ import { useNavigationStore } from '@/stores/navigationStore';
 import type { Node } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
 
+function isAgentCreatedNode(node: Node): boolean {
+  let details: Record<string, unknown> | undefined;
+
+  if (typeof node.nodeDetails === 'string') {
+    try {
+      details = JSON.parse(node.nodeDetails);
+    } catch {
+      details = undefined;
+    }
+  } else {
+    details = node.nodeDetails as Record<string, unknown> | undefined;
+  }
+
+  return (
+    details?.createdFrom === 'chat' ||
+    details?.createdFrom === 'agent' ||
+    details?.source === 'chat' ||
+    details?.source === 'agent' ||
+    details?.generatedBy === 'chat' ||
+    details?.generatedBy === 'agent' ||
+    details?.chatNodeType === 'entity'
+  );
+}
+
+
 // Convert Node to Scratchup Card format
 function nodeToCard(node: Node): Card {
   // Determine card type based on node type
@@ -445,16 +470,34 @@ export default function SpaceDetailPage() {
             </div>
           ) : (
             <div className="flex gap-[19px] flex-wrap pt-[15px]">
-              {cards.map((card) => (
-                <ProjectCard
-                  key={card.id}
-                  title={card.title}
-                  color={card.color}
-                  type={card.type}
-                  onClick={() => handleCardClick(card.id)}
-                  onContextMenu={(e) => handleCardContextMenu(e, card.id)}
-                />
-              ))}
+              {cards.map((card) => {
+                const node = nodes?.find((n) => n.id === card.id);
+                const isAgentCreated = node ? isAgentCreatedNode(node) : false;
+
+                return (
+                  <div key={card.id} className="relative">
+                    <div className="absolute right-[10px] top-[10px] z-10 pointer-events-none">
+                      {isAgentCreated ? (
+                        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-800">
+                          AI
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                          Manual
+                        </span>
+                      )}
+                    </div>
+
+                    <ProjectCard
+                      title={card.title}
+                      color={card.color}
+                      type={card.type}
+                      onClick={() => handleCardClick(card.id)}
+                      onContextMenu={(e) => handleCardContextMenu(e, card.id)}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
