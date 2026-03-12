@@ -164,6 +164,8 @@ function ChatPanelShell({
   onRenameSession,
   onDeleteSession,
   isBootstrapping,
+  searchTerm,
+  onSearchTermChange,
 }: {
   isRunning: boolean;
   title: string;
@@ -177,6 +179,8 @@ function ChatPanelShell({
   onRenameSession: (sessionId: string, newTitle: string) => Promise<void>;
   onDeleteSession: (sessionId: string) => Promise<void>;
   isBootstrapping: boolean;
+  searchTerm: string;
+  onSearchTermChange: (value: string) => void;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(220);
@@ -237,21 +241,34 @@ function ChatPanelShell({
     <div ref={panelRef} className={`flex h-full ${embedded ? 'bg-white' : ''}`}>
       {sidebarOpen && (
         <div
-          className="relative shrink-0 border-r bg-[#fafafa]"
+          className="relative shrink-0 border-r bg-[#fafafa] flex flex-col"
           style={{ width: `${sidebarWidth}px` }}
         >
           <div className="border-b px-3 py-3">
             <Button
               onClick={onNewSession}
-              variant="outline"
-              className="w-full justify-center"
               type="button"
+              className="w-full justify-center rounded-xl bg-[#111827] text-white shadow-sm transition hover:bg-[#1f2937]"
             >
               New chat
             </Button>
           </div>
+          <div className="border-b px-3 py-3">
+            <input
+              value={searchTerm}
+              onChange={(e) => onSearchTermChange(e.target.value)}
+              placeholder="Search conversations..."
+              className="w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-sm outline-none focus:border-[#c7d2fe] focus:ring-2 focus:ring-[#e0e7ff]"
+              type="text"
+            />
+          </div>
 
-          <div className="h-[calc(100%-61px)] overflow-y-auto p-2">
+          <div className="flex-1 overflow-y-auto p-2">
+            {sessions.length === 0 && (
+              <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+                No conversations found
+              </div>
+            )}
             {sessions.map((session) => (
               <div
                 key={session.id}
@@ -313,11 +330,10 @@ function ChatPanelShell({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-[#ececec] px-4 py-4 bg-white">          <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen((prev) => !prev)}
-              className="rounded-md border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
+              className="inline-flex items-center rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-sm font-medium text-[#4b5563] transition hover:bg-[#f9fafb] hover:text-[#111827]"
               type="button"
             >
               {sidebarOpen ? 'Hide chats' : 'Show chats'}
@@ -334,8 +350,9 @@ function ChatPanelShell({
           {embedded && onClose && (
             <button
               onClick={onClose}
-              className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
               aria-label="Close chat"
+              type="button"
             >
               <X className="h-5 w-5" />
             </button>
@@ -437,6 +454,8 @@ export function ChatPanel({
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sessionSearchIndex, setSessionSearchIndex] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -448,6 +467,45 @@ export function ChatPanel({
 
   const conversationNodeIdRef = useRef<string | null>(null);
   const messageOrderRef = useRef<number>(1);
+
+
+  const rebuildSessionSearchIndex = async (conversationSessions: ChatSession[]) => {
+  const entries = await Promise.all(
+    conversationSessions.map(async (session) => {
+      const text = await buildConversationSearchText(session.id, session.title);
+      return [session.id, text] as const;
+    })
+  );
+
+  setSessionSearchIndex(Object.fromEntries(entries));
+};
+
+
+  const buildConversationSearchText = async (conversationId: string, conversationTitle: string) => {
+    try {
+      const attributes = await attributeService.getNodeAttributes(conversationId);
+
+      const messageLinks = attributes.filter((attr) => attr.attributeName === 'contains');
+
+      if (messageLinks.length === 0) {
+        return conversationTitle.toLowerCase();
+      }
+
+      const messageNodes = await Promise.all(
+        messageLinks.map((attr) => nodeService.getNode(spaceSlug, attr.targetNodeId))
+      );
+
+      const messageText = messageNodes
+        .filter((node) => isMessageNode(node))
+        .map((node) => node.content || '')
+        .join(' ')
+        .toLowerCase();
+
+      return `${conversationTitle} ${messageText}`.toLowerCase();
+    } catch {
+      return conversationTitle.toLowerCase();
+    }
+  };
 
   const createConversationSession = async (): Promise<string> => {
     const createdConversation = await nodeService.createNode(spaceSlug, {
@@ -472,6 +530,9 @@ export function ChatPanel({
     };
 
     setSessions((prev) => [newSession, ...prev]);
+    setSessionSearchIndex((prev) => ({...prev,
+      [createdConversation.id]: createdConversation.title.toLowerCase(),
+    }));
     setActiveSessionId(createdConversation.id);
     conversationNodeIdRef.current = createdConversation.id;
     messageOrderRef.current = 1;
@@ -589,6 +650,7 @@ export function ChatPanel({
       }));
 
       setSessions(mappedSessions);
+      await rebuildSessionSearchIndex(mappedSessions);
 
       if (conversationNodes.length === 0) {
         const createdId = await createConversationSession();
@@ -657,7 +719,9 @@ export function ChatPanel({
         text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
       },
     ]);
-
+    setSearchTerm('');
+    conversationNodeIdRef.current = null;
+    setActiveSessionId(null);
     await createConversationSession();
     await refreshWorkspaceViews();
   };
@@ -671,6 +735,12 @@ export function ChatPanel({
         session.id === sessionId ? { ...session, title: newTitle } : session
       )
     );
+    const updatedSearchText = await buildConversationSearchText(sessionId, newTitle);
+
+    setSessionSearchIndex((prev) => ({
+      ...prev,
+      [sessionId]: updatedSearchText,
+    }));
     await refreshWorkspaceViews();
   };
   useEffect(() => {
@@ -696,7 +766,11 @@ export function ChatPanel({
 
     const remainingSessions = sessions.filter((session) => session.id !== sessionId);
     setSessions(remainingSessions);
-
+    setSessionSearchIndex((prev) => {
+      const next = { ...prev };
+      delete next[sessionId];
+      return next;
+    });
     const wasActive = activeSessionId === sessionId;
 
     if (!wasActive) {
@@ -829,13 +903,30 @@ export function ChatPanel({
 
         setMessages((current) => [...current, assistantMessage]);
         await persistMessageNode(conversationNodeId, 'assistant', assistantText);
+        const activeSession = sessions.find((session) => session.id === conversationNodeId);          if (activeSession) {
+            const updatedSearchText = await buildConversationSearchText(
+              conversationNodeId,
+              activeSession.title
+            );
+
+            setSessionSearchIndex((prev) => ({
+              ...prev,
+              [conversationNodeId]: updatedSearchText,
+            }));
+          }
         await refreshWorkspaceViews();
       } finally {
         setIsRunning(false);
       }
     },
   });
+  const filteredSessions = sessions.filter((session) => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
 
+    const indexedText = sessionSearchIndex[session.id] || session.title.toLowerCase();
+    return indexedText.includes(term);
+  });
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <ChatPanelShell
@@ -844,7 +935,9 @@ export function ChatPanel({
         embedded={embedded}
         onClose={onClose}
         messageCount={messages.length}
-        sessions={sessions}
+        sessions={filteredSessions}
+        searchTerm={searchTerm}
+        onSearchTermChange={setSearchTerm}
         activeSessionId={activeSessionId}
         onSelectSession={handleSelectSession}
         onNewSession={handleNewSession}
