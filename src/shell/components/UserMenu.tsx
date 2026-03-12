@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Plus, LogOut, Settings } from "lucide-react";
+import { useAuthStore } from "@/stores/auth.store";
 
 type UserMenuProps = {
   onClose: () => void;
@@ -10,6 +11,7 @@ type UserMenuProps = {
 
 export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,6 +41,36 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
     };
   }, [onClose, anchorEl]);
 
+
+  const rawName =
+    (user as any)?.name ||
+    (user as any)?.fullName ||
+    (user as any)?.username ||
+    "";
+
+  const rawEmail =
+    (user as any)?.email ||
+    "";
+
+  const displayName = typeof rawName === "string" ? rawName.trim() : "";
+  const displayEmail = typeof rawEmail === "string" ? rawEmail.trim() : "";
+
+  const initialsSource = displayName || displayEmail || "U";
+  const initials = initialsSource
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "U";
+
+  const avatarUrl =
+    (user as any)?.avatarUrl ||
+    (user as any)?.avatar ||
+    (user as any)?.imageUrl ||
+    (user as any)?.image ||
+    (user as any)?.picture ||
+    "";
+
   if (!anchorEl) return null;
 
   const rect = anchorEl.getBoundingClientRect();
@@ -46,7 +78,7 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
   return (
     <div
       ref={menuRef}
-      className="fixed bg-white rounded-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] w-[168px] py-[10px] z-[100]"
+      className="fixed z-[100] w-[290px] rounded-[14px] bg-white py-[10px] shadow-[0px_10px_30px_0px_rgba(0,0,0,0.10),0px_2px_10px_0px_rgba(0,0,0,0.05)]"
       style={{
         left: `${rect.left}px`,
         bottom: `${window.innerHeight - rect.top}px`,
@@ -54,39 +86,66 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
     >
       {/* User Info */}
       <button
-        className="w-full px-[10px] py-[8px] flex items-center gap-[10px] hover:bg-[#f5f5f5] transition-colors group"
+        className="mx-[10px] mb-[8px] flex w-[calc(100%-20px)] items-center gap-[10px] rounded-[10px] px-[10px] py-[10px] text-left transition-colors hover:bg-[#f7f7f7] group"
         onClick={() => {
-          console.log("View profile");
           onClose();
         }}
+        type="button"
       >
-        <div className="size-[30px] rounded-full bg-[#6ab5ff] flex items-center justify-center">
-          <span
-            className="font-['Roboto:Medium',sans-serif] font-medium text-[12px] text-white tracking-[-0.08px]"
-            style={{ fontVariationSettings: "'wdth' 100" }}
-          >
-            HA
-          </span>
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={displayName || displayEmail || "User"}
+            className="h-[36px] w-[36px] rounded-full object-cover shrink-0"
+          />
+        ) : (
+          <div className="h-[36px] w-[36px] shrink-0 rounded-full bg-[#7cb5f7] flex items-center justify-center">
+            <span
+              className="font-['Roboto:Medium',sans-serif] text-[13px] font-medium text-white"
+              style={{ fontVariationSettings: "'wdth' 100" }}
+            >
+              {initials}
+            </span>
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1">
+          {displayName && (
+            <div
+              className="truncate font-['Roboto:Medium',sans-serif] text-[14px] font-medium leading-[18px] text-[#1f1f1f]"
+              style={{ fontVariationSettings: "'wdth' 100" }}
+            >
+              {displayName}
+            </div>
+          )}
+
+          {displayEmail && (
+            <div
+              className="mt-[2px] break-all font-['Roboto:Regular',sans-serif] text-[12px] font-normal leading-[16px] text-[#7a7a7a]"
+              style={{ fontVariationSettings: "'wdth' 100" }}
+            >
+              {displayEmail}
+            </div>
+          )}
+
+          {!displayName && !displayEmail && (
+            <div
+              className="font-['Roboto:Regular',sans-serif] text-[12px] font-normal leading-[16px] text-[#7a7a7a]"
+              style={{ fontVariationSettings: "'wdth' 100" }}
+            >
+              Account
+            </div>
+          )}
         </div>
-        <div className="flex-1 flex flex-col items-start">
-          <span
-            className="font-['Roboto:Medium',sans-serif] font-medium text-[13px] text-black tracking-[-0.08px] leading-[18px]"
-            style={{ fontVariationSettings: "'wdth' 100" }}
-          >
-            Hager Ashraf
-          </span>
-          <span
-            className="font-['Roboto:Regular',sans-serif] font-normal text-[11px] text-[#828282] tracking-[-0.08px] leading-[16px]"
-            style={{ fontVariationSettings: "'wdth' 100" }}
-          >
-            Hager@gmail.com
-          </span>
-        </div>
-        <ChevronRight className="size-3 text-[#828282] opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
+
+        <ChevronRight
+          className="h-[14px] w-[14px] shrink-0 text-[#a3a3a3] opacity-0 transition-opacity group-hover:opacity-100"
+          strokeWidth={2}
+        />
       </button>
 
       {/* Divider */}
-      <div className="h-[1px] bg-[#f2f2f2] mx-[10px] my-[8px]" />
+      <div className="mx-[10px] my-[6px] h-[1px] bg-[#ececec]" />
 
       {/* Add Account */}
       <button
