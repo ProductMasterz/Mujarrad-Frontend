@@ -6,6 +6,7 @@ import { UserMenu } from "./UserMenu";
 import { ShortcutsModal } from "./ShortcutsModal";
 import VuesaxLinearContext from "../imports/VuesaxLinearContext";
 import VuesaxLinearNode from "../imports/VuesaxLinearNode";
+import { ChatWindow } from "@/components/chat/ChatWindow";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -258,7 +259,9 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
   const sidebarItems = items || projectsData;
   const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(null);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
-
+  //chat
+  const [showChatModal, setShowChatModal] = useState(false);
+  
   const handleUserClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setUserMenuAnchor(event.currentTarget);
   };
@@ -340,6 +343,20 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
               Shortcut
             </div>
           </div>
+    {/** */}
+          <div className="relative group">
+        <button
+          onClick={() => setShowChatModal(true)}
+          className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+        >
+          💬
+        </button>
+
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-[8px] py-[4px] bg-[#333] text-white text-[11px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+          Chat
+        </div>
+      </div>     
+      {/** */}
         </div>
       </div>
 
@@ -352,11 +369,37 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
         />
       )}
 
+
+     
       {/* Shortcuts Modal */}
       <ShortcutsModal
         isOpen={showShortcutsModal}
         onClose={() => setShowShortcutsModal(false)}
       />
+
+        {showChatModal && (
+      <div className="fixed bottom-6 right-6 w-[380px] h-[420px] bg-white shadow-xl rounded-lg border z-50 flex flex-col">
+
+        {/* Chat header */}
+        <div className="flex items-center justify-between px-3 py-2 border-b">
+          <span className="text-sm font-semibold">Chat Assistant</span>
+
+          <button
+            onClick={() => setShowChatModal(false)}
+            className="text-gray-500 hover:text-black"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Chat body */}
+        <div className="flex-1">
+          <ChatWindow />
+        </div>
+
+  </div>
+)}
     </div>
+    
   );
 }
