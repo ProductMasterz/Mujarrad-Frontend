@@ -10,6 +10,8 @@ import { useSpace } from '@/hooks/api';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
 import { useState } from 'react';
+import { MessageSquare } from 'lucide-react';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 
 export default function SpaceGraphPage() {
   const params = useParams();
@@ -17,7 +19,7 @@ export default function SpaceGraphPage() {
   const slug = params.slug as string;
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-
+  const [chatOpen, setChatOpen] = useState(false);
   const { data: space, isLoading: spaceLoading } = useSpace(slug);
 
   const { data: nodes = [], isLoading: nodesLoading } = useQuery({
@@ -94,19 +96,33 @@ export default function SpaceGraphPage() {
   return (
     <ProtectedRoute>
       <div className="h-screen flex flex-col bg-white">
-        <div className="flex items-center gap-3 border-b px-4 py-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push(`/spaces/${slug}`)}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Space
-          </Button>
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push(`/spaces/${slug}`)}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Space
+            </Button>
 
-          <h1 className="text-lg font-semibold">
-            {space ? `${space.name} - Graph View` : 'Graph View'}
-          </h1>
+            <h1 className="text-lg font-semibold">
+              {space ? `${space.name} - Graph View` : 'Graph View'}
+            </h1>
+          </div>
+
+          <button
+            onClick={() => {
+              setSelectedNodeId(null);
+              setChatOpen(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-[#f5f5f5]"
+            type="button"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Chat
+          </button>
         </div>
 
         <div
@@ -226,6 +242,16 @@ export default function SpaceGraphPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+        {chatOpen && (
+          <div className="fixed right-0 top-16 z-[80] h-[calc(100vh-64px)] w-[620px] border-l border-[#e6e6e6] bg-white shadow-2xl">
+            <ChatPanel
+              spaceSlug={slug}
+              title="Chat"
+              embedded={true}
+              onClose={() => setChatOpen(false)}
+            />
           </div>
         )}
       </div>

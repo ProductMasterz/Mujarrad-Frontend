@@ -162,6 +162,7 @@ function ChatPanelShell({
   onSelectSession,
   onNewSession,
   onRenameSession,
+  onDeleteSession,
   isBootstrapping,
 }: {
   isRunning: boolean;
@@ -174,6 +175,7 @@ function ChatPanelShell({
   onSelectSession: (sessionId: string) => void;
   onNewSession: () => void;
   onRenameSession: (sessionId: string, newTitle: string) => Promise<void>;
+  onDeleteSession: (sessionId: string) => Promise<void>;
   isBootstrapping: boolean;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -253,10 +255,10 @@ function ChatPanelShell({
             {sessions.map((session) => (
               <div
                 key={session.id}
-                className={`mb-2 rounded-md px-3 py-2 text-left text-sm transition ${
+                className={`mb-2 rounded-xl border px-3 py-3 text-left text-sm transition ${
                   activeSessionId === session.id
-                    ? 'bg-muted font-medium'
-                    : 'hover:bg-muted/60'
+                    ? 'border-[#c7d2fe] bg-[#eef2ff] shadow-sm'
+                    : 'border-transparent bg-white hover:border-[#e5e7eb] hover:bg-[#fafafa]'
                 }`}
                 title={`${session.title} — Created ${new Date(session.createdAt).toLocaleString()}`}
               >
@@ -271,18 +273,34 @@ function ChatPanelShell({
                   </div>
                 </button>
 
-                <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    const nextTitle = window.prompt('Rename chat session', session.title);
-                    if (!nextTitle || !nextTitle.trim()) return;
-                    await onRenameSession(session.id, nextTitle.trim());
-                  }}
-                  className="mt-2 text-xs text-blue-600 hover:underline"
-                  type="button"
-                >
-                  Rename
-                </button>
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const nextTitle = window.prompt('Rename chat session', session.title);
+                      if (!nextTitle || !nextTitle.trim()) return;
+                      await onRenameSession(session.id, nextTitle.trim());
+                    }}
+                    className="inline-flex items-center rounded-md border border-[#dbeafe] bg-[#eff6ff] px-2 py-1 text-xs font-medium text-[#2563eb] transition hover:bg-[#dbeafe]"
+                    type="button"
+                  >
+                    Rename
+                  </button>
+
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const confirmed = window.confirm('Delete this conversation and all its messages?');
+                      if (!confirmed) return;
+                      await onDeleteSession(session.id);
+                    }}
+                    className="inline-flex items-center rounded-md border border-[#fecaca] bg-[#fef2f2] px-2 py-1 text-xs font-medium text-[#dc2626] transition hover:bg-[#fee2e2]"
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </div>
+
               </div>
             ))}
           </div>
@@ -659,7 +677,64 @@ export function ChatPanel({
     bootstrapSessions();
   }, [spaceSlug]);
 
+  const deleteSession = async (sessionId: string) => {
+    const attributes = await attributeService.getNodeAttributes(sessionId);
 
+    const messageLinks = attributes.filter((attr) => attr.attributeName === 'contains');
+
+    await Promise.all(
+      messageLinks.map(async (attr) => {
+        try {
+          await nodeService.deleteNode(spaceSlug, attr.targetNodeId, true);
+        } catch {
+          // ignore single message delete failure for now
+        }
+      })
+    );
+
+    await nodeService.deleteNode(spaceSlug, sessionId, true);
+
+    const remainingSessions = sessions.filter((session) => session.id !== sessionId);
+    setSessions(remainingSessions);
+
+    const wasActive = activeSessionId === sessionId;
+
+    if (!wasActive) {
+      await refreshWorkspaceViews();
+      return;
+    }
+
+    if (remainingSessions.length > 0) {
+      const nextSession = remainingSessions[0];
+      setActiveSessionId(nextSession.id);
+      conversationNodeIdRef.current = nextSession.id;
+
+      const restoredMessages = await loadSessionMessages(nextSession.id);
+      setMessages(
+        restoredMessages.length > 0
+          ? restoredMessages
+          : [
+              {
+                id: 'welcome',
+                role: 'assistant',
+                text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+              },
+            ]
+      );
+    } else {
+      conversationNodeIdRef.current = null;
+      setActiveSessionId(null);
+      setMessages([
+        {
+          id: 'welcome',
+          role: 'assistant',
+          text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+        },
+      ]);
+    }
+
+    await refreshWorkspaceViews();
+  };
   const refreshWorkspaceViews = async () => {
     await queryClient.invalidateQueries({
       queryKey: nodeKeys.list(spaceSlug, { page: 1, size: 1000 }),
@@ -774,6 +849,7 @@ export function ChatPanel({
         onSelectSession={handleSelectSession}
         onNewSession={handleNewSession}
         onRenameSession={renameSession}
+        onDeleteSession={deleteSession}
         isBootstrapping={isBootstrapping}
       />
     </AssistantRuntimeProvider>

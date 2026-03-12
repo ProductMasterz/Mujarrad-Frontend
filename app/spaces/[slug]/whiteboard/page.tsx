@@ -16,6 +16,8 @@ import { nodeKeys } from '@/hooks/api/useNodes';
 import { nodeService } from '@/services/api/node.service';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 
 export default function WhiteboardPage() {
   const params = useParams();
@@ -24,6 +26,7 @@ export default function WhiteboardPage() {
   const queryClient = useQueryClient();
   const navigateToWhiteboard = useNavigationStore((state) => state.navigateToWhiteboard);
   const [isResetting, setIsResetting] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const canvasRef = useRef<WhiteboardCanvasRef>(null);
 
   // Fetch space info
@@ -190,6 +193,14 @@ export default function WhiteboardPage() {
               {saveError}
             </span>
           )}
+          <button
+            onClick={() => setChatOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-gray-100"
+            type="button"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Chat
+          </button>
           {/* Manual Save button */}
           <Button
             variant="outline"
@@ -228,6 +239,16 @@ export default function WhiteboardPage() {
           onError={(err) => console.error('Whiteboard error:', err)}
         />
       </div>
+      {chatOpen && (
+        <div className="fixed right-0 top-16 z-[80] h-[calc(100vh-64px)] w-[620px] border-l border-[#e6e6e6] bg-white shadow-2xl">
+          <ChatPanel
+            spaceSlug={spaceSlug}
+            title="Chat"
+            embedded={true}
+            onClose={() => setChatOpen(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }
