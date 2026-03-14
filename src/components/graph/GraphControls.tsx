@@ -77,7 +77,7 @@ function DropdownSection({
  */
 export function GraphControls({ viewMode, onViewModeChange }: GraphControlsProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [openSection, setOpenSection] = useState<'chat' | 'entities' | 'system' | null>('entities');
+  const [openSection, setOpenSection] = useState<'chat' | 'entities' | 'system' | null>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

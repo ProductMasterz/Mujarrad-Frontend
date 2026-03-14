@@ -138,7 +138,7 @@ function UserMessageBubble({
             </span>
           </div>
 
-          <div className="group rounded-[22px] rounded-br-[8px] bg-[#2563eb] px-4 py-3 text-sm leading-6 text-white shadow-sm transition-all duration-200 hover:shadow-md">
+          <div className="group rounded-[13px] rounded-br-[8px] bg-[#2563eb] px-4 py-3 text-[12px] leading-5 text-white shadow-sm transition-all duration-200 hover:shadow-md">
             <div className="whitespace-pre-wrap break-words">{text}</div>
             <div className="mt-3 flex justify-end">
               <CopyMessageButton text={text} />
@@ -179,8 +179,8 @@ function AssistantMessageBubble({
             </span>
           </div>
 
-          <div className="group rounded-[22px] rounded-bl-[8px] border border-[#e5e7eb] bg-[#f3f4f6] px-4 py-3 text-sm leading-6 text-[#111827] shadow-sm transition-all duration-200 hover:shadow-md">
-            <div className="text-black [&_*]:text-black [&_a]:text-[#2563eb] [&_a]:underline [&_code]:rounded [&_code]:bg-[#f3f4f6] [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-black [&_h1]:mb-2 [&_h1]:mt-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:mt-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:font-semibold [&_li]:mb-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-2 [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-[#1e293b] [&_pre]:bg-[#0f172a] [&_pre]:p-4 [&_pre]:text-white [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6">
+          <div className="group rounded-[13px] rounded-bl-[8px] border border-[#e5e7eb] bg-[#f3f4f6] px-4 py-3 shadow-sm transition-all duration-200 hover:shadow-md">
+            <div className="text-[12px] leading-5 text-black [&_*]:text-[12px] [&_*]:leading-5 [&_*]:text-black [&_a]:text-[#2563eb] [&_a]:underline [&_code]:rounded [&_code]:bg-[#f3f4f6] [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[12px] [&_code]:text-black [&_p]:my-2 [&_li]:mb-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_h1]:mb-2 [&_h1]:mt-3 [&_h1]:text-[12px] [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-3 [&_h2]:text-[12px] [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-[#1e293b] [&_pre]:bg-[#0f172a] [&_pre]:p-4 [&_pre]:text-[12px] [&_pre]:text-white">
               <MarkdownRenderer content={text} />
             </div>
             <div className="mt-3 flex justify-end">
@@ -196,6 +196,7 @@ function AssistantMessageBubble({
 }
 
 function ChatPanelShell({
+  hasActiveSpace,
   isRunning,
   title,
   spaceSlug,
@@ -214,9 +215,10 @@ function ChatPanelShell({
   searchTerm,
   onSearchTermChange,
 }: {
+  hasActiveSpace: boolean;
   isRunning: boolean;
   title: string;
-  spaceSlug: string;
+  spaceSlug?: string;
   embedded: boolean;
   onClose?: () => void;
   messageCount: number;
@@ -360,8 +362,9 @@ function ChatPanelShell({
 
             <button
               onClick={onNewSession}
+              disabled={!hasActiveSpace}
               type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#111827] text-white shadow-sm transition hover:bg-[#1f2937]"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#111827] text-white shadow-sm transition hover:bg-[#1f2937] disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="New chat"
               title="New chat"
             >
@@ -375,8 +378,9 @@ function ChatPanelShell({
               <input
                 value={searchTerm}
                 onChange={(e) => onSearchTermChange(e.target.value)}
+                disabled={!hasActiveSpace}
                 placeholder="Search conversations..."
-                className="w-full rounded-xl border border-[#e5e7eb] bg-white py-2.5 pl-9 pr-3 text-sm text-[#111827] shadow-sm outline-none placeholder:text-[#9ca3af] focus:border-[#c7d2fe] focus:ring-2 focus:ring-[#e0e7ff]"
+                className="w-full rounded-xl border border-[#e5e7eb] bg-white py-2.5 pl-9 pr-3 text-sm text-[#111827] shadow-sm outline-none placeholder:text-[#9ca3af] focus:border-[#c7d2fe] focus:ring-2 focus:ring-[#e0e7ff] disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#9ca3af]"
                 type="text"
               />
             </div>
@@ -386,10 +390,16 @@ function ChatPanelShell({
             {sessions.length === 0 && (
               <div className="rounded-xl border border-dashed border-[#e5e7eb] bg-white px-3 py-6 text-center">
                 <p className="text-sm font-medium text-[#6b7280]">
-                  {searchTerm.trim() ? 'No matching conversations' : 'No conversations yet'}
+                  {!hasActiveSpace
+                    ? 'No space selected'
+                    : searchTerm.trim()
+                    ? 'No matching conversations'
+                    : 'No conversations yet'}
                 </p>
                 <p className="mt-1 text-xs text-[#9ca3af]">
-                  {searchTerm.trim()
+                  {!hasActiveSpace
+                    ? 'Open a space to view or create conversations.'
+                    : searchTerm.trim()
                     ? 'Try a different keyword.'
                     : 'Start a new chat to begin building context.'}
                 </p>
@@ -502,7 +512,10 @@ function ChatPanelShell({
                 <h2 className="text-lg font-semibold text-[#111827]">{title}</h2>
               </div>
               <p className="mt-1 text-xs text-[#6b7280]">
-                Space: <span className="font-medium text-[#4b5563]">{spaceSlug}</span>
+                Space:{' '}
+                <span className="font-medium text-[#4b5563]">
+                  {spaceSlug?.trim() ? spaceSlug : 'No space selected'}
+                </span>
               </p>
             </div>
           </div>
@@ -533,10 +546,12 @@ function ChatPanelShell({
                 {messages.length === 1 && messages[0]?.id === 'welcome' ? (
                   <div className="rounded-3xl border border-[#e5e7eb] bg-white px-6 py-6 shadow-sm">
                     <div className="mb-2 text-sm font-semibold text-[#111827]">
-                      Start building in this space
+                      {hasActiveSpace ? 'Start building in this space' : 'Open a space to begin'}
                     </div>
                     <p className="text-sm leading-6 text-[#6b7280]">
-                      Use chat to explore the graph, create nodes, connect entities, or summarize what already exists in this space.
+                      {hasActiveSpace
+                        ? 'Use chat to explore the graph, create nodes, connect entities, or summarize what already exists in this space.'
+                        : 'Open any space first, then use chat to explore and build inside that space.'}
                     </p>
 
                     <div className="mt-4 grid gap-2 md:grid-cols-2">
@@ -637,13 +652,15 @@ function ChatPanelShell({
                       target.selectionStart = target.selectionEnd = start + 1;
                     });
                   }}
-                  placeholder="Message Mujarrad..."
-                  className="min-h-[48px] max-h-[180px] flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-2 text-sm leading-6 text-[#111827] outline-none placeholder:text-[#9ca3af]"
+                  disabled={!hasActiveSpace}
+                  placeholder={hasActiveSpace ? 'Message Mujarrad...' : 'Open a space to start chatting...'}
+                  className="min-h-[48px] max-h-[180px] flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-2 text-sm leading-6 text-[#111827] outline-none placeholder:text-[#9ca3af] disabled:cursor-not-allowed disabled:text-[#9ca3af]"
                 />
                 <ComposerPrimitive.Send asChild>
                   <Button
                     ref={sendButtonRef}
-                    className="h-11 rounded-xl bg-[#111827] px-4 text-white shadow-sm transition hover:bg-[#1f2937]"
+                    disabled={!hasActiveSpace}
+                    className="h-11 rounded-xl bg-[#111827] px-4 text-white shadow-sm transition hover:bg-[#1f2937] disabled:opacity-50"
                   >
                     <SendHorizontal className="h-4 w-4" />
                   </Button>
@@ -726,11 +743,12 @@ function ChatPanelShell({
 }
 
 export function ChatPanel({
-  spaceSlug = 'demo-rel-ui-fixed',
+  spaceSlug,
   title = 'Chat',
   embedded = false,
   onClose,
 }: ChatPanelProps) {
+  const hasActiveSpace = !!spaceSlug?.trim();
   const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
   const queryClient = useQueryClient();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -780,6 +798,7 @@ export function ChatPanel({
 
 
   const buildConversationSearchText = async (conversationId: string, conversationTitle: string) => {
+    if (!spaceSlug) return conversationTitle.toLowerCase();
     try {
       const attributes = await attributeService.getNodeAttributes(conversationId);
 
@@ -806,6 +825,7 @@ export function ChatPanel({
   };
   
   const buildConversationPreview = async (conversationId: string): Promise<string> => {
+    if (!spaceSlug) return 'No messages yet';
     try {
       const attributes = await attributeService.getNodeAttributes(conversationId);
 
@@ -835,6 +855,7 @@ export function ChatPanel({
     }
   };
   const createConversationSession = async (): Promise<string> => {
+    if (!spaceSlug) throw new Error('spaceSlug is required');
     const createdConversation = await nodeService.createNode(spaceSlug, {
       title: `Conversation ${new Date().toLocaleString()}`,
       nodeType: NodeType.REGULAR,
@@ -892,6 +913,8 @@ export function ChatPanel({
     role: 'user' | 'assistant',
     text: string
   ) => {
+    if (!spaceSlug) throw new Error('spaceSlug is required');
+
     const createdMessage = await nodeService.createNode(spaceSlug, {
       title: `${role === 'user' ? 'User' : 'Assistant'} Message ${Date.now()}`,
       nodeType: NodeType.REGULAR,
@@ -922,6 +945,7 @@ export function ChatPanel({
   };
 
   const loadSessionMessages = async (conversationId: string): Promise<ChatMessage[]> => {
+    if (!spaceSlug) return [];
     const attributes = await attributeService.getNodeAttributes(conversationId);
 
     const messageLinks = attributes
@@ -966,68 +990,74 @@ export function ChatPanel({
   };
 
   const bootstrapSessions = async () => {
-    setIsBootstrapping(true);
-
-    try {
-      const allNodes = await nodeService.getNodes(spaceSlug, { page: 1, size: 1000 });
-
-      const conversationNodes = allNodes
-        .filter((node) => isConversationNode(node))
-        .sort(
-          (a, b) =>
-            new Date(b.updatedAt || b.createdAt).getTime() -
-            new Date(a.updatedAt || a.createdAt).getTime()
-        );
-
-      const mappedSessions: ChatSession[] = conversationNodes.map((node) => ({
-        id: node.id,
-        title: node.title,
-        createdAt: node.createdAt,
-        updatedAt: node.updatedAt,
-      }));
-
-      setSessions(mappedSessions);
-      await rebuildSessionSearchIndex(mappedSessions);
-
-      if (conversationNodes.length === 0) {
-        const createdId = await createConversationSession();
-        setMessages([
-          {
-            id: 'welcome',
-            role: 'assistant',
-            text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
-            createdAt: new Date().toISOString(),
-          },
-        ]);
-        setActiveSessionId(createdId);
-        conversationNodeIdRef.current = createdId;
+      if (!spaceSlug) {
+        setIsBootstrapping(false);
         return;
-      }
+        }
+        setIsBootstrapping(true);
 
-      const latestSession = conversationNodes[0];
-      setActiveSessionId(latestSession.id);
-      conversationNodeIdRef.current = latestSession.id;
 
-      const restoredMessages = await loadSessionMessages(latestSession.id);
+        try {
+          const allNodes = await nodeService.getNodes(spaceSlug, { page: 1, size: 1000 });
 
-      if (restoredMessages.length === 0) {
-        setMessages([
-          {
-            id: 'welcome',
-            role: 'assistant',
-            text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
-            createdAt: new Date().toISOString(),
-          },
-        ]);
-      } else {
-        setMessages(restoredMessages);
-      }
-    } finally {
-      setIsBootstrapping(false);
-    }
+          const conversationNodes = allNodes
+            .filter((node) => isConversationNode(node))
+            .sort(
+              (a, b) =>
+                new Date(b.updatedAt || b.createdAt).getTime() -
+                new Date(a.updatedAt || a.createdAt).getTime()
+            );
+
+          const mappedSessions: ChatSession[] = conversationNodes.map((node) => ({
+            id: node.id,
+            title: node.title,
+            createdAt: node.createdAt,
+            updatedAt: node.updatedAt,
+          }));
+
+          setSessions(mappedSessions);
+          await rebuildSessionSearchIndex(mappedSessions);
+
+          if (conversationNodes.length === 0) {
+            const createdId = await createConversationSession();
+            setMessages([
+              {
+                id: 'welcome',
+                role: 'assistant',
+                text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+                createdAt: new Date().toISOString(),
+              },
+            ]);
+            setActiveSessionId(createdId);
+            conversationNodeIdRef.current = createdId;
+            return;
+          }
+
+          const latestSession = conversationNodes[0];
+          setActiveSessionId(latestSession.id);
+          conversationNodeIdRef.current = latestSession.id;
+
+          const restoredMessages = await loadSessionMessages(latestSession.id);
+
+          if (restoredMessages.length === 0) {
+            setMessages([
+              {
+                id: 'welcome',
+                role: 'assistant',
+                text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+                createdAt: new Date().toISOString(),
+              },
+            ]);
+          } else {
+            setMessages(restoredMessages);
+          }
+        } finally {
+          setIsBootstrapping(false);
+        }
   };
 
   const handleSelectSession = async (sessionId: string) => {
+    if (!spaceSlug) return;
     setActiveSessionId(sessionId);
     conversationNodeIdRef.current = sessionId;
     setIsBootstrapping(true);
@@ -1052,6 +1082,7 @@ export function ChatPanel({
   };
 
   const handleNewSession = async () => {
+    if (!spaceSlug) return;
     setMessages([
       {
         id: 'welcome',
@@ -1067,6 +1098,7 @@ export function ChatPanel({
     await refreshWorkspaceViews();
   };
   const renameSession = async (sessionId: string, newTitle: string) => {
+    if (!spaceSlug) return;
     await nodeService.updateNode(spaceSlug, sessionId, {
       title: newTitle,
     });
@@ -1092,11 +1124,33 @@ export function ChatPanel({
 
     await refreshWorkspaceViews();
   };
+
   useEffect(() => {
+    if (!hasActiveSpace) {
+      setSessions([]);
+      setActiveSessionId(null);
+      setSessionSearchIndex({});
+      setSessionPreviewIndex({});
+      setSearchTerm('');
+      conversationNodeIdRef.current = null;
+      messageOrderRef.current = 1;
+      setMessages([
+        {
+          id: 'welcome',
+          role: 'assistant',
+          text: 'Open a space to start a space-specific chat.',
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      setIsBootstrapping(false);
+      return;
+    }
+
     bootstrapSessions();
-  }, [spaceSlug]);
+  }, [spaceSlug, hasActiveSpace]);
 
   const deleteSession = async (sessionId: string) => {
+    if (!spaceSlug) return;
     const attributes = await attributeService.getNodeAttributes(sessionId);
 
     const messageLinks = attributes.filter((attr) => attr.attributeName === 'contains');
@@ -1168,6 +1222,7 @@ export function ChatPanel({
     await refreshWorkspaceViews();
   };
   const refreshWorkspaceViews = async () => {
+    if (!spaceSlug) return;
     await queryClient.invalidateQueries({
       queryKey: nodeKeys.list(spaceSlug, { page: 1, size: 1000 }),
     });
@@ -1212,6 +1267,19 @@ export function ChatPanel({
       const userText = firstPart.text.trim();
       if (!userText) return;
 
+      if (!hasActiveSpace) {
+        const assistantMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: 'No space is currently open. Please open a space first to use this chat.',
+          createdAt: new Date().toISOString(),
+        };
+
+        setMessages((current) => [...current, assistantMessage]);
+        setIsRunning(false);
+        return;
+      }
+
       const userMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'user',
@@ -1224,7 +1292,11 @@ export function ChatPanel({
 
       try {
         const conversationNodeId = await ensureConversationNode();
-        await persistMessageNode(conversationNodeId, 'user', userText);
+          if (!conversationNodeId) {
+            throw new Error('Could not create or resolve conversation node.');
+          }
+
+          await persistMessageNode(conversationNodeId, 'user', userText);
 
         let assistantText = '';
 
@@ -1297,6 +1369,7 @@ export function ChatPanel({
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <ChatPanelShell
+        hasActiveSpace={hasActiveSpace}
         isRunning={isRunning}
         title={title}
         spaceSlug={spaceSlug}
