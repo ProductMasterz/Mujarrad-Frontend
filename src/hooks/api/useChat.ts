@@ -1,7 +1,6 @@
 import { ChatMessage, sendChatMessage } from "@/services/api/chatService";
 import { useState } from "react";
 
-
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: "Hello! How can I help?" }
@@ -14,8 +13,28 @@ export function useChat() {
       role: "user",
       content: text,
     };
+     // Immediately show user message
+  setMessages((prev) => [...prev, userMessage]);
+  try {
+    setLoading(true);
 
-    const updatedMessages = [...messages, userMessage];
+    const data = await sendChatMessage([...messages, userMessage]);
+
+    const botMessage: ChatMessage = {
+      role: "assistant",
+      content: data.reply,
+    };
+
+    setMessages((prev) => [...prev, botMessage]);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false);
+  }
+
+  const updatedMessages = [...messages, userMessage];
+
+    // show user message immediately
     setMessages(updatedMessages);
 
     try {

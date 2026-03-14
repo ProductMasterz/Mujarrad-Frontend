@@ -15,7 +15,7 @@ export function ChatWindow() {
   }, [messages]);
 
  const handleSend = () => {
-  if (input.trim() === "") return;
+  if (input.trim() === ""|| loading) return;
 
   sendMessage(input);
   setInput("");
@@ -37,7 +37,7 @@ export function ChatWindow() {
   <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50">
     {messages.map((msg, idx) => (
       <div
-        key={idx}
+        key={`${msg.role}-${idx}`}
         className={`flex ${
           msg.role === "user" ? "justify-end" : "justify-start"
         }`}
@@ -54,6 +54,13 @@ export function ChatWindow() {
       </div>
     ))}
     <div ref={messagesEndRef} />
+    {loading && (
+  <div className="flex justify-start">
+    <div className="px-3 py-2 rounded-lg bg-gray-200 text-gray-600 text-sm">
+      Assistant is typing...
+    </div>
+  </div>
+)}
   </div>
 
   {/* Input area */}
@@ -63,13 +70,23 @@ export function ChatWindow() {
       className="flex-1 resize-none rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
       placeholder="Ask something..."
       value={input}
-      onChange={(e) => setInput(e.target.value)}
+      //Auto Resize Textarea
+      onChange={(e) => {
+      setInput(e.target.value);
+
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height =
+          textareaRef.current.scrollHeight + "px";
+      }
+    }}
       onKeyDown={handleKeyDown}
       rows={1}
     />
 
     <button
       onClick={handleSend}
+      disabled={loading}
       className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm"
     >
       Send
