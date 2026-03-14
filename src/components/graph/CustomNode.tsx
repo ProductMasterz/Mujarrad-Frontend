@@ -5,22 +5,105 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { NodeType } from '@/types/backend-dtos';
 import { cn } from '@/lib/utils';
 
-const nodeTypeStyles: Record<NodeType, string> = {
-  [NodeType.REGULAR]: 'bg-white border-[#d9d9d9]',
-  [NodeType.CONTEXT]: 'bg-purple-50 border-purple-500',
-  [NodeType.ASSUMPTION]: 'bg-yellow-50 border-yellow-500',
-  [NodeType.TEMPLATE]: 'bg-green-50 border-green-500',
+const nodeTypeStyles: Record<
+  NodeType,
+  {
+    border: string;
+    accent: string;
+    badgeBg: string;
+    badgeText: string;
+    surface: string;
+    label: string;
+  }
+> = {
+  [NodeType.REGULAR]: {
+    border: 'border-[#d9d9d9]',
+    accent: 'bg-[#9ca3af]',
+    badgeBg: 'bg-[#f3f4f6]',
+    badgeText: 'text-[#4b5563]',
+    surface: 'bg-white',
+    label: 'Regular',
+  },
+  [NodeType.CONTEXT]: {
+    border: 'border-purple-200',
+    accent: 'bg-purple-500',
+    badgeBg: 'bg-purple-100',
+    badgeText: 'text-purple-700',
+    surface: 'bg-purple-50',
+    label: 'Context',
+  },
+  [NodeType.ASSUMPTION]: {
+    border: 'border-yellow-200',
+    accent: 'bg-yellow-500',
+    badgeBg: 'bg-yellow-100',
+    badgeText: 'text-yellow-700',
+    surface: 'bg-yellow-50',
+    label: 'Assumption',
+  },
+  [NodeType.TEMPLATE]: {
+    border: 'border-green-200',
+    accent: 'bg-green-500',
+    badgeBg: 'bg-green-100',
+    badgeText: 'text-green-700',
+    surface: 'bg-green-50',
+    label: 'Template',
+  },
 };
 
-const entityTypeStyles: Record<string, string> = {
-  person: 'bg-blue-50 border-blue-500',
-  place: 'bg-emerald-50 border-emerald-500',
-  event: 'bg-orange-50 border-orange-500',
-  topic: 'bg-violet-50 border-violet-500',
-  action: 'bg-rose-50 border-rose-500',
+const entityTypeStyles: Record<
+  string,
+  {
+    border: string;
+    accent: string;
+    badgeBg: string;
+    badgeText: string;
+    surface: string;
+    label: string;
+  }
+> = {
+  person: {
+    border: 'border-blue-200',
+    accent: 'bg-blue-500',
+    badgeBg: 'bg-blue-100',
+    badgeText: 'text-blue-700',
+    surface: 'bg-blue-50',
+    label: 'Person',
+  },
+  place: {
+    border: 'border-emerald-200',
+    accent: 'bg-emerald-500',
+    badgeBg: 'bg-emerald-100',
+    badgeText: 'text-emerald-700',
+    surface: 'bg-emerald-50',
+    label: 'Place',
+  },
+  event: {
+    border: 'border-orange-200',
+    accent: 'bg-orange-500',
+    badgeBg: 'bg-orange-100',
+    badgeText: 'text-orange-700',
+    surface: 'bg-orange-50',
+    label: 'Event',
+  },
+  topic: {
+    border: 'border-violet-200',
+    accent: 'bg-violet-500',
+    badgeBg: 'bg-violet-100',
+    badgeText: 'text-violet-700',
+    surface: 'bg-violet-50',
+    label: 'Topic',
+  },
+  action: {
+    border: 'border-rose-200',
+    accent: 'bg-rose-500',
+    badgeBg: 'bg-rose-100',
+    badgeText: 'text-rose-700',
+    surface: 'bg-rose-50',
+    label: 'Action',
+  },
 };
 
-export const CustomNode = memo(({ data }: NodeProps) => {
+export const CustomNode = memo(({ data, selected }: NodeProps) => {
   const {
     label,
     nodeType,
@@ -32,31 +115,57 @@ export const CustomNode = memo(({ data }: NodeProps) => {
   };
 
   const normalizedEntityType = entityType?.toLowerCase().trim();
-  const entityStyle =
-    normalizedEntityType && entityTypeStyles[normalizedEntityType]
-      ? entityTypeStyles[normalizedEntityType]
-      : null;
+  const styleConfig =
+    (normalizedEntityType && entityTypeStyles[normalizedEntityType]) ||
+    nodeTypeStyles[nodeType] ||
+    nodeTypeStyles[NodeType.REGULAR];
 
   const nodeTypeLabel =
-    nodeType === NodeType.CONTEXT
-      ? 'folder'
-      : nodeType === NodeType.ASSUMPTION
-      ? 'assumption'
-      : 'document';
+    normalizedEntityType
+      ? styleConfig.label
+      : nodeTypeStyles[nodeType]?.label || 'Node';
 
   return (
     <div
       className={cn(
-        'px-4 py-2 shadow-md rounded-md border-2 min-w-[150px]',
-        entityStyle ?? nodeTypeStyles[nodeType] ?? 'bg-white border-[#d9d9d9]'
+        'group relative min-w-[180px] max-w-[220px] overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200',
+        styleConfig.border,
+        styleConfig.surface,
+        selected
+          ? 'ring-2 ring-[#3b82f6]/30 shadow-[0px_10px_24px_rgba(59,130,246,0.18)]'
+          : 'hover:shadow-[0px_10px_24px_rgba(0,0,0,0.10)]'
       )}
       role="button"
-      aria-label={`${label} (${normalizedEntityType || nodeTypeLabel})`}
+      aria-label={`${label} (${nodeTypeLabel})`}
       tabIndex={0}
     >
-      <Handle type="target" position={Position.Top} className="w-2 h-2" aria-hidden="true" />
-      <div className="text-sm font-medium">{label}</div>
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2" aria-hidden="true" />
+      <Handle type="target" position={Position.Top} className="h-2 w-2" aria-hidden="true" />
+
+      <div className={cn('h-1.5 w-full', styleConfig.accent)} />
+
+      <div className="px-3 py-3">
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <div className="line-clamp-2 text-sm font-semibold leading-5 text-[#111827]">
+            {label}
+          </div>
+
+          <span
+            className={cn(
+              'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+              styleConfig.badgeBg,
+              styleConfig.badgeText
+            )}
+          >
+            {nodeTypeLabel}
+          </span>
+        </div>
+
+        <div className="text-[11px] text-[#6b7280]">
+          {normalizedEntityType ? 'Entity node' : `${nodeTypeLabel} node`}
+        </div>
+      </div>
+
+      <Handle type="source" position={Position.Bottom} className="h-2 w-2" aria-hidden="true" />
     </div>
   );
 });

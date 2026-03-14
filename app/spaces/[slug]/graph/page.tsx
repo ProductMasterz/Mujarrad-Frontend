@@ -84,15 +84,73 @@ export default function SpaceGraphPage() {
     }
 
     const chatNodeType = details?.chatNodeType;
+    const createdFrom = details?.createdFrom;
+    const role = details?.role;
 
-    return (
+    const isConversation =
       chatNodeType === 'conversation' ||
+      ((createdFrom === 'chat' || createdFrom === 'assistant-ui') &&
+        role === 'conversation');
+
+    const isMessage =
       chatNodeType === 'message' ||
-      String(otherNode.title || '').startsWith('Conversation ') ||
-      String(otherNode.title || '').startsWith('User Message ') ||
-      String(otherNode.title || '').startsWith('Assistant Message ')
-    );
+      ((createdFrom === 'chat' || createdFrom === 'assistant-ui') &&
+        (role === 'user' || role === 'assistant'));
+
+    return isConversation || isMessage;
   });
+    let selectedNodeDetails: Record<string, unknown> | undefined;
+
+  if (selectedNode?.nodeDetails) {
+    if (typeof selectedNode.nodeDetails === 'string') {
+      try {
+        selectedNodeDetails = JSON.parse(selectedNode.nodeDetails);
+      } catch {
+        selectedNodeDetails = undefined;
+      }
+    } else {
+      selectedNodeDetails = selectedNode.nodeDetails as Record<string, unknown>;
+    }
+  }
+
+  const selectedEntityType =
+    typeof selectedNodeDetails?.entityType === 'string'
+      ? selectedNodeDetails.entityType
+      : undefined;
+
+  const summaryEntries = [
+    {
+      label: 'Node Type',
+      value: selectedNode?.nodeType || '—',
+    },
+    {
+      label: 'Entity Type',
+      value: selectedEntityType || '—',
+    },
+    {
+      label: 'Created From',
+      value:
+        typeof selectedNodeDetails?.createdFrom === 'string'
+          ? selectedNodeDetails.createdFrom
+          : '—',
+    },
+    {
+      label: 'Chat Type',
+      value:
+        typeof selectedNodeDetails?.chatNodeType === 'string'
+          ? selectedNodeDetails.chatNodeType
+          : '—',
+    },
+    {
+      label: 'Show In Space',
+      value:
+        typeof selectedNodeDetails?.showInSpaceList === 'boolean'
+          ? selectedNodeDetails.showInSpaceList
+            ? 'Yes'
+            : 'No'
+          : '—',
+    },
+  ].filter((item) => item.value !== '—');
   return (
     <ProtectedRoute>
       <div className="h-screen flex flex-col bg-white">
@@ -127,7 +185,7 @@ export default function SpaceGraphPage() {
 
         <div
           className="flex-1 transition-all duration-300"
-          style={{ marginRight: selectedNodeId ? '420px' : '0' }}
+          style={{ marginRight: selectedNodeId ? '430px' : '0' }}
         >
           {isLoading ? (
             <div className="flex h-full items-center justify-center">
@@ -143,41 +201,73 @@ export default function SpaceGraphPage() {
         </div>
 
         {selectedNodeId && selectedNode && (
-          <div className="fixed right-0 top-16 z-[70] h-[calc(100vh-64px)] w-[420px] overflow-y-auto border-l border-[#e6e6e6] bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b px-4 py-3">
-              <div>
-                <h2 className="text-lg font-semibold text-[#333]">{selectedNode.title}</h2>
-                <p className="text-xs text-[#828282]">{selectedNode.nodeType}</p>
+          <div className="fixed right-0 top-16 z-[70] h-[calc(100vh-64px)] w-[430px] overflow-y-auto border-l border-[#e5e7eb] bg-[#fcfcfd] shadow-2xl">
+            <div className="sticky top-0 z-10 border-b border-[#ececec] bg-white px-5 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-[#eef2ff] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#4f46e5]">
+                      {selectedNode.nodeType}
+                    </span>
+
+                    {selectedEntityType && (
+                      <span className="rounded-full bg-[#f3f4f6] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#4b5563]">
+                        {selectedEntityType}
+                      </span>
+                    )}
+                  </div>
+
+                  <h2 className="truncate text-xl font-semibold text-[#111827]">
+                    {selectedNode.title}
+                  </h2>
+                </div>
+
+                <button
+                  onClick={() => setSelectedNodeId(null)}
+                  className="rounded-lg border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm text-[#6b7280] transition hover:bg-[#f9fafb] hover:text-[#111827]"
+                  type="button"
+                >
+                  Close
+                </button>
               </div>
-              <button
-                onClick={() => setSelectedNodeId(null)}
-                className="rounded-md px-2 py-1 text-sm text-[#828282] hover:bg-[#f5f5f5]"
-                type="button"
-              >
-                Close
-              </button>
             </div>
 
-            <div className="space-y-6 p-4">
-              <div>
-                <h3 className="mb-2 text-sm font-semibold text-[#333]">Content</h3>
-                <div className="whitespace-pre-wrap rounded-[12px] border border-[#e6e6e6] bg-[#fafafa] p-3 text-sm text-[#4f4f4f]">
+            <div className="space-y-5 p-5">
+              <div className="rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-[#111827]">Content</h3>
+                <div className="whitespace-pre-wrap rounded-xl bg-[#f9fafb] px-4 py-3 text-sm leading-6 text-[#374151]">
                   {selectedNode.content || 'No content'}
                 </div>
               </div>
 
-              <div>
-                <h3 className="mb-2 text-sm font-semibold text-[#333]">Node Details</h3>
-                <pre className="overflow-x-auto rounded-[12px] border border-[#e6e6e6] bg-[#fafafa] p-3 text-xs text-[#4f4f4f]">
-                  {JSON.stringify(selectedNode.nodeDetails ?? {}, null, 2)}
-                </pre>
+              <div className="rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-[#111827]">Summary</h3>
+                {summaryEntries.length === 0 ? (
+                  <p className="text-sm text-[#9ca3af]">No structured metadata available</p>
+                ) : (
+                  <div className="grid gap-3">
+                    {summaryEntries.map((item) => (
+                      <div
+                        key={item.label}
+                        className="flex items-center justify-between gap-3 rounded-xl bg-[#f9fafb] px-3 py-2"
+                      >
+                        <span className="text-xs font-medium uppercase tracking-wide text-[#6b7280]">
+                          {item.label}
+                        </span>
+                        <span className="text-sm font-medium text-[#111827]">
+                          {String(item.value)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div>
-                <h3 className="mb-2 text-sm font-semibold text-[#333]">Origin / Chat Source</h3>
-                <div className="space-y-2">
+              <div className="rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-[#111827]">Origin / Chat Source</h3>
+                <div className="space-y-3">
                   {chatSourceAttributes.length === 0 ? (
-                    <p className="text-sm text-[#828282]">No chat source linked</p>
+                    <p className="text-sm text-[#9ca3af]">No chat source linked</p>
                   ) : (
                     chatSourceAttributes.map((attr) => {
                       const otherNodeId =
@@ -188,16 +278,18 @@ export default function SpaceGraphPage() {
                       return (
                         <div
                           key={`chat-source-${attr.id}`}
-                          className="rounded-[12px] border border-[#e6e6e6] bg-[#fafafa] p-3"
+                          className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] p-3"
                         >
-                          <div className="text-sm font-medium text-[#333]">
+                          <div className="text-sm font-semibold text-[#111827]">
                             {otherNode?.title || otherNodeId}
                           </div>
-                          <div className="mt-1 text-xs text-[#828282]">
-                            Relation: {attr.attributeName || attr.attributeType}
-                          </div>
-                          <div className="mt-1 text-xs text-[#828282]">
-                            Direction: {attr.sourceNodeId === selectedNodeId ? 'Outgoing' : 'Incoming'}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <span className="rounded-full bg-[#eef2ff] px-2.5 py-1 text-[11px] font-medium text-[#4338ca]">
+                              {attr.attributeName || attr.attributeType}
+                            </span>
+                            <span className="rounded-full bg-[#f3f4f6] px-2.5 py-1 text-[11px] font-medium text-[#4b5563]">
+                              {attr.sourceNodeId === selectedNodeId ? 'Outgoing' : 'Incoming'}
+                            </span>
                           </div>
                         </div>
                       );
@@ -206,11 +298,11 @@ export default function SpaceGraphPage() {
                 </div>
               </div>
 
-              <div>
-                <h3 className="mb-2 text-sm font-semibold text-[#333]">Relationships</h3>
-                <div className="space-y-2">
+              <div className="rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-[#111827]">Relationships</h3>
+                <div className="space-y-3">
                   {selectedNodeAttributes.length === 0 ? (
-                    <p className="text-sm text-[#828282]">No relationships</p>
+                    <p className="text-sm text-[#9ca3af]">No relationships</p>
                   ) : (
                     selectedNodeAttributes.map((attr) => {
                       const otherNodeId =
@@ -223,17 +315,19 @@ export default function SpaceGraphPage() {
                       return (
                         <div
                           key={attr.id}
-                          className="rounded-[12px] border border-[#e6e6e6] bg-[#fafafa] p-3"
+                          className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] p-3"
                         >
-                          <div className="text-sm font-medium text-[#333]">
-                            {attr.attributeName || attr.attributeType}
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <span className="rounded-full bg-[#ede9fe] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#6d28d9]">
+                              {attr.attributeName || attr.attributeType}
+                            </span>
+                            <span className="text-[11px] font-medium text-[#6b7280]">
+                              {attr.sourceNodeId === selectedNodeId ? 'Outgoing' : 'Incoming'}
+                            </span>
                           </div>
-                          <div className="mt-1 text-sm text-[#4f4f4f]">
-                            Connected to: {otherNode?.title || otherNodeId}
-                          </div>
-                          <div className="mt-1 text-xs text-[#828282]">
-                            Direction:{' '}
-                            {attr.sourceNodeId === selectedNodeId ? 'Outgoing' : 'Incoming'}
+
+                          <div className="text-sm font-medium text-[#111827]">
+                            {otherNode?.title || otherNodeId}
                           </div>
                         </div>
                       );
@@ -241,6 +335,15 @@ export default function SpaceGraphPage() {
                   )}
                 </div>
               </div>
+
+              <details className="rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
+                <summary className="cursor-pointer text-sm font-semibold text-[#111827]">
+                  Technical details
+                </summary>
+                <pre className="mt-3 overflow-x-auto rounded-xl bg-[#f9fafb] p-3 text-xs leading-5 text-[#4b5563]">
+                  {JSON.stringify(selectedNode.nodeDetails ?? {}, null, 2)}
+                </pre>
+              </details>
             </div>
           </div>
         )}

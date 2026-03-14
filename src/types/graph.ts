@@ -53,13 +53,32 @@ export interface GraphData {
  * Graph view mode for filtering nodes/edges
  */
 export interface GraphViewMode {
-  showContext: boolean;    // Show CONTEXT nodes
-  showRegular: boolean;    // Show REGULAR nodes
-  showContains: boolean;   // Show hierarchy edges
-  showReferences: boolean; // Show wiki-link edges
-  showConversation: boolean;
-  showCustomRelations: boolean;
+  // Chat
+  showChat: boolean;
+  showConversationNodes: boolean;
+  showUserMessages: boolean;
+  showAssistantMessages: boolean;
+  showChatRelations: boolean;
+
+  // Entities
+  showEntities: boolean;
+  showPerson: boolean;
+  showPlace: boolean;
+  showAction: boolean;
+  showTopic: boolean;
+  showEvent: boolean;
+  showEntityRelations: boolean;
+
+  // System
+  showSystem: boolean;
+  showRegular: boolean;
+  showContext: boolean;
+  showAssumption: boolean;
+  showTemplate: boolean;
   showBlocks: boolean;
+
+  // Legacy / generic relations if still needed
+  showReferences: boolean;
 }
 
 /**

@@ -9,7 +9,7 @@ import {
   useExternalStoreRuntime,
   type AppendMessage,
 } from '@assistant-ui/react';
-import { Copy, Check, SendHorizontal, X } from 'lucide-react';
+import { Copy, Check, SendHorizontal, X, Pencil, Trash2, PanelLeftClose, PanelLeftOpen, SquarePen, Search } from 'lucide-react';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ type ChatMessage = {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+  createdAt: string;
 };
 
 type ChatSession = {
@@ -63,12 +64,32 @@ function parseNodeDetails(node: Node): Record<string, unknown> | undefined {
 
 function isConversationNode(node: Node): boolean {
   const details = parseNodeDetails(node);
-  return details?.chatNodeType === 'conversation';
+
+  return (
+    details?.chatNodeType === 'conversation' ||
+    (details?.createdFrom === 'chat' && details?.role === 'conversation')
+  );
 }
 
 function isMessageNode(node: Node): boolean {
   const details = parseNodeDetails(node);
-  return details?.chatNodeType === 'message';
+
+  return (
+    details?.chatNodeType === 'message' ||
+    (details?.createdFrom === 'chat' &&
+      (details?.role === 'user' || details?.role === 'assistant'))
+  );
+}
+
+function formatMessageTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 }
 
 function CopyMessageButton({ text }: { text: string }) {
@@ -87,77 +108,103 @@ function CopyMessageButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="ml-2 inline-flex items-center gap-1 rounded-md border bg-white/80 px-2 py-1 text-xs text-gray-700 transition hover:bg-white"
-      aria-label="Copy message"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#dbe1ea] bg-white/70 text-[#94a3b8] transition hover:bg-white hover:text-[#111827]"
+      aria-label={copied ? 'Copied' : 'Copy message'}
       title={copied ? 'Copied' : 'Copy'}
       type="button"
     >
-      {copied ? (
-        <>
-          <Check className="h-3.5 w-3.5" />
-          Copied
-        </>
-      ) : (
-        <>
-          <Copy className="h-3.5 w-3.5" />
-          Copy
-        </>
-      )}
+      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
     </button>
   );
 }
 
-function UserMessage() {
+function UserMessageBubble({
+  text,
+  createdAt,
+}: {
+  text: string;
+  createdAt: string;
+}) {
   return (
-    <MessagePrimitive.Root className="flex justify-end">
-      <div className="flex max-w-[85%] items-start gap-2">
-        <MessagePrimitive.Content
-          components={{
-            Text: ({ text }) => (
-              <>
-                <div className="rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground">
-                  {text}
-                </div>
-                <CopyMessageButton text={text} />
-              </>
-            ),
-          }}
-        />
+    <div className="flex justify-end">
+      <div className="flex max-w-[78%] items-end gap-3">
+        <div className="flex flex-col items-end">
+          <div className="mb-1 flex items-center gap-2">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-[#9ca3af]">
+              You
+            </span>
+            <span className="text-[11px] text-[#94a3b8]">
+              {formatMessageTime(createdAt)}
+            </span>
+          </div>
+
+          <div className="group rounded-[22px] rounded-br-[8px] bg-[#2563eb] px-4 py-3 text-sm leading-6 text-white shadow-sm transition-all duration-200 hover:shadow-md">
+            <div className="whitespace-pre-wrap break-words">{text}</div>
+            <div className="mt-3 flex justify-end">
+              <CopyMessageButton text={text} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#dbeafe] text-xs font-semibold text-[#1d4ed8] shadow-sm">
+          Y
+        </div>
       </div>
-    </MessagePrimitive.Root>
+
+    </div>
   );
 }
 
-function AssistantMessage() {
+function AssistantMessageBubble({
+  text,
+  createdAt,
+}: {
+  text: string;
+  createdAt: string;
+}) {
   return (
-    <MessagePrimitive.Root className="flex justify-start">
-      <div className="flex max-w-[85%] items-start gap-2">
-        <MessagePrimitive.Content
-          components={{
-            Text: ({ text }) => (
-              <>
-                <div className="rounded-2xl bg-gray-200 px-4 py-3 !text-black">
-                  <div className="!text-black [&_*]:!text-black [&_p]:my-2 [&_h1]:my-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:my-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:my-2 [&_h3]:font-semibold [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-black [&_pre]:p-3 [&_pre]:!text-white [&_code]:rounded [&_code]:bg-gray-300 [&_code]:px-1 [&_code]:py-0.5 [&_code]:!text-black [&_a]:!text-blue-700 [&_a]:underline">
-                    <MarkdownRenderer content={text} />
-                  </div>
-                </div>
-                <CopyMessageButton text={text} />
-              </>
-            ),
-          }}
-        />
+    <div className="flex justify-start">
+      <div className="flex max-w-[85%] items-end gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ede9fe] text-xs font-semibold text-[#6d28d9] shadow-sm">
+          M
+        </div>
+
+        <div className="flex flex-col items-start">
+          <div className="mb-1 flex items-center gap-2">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-[#9ca3af]">
+              Mujarrad
+            </span>
+            <span className="text-[11px] text-[#94a3b8]">
+              {formatMessageTime(createdAt)}
+            </span>
+          </div>
+
+          <div className="group rounded-[22px] rounded-bl-[8px] border border-[#e5e7eb] bg-[#f3f4f6] px-4 py-3 text-sm leading-6 text-[#111827] shadow-sm transition-all duration-200 hover:shadow-md">
+            <div className="text-black [&_*]:text-black [&_a]:text-[#2563eb] [&_a]:underline [&_code]:rounded [&_code]:bg-[#f3f4f6] [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-black [&_h1]:mb-2 [&_h1]:mt-3 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:mb-2 [&_h2]:mt-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:font-semibold [&_li]:mb-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-2 [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-[#1e293b] [&_pre]:bg-[#0f172a] [&_pre]:p-4 [&_pre]:text-white [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6">
+              <MarkdownRenderer content={text} />
+            </div>
+            <div className="mt-3 flex justify-end">
+              <CopyMessageButton text={text} />
+            </div>
+          </div>
+        </div>
+
+        
       </div>
-    </MessagePrimitive.Root>
+    </div>
   );
 }
 
 function ChatPanelShell({
   isRunning,
   title,
+  spaceSlug,
   embedded,
   onClose,
   messageCount,
   sessions,
+  messages,
+  sessionPreviewIndex,
   activeSessionId,
   onSelectSession,
   onNewSession,
@@ -169,10 +216,13 @@ function ChatPanelShell({
 }: {
   isRunning: boolean;
   title: string;
+  spaceSlug: string;
   embedded: boolean;
   onClose?: () => void;
   messageCount: number;
   sessions: ChatSession[];
+  messages: ChatMessage[];
+  sessionPreviewIndex: Record<string, string>;
   activeSessionId: string | null;
   onSelectSession: (sessionId: string) => void;
   onNewSession: () => void;
@@ -183,13 +233,60 @@ function ChatPanelShell({
   onSearchTermChange: (value: string) => void;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarWidth, setSidebarWidth] = useState(220);
+  const [sidebarWidth, setSidebarWidth] = useState(260);
   const isResizingRef = useRef(false);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const sendButtonRef = useRef<HTMLButtonElement | null>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const [renameTarget, setRenameTarget] = useState<ChatSession | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<ChatSession | null>(null);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const autoResizeTextarea = (el: HTMLTextAreaElement) => {
+    el.style.height = '0px';
+    el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+  };
+
+  const openRenameModal = (session: ChatSession) => {
+    setRenameTarget(session);
+    setRenameValue(session.title);
+  };
+
+  const closeRenameModal = () => {
+    setRenameTarget(null);
+    setRenameValue('');
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteTarget(null);
+  };
+
+  const submitRename = async () => {
+    if (!renameTarget || !renameValue.trim()) return;
+    setIsRenaming(true);
+    try {
+      await onRenameSession(renameTarget.id, renameValue.trim());
+      closeRenameModal();
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
+  const submitDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await onDeleteSession(deleteTarget.id);
+      closeDeleteModal();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   };
@@ -206,6 +303,12 @@ function ChatPanelShell({
   const handleResizeStart = () => {
     isResizingRef.current = true;
   };
+
+  useEffect(() => {
+    if (!isRunning && composerInputRef.current) {
+      composerInputRef.current.style.height = '48px';
+    }
+  }, [isRunning]);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -238,111 +341,168 @@ function ChatPanelShell({
   }, [messageCount, shouldAutoScroll, isRunning]);
 
   return (
-    <div ref={panelRef} className={`flex h-full ${embedded ? 'bg-white' : ''}`}>
+    <div ref={panelRef} className={`relative flex h-full bg-[#f8fafc] ${embedded ? '' : ''}`}>
       {sidebarOpen && (
         <div
-          className="relative shrink-0 border-r bg-[#fafafa] flex flex-col"
+          className="relative shrink-0 border-r border-[#e5e7eb] bg-[#f8fafc] flex flex-col"
           style={{ width: `${sidebarWidth}px` }}
         >
-          <div className="border-b px-3 py-3">
-            <Button
+
+          <div className="border-b px-3 py-3 flex items-center justify-between pr-5">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-[#9ca3af]">
+                Chats
+              </div>
+              <div className="mt-1 text-[11px] text-[#9ca3af]">
+                {sessions.length} conversation{sessions.length === 1 ? '' : 's'}
+              </div>
+            </div>
+
+            <button
               onClick={onNewSession}
               type="button"
-              className="w-full justify-center rounded-xl bg-[#111827] text-white shadow-sm transition hover:bg-[#1f2937]"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#111827] text-white shadow-sm transition hover:bg-[#1f2937]"
+              aria-label="New chat"
+              title="New chat"
             >
-              New chat
-            </Button>
-          </div>
-          <div className="border-b px-3 py-3">
-            <input
-              value={searchTerm}
-              onChange={(e) => onSearchTermChange(e.target.value)}
-              placeholder="Search conversations..."
-              className="w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-sm outline-none focus:border-[#c7d2fe] focus:ring-2 focus:ring-[#e0e7ff]"
-              type="text"
-            />
+              <SquarePen className="h-4 w-4" />
+            </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="border-b px-3 py-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
+              <input
+                value={searchTerm}
+                onChange={(e) => onSearchTermChange(e.target.value)}
+                placeholder="Search conversations..."
+                className="w-full rounded-xl border border-[#e5e7eb] bg-white py-2.5 pl-9 pr-3 text-sm text-[#111827] shadow-sm outline-none placeholder:text-[#9ca3af] focus:border-[#c7d2fe] focus:ring-2 focus:ring-[#e0e7ff]"
+                type="text"
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-2 scroll-smooth">
             {sessions.length === 0 && (
-              <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                No conversations found
+              <div className="rounded-xl border border-dashed border-[#e5e7eb] bg-white px-3 py-6 text-center">
+                <p className="text-sm font-medium text-[#6b7280]">
+                  {searchTerm.trim() ? 'No matching conversations' : 'No conversations yet'}
+                </p>
+                <p className="mt-1 text-xs text-[#9ca3af]">
+                  {searchTerm.trim()
+                    ? 'Try a different keyword.'
+                    : 'Start a new chat to begin building context.'}
+                </p>
               </div>
             )}
             {sessions.map((session) => (
               <div
                 key={session.id}
-                className={`mb-2 rounded-xl border px-3 py-3 text-left text-sm transition ${
+                className={`group relative mb-2 rounded-xl border px-3 py-3 text-left text-sm transition ${
                   activeSessionId === session.id
-                    ? 'border-[#c7d2fe] bg-[#eef2ff] shadow-sm'
+                    ? 'border-[#c7d2fe] bg-[linear-gradient(180deg,#eef2ff_0%,#ffffff_100%)] shadow-[0px_8px_20px_rgba(79,70,229,0.08)]'
                     : 'border-transparent bg-white hover:border-[#e5e7eb] hover:bg-[#fafafa]'
                 }`}
                 title={`${session.title} — Created ${new Date(session.createdAt).toLocaleString()}`}
               >
+                {activeSessionId === session.id && (
+                  <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#4f46e5]" />
+                )}
+
                 <button
                   onClick={() => onSelectSession(session.id)}
                   className="w-full text-left"
                   type="button"
                 >
-                  <div className="truncate">{session.title}</div>
-                  <div className="truncate text-xs text-muted-foreground">
-                    {new Date(session.createdAt).toLocaleDateString()}
+                  <div className="truncate text-sm font-semibold text-[#111827]">
+                    {session.title}
+                  </div>
+                  <div className="mt-1 line-clamp-2 text-[12px] leading-5 text-[#9ca3af]">
+                    {sessionPreviewIndex[session.id] || 'No messages yet'}
                   </div>
                 </button>
 
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      const nextTitle = window.prompt('Rename chat session', session.title);
-                      if (!nextTitle || !nextTitle.trim()) return;
-                      await onRenameSession(session.id, nextTitle.trim());
-                    }}
-                    className="inline-flex items-center rounded-md border border-[#dbeafe] bg-[#eff6ff] px-2 py-1 text-xs font-medium text-[#2563eb] transition hover:bg-[#dbeafe]"
-                    type="button"
-                  >
-                    Rename
-                  </button>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <div className="truncate text-[11px] text-[#9ca3af]">
+                    {new Date(session.createdAt).toLocaleDateString()}
+                  </div>
 
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      const confirmed = window.confirm('Delete this conversation and all its messages?');
-                      if (!confirmed) return;
-                      await onDeleteSession(session.id);
-                    }}
-                    className="inline-flex items-center rounded-md border border-[#fecaca] bg-[#fef2f2] px-2 py-1 text-xs font-medium text-[#dc2626] transition hover:bg-[#fee2e2]"
-                    type="button"
+                  <div
+                    className={`flex items-center gap-1 transition-opacity ${
+                      activeSessionId === session.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
                   >
-                    Delete
-                  </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openRenameModal(session);
+                      }}
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[#94a3b8] transition hover:bg-[#eff6ff] hover:text-[#2563eb]"
+                      type="button"
+                      aria-label="Rename conversation"
+                      title="Rename"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget(session);
+                      }}
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[#94a3b8] transition hover:bg-[#fef2f2] hover:text-[#dc2626]"
+                      type="button"
+                      aria-label="Delete conversation"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
-
               </div>
             ))}
           </div>
 
-          <div
-            onMouseDown={handleResizeStart}
-            className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-gray-300"
-          />
+          <>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              type="button"
+              aria-label="Hide chats"
+              title="Hide chats"
+              className="absolute -right-4 top-4 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#6b7280] shadow-sm transition hover:bg-[#f9fafb] hover:text-[#111827]"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+
+            <div
+              onMouseDown={handleResizeStart}
+              className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-gray-300"
+            />
+          </>
         </div>
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center justify-between border-b border-[#ececec] px-4 py-4 bg-white">          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSidebarOpen((prev) => !prev)}
-              className="inline-flex items-center rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-sm font-medium text-[#4b5563] transition hover:bg-[#f9fafb] hover:text-[#111827]"
-              type="button"
-            >
-              {sidebarOpen ? 'Hide chats' : 'Show chats'}
-            </button>
+        <div className="flex items-center justify-between border-b border-[#ececec] bg-white px-5 py-4 shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+          <div className="flex items-center gap-2">
+            {!sidebarOpen && (
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white text-[#4b5563] transition hover:bg-[#f9fafb] hover:text-[#111827]"
+                type="button"
+                aria-label="Show chats"
+                title="Show chats"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </button>
+            )}
 
             <div>
-              <h2 className="text-lg font-semibold">{title}</h2>
-              <p className="text-xs text-muted-foreground">
-                Interact with Mujarrad through text.
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-[#111827]">{title}</h2>
+              </div>
+              <p className="mt-1 text-xs text-[#6b7280]">
+                Space: <span className="font-medium text-[#4b5563]">{spaceSlug}</span>
               </p>
             </div>
           </div>
@@ -363,25 +523,71 @@ function ChatPanelShell({
           <ThreadPrimitive.Viewport
             ref={viewportRef}
             onScroll={handleScroll}
-            className="flex-1 space-y-4 overflow-y-auto p-4"
-          >
+            className="flex-1 space-y-5 overflow-y-auto bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_40%)] px-5 py-5 scroll-smooth">
             {isBootstrapping ? (
-              <div className="text-sm text-muted-foreground">
+              <div className="rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 text-sm text-[#6b7280] shadow-sm">
                 Loading chat history...
               </div>
             ) : (
               <>
-                <ThreadPrimitive.Messages
-                  components={{
-                    UserMessage,
-                    AssistantMessage,
-                  }}
-                />
+                {messages.length === 1 && messages[0]?.id === 'welcome' ? (
+                  <div className="rounded-3xl border border-[#e5e7eb] bg-white px-6 py-6 shadow-sm">
+                    <div className="mb-2 text-sm font-semibold text-[#111827]">
+                      Start building in this space
+                    </div>
+                    <p className="text-sm leading-6 text-[#6b7280]">
+                      Use chat to explore the graph, create nodes, connect entities, or summarize what already exists in this space.
+                    </p>
+
+                    <div className="mt-4 grid gap-2 md:grid-cols-2">
+                      <div className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-3 py-3 text-sm text-[#4b5563]">
+                        Summarize this space
+                      </div>
+                      <div className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-3 py-3 text-sm text-[#4b5563]">
+                        Create nodes from text
+                      </div>
+                      <div className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-3 py-3 text-sm text-[#4b5563]">
+                        Find related entities
+                      </div>
+                      <div className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-3 py-3 text-sm text-[#4b5563]">
+                        Explain graph structure
+                      </div>
+                    </div>
+
+                    <div className="mt-5">
+                      <AssistantMessageBubble
+                        text={messages[0].text}
+                        createdAt={messages[0].createdAt}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  messages.map((message) =>
+                    message.role === 'user' ? (
+                      <UserMessageBubble
+                        key={message.id}
+                        text={message.text}
+                        createdAt={message.createdAt}
+                      />
+                    ) : (
+                      <AssistantMessageBubble
+                        key={message.id}
+                        text={message.text}
+                        createdAt={message.createdAt}
+                      />
+                    )
+                  )
+                )}
 
                 {isRunning && (
                   <div className="flex justify-start">
-                    <div className="max-w-[85%] rounded-2xl bg-muted px-4 py-3 text-sm text-foreground">
-                      Processing...
+                    <div className="rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 text-sm text-[#4b5563] shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-[#6366f1]" />
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-[#818cf8] [animation-delay:120ms]" />
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-[#a5b4fc] [animation-delay:240ms]" />
+                        <span className="ml-2">Mujarrad is thinking...</span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -391,54 +597,130 @@ function ChatPanelShell({
             )}
           </ThreadPrimitive.Viewport>
 
-          <div className="border-t p-4">
-            <ComposerPrimitive.Root className="flex items-end gap-3">
-              <ComposerPrimitive.Input
-                onKeyDownCapture={(event) => {
-                  if (event.key !== 'Enter') return;
+          <div className="border-t border-[#ececec] bg-white px-5 py-4">
+            <div className="rounded-2xl border border-[#dbe1ea] bg-[#fbfcfe] px-3 py-2.5 shadow-sm">
+              <ComposerPrimitive.Root className="flex items-end gap-3">
+                <ComposerPrimitive.Input
+                  onFocus={(e) => {
+                    composerInputRef.current = e.currentTarget;
+                  }}
+                  onInput={(e) => autoResizeTextarea(e.currentTarget)}
+                  onKeyDownCapture={(event) => {
+                    if (event.key !== 'Enter') return;
 
-                  const target = event.currentTarget as HTMLTextAreaElement;
+                    const target = event.currentTarget as HTMLTextAreaElement;
 
-                  if (event.shiftKey) {
+                    if (event.shiftKey) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      sendButtonRef.current?.click();
+                      return;
+                    }
+
                     event.preventDefault();
                     event.stopPropagation();
-                    sendButtonRef.current?.click();
-                    return;
-                  }
 
-                  event.preventDefault();
-                  event.stopPropagation();
+                    const start = target.selectionStart ?? 0;
+                    const end = target.selectionEnd ?? 0;
+                    const value = target.value ?? '';
+                    const nextValue = value.slice(0, start) + '\n' + value.slice(end);
 
-                  const start = target.selectionStart ?? 0;
-                  const end = target.selectionEnd ?? 0;
-                  const value = target.value ?? '';
-                  const nextValue = value.slice(0, start) + '\n' + value.slice(end);
+                    const nativeSetter = Object.getOwnPropertyDescriptor(
+                      window.HTMLTextAreaElement.prototype,
+                      'value'
+                    )?.set;
 
-                  const nativeSetter = Object.getOwnPropertyDescriptor(
-                    window.HTMLTextAreaElement.prototype,
-                    'value'
-                  )?.set;
+                    nativeSetter?.call(target, nextValue);
+                    target.dispatchEvent(new Event('input', { bubbles: true }));
 
-                  nativeSetter?.call(target, nextValue);
-                  target.dispatchEvent(new Event('input', { bubbles: true }));
+                    requestAnimationFrame(() => {
+                      target.selectionStart = target.selectionEnd = start + 1;
+                    });
+                  }}
+                  placeholder="Message Mujarrad..."
+                  className="min-h-[48px] max-h-[180px] flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-2 text-sm leading-6 text-[#111827] outline-none placeholder:text-[#9ca3af]"
+                />
+                <ComposerPrimitive.Send asChild>
+                  <Button
+                    ref={sendButtonRef}
+                    className="h-11 rounded-xl bg-[#111827] px-4 text-white shadow-sm transition hover:bg-[#1f2937]"
+                  >
+                    <SendHorizontal className="h-4 w-4" />
+                  </Button>
+                </ComposerPrimitive.Send>
+              </ComposerPrimitive.Root>
 
-                  requestAnimationFrame(() => {
-                    target.selectionStart = target.selectionEnd = start + 1;
-                  });
-                }}
-                placeholder="Type your message..."
-                className="min-h-[56px] flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm outline-none"
-              />
-              <ComposerPrimitive.Send asChild>
-                <Button ref={sendButtonRef} className="gap-2">
-                  <SendHorizontal className="h-4 w-4" />
-                  Send
-                </Button>
-              </ComposerPrimitive.Send>
-            </ComposerPrimitive.Root>
+
+            </div>
           </div>
         </ThreadPrimitive.Root>
       </div>
+
+      {renameTarget && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+            <div className="w-full max-w-md rounded-2xl border border-[#e5e7eb] bg-white p-5 shadow-2xl">
+              <h3 className="text-lg font-semibold text-[#111827]">Rename conversation</h3>
+              <p className="mt-1 text-sm text-[#6b7280]">
+                Update the conversation title.
+              </p>
+
+              <input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                className="mt-4 w-full rounded-xl border border-[#e5e7eb] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none focus:border-[#c7d2fe] focus:ring-2 focus:ring-[#e0e7ff]"
+                placeholder="Conversation title"
+                autoFocus
+              />
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  onClick={closeRenameModal}
+                  className="rounded-xl border border-[#e5e7eb] px-4 py-2 text-sm text-[#4b5563] transition hover:bg-[#f9fafb]"
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitRename}
+                  disabled={isRenaming || !renameValue.trim()}
+                  className="rounded-xl bg-[#111827] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1f2937] disabled:cursor-not-allowed disabled:opacity-50"
+                  type="button"
+                >
+                  {isRenaming ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {deleteTarget && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+            <div className="w-full max-w-md rounded-2xl border border-[#fecaca] bg-white p-5 shadow-2xl">
+              <h3 className="text-lg font-semibold text-[#111827]">Delete conversation</h3>
+              <p className="mt-1 text-sm leading-6 text-[#6b7280]">
+                This will delete <span className="font-medium text-[#111827]">{deleteTarget.title}</span> and all of its stored messages.
+              </p>
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  onClick={closeDeleteModal}
+                  className="rounded-xl border border-[#e5e7eb] px-4 py-2 text-sm text-[#4b5563] transition hover:bg-[#f9fafb]"
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitDelete}
+                  disabled={isDeleting}
+                  className="rounded-xl bg-[#dc2626] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-50"
+                  type="button"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
@@ -456,11 +738,13 @@ export function ChatPanel({
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sessionSearchIndex, setSessionSearchIndex] = useState<Record<string, string>>({});
+  const [sessionPreviewIndex, setSessionPreviewIndex] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
       text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+      createdAt: new Date().toISOString(),
     },
   ]);
   const [isRunning, setIsRunning] = useState(false);
@@ -470,15 +754,29 @@ export function ChatPanel({
 
 
   const rebuildSessionSearchIndex = async (conversationSessions: ChatSession[]) => {
-  const entries = await Promise.all(
-    conversationSessions.map(async (session) => {
-      const text = await buildConversationSearchText(session.id, session.title);
-      return [session.id, text] as const;
-    })
-  );
+    const entries = await Promise.all(
+      conversationSessions.map(async (session) => {
+        const [searchText, preview] = await Promise.all([
+          buildConversationSearchText(session.id, session.title),
+          buildConversationPreview(session.id),
+        ]);
 
-  setSessionSearchIndex(Object.fromEntries(entries));
-};
+        return {
+          id: session.id,
+          searchText,
+          preview,
+        };
+      })
+    );
+
+    setSessionSearchIndex(
+      Object.fromEntries(entries.map((entry) => [entry.id, entry.searchText]))
+    );
+
+    setSessionPreviewIndex(
+      Object.fromEntries(entries.map((entry) => [entry.id, entry.preview]))
+    );
+  };
 
 
   const buildConversationSearchText = async (conversationId: string, conversationTitle: string) => {
@@ -506,16 +804,46 @@ export function ChatPanel({
       return conversationTitle.toLowerCase();
     }
   };
+  
+  const buildConversationPreview = async (conversationId: string): Promise<string> => {
+    try {
+      const attributes = await attributeService.getNodeAttributes(conversationId);
 
+      const messageLinks = attributes
+        .filter((attr) => attr.attributeName === 'contains')
+        .sort((a, b) => {
+          const aOrder =
+            a.attributeValue && typeof a.attributeValue === 'object' && 'order' in a.attributeValue
+              ? Number(a.attributeValue.order)
+              : 0;
+          const bOrder =
+            b.attributeValue && typeof b.attributeValue === 'object' && 'order' in b.attributeValue
+              ? Number(b.attributeValue.order)
+              : 0;
+          return bOrder - aOrder;
+        });
+
+      if (messageLinks.length === 0) return 'No messages yet';
+
+      const latestMessage = await nodeService.getNode(spaceSlug, messageLinks[0].targetNodeId);
+      const preview = (latestMessage.content || '').trim();
+
+      if (!preview) return 'No messages yet';
+      return preview.length > 90 ? `${preview.slice(0, 90)}…` : preview;
+    } catch {
+      return 'No messages yet';
+    }
+  };
   const createConversationSession = async (): Promise<string> => {
     const createdConversation = await nodeService.createNode(spaceSlug, {
-      title: `Chat ${new Date().toLocaleString()}`,
+      title: `Conversation ${new Date().toLocaleString()}`,
       nodeType: NodeType.REGULAR,
       content: '',
       nodeDetails: {
         showInSpaceList: false,
+        createdFrom: 'chat',
         chatNodeType: 'conversation',
-        createdFrom: 'assistant-ui',
+        role: 'conversation',
         sessionType: 'default',
         scope: 'account-space',
         spaceSlug,
@@ -530,8 +858,14 @@ export function ChatPanel({
     };
 
     setSessions((prev) => [newSession, ...prev]);
-    setSessionSearchIndex((prev) => ({...prev,
+    setSessionSearchIndex((prev) => ({
+      ...prev,
       [createdConversation.id]: createdConversation.title.toLowerCase(),
+    }));
+
+    setSessionPreviewIndex((prev) => ({
+      ...prev,
+      [createdConversation.id]: 'No messages yet',
     }));
     setActiveSessionId(createdConversation.id);
     conversationNodeIdRef.current = createdConversation.id;
@@ -564,9 +898,11 @@ export function ChatPanel({
       content: text,
       nodeDetails: {
         showInSpaceList: false,
+        createdFrom: 'chat',
         chatNodeType: 'message',
         role,
         conversationNodeId,
+        messageType: role,
       },
     });
 
@@ -621,6 +957,7 @@ export function ChatPanel({
           id: node.id,
           role,
           text: node.content || '',
+          createdAt: node.createdAt || new Date().toISOString(),
         } as ChatMessage;
       });
 
@@ -659,6 +996,7 @@ export function ChatPanel({
             id: 'welcome',
             role: 'assistant',
             text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+            createdAt: new Date().toISOString(),
           },
         ]);
         setActiveSessionId(createdId);
@@ -678,6 +1016,7 @@ export function ChatPanel({
             id: 'welcome',
             role: 'assistant',
             text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+            createdAt: new Date().toISOString(),
           },
         ]);
       } else {
@@ -703,6 +1042,7 @@ export function ChatPanel({
                 id: 'welcome',
                 role: 'assistant',
                 text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+                createdAt: new Date().toISOString(),
               },
             ]
       );
@@ -717,6 +1057,7 @@ export function ChatPanel({
         id: 'welcome',
         role: 'assistant',
         text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+        createdAt: new Date().toISOString(),
       },
     ]);
     setSearchTerm('');
@@ -741,6 +1082,14 @@ export function ChatPanel({
       ...prev,
       [sessionId]: updatedSearchText,
     }));
+
+    const updatedPreview = await buildConversationPreview(sessionId);
+
+    setSessionPreviewIndex((prev) => ({
+      ...prev,
+      [sessionId]: updatedPreview,
+    }));
+
     await refreshWorkspaceViews();
   };
   useEffect(() => {
@@ -771,6 +1120,13 @@ export function ChatPanel({
       delete next[sessionId];
       return next;
     });
+
+    setSessionPreviewIndex((prev) => {
+      const next = { ...prev };
+      delete next[sessionId];
+      return next;
+    });
+
     const wasActive = activeSessionId === sessionId;
 
     if (!wasActive) {
@@ -792,6 +1148,7 @@ export function ChatPanel({
                 id: 'welcome',
                 role: 'assistant',
                 text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+                createdAt: new Date().toISOString(),
               },
             ]
       );
@@ -803,6 +1160,7 @@ export function ChatPanel({
           id: 'welcome',
           role: 'assistant',
           text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+          createdAt: new Date().toISOString(),
         },
       ]);
     }
@@ -839,6 +1197,7 @@ export function ChatPanel({
     convertMessage: (message) => ({
       id: message.id,
       role: message.role,
+      createdAt: message.createdAt,
       content: [
         {
           type: 'text',
@@ -857,6 +1216,7 @@ export function ChatPanel({
         id: crypto.randomUUID(),
         role: 'user',
         text: userText,
+        createdAt: new Date().toISOString(),
       };
 
       setMessages((current) => [...current, userMessage]);
@@ -899,21 +1259,28 @@ export function ChatPanel({
           id: crypto.randomUUID(),
           role: 'assistant',
           text: assistantText,
+          createdAt: new Date().toISOString(),
         };
 
         setMessages((current) => [...current, assistantMessage]);
         await persistMessageNode(conversationNodeId, 'assistant', assistantText);
-        const activeSession = sessions.find((session) => session.id === conversationNodeId);          if (activeSession) {
-            const updatedSearchText = await buildConversationSearchText(
-              conversationNodeId,
-              activeSession.title
-            );
+        const activeSession = sessions.find((session) => session.id === conversationNodeId);
+        if (activeSession) {
+          const [updatedSearchText, updatedPreview] = await Promise.all([
+            buildConversationSearchText(conversationNodeId, activeSession.title),
+            buildConversationPreview(conversationNodeId),
+          ]);
 
-            setSessionSearchIndex((prev) => ({
-              ...prev,
-              [conversationNodeId]: updatedSearchText,
-            }));
-          }
+          setSessionSearchIndex((prev) => ({
+            ...prev,
+            [conversationNodeId]: updatedSearchText,
+          }));
+
+          setSessionPreviewIndex((prev) => ({
+            ...prev,
+            [conversationNodeId]: updatedPreview,
+          }));
+        }
         await refreshWorkspaceViews();
       } finally {
         setIsRunning(false);
@@ -932,9 +1299,12 @@ export function ChatPanel({
       <ChatPanelShell
         isRunning={isRunning}
         title={title}
+        spaceSlug={spaceSlug}
         embedded={embedded}
         onClose={onClose}
         messageCount={messages.length}
+        messages={messages}
+        sessionPreviewIndex={sessionPreviewIndex}
         sessions={filteredSessions}
         searchTerm={searchTerm}
         onSearchTermChange={setSearchTerm}
