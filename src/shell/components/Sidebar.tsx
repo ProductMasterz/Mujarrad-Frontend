@@ -186,12 +186,12 @@ function SidebarItem({
             onNavigate(currentPath);
           }}
           className={clsx(
-            "flex items-center gap-[12px] w-full text-left transition-colors py-[4px] rounded-[4px]",
+            "flex w-full items-center gap-[12px] rounded-xl px-[8px] py-[7px] text-left transition-all",
             level === 0
               ? "font-['Roboto:Medium',sans-serif] font-medium text-[#4f4f4f]"
               : "font-['Roboto:Regular',sans-serif] font-normal text-[#828282]",
-            isSelected && "text-[#248bf2]",
-            isHoveringItem && !isSelected && "bg-[#f5f5f5]"
+            isSelected && "bg-[#eef2ff] text-[#2563eb] shadow-sm",
+            isHoveringItem && !isSelected && "bg-[#f7f8fa]"
           )}
         >
           {hasChildren ? (
@@ -277,14 +277,14 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
   return (
     <div
       className={clsx(
-        "fixed left-0 top-[76px] h-[calc(100vh-76px)] bg-white border-r border-[#f2f2f2] transition-all duration-300 ease-in-out z-10",
+        "fixed left-0 top-[76px] z-10 h-[calc(100vh-76px)] border-r border-[#eceff3] bg-[#fcfcfd] transition-all duration-300 ease-in-out",
         isOpen ? "w-[276px]" : "w-0"
       )}
       style={{ overflow: isOpen ? "visible" : "hidden" }}
     >
-      <div className="flex flex-col h-full w-[276px]">
+      <div className="flex h-full w-[276px] flex-col">
         {/* Sidebar Items */}
-        <div className="flex-1 pt-[29px] px-[17px] overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-[16px] pt-[20px]">
           <div className="flex flex-col gap-[12px]">
             {sidebarItems.map((item, idx) => (
               <SidebarItem
@@ -303,7 +303,7 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
         </div>
 
         {/* Bottom Icons */}
-        <div className="flex gap-[90px] items-center px-[17px] pb-[29px]">
+        <div className="mx-[16px] mb-[20px] mt-[12px] flex items-center justify-between rounded-2xl border border-[#e5e7eb] bg-white px-[14px] py-[12px] shadow-sm">
           <div className="relative group">
             <button
               onClick={handleUserClick}

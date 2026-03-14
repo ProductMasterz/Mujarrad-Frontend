@@ -111,12 +111,12 @@ export function Header({
   };
   
   return (
-    <div className="fixed top-0 left-0 right-0 z-50">
+    <div className="fixed left-0 right-0 top-0 z-50 border-b border-[#e5e7eb] bg-white/95 backdrop-blur-md">
       {/* Top gray bar with tabs */}
-      <div className="h-[33px] bg-[#f2f2f2] flex items-center px-[9px] gap-[12px]">
+      <div className="flex h-[34px] items-center gap-[12px] border-b border-[#f0f0f0] bg-[#f8fafc] px-[12px]">
         <button
           onClick={onHomeClick}
-          className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
           aria-label="Home"
         >
           <svg className="size-[18px]" viewBox="0 0 18 18" fill="none">
@@ -148,12 +148,12 @@ export function Header({
       </div>
 
       {/* Main navigation bar */}
-      <div className="h-[43px] bg-white border-b border-[#f2f2f2] flex items-center justify-between px-[9px]">
+      <div className="flex h-[46px] items-center justify-between bg-white px-[12px]">
         {/* Left section */}
         <div className="flex items-center gap-[12px]">
           <button
             onClick={onMenuClick}
-            className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
             aria-label="Menu"
           >
             <Menu className="size-6" strokeWidth={1.5} />
@@ -162,7 +162,7 @@ export function Header({
           {showBackButton && (
             <button
               onClick={onBackClick}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
               aria-label="Back"
             >
               <ArrowLeft className="size-6" strokeWidth={1.5} />
@@ -179,7 +179,7 @@ export function Header({
               onClick={handleAddClick}
               onMouseEnter={() => setHoveredButton("add")}
               onMouseLeave={() => setHoveredButton(null)}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
               aria-label="Add"
             >
               <Plus className="size-6" strokeWidth={1.5} />
@@ -196,7 +196,7 @@ export function Header({
               onClick={handleNotificationClick}
               onMouseEnter={() => setHoveredButton("notification")}
               onMouseLeave={() => setHoveredButton(null)}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
               aria-label="Notifications"
             >
               <Bell className="size-6" strokeWidth={1.5} />
@@ -214,7 +214,7 @@ export function Header({
               onClick={handleChatClick}
               onMouseEnter={() => setHoveredButton("chat")}
               onMouseLeave={() => setHoveredButton(null)}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
               aria-label="Open Chat"
             >
               <MessageSquare className="size-6" strokeWidth={1.5} />
@@ -232,7 +232,7 @@ export function Header({
               onClick={handleSearchClick}
               onMouseEnter={() => setHoveredButton("search")}
               onMouseLeave={() => setHoveredButton(null)}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
               aria-label="Search"
             >
               <Search className="size-6" strokeWidth={1.5} />
@@ -249,7 +249,7 @@ export function Header({
               onClick={handleHelpClick}
               onMouseEnter={() => setHoveredButton("help")}
               onMouseLeave={() => setHoveredButton(null)}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
               aria-label="Help"
             >
               <HelpCircle className="size-6" strokeWidth={1.5} />
@@ -266,7 +266,7 @@ export function Header({
               onClick={handleMoreClick}
               onMouseEnter={() => setHoveredButton("more")}
               onMouseLeave={() => setHoveredButton(null)}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
               aria-label="More"
             >
               <MoreVertical className="size-6" strokeWidth={1.5} />

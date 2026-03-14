@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Maximize2, ChevronDown, FolderPlus, FilePlus, Box } from "lucide-react";
+import { X, Maximize2, ChevronDown, FolderPlus, FilePlus, Box, Tag, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +11,6 @@ import { nodeKeys } from "@/hooks/api/useNodes";
 import { spaceKeys } from "@/hooks/api/useSpaces";
 import { useDuplicateCheck, type DuplicateAction } from "@/hooks/api/useDuplicateCheck";
 import { NodeType as BackendNodeType, type Node as NodeDTO } from "@/types/backend-dtos";
-import { BlockEditor, BlockEditorRef } from "@/components/blocks/BlockEditor";
 import { DuplicateNodeModal } from "@/components/nodes/DuplicateNodeModal";
 import { useNavigationStore } from "@/stores/navigationStore";
 
@@ -22,7 +21,8 @@ type SpaceItem = {
   id: string;
   name: string;
 };
-
+type ManualSystemNodeType = "REGULAR" | "CONTEXT" | "ASSUMPTION" | "TEMPLATE";
+type ManualEntityType = "" | "person" | "place" | "action" | "topic" | "event";
 // Icons for each entity type
 const ENTITY_ICONS: Record<EntityType, React.ReactNode> = {
   space: <FolderPlus className="size-4" />,
@@ -35,6 +35,28 @@ const ENTITY_LABELS: Record<EntityType, string> = {
   node: "Node",
   context: "Context",
 };
+
+const MANUAL_ENTITY_TYPE_OPTIONS: Array<{
+  value: ManualEntityType;
+  label: string;
+}> = [
+  { value: "", label: "None" },
+  { value: "person", label: "Person" },
+  { value: "place", label: "Place" },
+  { value: "action", label: "Action" },
+  { value: "topic", label: "Topic" },
+  { value: "event", label: "Event" },
+];
+
+const MANUAL_SYSTEM_NODE_TYPE_OPTIONS: Array<{
+  value: ManualSystemNodeType;
+  label: string;
+}> = [
+  { value: "REGULAR", label: "Regular" },
+  { value: "CONTEXT", label: "Context" },
+  { value: "ASSUMPTION", label: "Assumption" },
+  { value: "TEMPLATE", label: "Template" },
+];
 
 type NewNodeModalProps = {
   isOpen: boolean;
@@ -72,7 +94,6 @@ export function NewNodeModal({
   const router = useRouter();
   const queryClient = useQueryClient();
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const blockEditorRef = useRef<BlockEditorRef>(null);
 
   // Get current scope from navigation store to determine available types
   const scope = useNavigationStore((state) => state.scope);
@@ -84,12 +105,20 @@ export function NewNodeModal({
       : ['node', 'context'] as EntityType[]
   );
 
-  const [entityType, setEntityType] = useState<EntityType>(defaultType);
+   const [entityType, setEntityType] = useState<EntityType>(defaultType);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [title, setTitle] = useState("");
+  const [initialContent, setInitialContent] = useState("");
+  const [manualEntityType, setManualEntityType] = useState<ManualEntityType>("");
+  const [manualSystemNodeType, setManualSystemNodeType] =
+  useState<ManualSystemNodeType>(
+    defaultType === "context" ? "CONTEXT" : "REGULAR"
+  );
+  const [createdFrom] = useState<"manual">("manual");
   const [createdEntityId, setCreatedEntityId] = useState<string | null>(null);
-  const [createdEntitySlug, setCreatedEntitySlug] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+
+
 
   // Duplicate detection state
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
@@ -107,20 +136,31 @@ export function NewNodeModal({
   const isSpaceMode = entityType === "space";
 
   // Create node mutation
-  const createNodeMutation = useMutation({
-    mutationFn: async (data: { title: string; nodeType: BackendNodeType }) => {
-      if (!spaceSlug) throw new Error("spaceSlug is required for node creation");
-      return nodeService.createNode(spaceSlug, {
-        title: data.title || "Untitled",
-        nodeType: data.nodeType,
-        content: "",
-      });
-    },
-    onSuccess: (node) => {
-      setCreatedEntityId(node.id);
-      queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
-    },
-  });
+    const createNodeMutation = useMutation({
+      mutationFn: async (data: {
+        title: string;
+        nodeType: BackendNodeType;
+        content: string;
+        entityType?: ManualEntityType;
+        createdFrom: "manual";
+      }) => {
+        if (!spaceSlug) throw new Error("spaceSlug is required for node creation");
+
+        return nodeService.createNode(spaceSlug, {
+          title: data.title || "Untitled",
+          nodeType: data.nodeType,
+          content: data.content || "",
+          nodeDetails: {
+            createdFrom: data.createdFrom,
+            ...(data.entityType ? { entityType: data.entityType } : {}),
+          },
+        });
+      },
+      onSuccess: (node) => {
+        setCreatedEntityId(node.id);
+        queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
+      },
+    });
 
   // Create space mutation
   const createSpaceMutation = useMutation({
@@ -131,7 +171,6 @@ export function NewNodeModal({
     },
     onSuccess: (space) => {
       setCreatedEntityId(space.id);
-      setCreatedEntitySlug(space.slug);
       queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
     },
@@ -149,16 +188,21 @@ export function NewNodeModal({
     if (isOpen) {
       // Set default type when modal opens
       setEntityType(defaultType);
+      setManualSystemNodeType(defaultType === "context" ? "CONTEXT" : "REGULAR");
+
     } else {
       // Reset everything when modal closes
       setTitle("");
+      setInitialContent("");
+      setManualEntityType("");
       setCreatedEntityId(null);
-      setCreatedEntitySlug(null);
       setEntityType(defaultType);
       setIsCreating(false);
       setShowDuplicateModal(false);
       setDuplicateNode(null);
       setPendingTitle("");
+      setManualSystemNodeType(defaultType === "context" ? "CONTEXT" : "REGULAR");
+
     }
   }, [isOpen, defaultType]);
 
@@ -175,125 +219,116 @@ export function NewNodeModal({
   }, []);
 
   // Create entity when user starts typing (if not already created)
-  const ensureEntityCreated = useCallback(async (overrideTitle?: string) => {
-    if (createdEntityId || isCreating) return createdEntityId;
+  const ensureEntityCreated = useCallback(
+    async (options?: { openAfterCreate?: boolean; overrideTitle?: string }) => {
+      if (createdEntityId || isCreating) return createdEntityId;
 
-    const titleToUse = overrideTitle || title || "Untitled";
+      const titleToUse = options?.overrideTitle?.trim() || title.trim() || "Untitled";
 
-    setIsCreating(true);
-    try {
-      if (entityType === "space") {
-        // Create space
-        const space = await createSpaceMutation.mutateAsync({
-          name: titleToUse,
-        });
-        return space.id;
-      } else {
-        // Create node or context
-        const backendType = entityType === "context" ? BackendNodeType.CONTEXT : BackendNodeType.REGULAR;
+      setIsCreating(true);
+      try {
+        if (entityType === "space") {
+          const space = await createSpaceMutation.mutateAsync({
+            name: titleToUse,
+          });
+
+          if (options?.openAfterCreate) {
+            onClose();
+            router.push(`/spaces/${space.slug}`);
+          }
+
+          return space.id;
+        }
+
+        const backendType = manualSystemNodeType as BackendNodeType;
         const node = await createNodeMutation.mutateAsync({
           title: titleToUse,
           nodeType: backendType,
+          content: initialContent.trim(),
+          entityType: manualEntityType || undefined,
+          createdFrom,
         });
+
+        if (options?.openAfterCreate && spaceSlug) {
+          onClose();
+          router.push(`/spaces/${spaceSlug}/node/${node.id}`);
+        }
+
         return node.id;
+      } catch (error) {
+        console.error(`Failed to create ${entityType}:`, error);
+        return null;
+      } finally {
+        setIsCreating(false);
       }
-    } catch (error) {
-      console.error(`Failed to create ${entityType}:`, error);
-      return null;
-    } finally {
-      setIsCreating(false);
-    }
-  }, [createdEntityId, isCreating, entityType, title, createNodeMutation, createSpaceMutation]);
+    },
+    [
+      createdEntityId,
+      isCreating,
+      entityType,
+      title,
+      initialContent,
+      manualEntityType,
+      manualSystemNodeType,
+      createdFrom,
+      spaceSlug,
+      createNodeMutation,
+      createSpaceMutation,
+      onClose,
+      router,
+    ]
+  );
 
   // Handle duplicate action from modal
-  const handleDuplicateAction = useCallback(async (action: DuplicateAction, renamedTitle?: string) => {
-    setShowDuplicateModal(false);
+  const handleDuplicateAction = useCallback(
+    async (action: DuplicateAction, renamedTitle?: string) => {
+      setShowDuplicateModal(false);
 
-    switch (action) {
-      case 'merge':
-        // Navigate to existing node
-        if (duplicateNode && spaceSlug) {
-          onClose();
-          router.push(`/spaces/${spaceSlug}/node/${duplicateNode.id}`);
-        }
-        break;
+      switch (action) {
+        case "merge":
+          if (duplicateNode && spaceSlug) {
+            onClose();
+            router.push(`/spaces/${spaceSlug}/node/${duplicateNode.id}`);
+          }
+          break;
 
-      case 'create-anyway':
-        // Create with the duplicate title
-        setTitle(pendingTitle);
-        await ensureEntityCreated(pendingTitle);
-        break;
+        case "create-anyway":
+          await ensureEntityCreated();
+          break;
 
-      case 'rename':
-        // Create with the new title
-        if (renamedTitle) {
-          setTitle(renamedTitle);
-          await ensureEntityCreated(renamedTitle);
-        }
-        break;
+        case "rename":
+          if (renamedTitle) {
+            setTitle(renamedTitle);
+            await ensureEntityCreated({ overrideTitle: renamedTitle });
+          }
+          break;
 
-      case 'cancel':
-        // Just close the duplicate modal, keep the main modal open
-        setPendingTitle("");
-        break;
-    }
-
-    setDuplicateNode(null);
-    setPendingTitle("");
-  }, [duplicateNode, spaceSlug, onClose, router, pendingTitle, ensureEntityCreated]);
-
-  // Handle title change - create entity on first keystroke (with duplicate check)
-  const handleTitleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTitle = e.target.value;
-    setTitle(newTitle);
-
-    // For spaces, we don't create on first keystroke - wait for submission
-    if (isSpaceMode) {
-      return;
-    }
-
-    // Create node/context on first character if not created
-    if (!createdEntityId && newTitle.length === 1) {
-      // Check for duplicates before creating
-      const duplicateResult = checkDuplicate(newTitle);
-      if (duplicateResult.isDuplicate && duplicateResult.existingNode) {
-        // Show duplicate modal
-        setDuplicateNode(duplicateResult.existingNode);
-        setPendingTitle(newTitle);
-        setShowDuplicateModal(true);
-        return; // Don't create yet - wait for user decision
+        case "cancel":
+          break;
       }
 
-      await ensureEntityCreated();
-    }
+      setDuplicateNode(null);
+      setPendingTitle("");
+    },
+    [duplicateNode, spaceSlug, onClose, router, ensureEntityCreated]
+  );
 
-    // Update title if node exists
-    if (createdEntityId && newTitle && spaceSlug) {
-      nodeService.updateNode(spaceSlug, createdEntityId, { title: newTitle }).catch(console.error);
-    }
+  // Handle title change - create entity on first keystroke (with duplicate check)
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value);
   };
 
   // Check for duplicates when title loses focus (for longer titles typed quickly)
-  const handleTitleBlur = async () => {
-    if (isSpaceMode || createdEntityId || !title.trim()) {
-      return;
-    }
-
-    const duplicateResult = checkDuplicate(title);
-    if (duplicateResult.isDuplicate && duplicateResult.existingNode) {
-      setDuplicateNode(duplicateResult.existingNode);
-      setPendingTitle(title);
-      setShowDuplicateModal(true);
-    }
+  const handleTitleBlur = () => {
+    // No auto-create on blur anymore
   };
 
   // Handle expand to full page (or create and navigate for spaces)
   const handleExpand = async () => {
-    if (isSpaceMode) {
-      // Create space and navigate to it
+    if (entityType === "space") {
       try {
         const space = await createSpaceMutation.mutateAsync({
-          name: title || "Untitled",
+          name: title.trim() || "Untitled",
         });
         onClose();
         router.push(`/spaces/${space.slug}`);
@@ -303,30 +338,28 @@ export function NewNodeModal({
       return;
     }
 
-    // For nodes/contexts
-    let entityId = createdEntityId;
-
-    // Create entity if not exists
-    if (!entityId) {
-      entityId = await ensureEntityCreated();
+    if (!title.trim()) {
+      titleInputRef.current?.focus();
+      return;
     }
 
-    if (entityId && spaceSlug) {
-      onClose();
-      router.push(`/spaces/${spaceSlug}/node/${entityId}`);
+    const duplicateResult = checkDuplicate(title.trim());
+    if (duplicateResult.isDuplicate && duplicateResult.existingNode) {
+      setDuplicateNode(duplicateResult.existingNode);
+      setPendingTitle(title.trim());
+      setShowDuplicateModal(true);
+      return;
     }
+
+    await ensureEntityCreated({ openAfterCreate: true });
   };
 
   // Handle close - save and close
   const handleClose = async () => {
-    // Save any pending content before closing (only for nodes/contexts)
-    if (!isSpaceMode && blockEditorRef.current) {
-      await blockEditorRef.current.saveNow();
-    }
     if (createdEntityId) {
       if (isSpaceMode) {
         queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
-        queryClient.invalidateQueries({ queryKey: ['spaces'] });
+        queryClient.invalidateQueries({ queryKey: ["spaces"] });
       } else {
         queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
       }
@@ -336,16 +369,35 @@ export function NewNodeModal({
 
   // Handle create button click (for spaces, which don't auto-create)
   const handleCreate = async () => {
-    if (isSpaceMode) {
+    if (entityType === "space") {
       try {
         const space = await createSpaceMutation.mutateAsync({
-          name: title || "Untitled",
+          name: title.trim() || "Untitled",
         });
         onClose();
         router.push(`/spaces/${space.slug}`);
       } catch (error) {
         console.error("Failed to create space:", error);
       }
+      return;
+    }
+
+    if (!title.trim()) {
+      titleInputRef.current?.focus();
+      return;
+    }
+
+    const duplicateResult = checkDuplicate(title.trim());
+    if (duplicateResult.isDuplicate && duplicateResult.existingNode) {
+      setDuplicateNode(duplicateResult.existingNode);
+      setPendingTitle(title.trim());
+      setShowDuplicateModal(true);
+      return;
+    }
+
+    const entityId = await ensureEntityCreated();
+    if (entityId) {
+      onClose();
     }
   };
 
@@ -394,6 +446,13 @@ export function NewNodeModal({
                       key={type}
                       onClick={() => {
                         setEntityType(type);
+
+                        if (type === "context") {
+                          setManualSystemNodeType("CONTEXT");
+                        } else if (type === "node") {
+                          setManualSystemNodeType("REGULAR");
+                        }
+
                         setShowTypeDropdown(false);
                       }}
                       className={clsx(
@@ -489,36 +548,114 @@ export function NewNodeModal({
               </div>
             </>
           ) : (
-            // Node/Context mode - block editor
+            
             <>
               <p
-                className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#bdbdbd] tracking-[-0.08px] leading-[18px] mb-[24px]"
+                className="mb-[24px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-[#9ca3af]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
-                Press &apos;/&apos; for commands
+                Fill in the node details, then create it directly or open it in the full editor.
               </p>
 
-              {/* Block Editor - only show if node is created */}
-              {createdEntityId && spaceSlug && spaceId ? (
-                <BlockEditor
-                  ref={blockEditorRef}
-                  pageId={createdEntityId}
-                  spaceSlug={spaceSlug}
-                  spaceId={spaceId}
-                />
-              ) : (
-                <div
-                  className="min-h-[200px] text-[#9ca3af] cursor-text"
-                  onClick={async () => {
-                    const entityId = await ensureEntityCreated();
-                    if (entityId) {
-                      // Focus will be handled by BlockEditor
-                    }
-                  }}
-                >
-                  <p className="text-[15px]">Click here or start typing a title to begin editing...</p>
+              <div className="grid grid-cols-12 gap-6">
+                <div className="col-span-7 space-y-5">
+                  <div>
+                    <label className="mb-2 block text-[13px] font-medium text-[#374151]">
+                      Initial content
+                    </label>
+                    <textarea
+                      value={initialContent}
+                      onChange={(e) => setInitialContent(e.target.value)}
+                      placeholder="Add a short description, notes, or starting content..."
+                      className="min-h-[220px] w-full rounded-[18px] border border-[#e5e7eb] bg-[#fafafa] px-4 py-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:bg-white focus:ring-2 focus:ring-[#dbeafe]"
+                    />
+                  </div>
                 </div>
-              )}
+
+                <div className="col-span-5">
+                  <div className="rounded-[22px] border border-[#e5e7eb] bg-[#fcfcfd] p-5 shadow-sm">
+                    <div className="mb-4">
+                      <h3 className="text-[15px] font-semibold text-[#111827]">
+                        {ENTITY_LABELS[entityType]} settings
+                      </h3>
+                      <p className="mt-1 text-[12px] leading-5 text-[#9ca3af]">
+                        Configure how this {entityType} appears in the workspace.
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151]">
+                          <Box className="h-4 w-4 text-[#94a3b8]" />
+                          System type
+                        </label>
+                        <select
+                          value={manualSystemNodeType}
+                          onChange={(e) =>
+                            setManualSystemNodeType(e.target.value as ManualSystemNodeType)
+                          }
+                          className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe]"
+                        >
+                          {MANUAL_SYSTEM_NODE_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151]">
+                          <Tag className="h-4 w-4 text-[#94a3b8]" />
+                          Entity type
+                        </label>
+                        <select
+                          value={manualEntityType}
+                          onChange={(e) => setManualEntityType(e.target.value as ManualEntityType)}
+                          className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe]"
+                        >
+                          {MANUAL_ENTITY_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value || "none"} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151]">
+                          <Sparkles className="h-4 w-4 text-[#94a3b8]" />
+                          Source
+                        </label>
+                        <div className="flex h-[42px] items-center rounded-[14px] border border-[#e5e7eb] bg-[#f9fafb] px-3 text-[14px] text-[#4b5563]">
+                          Manual
+                        </div>
+                      </div>
+
+                    </div>
+
+                    <div className="mt-6 flex flex-wrap gap-3">
+                      <button
+                        onClick={handleCreate}
+                        disabled={isCreating || createNodeMutation.isPending}
+                        className="h-[42px] rounded-[100px] bg-[#248bf2] px-5 text-[14px] font-semibold text-white transition hover:bg-[#1d78d6] disabled:cursor-not-allowed disabled:opacity-50"
+                        type="button"
+                      >
+                        {isCreating || createNodeMutation.isPending ? "Creating..." : `Create ${ENTITY_LABELS[entityType]}`}
+                      </button>
+
+                      <button
+                        onClick={handleExpand}
+                        disabled={isCreating || createNodeMutation.isPending}
+                        className="h-[42px] rounded-[100px] border border-[#dbe3ee] bg-white px-5 text-[14px] font-semibold text-[#374151] transition hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-50"
+                        type="button"
+                      >
+                        Create and open
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </>
           )}
         </div>
@@ -530,7 +667,7 @@ export function NewNodeModal({
               className="font-['Roboto:Regular',sans-serif] font-normal text-[12px] text-[#bdbdbd] tracking-[-0.08px]"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
-              Auto-saved
+              Created successfully
             </span>
             <button
               onClick={handleExpand}
