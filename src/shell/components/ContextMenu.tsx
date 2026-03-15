@@ -48,24 +48,31 @@ export function ContextMenu({
   }, [onClose]);
 
   const menuItems = [
-    { label: "Open on new Tap Window", onClick: onOpenNewTab },
-    { label: "Open as a node", onClick: onOpenAsNode },
+    { label: "Open in New Tab", onClick: onOpenNewTab },
+    { label: "Open as Node", onClick: onOpenAsNode },
     { label: "Rename", onClick: onRename },
     { label: "Duplicate", onClick: onDuplicate },
     { label: "Share", onClick: onShare },
-    { label: "Delete", onClick: onDelete },
+    { label: "Delete", onClick: onDelete, destructive: true },
   ];
+
+  const menuWidth = 205;
+  const menuHeight = 280;
+  const padding = 12;
+
+  const left = Math.min(x, window.innerWidth - menuWidth - padding);
+  const top = Math.min(y, window.innerHeight - menuHeight - padding);
 
   return (
     <div
       ref={menuRef}
-      className="fixed bg-white rounded-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] w-[205px] py-[15px] px-[12px] z-[100]"
+      className="fixed z-[100] w-[205px] rounded-[12px] border border-border bg-background px-[12px] py-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] dark:shadow-[0px_10px_30px_rgba(0,0,0,0.35)]"
       style={{
-        left: `${x}px`,
-        top: `${y}px`,
+        left: `${left}px`,
+        top: `${top}px`,
       }}
     >
-      <div className="flex flex-col gap-[8px]">
+      <div className="flex flex-col gap-[4px]">
         {menuItems.map((item, index) => (
           <button
             key={index}
@@ -73,7 +80,11 @@ export function ContextMenu({
               item.onClick();
               onClose();
             }}
-            className="text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#828282] hover:text-[#333] transition-colors tracking-[-0.08px] leading-[18px]"
+            className={`rounded-[8px] px-[10px] py-[8px] text-left font-['Roboto:Regular',sans-serif] text-[13px] leading-[18px] tracking-[-0.08px] transition-colors ${
+              item.destructive
+                ? "text-[#d4183d] hover:bg-[#fef2f2] dark:hover:bg-[#3a161c]"
+                : "text-foreground hover:bg-accent"
+            }`}
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
             {item.label}

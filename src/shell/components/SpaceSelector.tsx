@@ -36,16 +36,16 @@ export function SpaceSelector({
     <>
       <button
         onClick={handleClick}
-        className="bg-[#e4f1ff] h-[32px] px-[12px] py-0 rounded-[100px] flex gap-[8px] items-center hover:bg-[#d4e7ff] transition-colors"
+        className="flex h-[32px] items-center gap-[8px] rounded-[100px] bg-[#e4f1ff] px-[12px] py-0 transition-colors hover:bg-[#d4e7ff] dark:bg-[#1e3a5f] dark:hover:bg-[#25456f]"
       >
         <span
-          className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#248bf2] tracking-[-0.08px] leading-[18px]"
+          className="font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-[#248bf2] dark:text-[#93c5fd]"
           style={{ fontVariationSettings: "'wdth' 100" }}
         >
           Space: {currentSpaceName}
         </span>
-        <div className="size-[16px] flex items-center justify-center">
-          <ChevronDown className="size-[12px] text-[#248bf2]" />
+        <div className="flex size-[16px] items-center justify-center">
+          <ChevronDown className="size-[12px] text-[#248bf2] dark:text-[#93c5fd]" />
         </div>
       </button>
 

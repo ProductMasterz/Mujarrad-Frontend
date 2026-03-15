@@ -34,8 +34,8 @@ const ExcalidrawWrapper = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      <div className="flex h-full items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
       </div>
     )
   }
@@ -283,7 +283,7 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasRef, WhiteboardCanvas
     }, [debouncedSave, performSave]);
 
     return (
-      <div className="w-full h-full relative" style={{ minHeight: '600px' }}>
+      <div className="relative h-full w-full" style={{ minHeight: '600px' }}>
         <ExcalidrawWrapper
           initialElements={initialElements}
           initialAppState={initialAppState}

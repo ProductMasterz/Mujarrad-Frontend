@@ -10,7 +10,6 @@ type AddMenuDropdownProps = {
   onCreateContext?: () => void;
 };
 
-// Icons for each action
 const ACTION_ICONS: Record<AddAction, React.ReactNode> = {
   create_space: <FolderPlus className="size-[14px]" />,
   create_node: <FilePlus className="size-[14px]" />,
@@ -27,7 +26,6 @@ export function AddMenuDropdown({
   const menuRef = useRef<HTMLDivElement>(null);
   const addActions = useNavigationStore((state) => state.addActions);
 
-  // Action handlers mapping
   const actionHandlers: Record<AddAction, (() => void) | undefined> = {
     create_space: onCreateSpace,
     create_node: onCreateNode,
@@ -64,6 +62,12 @@ export function AddMenuDropdown({
   if (!anchorEl) return null;
 
   const rect = anchorEl.getBoundingClientRect();
+  const menuWidth = 180;
+  const padding = 8;
+  const left = Math.min(
+    Math.max(padding, rect.right - menuWidth),
+    window.innerWidth - menuWidth - padding
+  );
 
   const handleActionClick = (action: AddAction) => {
     const handler = actionHandlers[action];
@@ -73,15 +77,12 @@ export function AddMenuDropdown({
     onClose();
   };
 
-  // Position menu, ensuring it doesn't go off-screen
-  const menuLeft = Math.max(8, rect.right - 180);
-
   return (
     <div
       ref={menuRef}
-      className="fixed bg-white rounded-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] min-w-[180px] z-[100] py-[8px] px-[8px]"
+      className="fixed z-[100] min-w-[180px] rounded-[12px] border border-border bg-background px-[8px] py-[8px] text-foreground shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] dark:shadow-[0px_14px_34px_rgba(0,0,0,0.35)]"
       style={{
-        left: `${menuLeft}px`,
+        left: `${left}px`,
         top: `${rect.bottom + 8}px`,
       }}
     >
@@ -90,11 +91,11 @@ export function AddMenuDropdown({
           <button
             key={action}
             onClick={() => handleActionClick(action)}
-            className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#4f4f4f] tracking-[-0.08px] leading-[18px] text-left py-[8px] px-[12px] rounded-[8px] hover:bg-[#f5f5f5] transition-colors flex items-center gap-[10px]"
+            className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-foreground transition-colors hover:bg-accent"
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
-            <span className="text-[#828282]">{ACTION_ICONS[action]}</span>
-            {ADD_ACTION_LABELS[action]}
+            <span className="text-muted-foreground">{ACTION_ICONS[action]}</span>
+            <span>{ADD_ACTION_LABELS[action]}</span>
           </button>
         ))}
       </div>

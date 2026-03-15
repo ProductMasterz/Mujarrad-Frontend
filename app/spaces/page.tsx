@@ -16,7 +16,6 @@ import { CardType, Card } from '@/shell/data/projects';
 import { spaceService } from '@/services/api';
 import { useRenameSpace } from '@/hooks/api';
 import type { Space } from '@/types/backend-dtos';
-import { NodeType } from '@/types/backend-dtos';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNavigationStore } from '@/stores/navigationStore';
 
@@ -64,6 +63,8 @@ export default function SpacesPage() {
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [spaceToRename, setSpaceToRename] = useState<Space | null>(null);
   const [selectedCardId, setSelectedCardId] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -107,7 +108,39 @@ export default function SpacesPage() {
   }, []);
 
   // Convert API spaces to card format
-  const cards = useMemo(() => apiSpaces.map(spaceToCard), [apiSpaces]);
+  const filteredAndSortedSpaces = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    const filtered = apiSpaces.filter((space) => {
+      if (!term) return true;
+      return (
+        space.name.toLowerCase().includes(term) ||
+        space.slug.toLowerCase().includes(term)
+      );
+    });
+
+    const sorted = [...filtered].sort((a, b) => {
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name);
+      }
+
+      if (sortBy === 'createdAt') {
+        return (
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime()
+        );
+      }
+
+      return (
+        new Date(b.updatedAt || b.createdAt || 0).getTime() -
+        new Date(a.updatedAt || a.createdAt || 0).getTime()
+      );
+    });
+
+    return sorted;
+  }, [apiSpaces, searchTerm, sortBy]);
+
+  const cards = useMemo(() => filteredAndSortedSpaces.map(spaceToCard), [filteredAndSortedSpaces]);
 
   // Build breadcrumb
   const breadcrumbPath = useMemo(() => {
@@ -280,11 +313,13 @@ export default function SpacesPage() {
   };
 
   // Build sidebar data from API spaces
-  const sidebarData = useMemo(() => spacesToSidebarData(apiSpaces), [apiSpaces]);
-
+  const sidebarData = useMemo(
+    () => spacesToSidebarData(filteredAndSortedSpaces),
+    [filteredAndSortedSpaces]
+  );
   return (
     <ProtectedRoute>
-      <div className="bg-white min-h-screen relative">
+      <div className="bg-background text-foreground min-h-screen relative">
         <Header
           onMenuClick={toggleSidebar}
           onBackClick={handleBackClick}
@@ -317,14 +352,39 @@ export default function SpacesPage() {
           isSpacesLevel={true}
           onQuickCreateSpace={handleQuickCreateSpace}
         />
-
+       
         {/* Main content */}
+
         <div
           className="pt-[76px] px-[14px] transition-all duration-300"
           style={{
             marginLeft: sidebarOpen ? '276px' : '0',
           }}
         >
+          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search spaces..."
+              className="h-[42px] w-full max-w-[320px] rounded-xl border border-border bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+
+            />
+
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
+                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="updatedAt">Date modified</option>
+                <option value="createdAt">Date created</option>
+                <option value="name">Name</option>
+              </select>
+            </div>
+          </div>
+
           {isLoading ? (
             <div className="flex items-center justify-center h-[400px]">
               <div className="animate-spin h-8 w-8 border-4 border-[#248bf2] border-t-transparent rounded-full" />
@@ -338,7 +398,7 @@ export default function SpacesPage() {
                 Error loading spaces
               </p>
               <p
-                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] mt-2 tracking-[-0.24px]"
+                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground mt-2 tracking-[-0.24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 {error.message || 'An unknown error occurred'}
@@ -347,16 +407,18 @@ export default function SpacesPage() {
           ) : cards.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[400px] text-center">
               <p
-                className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] tracking-[-0.24px]"
+                className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground tracking-[-0.24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
-                No spaces yet
+                {searchTerm.trim() ? 'No matching spaces' : 'No spaces yet'}
               </p>
               <p
-                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-[#bdbdbd] mt-2 tracking-[-0.24px]"
+                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground/70 mt-2 tracking-[-0.24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
-                Click the + button to create your first space
+                {searchTerm.trim()
+                  ? 'Try a different search term.'
+                  : 'Click the + button to create your first space'}
               </p>
             </div>
           ) : (
@@ -376,6 +438,7 @@ export default function SpacesPage() {
         </div>
 
         {/* New Node Modal - at spaces level, default to space creation */}
+
         <NewNodeModal
           isOpen={showNewNodeModal}
           onClose={() => setShowNewNodeModal(false)}

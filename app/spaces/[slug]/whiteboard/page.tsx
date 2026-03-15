@@ -16,6 +16,8 @@ import { nodeKeys } from '@/hooks/api/useNodes';
 import { nodeService } from '@/services/api/node.service';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 
 export default function WhiteboardPage() {
   const params = useParams();
@@ -24,26 +26,23 @@ export default function WhiteboardPage() {
   const queryClient = useQueryClient();
   const navigateToWhiteboard = useNavigationStore((state) => state.navigateToWhiteboard);
   const [isResetting, setIsResetting] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const canvasRef = useRef<WhiteboardCanvasRef>(null);
 
-  // Fetch space info
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(spaceSlug);
 
-  // Set navigation scope when space loads
   useEffect(() => {
     if (space) {
       navigateToWhiteboard(spaceSlug, space.id);
     }
   }, [space, spaceSlug, navigateToWhiteboard]);
 
-  // Handle manual save
   const handleSave = useCallback(async () => {
     if (canvasRef.current) {
       await canvasRef.current.saveNow();
     }
   }, []);
 
-  // Keyboard shortcut for save (Cmd+S / Ctrl+S)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
@@ -56,7 +55,6 @@ export default function WhiteboardPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSave]);
 
-  // Reset workspace - delete all nodes
   const handleReset = async () => {
     if (!confirm('Are you sure you want to delete ALL nodes in this space? This cannot be undone.')) {
       return;
@@ -64,15 +62,12 @@ export default function WhiteboardPage() {
 
     setIsResetting(true);
     try {
-      // Get all nodes
       const nodes = await nodeService.getNodes(spaceSlug, { size: 1000 });
 
-      // Delete all nodes
-      await Promise.all(nodes.map(node =>
-        nodeService.deleteNode(spaceSlug, node.id, true)
-      ));
+      await Promise.all(
+        nodes.map((node) => nodeService.deleteNode(spaceSlug, node.id, true))
+      );
 
-      // Invalidate queries and reload
       queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug] });
       queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
       window.location.reload();
@@ -84,7 +79,6 @@ export default function WhiteboardPage() {
     }
   };
 
-  // Fetch whiteboard state from context node
   const {
     elements,
     contextNodeId,
@@ -95,41 +89,37 @@ export default function WhiteboardPage() {
     error,
   } = useWhiteboardState(spaceSlug);
 
-  // Store state
   const { isSaving, lastSaved, error: saveError, reset } = useWhiteboardStore();
 
-  // Reset store on mount/unmount
   useEffect(() => {
     return () => {
       reset();
     };
   }, [reset]);
 
-  // Loading state
   if (spaceLoading || whiteboardLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex h-screen items-center justify-center bg-background text-foreground">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading whiteboard...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+          <p className="text-muted-foreground">Loading whiteboard...</p>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (spaceError || whiteboardError) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex h-screen items-center justify-center bg-background text-foreground">
         <div className="text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold mb-2">Failed to load whiteboard</h2>
-          <p className="text-gray-600">
+          <div className="mb-4 text-6xl text-destructive">⚠️</div>
+          <h2 className="mb-2 text-xl font-semibold text-foreground">Failed to load whiteboard</h2>
+          <p className="text-muted-foreground">
             {error?.message || 'An error occurred while loading the whiteboard.'}
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="mt-4 rounded-xl bg-primary px-4 py-2 text-primary-foreground transition hover:opacity-90"
           >
             Retry
           </button>
@@ -138,14 +128,13 @@ export default function WhiteboardPage() {
     );
   }
 
-  // Space not found
   if (!space) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex h-screen items-center justify-center bg-background text-foreground">
         <div className="text-center">
-          <div className="text-gray-400 text-6xl mb-4">🔍</div>
-          <h2 className="text-xl font-semibold mb-2">Space not found</h2>
-          <p className="text-gray-600">
+          <div className="mb-4 text-6xl text-muted-foreground">🔍</div>
+          <h2 className="mb-2 text-xl font-semibold text-foreground">Space not found</h2>
+          <p className="text-muted-foreground">
             The space &quot;{spaceSlug}&quot; does not exist or you don&apos;t have access.
           </p>
         </div>
@@ -154,43 +143,54 @@ export default function WhiteboardPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex h-screen flex-col bg-background text-foreground">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
+      <div className="flex items-center justify-between border-b border-border bg-background px-4 py-3">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push(`/spaces/${spaceSlug}`)}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            className="rounded-md p-2 transition-colors hover:bg-muted"
             title="Back to space"
           >
-            <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
+            <ArrowLeftIcon className="h-5 w-5 text-muted-foreground" />
           </button>
           <div>
-            <h1 className="text-lg font-semibold">{space.name} - Whiteboard</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-lg font-semibold text-foreground">{space.name} - Whiteboard</h1>
+            <p className="text-sm text-muted-foreground">
               {elements.length} element{elements.length !== 1 ? 's' : ''}
             </p>
           </div>
         </div>
+
         <div className="flex items-center gap-4">
-          {/* Save status indicator */}
           {isSaving && (
-            <span className="text-sm text-gray-500 flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+            <span className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-primary" />
               Saving...
             </span>
           )}
+
           {!isSaving && lastSaved && (
-            <span className="text-sm text-green-600">
+            <span className="text-sm text-green-600 dark:text-green-400">
               Saved {lastSaved.toLocaleTimeString()}
             </span>
           )}
+
           {saveError && (
-            <span className="text-sm text-red-500">
+            <span className="text-sm text-destructive">
               {saveError}
             </span>
           )}
-          {/* Manual Save button */}
+
+          <button
+            onClick={() => setChatOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground transition hover:bg-muted"
+            type="button"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Chat
+          </button>
+
           <Button
             variant="outline"
             size="sm"
@@ -200,24 +200,27 @@ export default function WhiteboardPage() {
           >
             {isSaving ? 'Saving...' : 'Save'}
           </Button>
-          {/* Reset button */}
+
           <button
             onClick={handleReset}
             disabled={isResetting}
-            className="p-2 hover:bg-red-100 rounded-md transition-colors text-red-600 disabled:opacity-50"
+            className="rounded-md p-2 text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/40"
             title="Reset workspace (delete all nodes)"
           >
             {isResetting ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500" />
+              <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-red-500" />
             ) : (
-              <TrashIcon className="w-5 h-5" />
+              <TrashIcon className="h-5 w-5" />
             )}
           </button>
         </div>
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 overflow-hidden">
+      <div
+        className="flex-1 overflow-hidden transition-all duration-300"
+        style={{ marginRight: chatOpen ? '620px' : '0' }}
+      >
         <WhiteboardCanvas
           ref={canvasRef}
           spaceSlug={spaceSlug}
@@ -228,6 +231,17 @@ export default function WhiteboardPage() {
           onError={(err) => console.error('Whiteboard error:', err)}
         />
       </div>
+
+      {chatOpen && (
+        <div className="fixed right-0 top-16 z-[80] h-[calc(100vh-64px)] w-[620px] overflow-hidden rounded-l-[24px] border-l border-border bg-background shadow-2xl">
+          <ChatPanel
+            spaceSlug={spaceSlug}
+            title="Chat"
+            embedded={true}
+            onClose={() => setChatOpen(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }

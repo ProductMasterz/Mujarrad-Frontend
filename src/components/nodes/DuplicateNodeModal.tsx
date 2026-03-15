@@ -85,7 +85,7 @@ export function DuplicateNodeModal({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md">
+      <AlertDialogContent className="max-w-md border-border bg-background text-foreground">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
@@ -99,7 +99,7 @@ export function DuplicateNodeModal({
               </p>
 
               {/* Existing node preview */}
-              <div className="border rounded-lg p-3 bg-muted/50">
+              <div className="rounded-lg border border-border bg-muted/50 p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground truncate">

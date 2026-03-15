@@ -49,7 +49,10 @@ const mockNotifications: Notification[] = [
   },
 ];
 
-export function NotificationsDropdown({ onClose, anchorEl }: NotificationsDropdownProps) {
+export function NotificationsDropdown({
+  onClose,
+  anchorEl,
+}: NotificationsDropdownProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,27 +85,32 @@ export function NotificationsDropdown({ onClose, anchorEl }: NotificationsDropdo
   if (!anchorEl) return null;
 
   const rect = anchorEl.getBoundingClientRect();
+  const menuWidth = 312;
+  const padding = 8;
+  const left = Math.min(
+    Math.max(padding, rect.right - menuWidth),
+    window.innerWidth - menuWidth - padding
+  );
 
   return (
     <div
       ref={menuRef}
-      className="fixed bg-white rounded-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] w-[312px] z-[100]"
+      className="fixed z-[100] w-[312px] rounded-[12px] border border-border bg-background text-foreground shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] dark:shadow-[0px_14px_34px_rgba(0,0,0,0.35)]"
       style={{
-        left: `${rect.right - 312}px`,
+        left: `${left}px`,
         top: `${rect.bottom + 8}px`,
       }}
     >
-      {/* Header */}
-      <div className="px-[17px] py-[15px] border-b border-[#f2f2f2]">
+      <div className="border-b border-border px-[17px] py-[15px]">
         <div className="flex items-center justify-between">
           <span
-            className="font-['Roboto:Medium',sans-serif] font-medium text-[15px] text-black tracking-[-0.24px] leading-[24px]"
+            className="font-['Roboto:Medium',sans-serif] text-[15px] font-medium leading-[24px] tracking-[-0.24px] text-foreground"
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
             Notifications
           </span>
           <span
-            className="font-['Roboto:Regular',sans-serif] font-normal text-[11px] text-[#bdbdbd] tracking-[-0.08px] leading-[16px]"
+            className="font-['Roboto:Regular',sans-serif] text-[11px] font-normal leading-[16px] tracking-[-0.08px] text-muted-foreground"
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
             (54)
@@ -110,39 +118,40 @@ export function NotificationsDropdown({ onClose, anchorEl }: NotificationsDropdo
         </div>
       </div>
 
-      {/* Notifications List */}
       <div className="max-h-[400px] overflow-y-auto">
         {mockNotifications.map((notification, index) => (
           <div
             key={notification.id}
-            className={`px-[17px] py-[12px] hover:bg-[#f5f5f5] transition-colors cursor-pointer ${
-              index !== mockNotifications.length - 1 ? "border-b border-[#f2f2f2]" : ""
+            className={`cursor-pointer px-[17px] py-[12px] transition-colors hover:bg-accent ${
+              index !== mockNotifications.length - 1 ? "border-b border-border" : ""
             }`}
           >
             <div className="flex gap-[12px]">
               <div
-                className="size-[30px] rounded-full flex items-center justify-center shrink-0"
+                className="flex size-[30px] shrink-0 items-center justify-center rounded-full"
                 style={{ backgroundColor: notification.userColor }}
               >
                 <span
-                  className="font-['Roboto:Medium',sans-serif] font-medium text-[12px] text-white tracking-[-0.08px]"
+                  className="font-['Roboto:Medium',sans-serif] text-[12px] font-medium tracking-[-0.08px] text-white"
                   style={{ fontVariationSettings: "'wdth' 100" }}
                 >
                   {notification.userInitials}
                 </span>
               </div>
-              <div className="flex-1 min-w-0">
+
+              <div className="min-w-0 flex-1">
                 <p
-                  className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#4f4f4f] tracking-[-0.08px] leading-[18px] mb-[4px]"
+                  className="mb-[4px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-foreground"
                   style={{ fontVariationSettings: "'wdth' 100" }}
                 >
                   <span className="font-['Roboto:Medium',sans-serif] font-medium">
                     {notification.userName}
                   </span>{" "}
-                  {notification.message}
+                  <span className="text-muted-foreground">{notification.message}</span>
                 </p>
+
                 <span
-                  className="font-['Roboto:Regular',sans-serif] font-normal text-[11px] text-[#bdbdbd] tracking-[-0.08px] leading-[16px]"
+                  className="font-['Roboto:Regular',sans-serif] text-[11px] font-normal leading-[16px] tracking-[-0.08px] text-muted-foreground"
                   style={{ fontVariationSettings: "'wdth' 100" }}
                 >
                   {notification.timestamp}

@@ -33,11 +33,10 @@ export function WhiteboardContextMenu({
 }: WhiteboardContextMenuProps) {
   return (
     <>
-      {/* Backdrop to close menu on click outside */}
       <div className="fixed inset-0 z-50" onClick={onClose} />
-      {/* Menu */}
+
       <div
-        className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 min-w-[180px]"
+        className="fixed z-50 min-w-[180px] rounded-lg border border-border bg-background py-1 text-foreground shadow-lg"
         style={{ left: x, top: y }}
       >
         <button
@@ -45,9 +44,9 @@ export function WhiteboardContextMenu({
             onShowInSpaceList();
             onClose();
           }}
-          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition hover:bg-muted"
         >
-          <ListBulletIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <ListBulletIcon className="h-4 w-4 text-muted-foreground" />
           Show in Space List
         </button>
 
@@ -57,24 +56,24 @@ export function WhiteboardContextMenu({
               onViewInHierarchy();
               onClose();
             }}
-            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition hover:bg-muted"
           >
-            <EyeIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <EyeIcon className="h-4 w-4 text-muted-foreground" />
             View in Hierarchy
           </button>
         )}
 
         {isLinked && onUnlink && (
           <>
-            <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+            <div className="my-1 border-t border-border" />
             <button
               onClick={() => {
                 onUnlink();
                 onClose();
               }}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-orange-600 dark:text-orange-400"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-orange-600 transition hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30"
             >
-              <LinkIcon className="w-4 h-4" />
+              <LinkIcon className="h-4 w-4" />
               Unlink from Node
             </button>
           </>

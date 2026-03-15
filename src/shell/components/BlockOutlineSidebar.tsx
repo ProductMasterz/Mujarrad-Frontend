@@ -228,12 +228,12 @@ function OutlineItemComponent({
             onBlockClick(item.id);
           }}
           className={clsx(
-            'flex items-center gap-[8px] w-full text-left transition-colors py-[4px] px-[4px] rounded-[4px]',
+            'flex w-full items-center gap-[8px] rounded-[4px] px-[4px] py-[4px] text-left transition-colors',
             isHeading
-              ? "font-['Roboto:Medium',sans-serif] font-medium text-[#4f4f4f]"
-              : "font-['Roboto:Regular',sans-serif] font-normal text-[#828282]",
-            isSelected && 'bg-[#e4f1ff] text-[#248bf2]',
-            isHovered && !isSelected && 'bg-[#f5f5f5]'
+              ? "font-['Roboto:Medium',sans-serif] font-medium text-[#4f4f4f] dark:text-[#e5e7eb]"
+              : "font-['Roboto:Regular',sans-serif] font-normal text-[#828282] dark:text-[#9ca3af]",
+            isSelected && 'bg-[#e4f1ff] text-[#248bf2] dark:bg-[#1e3a5f] dark:text-[#93c5fd]',
+            isHovered && !isSelected && 'bg-[#f5f5f5] dark:bg-[#1f2937]'
           )}
           style={{
             paddingLeft: `${level * 12 + 4}px`,
@@ -241,7 +241,7 @@ function OutlineItemComponent({
         >
           {/* Expand/collapse icon */}
           {hasChildren ? (
-            <div className="shrink-0 w-[14px]">
+            <div className="w-[14px] shrink-0">
               {isExpanded ? (
                 <ChevronDown className="size-[14px]" strokeWidth={1.5} />
               ) : (
@@ -255,8 +255,8 @@ function OutlineItemComponent({
           {/* Block type icon */}
           <span
             className={clsx(
-              'shrink-0 w-[20px] text-center text-[11px]',
-              isSelected ? 'text-[#248bf2]' : 'text-[#bdbdbd]'
+              'w-[20px] shrink-0 text-center text-[11px]',
+              isSelected ? 'text-[#248bf2] dark:text-[#93c5fd]' : 'text-[#bdbdbd] dark:text-[#6b7280]'
             )}
           >
             {getBlockIcon(item.block.type)}
@@ -264,7 +264,7 @@ function OutlineItemComponent({
 
           {/* Block content */}
           <span
-            className="text-[13px] tracking-[-0.24px] leading-[20px] truncate flex-1"
+            className="flex-1 truncate text-[13px] leading-[20px] tracking-[-0.24px]"
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
             {item.displayText}
@@ -318,16 +318,16 @@ export function BlockOutlineSidebar({
   return (
     <div
       className={clsx(
-        'fixed left-0 top-[76px] h-[calc(100vh-76px)] bg-white border-r border-[#f2f2f2] transition-all duration-300 ease-in-out z-10',
+        'fixed left-0 top-[76px] z-10 h-[calc(100vh-76px)] border-r border-[#f2f2f2] bg-white transition-all duration-300 ease-in-out dark:border-[#374151] dark:bg-[#0f172a]',
         isOpen ? 'w-[276px]' : 'w-0'
       )}
       style={{ overflow: isOpen ? 'visible' : 'hidden' }}
     >
-      <div className="flex flex-col h-full w-[276px]">
+      <div className="flex h-full w-[276px] flex-col">
         {/* Header */}
-        <div className="px-[17px] pt-[20px] pb-[12px] border-b border-[#f2f2f2]">
+        <div className="border-b border-[#f2f2f2] px-[17px] pb-[12px] pt-[20px] dark:border-[#374151]">
           <h3
-            className="font-['Roboto:Medium',sans-serif] font-medium text-[13px] text-[#828282] uppercase tracking-[0.5px]"
+            className="font-['Roboto:Medium',sans-serif] text-[13px] font-medium uppercase tracking-[0.5px] text-[#828282] dark:text-[#9ca3af]"
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
             Page Outline
@@ -335,10 +335,10 @@ export function BlockOutlineSidebar({
         </div>
 
         {/* Outline Items */}
-        <div className="flex-1 pt-[12px] px-[12px] overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-[12px] pt-[12px]">
           {outlineItems.length === 0 ? (
             <p
-              className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#bdbdbd] px-[4px]"
+              className="px-[4px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal text-[#bdbdbd] dark:text-[#6b7280]"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               No blocks yet
@@ -358,22 +358,22 @@ export function BlockOutlineSidebar({
         </div>
 
         {/* Bottom Icons */}
-        <div className="flex gap-[90px] items-center px-[17px] pb-[29px]">
+        <div className="flex items-center gap-[90px] px-[17px] pb-[29px]">
           <div className="relative group">
             <button
               onClick={handleUserClick}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="text-[#828282] transition-colors hover:text-[#4f4f4f] dark:text-[#9ca3af] dark:hover:text-white"
             >
               <svg className="size-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M20 22H18V20C18 19.2044 17.6839 18.4413 17.1213 17.8787C16.5587 17.3161 15.7956 17 15 17H9C8.20435 17 7.44129 17.3161 6.87868 17.8787C6.31607 18.4413 6 19.2044 6 20V22H4V20C4 18.6739 4.52678 17.4021 5.46447 16.4645C6.40215 15.5268 7.67392 15 9 15H15C16.3261 15 17.5979 15.5268 18.5355 16.4645C19.4732 17.4021 20 18.6739 20 20V22ZM12 13C11.2121 13 10.4319 12.8448 9.7039 12.5433C8.97595 12.2417 8.31451 11.7998 7.75736 11.2426C7.20021 10.6855 6.75825 10.0241 6.45672 9.2961C6.15519 8.56815 6 7.78793 6 7C6 6.21207 6.15519 5.43185 6.45672 4.7039C6.75825 3.97595 7.20021 3.31451 7.75736 2.75736C8.31451 2.20021 8.97595 1.75825 9.7039 1.45672C10.4319 1.15519 11.2121 1 12 1C13.5913 1 15.1174 1.63214 16.2426 2.75736C17.3679 3.88258 18 5.4087 18 7C18 8.5913 17.3679 10.1174 16.2426 11.2426C15.1174 12.3679 13.5913 13 12 13ZM12 11C13.0609 11 14.0783 10.5786 14.8284 9.82843C15.5786 9.07828 16 8.06087 16 7C16 5.93913 15.5786 4.92172 14.8284 4.17157C14.0783 3.42143 13.0609 3 12 3C10.9391 3 9.92172 3.42143 9.17157 4.17157C8.42143 4.92172 8 5.93913 8 7C8 8.06087 8.42143 9.07828 9.17157 9.82843C9.92172 10.5786 10.9391 11 12 11Z" />
               </svg>
             </button>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-[8px] py-[4px] bg-[#333] text-white text-[11px] rounded whitespace-nowrap font-['Roboto:Regular',sans-serif] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-[#333] px-[8px] py-[4px] font-['Roboto:Regular',sans-serif] text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">
               Profile
             </div>
           </div>
-          <div className="relative group">
-            <button className="text-[#828282] hover:text-[#4f4f4f] transition-colors">
+          <div className="group relative">
+            <button className="text-[#828282] transition-colors hover:text-[#4f4f4f] dark:text-[#9ca3af] dark:hover:text-white">
               <svg className="size-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M4 11.333L0 9L12 2L24 9V17.5H22V10.167L20 11.333V18.011L19.777 18.286C18.8404 19.4467 17.6557 20.3827 16.3099 21.0255C14.9641 21.6682 13.4914 22.0012 12 22C10.5086 22.0012 9.03588 21.6682 7.69007 21.0255C6.34426 20.3827 5.15955 19.4467 4.223 18.286L4 18.011V11.333ZM6 12.5V17.292C6.74991 18.1442 7.67304 18.8266 8.70772 19.2936C9.7424 19.7606 10.8648 20.0014 12 20C13.1352 20.0015 14.2576 19.7607 15.2923 19.2937C16.327 18.8267 17.2501 18.1443 18 17.292V12.5L12 16L6 12.5ZM3.97 9L12 13.685L20.03 9L12 4.315L3.97 9Z" />
               </svg>
@@ -385,13 +385,13 @@ export function BlockOutlineSidebar({
           <div className="relative group">
             <button
               onClick={handleShortcutClick}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="text-[#828282] transition-colors hover:text-[#4f4f4f] dark:text-[#9ca3af] dark:hover:text-white"
             >
               <svg className="size-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M13 3V10.267L19.294 6.634L20.294 8.366L14 11.999L20.294 15.634L19.294 17.366L12.999 13.732V21H10.999V13.732L4.705 17.366L3.705 15.634L9.998 12L3.705 8.366L4.705 6.634L11 10.267V3H13Z" />
               </svg>
             </button>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-[8px] py-[4px] bg-[#333] text-white text-[11px] rounded whitespace-nowrap font-['Roboto:Regular',sans-serif] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-[#333] px-[8px] py-[4px] font-['Roboto:Regular',sans-serif] text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">
               Shortcut
             </div>
           </div>

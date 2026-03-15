@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Header } from '@/shell/components/Header';
 import { Sidebar } from '@/shell/components/Sidebar';
-import { ProjectCard } from '@/shell/components/ProjectCard';
 import { ContextMenu } from '@/shell/components/ContextMenu';
 import { NewNodeModal, EntityType } from '@/shell/components/NewNodeModal';
 import { ShareModal } from '@/shell/components/ShareModal';
@@ -21,6 +20,31 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useNavigationStore } from '@/stores/navigationStore';
 import type { Node } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
+import { NodeCard } from '@/shell/components/NodeCard';
+
+function isAgentCreatedNode(node: Node): boolean {
+  let details: Record<string, unknown> | undefined;
+
+  if (typeof node.nodeDetails === 'string') {
+    try {
+      details = JSON.parse(node.nodeDetails);
+    } catch {
+      details = undefined;
+    }
+  } else {
+    details = node.nodeDetails as Record<string, unknown> | undefined;
+  }
+
+  return (
+    details?.createdFrom === 'chat' ||
+    details?.createdFrom === 'agent' ||
+    details?.source === 'chat' ||
+    details?.source === 'agent' ||
+    details?.generatedBy === 'chat' ||
+    details?.generatedBy === 'agent' ||
+    details?.chatNodeType === 'entity'
+  );
+}
 
 // Convert Node to Scratchup Card format
 function nodeToCard(node: Node): Card {
@@ -84,6 +108,10 @@ export default function SpaceDetailPage() {
   const [nodeToDelete, setNodeToDelete] = useState<Node | null>(null);
   const [nodeToRename, setNodeToRename] = useState<Node | null>(null);
   const [selectedCardId, setSelectedCardId] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
+  const [filterNodeType, setFilterNodeType] = useState<'ALL' | 'REGULAR' | 'CONTEXT' | 'ASSUMPTION' | 'TEMPLATE'>('ALL');
+  const [filterEntityType, setFilterEntityType] = useState<'ALL' | '' | 'person' | 'place' | 'action' | 'topic' | 'event'>('ALL');
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -118,32 +146,66 @@ export default function SpaceDetailPage() {
   }, [space]);
 
   // Convert nodes to card format - filter out block nodes (showInSpaceList: false)
-  const cards = useMemo(() => {
-    const filteredNodes = (nodes || []).filter((node) => {
-      // Handle nodeDetails being a string (JSON) or object
-      let details: Record<string, unknown> | undefined;
-      if (typeof node.nodeDetails === 'string') {
-        try {
-          details = JSON.parse(node.nodeDetails);
-        } catch {
-          details = undefined;
-        }
-      } else {
-        details = node.nodeDetails as Record<string, unknown> | undefined;
-      }
+  const visibleNodes = useMemo(() => {
+    return (nodes || [])
+      .filter((node) => {
+        let details: Record<string, unknown> | undefined;
 
-      // Only show nodes that should appear in the space list
-      // Block nodes have showInSpaceList: false or blockType set
-      if (details?.showInSpaceList === false) {
-        return false;
-      }
-      if (details?.blockType) {
-        return false;
-      }
-      return true;
-    });
-    return filteredNodes.map(nodeToCard);
-  }, [nodes]);
+        if (typeof node.nodeDetails === 'string') {
+          try {
+            details = JSON.parse(node.nodeDetails);
+          } catch {
+            details = undefined;
+          }
+        } else {
+          details = node.nodeDetails as Record<string, unknown> | undefined;
+        }
+
+        if (details?.showInSpaceList === false) return false;
+        if (details?.blockType) return false;
+
+
+        const term = searchTerm.trim().toLowerCase();
+        const entityType =
+          typeof details?.entityType === 'string'
+            ? details.entityType.toLowerCase()
+            : '';
+
+        const matchesSearch =
+          !term ||
+          node.title.toLowerCase().includes(term) ||
+          (node.content || '').toLowerCase().includes(term) ||
+          entityType.includes(term);
+
+        const nodeTypeValue = String(node.nodeType).toUpperCase();
+
+        const matchesNodeType =
+          filterNodeType === 'ALL' || nodeTypeValue === filterNodeType;
+
+        const matchesEntityType =
+          filterEntityType === 'ALL' || entityType === filterEntityType;
+
+        return matchesSearch && matchesNodeType && matchesEntityType;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'name') {
+          return a.title.localeCompare(b.title);
+        }
+
+        if (sortBy === 'createdAt') {
+          return (
+            new Date(b.createdAt || 0).getTime() -
+            new Date(a.createdAt || 0).getTime()
+          );
+        }
+
+        return (
+          new Date(b.updatedAt || b.createdAt || 0).getTime() -
+          new Date(a.updatedAt || a.createdAt || 0).getTime()
+        );
+      });
+  }, [nodes, searchTerm, sortBy, filterNodeType, filterEntityType]);
+  const sidebarData = useMemo(() => visibleNodes.map(nodeToCard), [visibleNodes]);
 
   // Build breadcrumb
   const breadcrumbPath = useMemo(() => {
@@ -169,6 +231,7 @@ export default function SpaceDetailPage() {
     if (path.length > 0) {
       const nodeId = path[path.length - 1];
       router.push(`/spaces/${slug}/node/${nodeId}`);
+
     }
   };
 
@@ -214,11 +277,13 @@ export default function SpaceDetailPage() {
       case 'openNewTab':
         if (node) {
           window.open(`/spaces/${slug}/node/${node.id}`, '_blank');
+
         }
         break;
       case 'openAsNode':
         if (node) {
           router.push(`/spaces/${slug}/node/${node.id}`);
+
         }
         break;
       case 'rename':
@@ -248,6 +313,11 @@ export default function SpaceDetailPage() {
 
   const handleWhiteboardClick = () => {
     router.push(`/spaces/${slug}/whiteboard`);
+
+  };
+
+  const handleGraphClick = () => {
+    router.push(`/spaces/${slug}/graph`);
   };
 
   const handleDeleteClick = () => {
@@ -352,23 +422,23 @@ export default function SpaceDetailPage() {
   if (spaceError) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
           <div className="text-center">
             <h1
-              className="text-[24px] font-['Roboto:Bold',sans-serif] font-bold text-[#333] mb-2"
+              className="text-[24px] font-['Roboto:Bold',sans-serif] font-bold text-foreground mb-2"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               Space not found
             </h1>
             <p
-              className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] mb-4"
+              className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground mb-4"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               The space you&apos;re looking for doesn&apos;t exist.
             </p>
             <button
               onClick={() => router.push('/spaces')}
-              className="h-[36px] px-[20px] bg-[#248bf2] rounded-[100px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[14px] text-white tracking-[-0.24px] hover:bg-[#1a6bc4] transition-colors"
+              className="h-[36px] rounded-[100px] bg-primary px-[20px] font-['Roboto:SemiBold',sans-serif] text-[14px] font-semibold tracking-[-0.24px] text-primary-foreground transition hover:opacity-90"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               Back to Spaces
@@ -381,7 +451,7 @@ export default function SpaceDetailPage() {
 
   return (
     <ProtectedRoute>
-      <div className="bg-white min-h-screen relative">
+      <div className="bg-background text-foreground min-h-screen relative">
         <Header
           onMenuClick={toggleSidebar}
           onBackClick={handleBackClick}
@@ -397,6 +467,7 @@ export default function SpaceDetailPage() {
           // More menu actions
           onShare={handleShareClick}
           onOpenInNewTab={handleOpenInNewTab}
+          onGraph={handleGraphClick}
           onWhiteboard={handleWhiteboardClick}
           onDelete={handleDeleteClick}
           onClearSpace={handleClearSpace}
@@ -414,47 +485,133 @@ export default function SpaceDetailPage() {
           selectedItem={null}
           onNavigate={handleSidebarNavigate}
           onLogout={handleLogout}
-          items={cards}
+          items={sidebarData}
         />
 
         {/* Main content */}
+
         <div
           className="pt-[76px] px-[14px] transition-all duration-300"
           style={{
             marginLeft: sidebarOpen ? '276px' : '0',
           }}
         >
+          <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-1 flex-col gap-3 md:flex-row">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search nodes by title, content, or entity type..."
+                className="h-[42px] w-full max-w-[320px] rounded-xl border border-border bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+
+              <select
+                value={filterNodeType}
+                onChange={(e) =>
+                  setFilterNodeType(
+                    e.target.value as 'ALL' | 'REGULAR' | 'CONTEXT' | 'ASSUMPTION' | 'TEMPLATE'
+                  )
+                }
+                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="ALL">All node types</option>
+                <option value="REGULAR">Regular</option>
+                <option value="CONTEXT">Context</option>
+                <option value="ASSUMPTION">Assumption</option>
+                <option value="TEMPLATE">Template</option>
+              </select>
+
+              <select
+                value={filterEntityType}
+                onChange={(e) =>
+                  setFilterEntityType(
+                    e.target.value as 'ALL' | '' | 'person' | 'place' | 'action' | 'topic' | 'event'
+                  )
+                }
+                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="ALL">All entity types</option>
+                <option value="">No entity type</option>
+                <option value="person">Person</option>
+                <option value="place">Place</option>
+                <option value="action">Action</option>
+                <option value="topic">Topic</option>
+                <option value="event">Event</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
+                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="updatedAt">Date modified</option>
+                <option value="createdAt">Date created</option>
+                <option value="name">Name</option>
+              </select>
+            </div>
+          </div>
+
           {isLoading ? (
             <div className="flex items-center justify-center h-[400px]">
-              <div className="animate-spin h-8 w-8 border-4 border-[#248bf2] border-t-transparent rounded-full" />
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
-          ) : cards.length === 0 ? (
+          ) : visibleNodes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[400px] text-center">
               <p
-                className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] tracking-[-0.24px]"
+                className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground tracking-[-0.24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
-                No nodes in this space
+                {searchTerm.trim() || filterNodeType !== 'ALL' || filterEntityType !== 'ALL'
+                  ? 'No matching nodes'
+                  : 'No nodes in this space'}
               </p>
               <p
-                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-[#bdbdbd] mt-2 tracking-[-0.24px]"
+                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground/70 mt-2 tracking-[-0.24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
-                Click the + button to create your first node
+                {searchTerm.trim() || filterNodeType !== 'ALL' || filterEntityType !== 'ALL'
+                  ? 'Try changing your search or filters.'
+                  : 'Click the + button to create your first node'}
               </p>
             </div>
           ) : (
             <div className="flex gap-[19px] flex-wrap pt-[15px]">
-              {cards.map((card) => (
-                <ProjectCard
-                  key={card.id}
-                  title={card.title}
-                  color={card.color}
-                  type={card.type}
-                  onClick={() => handleCardClick(card.id)}
-                  onContextMenu={(e) => handleCardContextMenu(e, card.id)}
-                />
-              ))}
+              {visibleNodes.map((node) => {
+                let details: Record<string, unknown> | undefined;
+
+                if (typeof node.nodeDetails === 'string') {
+                  try {
+                    details = JSON.parse(node.nodeDetails);
+                  } catch {
+                    details = undefined;
+                  }
+                } else {
+                  details = node.nodeDetails as Record<string, unknown> | undefined;
+                }
+
+                const isAgentCreated = isAgentCreatedNode(node);
+
+                return (
+                  <div key={node.id}>
+                    <NodeCard
+                      title={node.title}
+                      type={node.nodeType === NodeType.CONTEXT ? CardType.FULFILLED_CONTEXT : CardType.NODE}
+                      entityType={
+                        typeof details?.entityType === 'string'
+                          ? details.entityType
+                          : undefined
+                      }
+                      badge={isAgentCreated ? 'AI' : 'Manual'}
+                      onClick={() => handleCardClick(node.id)}
+                      onContextMenu={(e) => handleCardContextMenu(e, node.id)}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -539,15 +696,15 @@ export default function SpaceDetailPage() {
         {/* Clear Space Confirmation Dialog */}
         {showClearSpaceDialog && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-[16px] p-[24px] w-[400px] shadow-lg">
+            <div className="bg-background border border-border rounded-[16px] p-[24px] w-[400px] shadow-lg">
               <h2
-                className="text-[18px] font-['Roboto:Bold',sans-serif] font-bold text-[#333] mb-[12px]"
+                className="text-[18px] font-['Roboto:Bold',sans-serif] font-bold text-foreground mb-[12px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 Clear Space
               </h2>
               <p
-                className="text-[14px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] mb-[24px]"
+                className="text-[14px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground mb-[24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 Are you sure you want to delete all {nodes?.length || 0} nodes in this space? This action cannot be undone.
@@ -556,7 +713,7 @@ export default function SpaceDetailPage() {
                 <button
                   onClick={() => setShowClearSpaceDialog(false)}
                   disabled={isClearingSpace}
-                  className="h-[36px] px-[20px] bg-[#f5f5f5] rounded-[100px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[14px] text-[#333] tracking-[-0.24px] hover:bg-[#e5e5e5] transition-colors disabled:opacity-50"
+                  className="h-[36px] px-[20px] bg-secondary rounded-[100px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[14px] text-foreground tracking-[-0.24px] hover:bg-accent transition-colors disabled:opacity-50"
                   style={{ fontVariationSettings: "'wdth' 100" }}
                 >
                   Cancel

@@ -6,6 +6,7 @@
  */
 
 import { useRef, useCallback, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import { Excalidraw, MainMenu, Sidebar } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 
@@ -28,7 +29,7 @@ function generateId(): string {
 }
 
 // Create a rectangle with bound text
-function createBoundRectangleWithText(x: number, y: number): ExcalidrawElement[] {
+function createBoundRectangleWithText(x: number, y: number, isDark: boolean): ExcalidrawElement[] {
   const rectId = generateId();
   const textId = generateId();
   const now = Date.now();
@@ -41,8 +42,8 @@ function createBoundRectangleWithText(x: number, y: number): ExcalidrawElement[]
     width: 150,
     height: 60,
     angle: 0,
-    strokeColor: '#1e1e1e',
-    backgroundColor: '#f8f9fa',
+    strokeColor: isDark ? '#e5e7eb' : '#1e1e1e',
+    backgroundColor: isDark ? '#111827' : '#f8f9fa',
     fillStyle: 'solid',
     strokeWidth: 2,
     strokeStyle: 'solid',
@@ -64,7 +65,7 @@ function createBoundRectangleWithText(x: number, y: number): ExcalidrawElement[]
     width: 150,
     height: 20,
     angle: 0,
-    strokeColor: '#1e1e1e',
+    strokeColor: isDark ? '#e5e7eb' : '#1e1e1e',
     backgroundColor: 'transparent',
     fillStyle: 'solid',
     strokeWidth: 1,
@@ -97,6 +98,8 @@ export default function ExcalidrawWrapper({
   onContextMenu,
   readOnly = false,
 }: ExcalidrawWrapperProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -148,7 +151,7 @@ export default function ExcalidrawWrapper({
         e.preventDefault();
         e.stopPropagation();
 
-        const newElements = createBoundRectangleWithText(canvasX, canvasY);
+        const newElements = createBoundRectangleWithText(canvasX, canvasY, isDark);
         const allElements = [...elements, ...newElements];
 
         api.updateScene({
@@ -176,7 +179,7 @@ export default function ExcalidrawWrapper({
     return () => {
       container.removeEventListener('dblclick', handleDoubleClick);
     };
-  }, [readOnly]);
+  }, [readOnly, isDark]);
 
   // Custom right-click handler for context menu
   useEffect(() => {
@@ -219,7 +222,7 @@ export default function ExcalidrawWrapper({
   }, [readOnly, onContextMenu]);
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+    <div ref={containerRef} className="relative h-full w-full">
       {/* Hide library button via CSS */}
       <style>{`
         .library-button,
@@ -233,25 +236,25 @@ export default function ExcalidrawWrapper({
       <Excalidraw
         excalidrawAPI={handleAPIMount}
         initialData={{
-          elements: initialElements,
-          appState: {
-            viewBackgroundColor: '#ffffff',
-            currentItemBackgroundColor: '#f8f9fa',
-            currentItemFillStyle: 'solid',
-            currentItemStrokeColor: '#1e1e1e',
-            currentItemStrokeWidth: 2,
-            currentItemRoughness: 0,
-            currentItemFontFamily: 2,
-            currentItemRoundness: 'sharp',
-            ...initialAppState,
-          },
-          files: initialFiles,
-        } as any}
+        elements: initialElements,
+        appState: {
+          viewBackgroundColor: isDark ? '#0f172a' : '#ffffff',
+          currentItemBackgroundColor: isDark ? '#111827' : '#f8f9fa',
+          currentItemFillStyle: 'solid',
+          currentItemStrokeColor: isDark ? '#e5e7eb' : '#1e1e1e',
+          currentItemStrokeWidth: 2,
+          currentItemRoughness: 0,
+          currentItemFontFamily: 2,
+          currentItemRoundness: 'sharp',
+          ...initialAppState,
+        },
+        files: initialFiles,
+      } as any}
         onChange={onChange as any}
         viewModeEnabled={readOnly}
         zenModeEnabled={false}
         gridModeEnabled={false}
-        theme="light"
+        theme={isDark ? 'dark' : 'light'}
         name="Mujarrad Whiteboard"
         UIOptions={{
           canvasActions: {

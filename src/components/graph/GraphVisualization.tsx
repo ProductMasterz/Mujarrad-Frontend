@@ -1,8 +1,3 @@
-/**
- * GraphVisualization component
- * React Flow wrapper for graph display
- */
-
 'use client';
 
 import React, { useMemo, useCallback } from 'react';
@@ -13,7 +8,6 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   Node as ReactFlowNode,
-  Edge as ReactFlowEdge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -21,118 +15,146 @@ import type { Node, Attribute } from '@/types/backend-dtos';
 import { buildGraphData } from '@/lib/graph-utils';
 import { useGraphStore } from '@/stores/graphStore';
 import { GraphControls } from './GraphControls';
-
+import { CustomNode } from './CustomNode';
+import { useTheme } from 'next-themes';
 interface GraphVisualizationProps {
   nodes: Node[];
   attributes: Attribute[];
   onNodeClick?: (nodeId: string) => void;
 }
 
-/**
- * GraphVisualization component
- * Displays nodes and edges using React Flow
- */
+const nodeTypes = {
+  custom: CustomNode,
+};
+
 export function GraphVisualization({
   nodes,
   attributes,
   onNodeClick,
 }: GraphVisualizationProps) {
-  const viewMode = useGraphStore(state => state.viewMode);
-  const selectedNodeId = useGraphStore(state => state.selectedNodeId);
-  const setSelectedNode = useGraphStore(state => state.setSelectedNode);
-
-  // Build graph data based on view mode
+  const viewMode = useGraphStore((state) => state.viewMode);
+  const selectedNodeId = useGraphStore((state) => state.selectedNodeId);
+  const setSelectedNode = useGraphStore((state) => state.setSelectedNode);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const graphData = useMemo(() => {
-    return buildGraphData(
-      nodes,
-      attributes,
-      viewMode,
-      selectedNodeId
-    );
+    return buildGraphData(nodes, attributes, viewMode, selectedNodeId);
   }, [nodes, attributes, viewMode, selectedNodeId]);
 
-  // Convert to ReactFlow format
   const [flowNodes, setFlowNodes, onNodesChange] = useNodesState(
-    graphData.nodes.map(node => ({
+    graphData.nodes.map((node) => ({
       ...node,
       data: {
         ...node.data,
         label: node.data.label,
+        nodeType: node.data.node.nodeType,
       },
     }))
   );
 
   const [flowEdges, setFlowEdges, onEdgesChange] = useEdgesState(
-    graphData.edges.map(edge => ({
+    graphData.edges.map((edge) => ({
       ...edge,
       label: edge.data.label,
+      animated: edge.animated,
+      style: edge.style,
+        labelStyle: {
+        fontSize: 12,
+        fontWeight: 600,
+        fill: isDark ? '#ffffff' : '#111827',
+        color: isDark ? '#ffffff' : '#111827',
+      },
+      labelBgStyle: {
+        fill: isDark ? '#0f172a' : '#ffffff',
+        fillOpacity: 0.92,
+      },
+      labelBgPadding: [6, 3] as [number, number],
+      labelBgBorderRadius: 4,
     }))
   );
 
-  // Update flow nodes when graph data changes
   React.useEffect(() => {
     setFlowNodes(
-      graphData.nodes.map(node => ({
+      graphData.nodes.map((node) => ({
         ...node,
         data: {
           ...node.data,
           label: node.data.label,
+          nodeType: node.data.node.nodeType,
         },
       }))
     );
   }, [graphData.nodes, setFlowNodes]);
 
-  // Update flow edges when graph data changes
   React.useEffect(() => {
     setFlowEdges(
-      graphData.edges.map(edge => ({
+      graphData.edges.map((edge) => ({
         ...edge,
         label: edge.data.label,
+        animated: edge.animated,
+        style: edge.style,
+        labelStyle: {
+          fontSize: 12,
+          fontWeight: 600,
+          fill: isDark ? '#ffffff' : '#111827',
+          color: isDark ? '#ffffff' : '#111827',
+        },
+        labelBgStyle: {
+          fill: isDark ? '#0f172a' : '#ffffff',
+          fillOpacity: 0.92,
+        },
+        labelBgPadding: [6, 3] as [number, number],
+        labelBgBorderRadius: 4,
       }))
     );
-  }, [graphData.edges, setFlowEdges]);
+  }, [graphData.edges, setFlowEdges, isDark]);
 
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: ReactFlowNode) => {
       setSelectedNode(node.id);
-      if (onNodeClick) {
-        onNodeClick(node.id);
-      }
+      onNodeClick?.(node.id);
     },
     [onNodeClick, setSelectedNode]
   );
 
-  // View mode change handler for GraphControls
   const handleViewModeChange = useCallback((mode: Partial<typeof viewMode>) => {
-    useGraphStore.setState(state => ({
-      viewMode: { ...state.viewMode, ...mode }
+    useGraphStore.setState((state) => ({
+      viewMode: { ...state.viewMode, ...mode },
     }));
   }, []);
 
   if (nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
+      <div className="flex h-full items-center justify-center text-muted-foreground">
         No nodes to display in graph
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex h-full flex-col bg-background text-foreground">
       <GraphControls viewMode={viewMode} onViewModeChange={handleViewModeChange} />
 
-      <div className="flex-1">
+      <div className="flex-1 overflow-hidden rounded-[20px] border border-border bg-background">
         <ReactFlow
           nodes={flowNodes}
           edges={flowEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeClick={handleNodeClick}
+          nodeTypes={nodeTypes}
           fitView
         >
-          <Background />
+          <Background color="hsl(var(--border))" gap={20} />
           <Controls />
-          <MiniMap />
+          <MiniMap
+            pannable
+            zoomable
+            style={{
+              backgroundColor: 'hsl(var(--background))',
+              border: '1px solid hsl(var(--border))',
+            }}
+          />
         </ReactFlow>
       </div>
     </div>

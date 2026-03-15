@@ -8,7 +8,7 @@ type RenameModalProps = {
   onClose: () => void;
   currentName: string;
   onRename: (newName: string) => Promise<void>;
-  entityLabel: string; // "Space" | "Node" | "Context"
+  entityLabel: string;
 };
 
 export function RenameModal({
@@ -23,25 +23,20 @@ export function RenameModal({
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setName(currentName);
       setError(null);
       setIsLoading(false);
-      // Focus input after modal opens
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen, currentName]);
 
-  // Handle keyboard events
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -79,36 +74,29 @@ export function RenameModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-[rgba(41,41,41,0.5)]"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative bg-white w-[400px] rounded-[16px] shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-[24px] pt-[20px] pb-[12px]">
+      <div className="relative w-[400px] rounded-[16px] border border-border bg-background text-foreground shadow-2xl">
+        <div className="flex items-center justify-between px-[24px] pb-[12px] pt-[20px]">
           <h2
-            className="font-['Roboto:SemiBold',sans-serif] font-semibold text-[18px] text-[#333] tracking-[-0.24px]"
+            className="font-['Roboto:SemiBold',sans-serif] text-[18px] font-semibold tracking-[-0.24px] text-foreground"
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
             Rename {entityLabel}
           </h2>
           <button
             onClick={onClose}
-            className="text-[#828282] hover:text-[#333] transition-colors"
+            className="text-muted-foreground transition-colors hover:text-foreground"
           >
             <X className="size-5" strokeWidth={1.5} />
           </button>
         </div>
 
-        {/* Content */}
         <form onSubmit={handleSubmit} className="px-[24px] pb-[24px]">
           <div className="mb-[16px]">
             <label
               htmlFor="rename-input"
-              className="block font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#828282] tracking-[-0.08px] mb-[8px]"
+              className="mb-[8px] block font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] text-muted-foreground"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               Name
@@ -123,13 +111,13 @@ export function RenameModal({
                 setError(null);
               }}
               disabled={isLoading}
-              className="w-full h-[40px] px-[12px] border border-[#e0e0e0] rounded-[8px] font-['Roboto:Regular',sans-serif] font-normal text-[15px] text-[#333] tracking-[-0.24px] outline-none focus:border-[#248bf2] transition-colors disabled:bg-[#f5f5f5] disabled:cursor-not-allowed"
+              className="h-[40px] w-full rounded-[8px] border border-border bg-background px-[12px] font-['Roboto:Regular',sans-serif] text-[15px] font-normal tracking-[-0.24px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary disabled:cursor-not-allowed disabled:bg-muted"
               style={{ fontVariationSettings: "'wdth' 100" }}
               placeholder={`Enter ${entityLabel.toLowerCase()} name`}
             />
             {error && (
               <p
-                className="mt-[8px] font-['Roboto:Regular',sans-serif] font-normal text-[12px] text-[#d4183d] tracking-[-0.08px]"
+                className="mt-[8px] font-['Roboto:Regular',sans-serif] text-[12px] font-normal tracking-[-0.08px] text-destructive"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 {error}
@@ -137,13 +125,12 @@ export function RenameModal({
             )}
           </div>
 
-          {/* Actions */}
           <div className="flex justify-end gap-[12px]">
             <button
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="h-[36px] px-[20px] bg-[#f5f5f5] rounded-[100px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[14px] text-[#333] tracking-[-0.24px] hover:bg-[#e5e5e5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-[36px] rounded-[100px] bg-secondary px-[20px] font-['Roboto:SemiBold',sans-serif] text-[14px] font-semibold tracking-[-0.24px] text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               Cancel
@@ -151,12 +138,12 @@ export function RenameModal({
             <button
               type="submit"
               disabled={isLoading || !name.trim()}
-              className="h-[36px] px-[20px] bg-[#248bf2] rounded-[100px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[14px] text-white tracking-[-0.24px] hover:bg-[#1a6bc4] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-[8px]"
+              className="flex h-[36px] items-center gap-[8px] rounded-[100px] bg-[#248bf2] px-[20px] font-['Roboto:SemiBold',sans-serif] text-[14px] font-semibold tracking-[-0.24px] text-white transition-colors hover:bg-[#1a6bc4] disabled:cursor-not-allowed disabled:opacity-50"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               {isLoading ? (
                 <>
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   Renaming...
                 </>
               ) : (

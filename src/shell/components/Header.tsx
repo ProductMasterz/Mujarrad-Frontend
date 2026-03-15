@@ -1,6 +1,8 @@
-import { Menu, ArrowLeft, Plus, Bell, Search, MoreVertical, HelpCircle } from "lucide-react";
+'use client';
+import { Menu, MessageSquare,ArrowLeft, Plus, Bell, Search, MoreVertical, HelpCircle } from "lucide-react";
 import { Breadcrumb } from "./Breadcrumb";
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { MoreMenuDropdown } from "./MoreMenuDropdown";
 import { AddMenuDropdown } from "./AddMenuDropdown";
@@ -8,6 +10,8 @@ import { SearchModal } from "./SearchModal";
 import { TabsBar, Tab } from "./TabsBar";
 import { HelpDropdown } from "./HelpDropdown";
 import { useNavigationStore } from "@/stores/navigationStore";
+import { ChatPanel } from "@/components/chat/ChatPanel";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -27,6 +31,7 @@ type HeaderProps = {
   onOpenInNewTab?: () => void;
   onOpenAsNode?: () => void;
   onLock?: () => void;
+  onGraph?: () => void;
   onWhiteboard?: () => void;
   onDelete?: () => void;
   onClearSpace?: () => void;
@@ -49,20 +54,18 @@ export function Header({
   onSearchClick,
   onHomeClick,
   onBreadcrumbClick,
-  // Add menu actions
   onCreateSpace,
   onCreateNode,
   onCreateContext,
-  // More menu actions
   onShare,
   onOpenInNewTab,
   onOpenAsNode,
   onLock,
+  onGraph,
   onWhiteboard,
   onDelete,
   onClearSpace,
   onMoveTo,
-  // Tabs
   tabs,
   activeTabId,
   onTabClick,
@@ -76,6 +79,10 @@ export function Header({
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<HTMLElement | null>(null);
   const [helpAnchor, setHelpAnchor] = useState<HTMLElement | null>(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  
+  const params = useParams();
+  const currentSlug = params?.slug as string | undefined;
+  const [chatOpen, setChatOpen] = useState(false);
 
   // Get tooltip from navigation store
   const addButtonTooltip = useNavigationStore((state) => state.addButtonTooltip);
@@ -101,13 +108,17 @@ export function Header({
     onSearchClick();
   };
 
+  const handleChatClick = () => {
+    setChatOpen(true);
+  };
+  
   return (
-    <div className="fixed top-0 left-0 right-0 z-50">
+    <div className="fixed left-0 right-0 top-0 z-50 border-b border-[#e5e7eb] bg-white/95 backdrop-blur-md dark:border-[#374151] dark:bg-[#111827]/95">
       {/* Top gray bar with tabs */}
-      <div className="h-[33px] bg-[#f2f2f2] flex items-center px-[9px] gap-[12px]">
+      <div className="flex h-[34px] items-center gap-[12px] border-b border-[#f0f0f0] bg-[#f8fafc] px-[12px] dark:border-[#374151] dark:bg-[#0f172a]">
         <button
           onClick={onHomeClick}
-          className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827] dark:text-[#d1d5db] dark:hover:bg-[#1f2937] dark:hover:text-white"
           aria-label="Home"
         >
           <svg className="size-[18px]" viewBox="0 0 18 18" fill="none">
@@ -139,12 +150,12 @@ export function Header({
       </div>
 
       {/* Main navigation bar */}
-      <div className="h-[43px] bg-white border-b border-[#f2f2f2] flex items-center justify-between px-[9px]">
+      <div className="flex h-[46px] items-center justify-between bg-white px-[12px] dark:bg-[#111827]">
         {/* Left section */}
         <div className="flex items-center gap-[12px]">
           <button
             onClick={onMenuClick}
-            className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827] dark:text-[#d1d5db] dark:hover:bg-[#1f2937] dark:hover:text-white"
             aria-label="Menu"
           >
             <Menu className="size-6" strokeWidth={1.5} />
@@ -153,7 +164,7 @@ export function Header({
           {showBackButton && (
             <button
               onClick={onBackClick}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827] dark:text-[#d1d5db] dark:hover:bg-[#1f2937] dark:hover:text-white"
               aria-label="Back"
             >
               <ArrowLeft className="size-6" strokeWidth={1.5} />
@@ -165,12 +176,14 @@ export function Header({
 
         {/* Right section */}
         <div className="flex items-center gap-[15px]">
+          <ThemeToggle />
+
           <div className="relative">
             <button
               onClick={handleAddClick}
               onMouseEnter={() => setHoveredButton("add")}
               onMouseLeave={() => setHoveredButton(null)}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827] dark:text-[#d1d5db] dark:hover:bg-[#1f2937] dark:hover:text-white"
               aria-label="Add"
             >
               <Plus className="size-6" strokeWidth={1.5} />
@@ -181,13 +194,13 @@ export function Header({
               </div>
             )}
           </div>
-
+          
           <div className="relative">
             <button
               onClick={handleNotificationClick}
               onMouseEnter={() => setHoveredButton("notification")}
               onMouseLeave={() => setHoveredButton(null)}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827] dark:text-[#d1d5db] dark:hover:bg-[#1f2937] dark:hover:text-white"
               aria-label="Notifications"
             >
               <Bell className="size-6" strokeWidth={1.5} />
@@ -199,12 +212,31 @@ export function Header({
             )}
           </div>
 
+          
+          <div className="relative">
+            <button
+              onClick={handleChatClick}
+              onMouseEnter={() => setHoveredButton("chat")}
+              onMouseLeave={() => setHoveredButton(null)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827] dark:text-[#d1d5db] dark:hover:bg-[#1f2937] dark:hover:text-white"
+              aria-label="Open Chat"
+            >
+              <MessageSquare className="size-6" strokeWidth={1.5} />
+            </button>
+            {hoveredButton === "chat" && (
+              <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-[#333] text-white text-[11px] px-[8px] py-[4px] rounded whitespace-nowrap font-['Roboto:Regular',sans-serif]">
+                Open Chat
+              </div>
+            )}
+          </div>
+          
+
           <div className="relative">
             <button
               onClick={handleSearchClick}
               onMouseEnter={() => setHoveredButton("search")}
               onMouseLeave={() => setHoveredButton(null)}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827] dark:text-[#d1d5db] dark:hover:bg-[#1f2937] dark:hover:text-white"
               aria-label="Search"
             >
               <Search className="size-6" strokeWidth={1.5} />
@@ -221,7 +253,7 @@ export function Header({
               onClick={handleHelpClick}
               onMouseEnter={() => setHoveredButton("help")}
               onMouseLeave={() => setHoveredButton(null)}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827] dark:text-[#d1d5db] dark:hover:bg-[#1f2937] dark:hover:text-white"
               aria-label="Help"
             >
               <HelpCircle className="size-6" strokeWidth={1.5} />
@@ -238,7 +270,7 @@ export function Header({
               onClick={handleMoreClick}
               onMouseEnter={() => setHoveredButton("more")}
               onMouseLeave={() => setHoveredButton(null)}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827] dark:text-[#d1d5db] dark:hover:bg-[#1f2937] dark:hover:text-white"
               aria-label="More"
             >
               <MoreVertical className="size-6" strokeWidth={1.5} />
@@ -280,6 +312,7 @@ export function Header({
           onOpenInNewTab={onOpenInNewTab}
           onOpenAsNode={onOpenAsNode}
           onLock={onLock}
+          onGraph={onGraph}
           onWhiteboard={onWhiteboard}
           onDelete={onDelete}
           onClearSpace={onClearSpace}
@@ -301,6 +334,18 @@ export function Header({
         <SearchModal
           onClose={() => setSearchModalOpen(false)}
         />
+      )}
+
+      {/* Chat Drawer */}
+      {chatOpen && (
+        <div className="fixed right-0 top-[76px] z-[60] h-[calc(100vh-76px)] w-[620px] overflow-hidden rounded-l-[24px] border-l border-[#e6e6e6] bg-white shadow-2xl dark:border-[#374151] dark:bg-[#111827]">
+          <ChatPanel
+            spaceSlug={currentSlug}
+            title="Chat"
+            embedded={true}
+            onClose={() => setChatOpen(false)}
+          />
+        </div>
       )}
     </div>
   );
