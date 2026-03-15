@@ -3,13 +3,14 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores';
+import { isAuthBypassEnabled } from '@/lib/auth-bypass';
 
 export default function Home() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthBypassEnabled() || isAuthenticated) {
       router.push('/spaces');
     } else {
       router.push('/login');

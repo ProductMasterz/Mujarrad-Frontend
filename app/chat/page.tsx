@@ -6,6 +6,7 @@ import { SendHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 
 type Message = {
   id: string;
@@ -22,10 +23,58 @@ type AgentProcessResponse = {
   code?: string;
 };
 
+async function getAgentResponse(
+  agentServiceUrl: string | undefined,
+  text: string,
+  spaceSlug: string,
+): Promise<AgentProcessResponse> {
+  // Demo mode gives a visible working flow even when backend URL is not configured.
+  if (!agentServiceUrl) {
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    return {
+      report: [
+        '# Demo Summary',
+        '',
+        `**Input:** ${text}`,
+        '',
+        '## Extracted',
+        '- 1 node idea',
+        '- 1 relationship idea',
+        '',
+        '```ts',
+        "const spaceSlug = '" + spaceSlug + "';",
+        '```',
+        '',
+        '[Open space](#/spaces)',
+      ].join('\n'),
+    };
+  }
+
+  const response = await fetch(`${agentServiceUrl}/api/agents/process`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      text,
+      space_slug: spaceSlug,
+    }),
+  });
+
+  const data: AgentProcessResponse = await response.json();
+
+  if (!response.ok || data.error) {
+    throw new Error(data.message || 'The agent service returned an error.');
+  }
+
+  return data;
+}
+
 export default function ChatPage() {
   const searchParams = useSearchParams();
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -36,6 +85,7 @@ export default function ChatPage() {
   ]);
 
   const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
+  const isDemoMode = !agentServiceUrl;
   const spaceSlug = searchParams.get('space_slug') || 'demo-space';
 
   const appendMessage = (role: 'user' | 'assistant', content: string) => {
@@ -57,43 +107,23 @@ export default function ChatPage() {
     setInput('');
     setIsSending(true);
 
-    if (!agentServiceUrl) {
-      appendMessage('assistant', 'Agent service URL is not configured.');
-      setIsSending(false);
-      return;
-    }
-
+    const startedAt = Date.now();
     try {
-      const response = await fetch(`${agentServiceUrl}/api/agents/process`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: trimmed,
-          space_slug: spaceSlug,
-        }),
-      });
-
-      const data: AgentProcessResponse = await response.json();
-
-      if (!response.ok || data.error) {
-        appendMessage(
-          'assistant',
-          data.message || 'The agent service returned an error.',
-        );
-        return;
-      }
+      const data = await getAgentResponse(agentServiceUrl, trimmed, spaceSlug);
+      setLastLatencyMs(Date.now() - startedAt);
 
       appendMessage(
         'assistant',
         data.report || 'Your message was processed successfully.',
       );
-    } catch {
+    } catch (error) {
       appendMessage(
         'assistant',
-        'Could not reach the agent service. Please try again.',
+        error instanceof Error
+          ? error.message
+          : 'Could not reach the agent service. Please try again.',
       );
+      setLastLatencyMs(Date.now() - startedAt);
     } finally {
       setIsSending(false);
     }
@@ -108,6 +138,10 @@ export default function ChatPage() {
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           Space: {spaceSlug}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Mode: {isDemoMode ? 'Demo (no backend URL)' : 'Live backend'}
+          {lastLatencyMs !== null ? ` • Last response: ${lastLatencyMs}ms` : ''}
         </p>
       </div>
 
@@ -125,7 +159,14 @@ export default function ChatPage() {
                     : 'bg-muted text-foreground'
                 }`}
               >
-                {message.content}
+                {message.role === 'assistant' ? (
+                  <MarkdownRenderer
+                    content={message.content}
+                    className="markdown-content prose-sm max-w-none"
+                  />
+                ) : (
+                  message.content
+                )}
               </div>
             </div>
           ))}
