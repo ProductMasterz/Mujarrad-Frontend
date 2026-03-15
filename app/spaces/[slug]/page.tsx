@@ -31,9 +31,7 @@ function nodeToCard(node: Node): Card {
   } else if (node.nodeType === NodeType.REGULAR) {
     cardType = CardType.NODE;
   }
-   
 
-  //test
   return {
     id: node.id,
     title: node.title,
