@@ -102,14 +102,13 @@ export function SpacesDropdown({
   return (
     <div
       ref={menuRef}
-      className="fixed bg-white rounded-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] w-[188px] z-[100] py-[8px]"
+      className="fixed z-[100] w-[188px] rounded-[12px] bg-white py-[8px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] dark:border dark:border-[#374151] dark:bg-[#111827] dark:shadow-[0px_8px_24px_0px_rgba(0,0,0,0.35)]"
       style={{
         left: `${rect.left}px`,
         top: `${rect.bottom + 8}px`,
       }}
     >
-      {/* Header */}
-      <div className="px-[26px] py-[8px] flex items-center justify-between relative">
+      <div className="relative flex items-center justify-between px-[26px] py-[8px]">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -119,39 +118,42 @@ export function SpacesDropdown({
               onClose();
             }
           }}
-          className="flex items-center justify-center size-[12px] hover:opacity-70 transition-opacity cursor-pointer z-10"
+          className="z-10 flex size-[12px] cursor-pointer items-center justify-center transition-opacity hover:opacity-70"
           aria-label="Back"
         >
-          <ChevronDown className="size-[12px] text-[#292D32] rotate-90" />
+          <ChevronDown className="size-[12px] rotate-90 text-[#292D32] dark:text-[#d1d5db]" />
         </button>
+
         <span
-          className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#333] tracking-[-0.08px] leading-[18px] absolute left-1/2 -translate-x-1/2 pointer-events-none"
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-[#333] dark:text-white"
           style={{ fontVariationSettings: "'wdth' 100" }}
         >
           Spaces
         </span>
+
         <button
           onClick={handleAddSpaceClick}
-          className="flex items-center justify-center size-[16px] text-[#248bf2] hover:text-[#1a6bc4] transition-colors cursor-pointer z-10"
+          className="z-10 flex size-[16px] cursor-pointer items-center justify-center text-[#248bf2] transition-colors hover:text-[#1a6bc4] dark:text-[#93c5fd] dark:hover:text-white"
           aria-label="Add space"
         >
           <Plus className="size-[16px]" />
         </button>
       </div>
 
-      {/* Spaces List */}
-      <div className="flex flex-col gap-[8px] mt-[12px] px-[26px]">
+      <div className="mt-[12px] flex flex-col gap-[8px] px-[26px]">
         {spaces.map((space) => (
           <button
             key={space.id}
             onClick={() => handleSpaceClick(space.id)}
-            className={`flex gap-[3px] items-center text-left py-[4px] px-[0px] rounded-[6px] hover:bg-[#f5f5f5] transition-colors ${
-              currentSpace === space.id ? "text-[#248bf2]" : "text-[#828282]"
+            className={`flex items-center gap-[3px] rounded-[6px] px-[0px] py-[4px] text-left transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#1f2937] ${
+              currentSpace === space.id
+                ? "text-[#248bf2] dark:text-[#93c5fd]"
+                : "text-[#828282] dark:text-[#9ca3af]"
             }`}
           >
-            <MoreHorizontal className="size-[16px] text-[#e0e0e0] rotate-90" />
+            <MoreHorizontal className="size-[16px] rotate-90 text-[#e0e0e0] dark:text-[#4b5563]" />
             <span
-              className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] tracking-[-0.08px] leading-[18px]"
+              className="font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px]"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               {space.name}
@@ -159,7 +161,6 @@ export function SpacesDropdown({
           </button>
         ))}
 
-        {/* Input for new space */}
         {isAddingSpace && (
           <div className="mt-[-8px]">
             <input
@@ -170,17 +171,16 @@ export function SpacesDropdown({
               onKeyDown={handleInputKeyDown}
               onBlur={handleCreateSpace}
               placeholder="Type Space Name"
-              className="w-full h-[32px] px-[14px] py-[8px] bg-white border border-[#e0e0e0] rounded-[10px] font-['Roboto:Regular',sans-serif] font-normal text-[12px] text-[#828282] tracking-[-0.08px] leading-[18px] focus:outline-none focus:border-[#248bf2]"
+              className="h-[32px] w-full rounded-[10px] border border-[#e0e0e0] bg-white px-[14px] py-[8px] font-['Roboto:Regular',sans-serif] text-[12px] font-normal leading-[18px] tracking-[-0.08px] text-[#828282] focus:border-[#248bf2] focus:outline-none dark:border-[#374151] dark:bg-[#0f172a] dark:text-[#e5e7eb] dark:placeholder:text-[#6b7280] dark:focus:border-[#60a5fa]"
               style={{ fontVariationSettings: "'wdth' 100" }}
             />
           </div>
         )}
       </div>
 
-      {/* Empty State */}
       {showEmptyState && (
         <p
-          className="px-[8px] py-[8px] text-center font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#bdbdbd] tracking-[-0.08px] leading-[18px]"
+          className="px-[8px] py-[8px] text-center font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-[#bdbdbd] dark:text-[#6b7280]"
           style={{ fontVariationSettings: "'wdth' 100" }}
         >
           You don&apos;t have any spaces yet, create your first one

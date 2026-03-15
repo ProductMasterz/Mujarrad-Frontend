@@ -59,279 +59,7 @@ open https://mujarrad.onrender.com/swagger-ui/index.html
 \`\`\`
 `,
 
-  // Getting Started - Prerequisites
-  'prerequisites': `# Prerequisites
 
-Before setting up the Mujarrad Backend, ensure you have the following installed on your system.
-
-## Required Software
-
-### Java 21 (OpenJDK)
-
-Mujarrad requires Java 21 or later.
-
-**macOS (Homebrew):**
-\`\`\`bash
-brew install openjdk@21
-
-# Add to PATH
-echo 'export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-
-# Verify installation
-java -version
-# Expected: openjdk version "21.x.x"
-\`\`\`
-
-**Ubuntu/Debian:**
-\`\`\`bash
-sudo apt update
-sudo apt install openjdk-21-jdk
-
-# Verify
-java -version
-\`\`\`
-
-**Windows:**
-Download from [Adoptium](https://adoptium.net/) and install Eclipse Temurin 21.
-
-### PostgreSQL 14+
-
-**macOS (Homebrew):**
-\`\`\`bash
-brew install postgresql@15
-brew services start postgresql@15
-\`\`\`
-
-**Docker (Recommended):**
-\`\`\`bash
-docker run -d \\
-  --name mujarrad-postgres \\
-  -e POSTGRES_USER=mujarrad \\
-  -e POSTGRES_PASSWORD=mujarrad123 \\
-  -e POSTGRES_DB=mujarrad \\
-  -p 5432:5432 \\
-  postgres:15
-\`\`\`
-
-### Docker (Optional but Recommended)
-
-Docker simplifies running PostgreSQL and the full application stack.
-
-**macOS:**
-\`\`\`bash
-brew install --cask docker
-# Then launch Docker Desktop
-\`\`\`
-
-### Git
-
-\`\`\`bash
-brew install git   # macOS
-sudo apt install git  # Ubuntu
-\`\`\`
-
-## System Requirements
-
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| RAM | 4 GB | 8+ GB |
-| CPU | 2 cores | 4+ cores |
-| Disk | 2 GB free | 10+ GB free |
-| OS | macOS 12+, Ubuntu 20.04+, Windows 10+ | Latest LTS |
-`,
-
-  // Getting Started - Local Setup
-  'local-setup': `# Local Setup
-
-This guide walks you through setting up the Mujarrad Backend for local development.
-
-## 1. Clone the Repository
-
-\`\`\`bash
-git clone https://github.com/your-org/mujarrad-backend.git
-cd mujarrad-backend
-\`\`\`
-
-## 2. Start PostgreSQL
-
-### Option A: Docker (Recommended)
-
-\`\`\`bash
-# Start PostgreSQL container
-docker run -d \\
-  --name mujarrad-postgres \\
-  -e POSTGRES_USER=mujarrad \\
-  -e POSTGRES_PASSWORD=mujarrad123 \\
-  -e POSTGRES_DB=mujarrad \\
-  -p 5432:5432 \\
-  postgres:15
-
-# Verify it's running
-docker ps | grep mujarrad-postgres
-\`\`\`
-
-### Option B: Docker Compose
-
-\`\`\`bash
-docker-compose up -d postgres
-docker-compose ps
-\`\`\`
-
-## 3. Configure Environment Variables
-
-Create a \`.env\` file in the project root:
-
-\`\`\`bash
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=mujarrad
-DB_USER=mujarrad
-DB_PASSWORD=mujarrad123
-
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-min-256-bits
-JWT_EXPIRATION=86400000
-
-# Server
-SERVER_PORT=3000
-\`\`\`
-
-## 4. Build the Application
-
-\`\`\`bash
-cd Backend
-
-# Set JAVA_HOME if needed (macOS example)
-export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
-
-# Build (skip tests for faster startup)
-./gradlew build -x test
-
-# Or full build with tests
-./gradlew build
-\`\`\`
-
-## 5. Run the Application
-
-\`\`\`bash
-cd Backend
-./gradlew bootRun
-\`\`\`
-
-## 6. Verify the Setup
-
-### Health Check
-
-\`\`\`bash
-curl https://mujarrad.onrender.com/api/health
-\`\`\`
-
-Expected response:
-\`\`\`json
-{
-  "status": "UP",
-  "database": "Connected"
-}
-\`\`\`
-
-### Swagger UI
-
-Open in browser: https://mujarrad.onrender.com/swagger-ui/index.html
-
-### Register a Test User
-
-\`\`\`bash
-curl -X POST https://mujarrad.onrender.com/api/users/register \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "email": "test@example.com",
-    "username": "testuser",
-    "password": "TestPassword123!"
-  }'
-\`\`\`
-`,
-
-  // Getting Started - Environment Variables
-  'environment-variables': `# Environment Variables
-
-This document covers all environment variables used by the Mujarrad Backend.
-
-## Quick Reference
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| \`DB_HOST\` | Yes | - | PostgreSQL hostname |
-| \`DB_PORT\` | No | 5432 | PostgreSQL port |
-| \`DB_NAME\` | Yes | - | Database name |
-| \`DB_USER\` | Yes | - | Database username |
-| \`DB_PASSWORD\` | Yes | - | Database password |
-| \`JWT_SECRET\` | Yes | - | JWT signing key (min 256 bits) |
-| \`JWT_EXPIRATION\` | No | 86400000 | Token validity (ms) |
-| \`SERVER_PORT\` | No | 8080 | Application port |
-
-## Database Configuration
-
-\`\`\`bash
-# PostgreSQL connection
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=mujarrad
-DB_USER=mujarrad
-DB_PASSWORD=your-secure-password
-\`\`\`
-
-## Authentication
-
-### JWT Configuration
-
-\`\`\`bash
-# JWT signing secret (REQUIRED - minimum 256 bits / 32 characters)
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-min-256-bits
-
-# Token expiration in milliseconds (default: 24 hours)
-JWT_EXPIRATION=86400000
-\`\`\`
-
-**Important:** The JWT secret must be at least 32 characters long for HMAC-SHA256 signing.
-
-### Google OAuth2 (Optional)
-
-\`\`\`bash
-GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-\`\`\`
-
-## Rate Limiting
-
-\`\`\`bash
-# Rate limit window (milliseconds)
-RATE_LIMIT_WINDOW=60000
-
-# Requests per window (JWT auth)
-RATE_LIMIT_JWT_MAX=10
-
-# Requests per window (API key auth)
-RATE_LIMIT_APIKEY_MAX=1000
-\`\`\`
-
-## Generating Secrets
-
-### JWT Secret
-
-\`\`\`bash
-# Generate a secure 256-bit key
-openssl rand -base64 32
-\`\`\`
-
-### Database Password
-
-\`\`\`bash
-# Generate a secure password
-openssl rand -base64 24
-\`\`\`
-`,
 
   // Getting Started - First API Call
   'first-api-call': `# First API Call
@@ -950,6 +678,179 @@ curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceId}/context-types" 
 ## Built-in REGULAR Type
 
 Every BACKEND space has a built-in \`REGULAR\` context type that cannot be modified or deleted. It serves as an escape hatch for unstructured content.
+
+## Context Type Error Codes
+
+| Code | HTTP | When |
+|------|------|------|
+| \`MODE_RESTRICTION\` | 403 | Schema mutation attempted in PRODUCTION mode |
+| \`INVALID_HEADER\` | 400 | Invalid \`X-Space-Mode\` header value |
+| \`BUILTIN_IMMUTABLE\` | 400 | Attempt to modify/delete the REGULAR type |
+| \`CONTEXT_TYPE_IN_USE\` | 409 | Delete attempted while nodes reference the type |
+| \`DUPLICATE_SLUG\` | 409 | Context type slug already exists in this space |
+| \`INVALID_PROJECT_TYPE\` | 400 | Context type API called on a CONSUMER space |
+`,
+
+  // Core Concepts - Space Modes
+  'space-modes': `# Space Modes
+
+Space Modes control what operations are permitted on a **BACKEND** space. CONSUMER spaces are always in full-flexibility mode — Modes only apply to BACKEND spaces.
+
+## Two Modes
+
+### CONFIGURATION Mode
+
+The space is open for schema changes. Use this while setting up your application's data model.
+
+**What you can do:**
+- Create, update, and delete Context Types
+- Define attribute schemas (field types, validation rules)
+- Define schema relationships between context types
+- Create any nodes and relationships freely
+
+### PRODUCTION Mode
+
+The schema is locked. End-users of your application interact with the space in this mode.
+
+**What you can do:**
+- Create nodes following the defined schema
+- Create relationships using **any** relationship type (full neuroplasticity preserved)
+- Add custom properties via \`nodeDetails\` JSONB
+
+**What is blocked:**
+- Cannot create, update, or delete Context Types (returns \`403 MODE_RESTRICTION\`)
+- Cannot modify attribute schemas
+- Cannot modify schema relationship definitions
+
+> **Key principle:** You can CREATE relationships freely in Production. You just can't modify the SCHEMA that documents them.
+
+## Switching Modes
+
+Only the space owner can switch modes.
+
+\`\`\`bash
+PATCH https://mujarrad.onrender.com/api/spaces/{spaceId}
+Authorization: Bearer $TOKEN
+Content-Type: application/json
+
+{
+  "mode": "PRODUCTION"
+}
+\`\`\`
+
+## X-Space-Mode Header Override
+
+For CI/CD pipelines or one-off admin tasks, temporarily override the persisted mode **without changing it**:
+
+\`\`\`bash
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceId}/context-types" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "X-Space-Mode: CONFIGURATION" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "name": "NewType", "attributeSchema": {} }'
+\`\`\`
+
+- Requires **owner** authentication
+- The space's persisted mode is **not** changed
+- Invalid header values return \`400 INVALID_HEADER\`
+
+## Recommended Workflow
+
+1. Create a BACKEND space → automatically starts in CONFIGURATION mode
+2. Design your Context Types and relationships
+3. Test with real data
+4. Switch to PRODUCTION mode when ready for end-users
+5. Use \`X-Space-Mode: CONFIGURATION\` for future schema migrations
+`,
+
+  // Core Concepts - Project Types
+  'project-types': `# Project Types
+
+Every Mujarrad space has a **Project Type** that determines how it behaves.
+
+## CONSUMER (Default)
+
+The default type for all new spaces. Full flexibility — no schema enforcement.
+
+**Ideal for:**
+- Personal knowledge management
+- Note-taking applications
+- Exploratory research
+- Any use case where structure emerges organically
+
+**Characteristics:**
+- No modes (always full flexibility)
+- No Context Types
+- Free-form nodes and relationships
+
+\`\`\`bash
+# Create a CONSUMER space (default)
+curl -X POST "https://mujarrad.onrender.com/api/spaces" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "name": "My Notes" }'
+\`\`\`
+
+## BACKEND
+
+Designed for applications that use Mujarrad as their backend database.
+
+**Ideal for:**
+- SaaS applications
+- Structured knowledge bases
+- Multi-tenant apps where schema consistency matters
+- APIs serving end-users
+
+**Characteristics:**
+- Starts in CONFIGURATION mode automatically
+- Supports Context Types with schema validation
+- Built-in \`REGULAR\` type created automatically
+- Switches between CONFIGURATION and PRODUCTION modes
+
+\`\`\`bash
+# Create a BACKEND space
+curl -X POST "https://mujarrad.onrender.com/api/spaces" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "My App",
+    "projectType": "BACKEND"
+  }'
+\`\`\`
+
+## Converting CONSUMER → BACKEND
+
+Existing CONSUMER spaces can be converted to BACKEND:
+
+\`\`\`bash
+PATCH https://mujarrad.onrender.com/api/spaces/{spaceId}
+Authorization: Bearer $TOKEN
+Content-Type: application/json
+
+{
+  "projectType": "BACKEND"
+}
+\`\`\`
+
+The space will automatically:
+- Switch to CONFIGURATION mode
+- Get the built-in \`REGULAR\` context type created
+
+## Space Response
+
+Both \`projectType\` and \`mode\` are included in all space API responses:
+
+\`\`\`json
+{
+  "id": "uuid",
+  "name": "My App",
+  "slug": "my-app",
+  "projectType": "BACKEND",
+  "mode": "CONFIGURATION",
+  "ownerId": "uuid",
+  "createdAt": "2026-03-14T10:00:00Z"
+}
+\`\`\`
 `,
 
   // Authentication Overview
@@ -1327,9 +1228,6 @@ const navSections = [
     icon: Rocket,
     items: [
       { id: 'introduction', title: 'Introduction' },
-      { id: 'prerequisites', title: 'Prerequisites' },
-      { id: 'local-setup', title: 'Local Setup' },
-      { id: 'environment-variables', title: 'Environment Variables' },
       { id: 'first-api-call', title: 'First API Call' },
     ],
   },
@@ -1349,7 +1247,9 @@ const navSections = [
       { id: 'spaces', title: 'Spaces' },
       { id: 'nodes', title: 'Nodes' },
       { id: 'attributes', title: 'Attributes' },
+      { id: 'project-types', title: 'Project Types' },
       { id: 'context-types', title: 'Context Types' },
+      { id: 'space-modes', title: 'Space Modes' },
     ],
   },
   {

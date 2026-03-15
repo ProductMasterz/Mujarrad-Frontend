@@ -153,15 +153,15 @@ export default function SpaceGraphPage() {
   ].filter((item) => item.value !== '—');
   return (
     <ProtectedRoute>
-      <div className="h-screen flex flex-col bg-white">
-        <div className="flex items-center justify-between border-b px-4 py-3">
+      <div className="flex h-screen flex-col bg-background text-foreground">
+        <div className="flex items-center justify-between border-b border-border bg-background px-4 py-3">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.push(`/spaces/${slug}`)}
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Space
             </Button>
 
@@ -175,7 +175,7 @@ export default function SpaceGraphPage() {
               setSelectedNodeId(null);
               setChatOpen(true);
             }}
-            className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-[#f5f5f5]"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground transition hover:bg-muted"
             type="button"
           >
             <MessageSquare className="h-4 w-4" />
@@ -185,7 +185,9 @@ export default function SpaceGraphPage() {
 
         <div
           className="flex-1 transition-all duration-300"
-          style={{ marginRight: selectedNodeId ? '430px' : '0' }}
+          style={{
+            marginRight: `${(selectedNodeId ? 430 : 0) + (chatOpen ? 620 : 0)}px`,
+          }}
         >
           {isLoading ? (
             <div className="flex h-full items-center justify-center">
@@ -201,30 +203,30 @@ export default function SpaceGraphPage() {
         </div>
 
         {selectedNodeId && selectedNode && (
-          <div className="fixed right-0 top-16 z-[70] h-[calc(100vh-64px)] w-[430px] overflow-y-auto border-l border-[#e5e7eb] bg-[#fcfcfd] shadow-2xl">
-            <div className="sticky top-0 z-10 border-b border-[#ececec] bg-white px-5 py-4">
+          <div className="fixed right-0 top-16 z-[70] h-[calc(100vh-64px)] w-[430px] overflow-y-auto border-l border-border bg-background shadow-2xl">
+            <div className="sticky top-0 z-10 border-b border-border bg-background px-5 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-[#eef2ff] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#4f46e5]">
+                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
                       {selectedNode.nodeType}
                     </span>
 
                     {selectedEntityType && (
-                      <span className="rounded-full bg-[#f3f4f6] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#4b5563]">
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {selectedEntityType}
                       </span>
                     )}
                   </div>
 
-                  <h2 className="truncate text-xl font-semibold text-[#111827]">
+                  <h2 className="truncate text-xl font-semibold text-foreground">
                     {selectedNode.title}
                   </h2>
                 </div>
 
                 <button
                   onClick={() => setSelectedNodeId(null)}
-                  className="rounded-lg border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm text-[#6b7280] transition hover:bg-[#f9fafb] hover:text-[#111827]"
+                  className="rounded-xl border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
                   type="button"
                 >
                   Close
@@ -233,28 +235,28 @@ export default function SpaceGraphPage() {
             </div>
 
             <div className="space-y-5 p-5">
-              <div className="rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
-                <h3 className="mb-3 text-sm font-semibold text-[#111827]">Content</h3>
-                <div className="whitespace-pre-wrap rounded-xl bg-[#f9fafb] px-4 py-3 text-sm leading-6 text-[#374151]">
+              <div className="rounded-2xl border border-border bg-background p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-foreground">Content</h3>
+                <div className="whitespace-pre-wrap rounded-xl bg-muted/40 px-4 py-3 text-sm leading-6 text-foreground">
                   {selectedNode.content || 'No content'}
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
-                <h3 className="mb-3 text-sm font-semibold text-[#111827]">Summary</h3>
+              <div className="rounded-2xl border border-border bg-background p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-foreground">Summary</h3>
                 {summaryEntries.length === 0 ? (
-                  <p className="text-sm text-[#9ca3af]">No structured metadata available</p>
+                  <p className="text-sm text-muted-foreground">No structured metadata available</p>
                 ) : (
                   <div className="grid gap-3">
                     {summaryEntries.map((item) => (
                       <div
                         key={item.label}
-                        className="flex items-center justify-between gap-3 rounded-xl bg-[#f9fafb] px-3 py-2"
+                        className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2"
                       >
-                        <span className="text-xs font-medium uppercase tracking-wide text-[#6b7280]">
+                        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           {item.label}
                         </span>
-                        <span className="text-sm font-medium text-[#111827]">
+                        <span className="text-sm font-medium text-foreground">
                           {String(item.value)}
                         </span>
                       </div>
@@ -263,11 +265,11 @@ export default function SpaceGraphPage() {
                 )}
               </div>
 
-              <div className="rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
-                <h3 className="mb-3 text-sm font-semibold text-[#111827]">Origin / Chat Source</h3>
+              <div className="rounded-2xl border border-border bg-background p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-foreground">Origin / Chat Source</h3>
                 <div className="space-y-3">
                   {chatSourceAttributes.length === 0 ? (
-                    <p className="text-sm text-[#9ca3af]">No chat source linked</p>
+                    <p className="text-sm text-muted-foreground">No chat source linked</p>
                   ) : (
                     chatSourceAttributes.map((attr) => {
                       const otherNodeId =
@@ -278,16 +280,16 @@ export default function SpaceGraphPage() {
                       return (
                         <div
                           key={`chat-source-${attr.id}`}
-                          className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] p-3"
+                          className="rounded-xl border border-border bg-muted/40 p-3"
                         >
-                          <div className="text-sm font-semibold text-[#111827]">
+                          <div className="text-sm font-semibold text-foreground">
                             {otherNode?.title || otherNodeId}
                           </div>
                           <div className="mt-2 flex flex-wrap gap-2">
-                            <span className="rounded-full bg-[#eef2ff] px-2.5 py-1 text-[11px] font-medium text-[#4338ca]">
+                            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
                               {attr.attributeName || attr.attributeType}
                             </span>
-                            <span className="rounded-full bg-[#f3f4f6] px-2.5 py-1 text-[11px] font-medium text-[#4b5563]">
+                            <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
                               {attr.sourceNodeId === selectedNodeId ? 'Outgoing' : 'Incoming'}
                             </span>
                           </div>
@@ -298,11 +300,11 @@ export default function SpaceGraphPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
-                <h3 className="mb-3 text-sm font-semibold text-[#111827]">Relationships</h3>
+              <div className="rounded-2xl border border-border bg-background p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-foreground">Relationships</h3>
                 <div className="space-y-3">
                   {selectedNodeAttributes.length === 0 ? (
-                    <p className="text-sm text-[#9ca3af]">No relationships</p>
+                    <p className="text-sm text-muted-foreground">No relationships</p>
                   ) : (
                     selectedNodeAttributes.map((attr) => {
                       const otherNodeId =
@@ -315,18 +317,18 @@ export default function SpaceGraphPage() {
                       return (
                         <div
                           key={attr.id}
-                          className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] p-3"
+                          className="rounded-xl border border-border bg-muted/40 p-3"
                         >
                           <div className="mb-2 flex items-center justify-between gap-3">
-                            <span className="rounded-full bg-[#ede9fe] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#6d28d9]">
+                            <span className="rounded-full bg-violet-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-violet-700 dark:bg-violet-900/40 dark:text-violet-200">
                               {attr.attributeName || attr.attributeType}
                             </span>
-                            <span className="text-[11px] font-medium text-[#6b7280]">
+                            <span className="text-[11px] font-medium text-muted-foreground">
                               {attr.sourceNodeId === selectedNodeId ? 'Outgoing' : 'Incoming'}
                             </span>
                           </div>
 
-                          <div className="text-sm font-medium text-[#111827]">
+                          <div className="text-sm font-medium text-foreground">
                             {otherNode?.title || otherNodeId}
                           </div>
                         </div>
@@ -336,11 +338,11 @@ export default function SpaceGraphPage() {
                 </div>
               </div>
 
-              <details className="rounded-2xl border border-[#e5e7eb] bg-white p-4 shadow-sm">
-                <summary className="cursor-pointer text-sm font-semibold text-[#111827]">
+              <details className="rounded-2xl border border-border bg-background p-4 shadow-sm">
+                <summary className="cursor-pointer text-sm font-semibold text-foreground">
                   Technical details
                 </summary>
-                <pre className="mt-3 overflow-x-auto rounded-xl bg-[#f9fafb] p-3 text-xs leading-5 text-[#4b5563]">
+                <pre className="mt-3 overflow-x-auto rounded-xl bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">
                   {JSON.stringify(selectedNode.nodeDetails ?? {}, null, 2)}
                 </pre>
               </details>
@@ -348,7 +350,7 @@ export default function SpaceGraphPage() {
           </div>
         )}
         {chatOpen && (
-          <div className="fixed right-0 top-16 z-[80] h-[calc(100vh-64px)] w-[620px] border-l border-[#e6e6e6] bg-white shadow-2xl">
+          <div className="fixed right-0 top-16 z-[80] h-[calc(100vh-64px)] w-[620px] border-l border-border bg-background shadow-2xl">
             <ChatPanel
               spaceSlug={slug}
               title="Chat"

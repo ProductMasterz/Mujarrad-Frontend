@@ -179,7 +179,6 @@ export default function NodeDetailPage() {
     setActiveTabId(newTab.id);
   };
 
-  // Task 8: origin traceability
   const { data: attributes, isLoading: isLoadingAttributes } = useQuery({
     queryKey: ['spaces', slug, 'nodes', nodeId, 'attributes', 'origin'],
     queryFn: () => attributeService.getNodeAttributes(nodeId),
@@ -213,23 +212,23 @@ export default function NodeDetailPage() {
   if (nodeError) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
           <div className="text-center">
             <h1
-              className="text-[24px] font-['Roboto:Bold',sans-serif] font-bold text-[#333] mb-2"
+              className="mb-2 text-[24px] font-['Roboto:Bold',sans-serif] font-bold text-foreground"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               Node not found
             </h1>
             <p
-              className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] mb-4"
+              className="mb-4 text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               The node you&apos;re looking for doesn&apos;t exist.
             </p>
             <button
               onClick={() => router.push(`/spaces/${slug}`)}
-              className="h-[36px] px-[20px] bg-[#248bf2] rounded-[100px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[14px] text-white tracking-[-0.24px] hover:bg-[#1a6bc4] transition-colors"
+              className="h-[36px] rounded-[100px] bg-[#248bf2] px-[20px] font-['Roboto:SemiBold',sans-serif] text-[14px] font-semibold tracking-[-0.24px] text-white transition-colors hover:bg-[#1a6bc4]"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               Back to Space
@@ -242,7 +241,7 @@ export default function NodeDetailPage() {
 
   return (
     <ProtectedRoute>
-      <div className="bg-white min-h-screen relative">
+      <div className="relative min-h-screen bg-background text-foreground">
         <Header
           onMenuClick={toggleSidebar}
           onBackClick={handleBackClick}
@@ -284,32 +283,32 @@ export default function NodeDetailPage() {
           }}
         >
           {isLoading ? (
-            <div className="flex items-center justify-center h-[400px]">
-              <div className="animate-spin h-8 w-8 border-4 border-[#248bf2] border-t-transparent rounded-full" />
+            <div className="flex h-[400px] items-center justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#248bf2] border-t-transparent" />
             </div>
           ) : node && space ? (
-            <div className="max-w-4xl mx-auto py-8 px-6">
+            <div className="mx-auto max-w-4xl px-6 py-8">
               <input
                 type="text"
                 value={title}
                 onChange={handleTitleChange}
                 onBlur={handleSave}
                 placeholder="Untitled"
-                className="w-full text-[32px] font-['Roboto:Bold',sans-serif] font-bold text-[#333] mb-2 outline-none border-none bg-transparent placeholder:text-[#bdbdbd]"
+                className="mb-2 w-full border-none bg-transparent font-['Roboto:Bold',sans-serif] text-[32px] font-bold text-foreground outline-none placeholder:text-muted-foreground"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               />
 
               <p
-                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-[#bdbdbd] mb-8"
+                className="mb-8 font-['Roboto:Regular',sans-serif] text-[13px] font-normal text-muted-foreground"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 Last edited {node.updatedAt ? new Date(node.updatedAt).toLocaleDateString() : 'recently'}
               </p>
 
-              <div className="mb-8 rounded-[16px] border border-[#e6e6e6] bg-[#fafafa] p-5">
+              <div className="mb-8 rounded-[16px] border border-border bg-muted/30 p-5">
                 <div className="mb-3 flex items-center gap-2">
                   <h2
-                    className="text-[18px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[#333]"
+                    className="font-['Roboto:SemiBold',sans-serif] text-[18px] font-semibold text-foreground"
                     style={{ fontVariationSettings: "'wdth' 100" }}
                   >
                     Source / Origin
@@ -320,33 +319,33 @@ export default function NodeDetailPage() {
                 </div>
 
                 {isLoadingAttributes || (originNodeId && isLoadingOriginNode) ? (
-                  <p className="text-[14px] text-[#828282]">Loading source information...</p>
+                  <p className="text-[14px] text-muted-foreground">Loading source information...</p>
                 ) : originAttribute && originNode ? (
                   <div className="space-y-4">
-                    <div className="text-[14px] text-[#333]">
+                    <div className="text-[14px] text-foreground">
                       <span className="font-semibold">Source node:</span> {originNode.title}
                     </div>
 
-                    <div className="rounded-[12px] border border-[#e6e6e6] bg-white p-4">
-                      <p className="mb-2 text-[12px] uppercase tracking-wide text-[#828282]">
+                    <div className="rounded-[12px] border border-border bg-background p-4">
+                      <p className="mb-2 text-[12px] uppercase tracking-wide text-muted-foreground">
                         Original Text
                       </p>
-                      <p className="whitespace-pre-wrap text-[14px] text-[#333]">
+                      <p className="whitespace-pre-wrap text-[14px] text-foreground">
                         {originNode.content || 'No original text found.'}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex flex-wrap items-center gap-3">
                       <Link href={`/spaces/${slug}/node/${originNode.id}`}>
                         <Button variant="outline">Open Source Input</Button>
                       </Link>
-                      <span className="text-[12px] text-[#828282] break-all">
+                      <span className="break-all text-[12px] text-muted-foreground">
                         {originNode.id}
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-[14px] text-[#828282]">
+                  <p className="text-[14px] text-muted-foreground">
                     No source input linked to this node.
                   </p>
                 )}

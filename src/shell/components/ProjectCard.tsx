@@ -93,7 +93,7 @@ export function ProjectCard({
   <button
     onClick={onClick}
     onContextMenu={onContextMenu}
-    className="group relative h-[156px] w-[260px] overflow-hidden rounded-[28px] border border-[#e8ecf2] bg-[linear-gradient(180deg,#ffffff_0%,#fbfcfe_100%)] text-left shadow-[0px_6px_20px_rgba(15,23,42,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#d7deea] hover:shadow-[0px_14px_32px_rgba(15,23,42,0.10)]"
+    className="group relative h-[156px] w-[260px] overflow-hidden rounded-[28px] border border-[#e8ecf2] bg-[linear-gradient(180deg,#ffffff_0%,#fbfcfe_100%)] text-left shadow-[0px_6px_20px_rgba(15,23,42,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#d7deea] hover:shadow-[0px_14px_32px_rgba(15,23,42,0.10)] dark:border-[#374151] dark:bg-[linear-gradient(180deg,#111827_0%,#0f172a_100%)] dark:hover:border-[#4b5563] dark:hover:shadow-[0px_14px_32px_rgba(0,0,0,0.35)]"
     type="button"
   >
     <div
@@ -109,20 +109,20 @@ export function ProjectCard({
     <div className="flex h-full flex-col justify-between px-5 py-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#94a3b8]">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#94a3b8] dark:text-[#9ca3af]">
             Workspace
           </div>
-          <p className="line-clamp-2 text-[17px] font-semibold leading-6 text-[#0f172a]">
+          <p className="line-clamp-2 text-[17px] font-semibold leading-6 text-[#0f172a] dark:text-white">
             {title}
           </p>
         </div>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#edf1f5] bg-white text-[#94a3b8] shadow-sm transition-colors duration-200 group-hover:text-[#475569]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#edf1f5] bg-white text-[#94a3b8] shadow-sm transition-colors duration-200 group-hover:text-[#475569] dark:border-[#374151] dark:bg-[#111827] dark:text-[#9ca3af] dark:group-hover:text-white">
           {renderIcon()}
         </div>
       </div>
 
-      <div className="text-[12px] leading-5 text-[#64748b]">
+      <div className="text-[12px] leading-5 text-[#64748b] dark:text-[#9ca3af]">
         Open this workspace to explore nodes, graph, and whiteboard.
       </div>
     </div>

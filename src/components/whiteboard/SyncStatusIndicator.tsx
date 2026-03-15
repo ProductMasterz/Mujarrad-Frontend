@@ -42,18 +42,18 @@ export function SyncStatusIndicator({ onRetry }: SyncStatusIndicatorProps) {
   }
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-sm border border-gray-200 dark:border-gray-700 text-sm">
+    <div className="flex items-center gap-2 rounded-full border border-border bg-background/90 px-3 py-1.5 text-sm text-foreground shadow-sm backdrop-blur-sm">
       {effectiveStatus === 'syncing' && (
         <>
           <SpinnerIcon className="w-4 h-4 text-blue-500 animate-spin" />
-          <span className="text-gray-600 dark:text-gray-300">Saving...</span>
+          <span className="text-muted-foreground">Saving...</span>
         </>
       )}
 
       {effectiveStatus === 'idle' && showSaved && (
         <>
           <CheckIcon className="w-4 h-4 text-green-500" />
-          <span className="text-gray-600 dark:text-gray-300">Saved</span>
+          <span className="text-muted-foreground">Saved</span>
         </>
       )}
 
@@ -66,7 +66,7 @@ export function SyncStatusIndicator({ onRetry }: SyncStatusIndicatorProps) {
           {onRetry && (
             <button
               onClick={onRetry}
-              className="ml-1 px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+              className="ml-1 rounded px-2 py-0.5 text-xs text-red-700 transition-colors hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40"
             >
               Retry
             </button>

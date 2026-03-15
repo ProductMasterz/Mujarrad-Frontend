@@ -34,15 +34,15 @@ export function TabsBar({
             className={clsx(
               "group relative flex items-center gap-[8px] h-[28px] px-[12px] rounded-[6px] cursor-pointer transition-colors max-w-[200px]",
               isActive
-                ? "bg-white text-[#333]"
-                : "bg-transparent text-[#828282] hover:bg-[rgba(255,255,255,0.1)]"
+                ? "bg-white text-[#333] dark:bg-[#1f2937] dark:text-white"
+                : "bg-transparent text-[#828282] hover:bg-[rgba(255,255,255,0.1)] dark:text-[#9ca3af] dark:hover:bg-[#1f2937]"
             )}
             onClick={() => onTabClick(tab.id)}
           >
             <span
               className={clsx(
                 "font-['Roboto:Regular',sans-serif] font-normal text-[13px] tracking-[-0.08px] truncate",
-                isActive ? "text-[#333]" : "text-[#828282]"
+                isActive ? "text-[#333] dark:text-white" : "text-[#828282] dark:text-[#9ca3af]"
               )}
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
@@ -58,8 +58,8 @@ export function TabsBar({
                 className={clsx(
                   "flex items-center justify-center size-4 rounded-[4px] transition-opacity",
                   isActive
-                    ? "opacity-100 hover:bg-[#f5f5f5]"
-                    : "opacity-0 group-hover:opacity-100 hover:bg-[rgba(255,255,255,0.2)]"
+                    ? "opacity-100 hover:bg-[#f5f5f5] dark:hover:bg-[#374151]"
+                    : "opacity-0 group-hover:opacity-100 hover:bg-[rgba(255,255,255,0.2)] dark:hover:bg-[#374151]"
                 )}
               >
                 <X className="size-3" strokeWidth={1.5} />
@@ -69,10 +69,9 @@ export function TabsBar({
         );
       })}
 
-      {/* New Tab Button */}
       <button
         onClick={onNewTab}
-        className="flex items-center justify-center size-[28px] rounded-[6px] text-[#828282] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+        className="flex items-center justify-center size-[28px] rounded-[6px] text-[#828282] hover:bg-[rgba(255,255,255,0.1)] transition-colors dark:text-[#9ca3af] dark:hover:bg-[#1f2937]"
         aria-label="New tab"
       >
         <Plus className="size-4" strokeWidth={1.5} />

@@ -41,7 +41,6 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
     };
   }, [onClose, anchorEl]);
 
-
   const rawName =
     (user as any)?.name ||
     (user as any)?.fullName ||
@@ -56,12 +55,13 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
   const displayEmail = typeof rawEmail === "string" ? rawEmail.trim() : "";
 
   const initialsSource = displayName || displayEmail || "U";
-  const initials = initialsSource
-    .split(/[\s@._-]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || "")
-    .join("") || "U";
+  const initials =
+    initialsSource
+      .split(/[\s@._-]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() || "")
+      .join("") || "U";
 
   const avatarUrl =
     (user as any)?.avatarUrl ||
@@ -74,19 +74,25 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
   if (!anchorEl) return null;
 
   const rect = anchorEl.getBoundingClientRect();
+  const menuWidth = 290;
+  const padding = 8;
+
+  const left = Math.min(
+    Math.max(padding, rect.left),
+    window.innerWidth - menuWidth - padding
+  );
 
   return (
     <div
       ref={menuRef}
-      className="fixed z-[100] w-[290px] rounded-[14px] bg-white py-[10px] shadow-[0px_10px_30px_0px_rgba(0,0,0,0.10),0px_2px_10px_0px_rgba(0,0,0,0.05)]"
+      className="fixed z-[100] w-[290px] rounded-[14px] border border-border bg-background py-[10px] text-foreground shadow-[0px_10px_30px_0px_rgba(0,0,0,0.10),0px_2px_10px_0px_rgba(0,0,0,0.05)] dark:shadow-[0px_14px_34px_rgba(0,0,0,0.35)]"
       style={{
-        left: `${rect.left}px`,
+        left: `${left}px`,
         bottom: `${window.innerHeight - rect.top}px`,
       }}
     >
-      {/* User Info */}
       <button
-        className="mx-[10px] mb-[8px] flex w-[calc(100%-20px)] items-center gap-[10px] rounded-[10px] px-[10px] py-[10px] text-left transition-colors hover:bg-[#f7f7f7] group"
+        className="group mx-[10px] mb-[8px] flex w-[calc(100%-20px)] items-center gap-[10px] rounded-[10px] px-[10px] py-[10px] text-left transition-colors hover:bg-accent"
         onClick={() => {
           onClose();
         }}
@@ -96,10 +102,10 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
           <img
             src={avatarUrl}
             alt={displayName || displayEmail || "User"}
-            className="h-[36px] w-[36px] rounded-full object-cover shrink-0"
+            className="h-[36px] w-[36px] shrink-0 rounded-full object-cover"
           />
         ) : (
-          <div className="h-[36px] w-[36px] shrink-0 rounded-full bg-[#7cb5f7] flex items-center justify-center">
+          <div className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full bg-[#7cb5f7]">
             <span
               className="font-['Roboto:Medium',sans-serif] text-[13px] font-medium text-white"
               style={{ fontVariationSettings: "'wdth' 100" }}
@@ -112,7 +118,7 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
         <div className="min-w-0 flex-1">
           {displayName && (
             <div
-              className="truncate font-['Roboto:Medium',sans-serif] text-[14px] font-medium leading-[18px] text-[#1f1f1f]"
+              className="truncate font-['Roboto:Medium',sans-serif] text-[14px] font-medium leading-[18px] text-foreground"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               {displayName}
@@ -121,7 +127,7 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
 
           {displayEmail && (
             <div
-              className="mt-[2px] break-all font-['Roboto:Regular',sans-serif] text-[12px] font-normal leading-[16px] text-[#7a7a7a]"
+              className="mt-[2px] break-all font-['Roboto:Regular',sans-serif] text-[12px] font-normal leading-[16px] text-muted-foreground"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               {displayEmail}
@@ -130,7 +136,7 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
 
           {!displayName && !displayEmail && (
             <div
-              className="font-['Roboto:Regular',sans-serif] text-[12px] font-normal leading-[16px] text-[#7a7a7a]"
+              className="font-['Roboto:Regular',sans-serif] text-[12px] font-normal leading-[16px] text-muted-foreground"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               Account
@@ -139,59 +145,55 @@ export function UserMenu({ onClose, anchorEl, onLogout }: UserMenuProps) {
         </div>
 
         <ChevronRight
-          className="h-[14px] w-[14px] shrink-0 text-[#a3a3a3] opacity-0 transition-opacity group-hover:opacity-100"
+          className="h-[14px] w-[14px] shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
           strokeWidth={2}
         />
       </button>
 
-      {/* Divider */}
-      <div className="mx-[10px] my-[6px] h-[1px] bg-[#ececec]" />
+      <div className="mx-[10px] my-[6px] h-[1px] bg-border" />
 
-      {/* Add Account */}
       <button
-        className="w-full px-[10px] py-[8px] flex items-center gap-[10px] hover:bg-[#f5f5f5] transition-colors"
+        className="flex w-full items-center gap-[10px] px-[10px] py-[8px] transition-colors hover:bg-accent"
         onClick={() => {
           console.log("Add account");
           onClose();
         }}
       >
-        <Plus className="size-[14px] text-[#e0e0e0]" strokeWidth={2} />
+        <Plus className="size-[14px] text-muted-foreground" strokeWidth={2} />
         <span
-          className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#828282] tracking-[-0.08px] leading-[18px]"
+          className="font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-foreground"
           style={{ fontVariationSettings: "'wdth' 100" }}
         >
           Add account
         </span>
       </button>
 
-      {/* Settings */}
       <button
-        className="w-full px-[10px] py-[8px] flex items-center gap-[10px] hover:bg-[#f5f5f5] transition-colors"
+        className="flex w-full items-center gap-[10px] px-[10px] py-[8px] transition-colors hover:bg-accent"
         onClick={() => {
-          router.push('/settings');
+          router.push("/settings");
           onClose();
         }}
       >
-        <Settings className="size-[14px] text-[#e0e0e0]" strokeWidth={2} />
+        <Settings className="size-[14px] text-muted-foreground" strokeWidth={2} />
         <span
-          className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#828282] tracking-[-0.08px] leading-[18px]"
+          className="font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-foreground"
           style={{ fontVariationSettings: "'wdth' 100" }}
         >
           Settings
         </span>
       </button>
 
-      {/* Log Out */}
       <button
-        className="w-full px-[10px] py-[8px] flex items-center gap-[10px] hover:bg-[#f5f5f5] transition-colors"
+        className="flex w-full items-center gap-[10px] px-[10px] py-[8px] transition-colors hover:bg-[#fef2f2] dark:hover:bg-[#3a161c]"
         onClick={() => {
           onLogout();
           onClose();
         }}
       >
-        <LogOut className="size-[14px] text-[#e0e0e0]" strokeWidth={2} />
+        <LogOut className="size-[14px] text-[#d4183d]" strokeWidth={2} />
         <span
-          className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#828282] tracking-[-0.08px] leading-[18px]"
+          className="font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-[#d4183d]"
           style={{ fontVariationSettings: "'wdth' 100" }}
         >
           Log out

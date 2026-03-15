@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   AssistantRuntimeProvider,
   ComposerPrimitive,
-  MessagePrimitive,
   ThreadPrimitive,
   useExternalStoreRuntime,
   type AppendMessage,
@@ -108,7 +107,7 @@ function CopyMessageButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#dbe1ea] bg-white/70 text-[#94a3b8] transition hover:bg-white hover:text-[#111827]"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-background/70 text-muted-foreground transition hover:bg-background hover:text-foreground"
       aria-label={copied ? 'Copied' : 'Copy message'}
       title={copied ? 'Copied' : 'Copy'}
       type="button"
@@ -130,15 +129,15 @@ function UserMessageBubble({
       <div className="flex max-w-[78%] items-end gap-3">
         <div className="flex flex-col items-end">
           <div className="mb-1 flex items-center gap-2">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-[#9ca3af]">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               You
             </span>
-            <span className="text-[11px] text-[#94a3b8]">
+            <span className="text-[11px] text-muted-foreground">
               {formatMessageTime(createdAt)}
             </span>
           </div>
 
-          <div className="group rounded-[13px] rounded-br-[8px] bg-[#2563eb] px-4 py-3 text-[12px] leading-5 text-white shadow-sm transition-all duration-200 hover:shadow-md">
+          <div className="group rounded-[13px] rounded-br-[8px] bg-primary text-primary-foreground px-4 py-3 text-[12px] leading-5 text-white shadow-sm transition-all duration-200 hover:shadow-md">
             <div className="whitespace-pre-wrap break-words">{text}</div>
             <div className="mt-3 flex justify-end">
               <CopyMessageButton text={text} />
@@ -146,7 +145,7 @@ function UserMessageBubble({
           </div>
         </div>
 
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#dbeafe] text-xs font-semibold text-[#1d4ed8] shadow-sm">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700 shadow-sm dark:bg-blue-900/40 dark:text-blue-200">
           Y
         </div>
       </div>
@@ -165,22 +164,22 @@ function AssistantMessageBubble({
   return (
     <div className="flex justify-start">
       <div className="flex max-w-[85%] items-end gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ede9fe] text-xs font-semibold text-[#6d28d9] shadow-sm">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700 shadow-sm dark:bg-violet-900/40 dark:text-violet-200">
           M
         </div>
 
         <div className="flex flex-col items-start">
           <div className="mb-1 flex items-center gap-2">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-[#9ca3af]">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Mujarrad
             </span>
-            <span className="text-[11px] text-[#94a3b8]">
+            <span className="text-[11px] text-muted-foreground">
               {formatMessageTime(createdAt)}
             </span>
           </div>
 
-          <div className="group rounded-[13px] rounded-bl-[8px] border border-[#e5e7eb] bg-[#f3f4f6] px-4 py-3 shadow-sm transition-all duration-200 hover:shadow-md">
-            <div className="text-[12px] leading-5 text-black [&_*]:text-[12px] [&_*]:leading-5 [&_*]:text-black [&_a]:text-[#2563eb] [&_a]:underline [&_code]:rounded [&_code]:bg-[#f3f4f6] [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[12px] [&_code]:text-black [&_p]:my-2 [&_li]:mb-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_h1]:mb-2 [&_h1]:mt-3 [&_h1]:text-[12px] [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-3 [&_h2]:text-[12px] [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-[#1e293b] [&_pre]:bg-[#0f172a] [&_pre]:p-4 [&_pre]:text-[12px] [&_pre]:text-white">
+          <div className="group rounded-[18px] rounded-bl-[10px] border border-border bg-muted px-4 py-3 shadow-sm transition-all duration-200 hover:shadow-md">
+            <div className="text-[12px] leading-5 text-foreground [&_*]:text-[12px] [&_*]:leading-5 [&_*]:text-foreground [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded [&_code]:bg-background [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[12px] [&_code]:text-foreground [&_p]:my-2 [&_li]:mb-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_h1]:mb-2 [&_h1]:mt-3 [&_h1]:text-[12px] [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-3 [&_h2]:text-[12px] [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-slate-700 [&_pre]:bg-slate-950 [&_pre]:p-4 [&_pre]:text-[12px] [&_pre]:text-white">
               <MarkdownRenderer content={text} />
             </div>
             <div className="mt-3 flex justify-end">
@@ -343,19 +342,23 @@ function ChatPanelShell({
   }, [messageCount, shouldAutoScroll, isRunning]);
 
   return (
-    <div ref={panelRef} className={`relative flex h-full bg-[#f8fafc] ${embedded ? '' : ''}`}>
+    <div
+      ref={panelRef}
+      className={`relative flex h-full overflow-hidden rounded-[24px] bg-background text-foreground ${embedded ? '' : ''}`}
+    >
+      
       {sidebarOpen && (
         <div
-          className="relative shrink-0 border-r border-[#e5e7eb] bg-[#f8fafc] flex flex-col"
+          className="relative flex shrink-0 flex-col border-r border-border bg-muted/40"
           style={{ width: `${sidebarWidth}px` }}
         >
 
-          <div className="border-b px-3 py-3 flex items-center justify-between pr-5">
+          <div className="flex items-center justify-between border-b border-border px-3 py-3 pr-5">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-[#9ca3af]">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Chats
               </div>
-              <div className="mt-1 text-[11px] text-[#9ca3af]">
+              <div className="mt-1 text-[11px] text-muted-foreground">
                 {sessions.length} conversation{sessions.length === 1 ? '' : 's'}
               </div>
             </div>
@@ -364,7 +367,7 @@ function ChatPanelShell({
               onClick={onNewSession}
               disabled={!hasActiveSpace}
               type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#111827] text-white shadow-sm transition hover:bg-[#1f2937] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-foreground text-background shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="New chat"
               title="New chat"
             >
@@ -374,13 +377,13 @@ function ChatPanelShell({
 
           <div className="border-b px-3 py-3">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9ca3af]" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={searchTerm}
                 onChange={(e) => onSearchTermChange(e.target.value)}
                 disabled={!hasActiveSpace}
                 placeholder="Search conversations..."
-                className="w-full rounded-xl border border-[#e5e7eb] bg-white py-2.5 pl-9 pr-3 text-sm text-[#111827] shadow-sm outline-none placeholder:text-[#9ca3af] focus:border-[#c7d2fe] focus:ring-2 focus:ring-[#e0e7ff] disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#9ca3af]"
+                className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-sm text-foreground shadow-sm outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
                 type="text"
               />
             </div>
@@ -388,15 +391,15 @@ function ChatPanelShell({
 
           <div className="flex-1 overflow-y-auto p-2 scroll-smooth">
             {sessions.length === 0 && (
-              <div className="rounded-xl border border-dashed border-[#e5e7eb] bg-white px-3 py-6 text-center">
-                <p className="text-sm font-medium text-[#6b7280]">
+              <div className="rounded-xl border border-dashed border-border bg-background px-3 py-6 text-center">
+                <p className="text-sm font-medium text-muted-foreground">
                   {!hasActiveSpace
                     ? 'No space selected'
                     : searchTerm.trim()
                     ? 'No matching conversations'
                     : 'No conversations yet'}
                 </p>
-                <p className="mt-1 text-xs text-[#9ca3af]">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {!hasActiveSpace
                     ? 'Open a space to view or create conversations.'
                     : searchTerm.trim()
@@ -408,15 +411,15 @@ function ChatPanelShell({
             {sessions.map((session) => (
               <div
                 key={session.id}
-                className={`group relative mb-2 rounded-xl border px-3 py-3 text-left text-sm transition ${
+                className={`group relative mb-2 rounded-2xl border px-3 py-3 text-left text-sm transition ${
                   activeSessionId === session.id
-                    ? 'border-[#c7d2fe] bg-[linear-gradient(180deg,#eef2ff_0%,#ffffff_100%)] shadow-[0px_8px_20px_rgba(79,70,229,0.08)]'
-                    : 'border-transparent bg-white hover:border-[#e5e7eb] hover:bg-[#fafafa]'
+                    ? 'border-primary/30 bg-primary/5 shadow-[0px_8px_20px_rgba(59,130,246,0.10)]'
+                    : 'border-transparent bg-background hover:border-border hover:bg-muted/50'
                 }`}
                 title={`${session.title} — Created ${new Date(session.createdAt).toLocaleString()}`}
               >
                 {activeSessionId === session.id && (
-                  <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#4f46e5]" />
+                  <div className="absolute bottom-2 left-0 top-2 w-1 rounded-r-full bg-primary"/>
                 )}
 
                 <button
@@ -424,16 +427,16 @@ function ChatPanelShell({
                   className="w-full text-left"
                   type="button"
                 >
-                  <div className="truncate text-sm font-semibold text-[#111827]">
+                  <div className="truncate text-sm font-semibold text-foreground">
                     {session.title}
                   </div>
-                  <div className="mt-1 line-clamp-2 text-[12px] leading-5 text-[#9ca3af]">
+                  <div className="mt-1 line-clamp-2 text-[12px] leading-5 text-muted-foreground">
                     {sessionPreviewIndex[session.id] || 'No messages yet'}
                   </div>
                 </button>
 
                 <div className="mt-1 flex items-center justify-between gap-2">
-                  <div className="truncate text-[11px] text-[#9ca3af]">
+                  <div className="truncate text-[11px] text-muted-foreground">
                     {new Date(session.createdAt).toLocaleDateString()}
                   </div>
 
@@ -447,7 +450,7 @@ function ChatPanelShell({
                         e.stopPropagation();
                         openRenameModal(session);
                       }}
-                      className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[#94a3b8] transition hover:bg-[#eff6ff] hover:text-[#2563eb]"
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
                       type="button"
                       aria-label="Rename conversation"
                       title="Rename"
@@ -460,7 +463,7 @@ function ChatPanelShell({
                         e.stopPropagation();
                         setDeleteTarget(session);
                       }}
-                      className="inline-flex h-6 w-6 items-center justify-center rounded-md text-[#94a3b8] transition hover:bg-[#fef2f2] hover:text-[#dc2626]"
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-300"
                       type="button"
                       aria-label="Delete conversation"
                       title="Delete"
@@ -479,26 +482,26 @@ function ChatPanelShell({
               type="button"
               aria-label="Hide chats"
               title="Hide chats"
-              className="absolute -right-4 top-4 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#e5e7eb] bg-white text-[#6b7280] shadow-sm transition hover:bg-[#f9fafb] hover:text-[#111827]"
+              className="absolute -right-4 top-4 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground"
             >
               <PanelLeftClose className="h-4 w-4" />
             </button>
 
             <div
               onMouseDown={handleResizeStart}
-              className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-gray-300"
+              className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-border"
             />
           </>
         </div>
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center justify-between border-b border-[#ececec] bg-white px-5 py-4 shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+        <div className="flex items-center justify-between border-b border-border bg-background px-5 py-4 shadow-[0_1px_0_rgba(0,0,0,0.03)]">
           <div className="flex items-center gap-2">
             {!sidebarOpen && (
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white text-[#4b5563] transition hover:bg-[#f9fafb] hover:text-[#111827]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 type="button"
                 aria-label="Show chats"
                 title="Show chats"
@@ -509,11 +512,11 @@ function ChatPanelShell({
 
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-[#111827]">{title}</h2>
+                <h2 className="text-lg font-semibold text-foreground">{title}</h2>
               </div>
-              <p className="mt-1 text-xs text-[#6b7280]">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Space:{' '}
-                <span className="font-medium text-[#4b5563]">
+                <span className="font-medium text-foreground">
                   {spaceSlug?.trim() ? spaceSlug : 'No space selected'}
                 </span>
               </p>
@@ -523,7 +526,7 @@ function ChatPanelShell({
           {embedded && onClose && (
             <button
               onClick={onClose}
-              className="rounded-lg p-2 text-[#6b7280] transition hover:bg-[#f3f4f6] hover:text-[#111827]"
+              className="rounded-lg p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
               aria-label="Close chat"
               type="button"
             >
@@ -536,35 +539,35 @@ function ChatPanelShell({
           <ThreadPrimitive.Viewport
             ref={viewportRef}
             onScroll={handleScroll}
-            className="flex-1 space-y-5 overflow-y-auto bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_40%)] px-5 py-5 scroll-smooth">
+            className="flex-1 space-y-5 overflow-y-auto bg-[linear-gradient(180deg,hsl(var(--muted)/0.35)_0%,hsl(var(--background))_40%)] px-5 py-5 scroll-smooth">
             {isBootstrapping ? (
-              <div className="rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 text-sm text-[#6b7280] shadow-sm">
+              <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm text-muted-foreground shadow-sm">
                 Loading chat history...
               </div>
             ) : (
               <>
                 {messages.length === 1 && messages[0]?.id === 'welcome' ? (
-                  <div className="rounded-3xl border border-[#e5e7eb] bg-white px-6 py-6 shadow-sm">
-                    <div className="mb-2 text-sm font-semibold text-[#111827]">
+                  <div className="rounded-[28px] border border-border bg-background px-6 py-6 shadow-sm">
+                    <div className="mb-2 text-sm font-semibold text-foreground">
                       {hasActiveSpace ? 'Start building in this space' : 'Open a space to begin'}
                     </div>
-                    <p className="text-sm leading-6 text-[#6b7280]">
+                    <p className="text-sm leading-6 text-muted-foreground">
                       {hasActiveSpace
                         ? 'Use chat to explore the graph, create nodes, connect entities, or summarize what already exists in this space.'
                         : 'Open any space first, then use chat to explore and build inside that space.'}
                     </p>
 
                     <div className="mt-4 grid gap-2 md:grid-cols-2">
-                      <div className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-3 py-3 text-sm text-[#4b5563]">
+                      <div className="rounded-xl border border-border bg-muted/40 px-3 py-3 text-sm text-foreground">
                         Summarize this space
                       </div>
-                      <div className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-3 py-3 text-sm text-[#4b5563]">
+                      <div className="rounded-xl border border-border bg-muted/40 px-3 py-3 text-sm text-foreground">
                         Create nodes from text
                       </div>
-                      <div className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-3 py-3 text-sm text-[#4b5563]">
+                      <div className="rounded-xl border border-border bg-muted/40 px-3 py-3 text-sm text-foreground">
                         Find related entities
                       </div>
-                      <div className="rounded-xl border border-[#e5e7eb] bg-[#fafafa] px-3 py-3 text-sm text-[#4b5563]">
+                      <div className="rounded-xl border border-border bg-muted/40 px-3 py-3 text-sm text-foreground">
                         Explain graph structure
                       </div>
                     </div>
@@ -596,7 +599,7 @@ function ChatPanelShell({
 
                 {isRunning && (
                   <div className="flex justify-start">
-                    <div className="rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 text-sm text-[#4b5563] shadow-sm">
+                    <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground shadow-sm">
                       <div className="flex items-center gap-2">
                         <span className="h-2 w-2 animate-pulse rounded-full bg-[#6366f1]" />
                         <span className="h-2 w-2 animate-pulse rounded-full bg-[#818cf8] [animation-delay:120ms]" />
@@ -612,8 +615,8 @@ function ChatPanelShell({
             )}
           </ThreadPrimitive.Viewport>
 
-          <div className="border-t border-[#ececec] bg-white px-5 py-4">
-            <div className="rounded-2xl border border-[#dbe1ea] bg-[#fbfcfe] px-3 py-2.5 shadow-sm">
+          <div className="border-t border-border bg-background px-5 py-4">
+            <div className="rounded-[22px] border border-border bg-muted/30 px-3 py-2.5 shadow-sm">
               <ComposerPrimitive.Root className="flex items-end gap-3">
                 <ComposerPrimitive.Input
                   onFocus={(e) => {
@@ -654,13 +657,13 @@ function ChatPanelShell({
                   }}
                   disabled={!hasActiveSpace}
                   placeholder={hasActiveSpace ? 'Message Mujarrad...' : 'Open a space to start chatting...'}
-                  className="min-h-[48px] max-h-[180px] flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-2 text-sm leading-6 text-[#111827] outline-none placeholder:text-[#9ca3af] disabled:cursor-not-allowed disabled:text-[#9ca3af]"
+                  className="min-h-[48px] max-h-[180px] flex-1 resize-none overflow-y-auto border-0 bg-transparent px-2 py-2 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:text-muted-foreground"
                 />
                 <ComposerPrimitive.Send asChild>
                   <Button
                     ref={sendButtonRef}
                     disabled={!hasActiveSpace}
-                    className="h-11 rounded-xl bg-[#111827] px-4 text-white shadow-sm transition hover:bg-[#1f2937] disabled:opacity-50"
+                    className="h-11 rounded-xl bg-foreground px-4 text-background shadow-sm transition hover:opacity-90 disabled:opacity-50"
                   >
                     <SendHorizontal className="h-4 w-4" />
                   </Button>
@@ -675,16 +678,16 @@ function ChatPanelShell({
 
       {renameTarget && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-            <div className="w-full max-w-md rounded-2xl border border-[#e5e7eb] bg-white p-5 shadow-2xl">
-              <h3 className="text-lg font-semibold text-[#111827]">Rename conversation</h3>
-              <p className="mt-1 text-sm text-[#6b7280]">
+            <div className="w-full max-w-md rounded-[24px] border border-border bg-background p-5 shadow-2xl">
+              <h3 className="text-lg font-semibold text-foreground">Rename conversation</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
                 Update the conversation title.
               </p>
 
               <input
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
-                className="mt-4 w-full rounded-xl border border-[#e5e7eb] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none focus:border-[#c7d2fe] focus:ring-2 focus:ring-[#e0e7ff]"
+                className="mt-4 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 placeholder="Conversation title"
                 autoFocus
               />
@@ -692,7 +695,7 @@ function ChatPanelShell({
               <div className="mt-5 flex justify-end gap-2">
                 <button
                   onClick={closeRenameModal}
-                  className="rounded-xl border border-[#e5e7eb] px-4 py-2 text-sm text-[#4b5563] transition hover:bg-[#f9fafb]"
+                  className="rounded-xl border border-border px-4 py-2 text-sm text-foreground transition hover:bg-muted"
                   type="button"
                 >
                   Cancel
@@ -700,7 +703,7 @@ function ChatPanelShell({
                 <button
                   onClick={submitRename}
                   disabled={isRenaming || !renameValue.trim()}
-                  className="rounded-xl bg-[#111827] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1f2937] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-xl bg-foreground px-4 py-2 text-sm font-medium text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                   type="button"
                 >
                   {isRenaming ? 'Saving...' : 'Save'}
@@ -712,16 +715,16 @@ function ChatPanelShell({
 
         {deleteTarget && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-            <div className="w-full max-w-md rounded-2xl border border-[#fecaca] bg-white p-5 shadow-2xl">
-              <h3 className="text-lg font-semibold text-[#111827]">Delete conversation</h3>
-              <p className="mt-1 text-sm leading-6 text-[#6b7280]">
-                This will delete <span className="font-medium text-[#111827]">{deleteTarget.title}</span> and all of its stored messages.
+            <div className="w-full max-w-md rounded-[24px] border border-red-200 bg-background p-5 shadow-2xl dark:border-red-900/50">
+              <h3 className="text-lg font-semibold text-foreground">Delete conversation</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                This will delete <span className="font-medium text-foreground">{deleteTarget.title}</span> and all of its stored messages.
               </p>
 
               <div className="mt-5 flex justify-end gap-2">
                 <button
                   onClick={closeDeleteModal}
-                  className="rounded-xl border border-[#e5e7eb] px-4 py-2 text-sm text-[#4b5563] transition hover:bg-[#f9fafb]"
+                  className="rounded-xl border border-border px-4 py-2 text-sm text-foreground transition hover:bg-muted"
                   type="button"
                 >
                   Cancel
@@ -729,7 +732,7 @@ function ChatPanelShell({
                 <button
                   onClick={submitDelete}
                   disabled={isDeleting}
-                  className="rounded-xl bg-[#dc2626] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#b91c1c] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                   type="button"
                 >
                   {isDeleting ? 'Deleting...' : 'Delete'}
@@ -761,7 +764,7 @@ export function ChatPanel({
     {
       id: 'welcome',
       role: 'assistant',
-      text: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
+      text: 'Welcome to Mujarrad chat. Ask questions, create nodes, and explore your space.',
       createdAt: new Date().toISOString(),
     },
   ]);
@@ -1138,7 +1141,7 @@ export function ChatPanel({
         {
           id: 'welcome',
           role: 'assistant',
-          text: 'Open a space to start a space-specific chat.',
+          text: 'Open a space to start chatting in context.',
           createdAt: new Date().toISOString(),
         },
       ]);

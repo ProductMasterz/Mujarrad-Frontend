@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Link, ChevronDown, ChevronRight, MoreVertical, UserCircle, Square } from "lucide-react";
+import {
+  X,
+  Link,
+  ChevronDown,
+  ChevronRight,
+  MoreVertical,
+  UserCircle,
+} from "lucide-react";
 import { CardType } from "../data/projects";
 
 type TreeNode = {
@@ -28,7 +35,7 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
   const modalRef = useRef<HTMLDivElement>(null);
   const [emails, setEmails] = useState("");
   const [permission, setPermission] = useState("Can View");
-  const [linkPermission, setLinkPermission] = useState("can View");
+  const [linkPermission, setLinkPermission] = useState("Can View");
   const [showPermissionDropdown, setShowPermissionDropdown] = useState(false);
   const [showLinkPermissionDropdown, setShowLinkPermissionDropdown] = useState(false);
   const [showContentDropdown, setShowContentDropdown] = useState(false);
@@ -51,7 +58,6 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
   const [showPersonPermissionDropdown, setShowPersonPermissionDropdown] = useState<string | null>(null);
   const [showPersonContentDropdown, setShowPersonContentDropdown] = useState<string | null>(null);
 
-  // Tree structure for "What can users view?"
   const [viewTree, setViewTree] = useState<TreeNode[]>([
     {
       id: "user-story-map",
@@ -84,9 +90,7 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
 
     if (isOpen) {
@@ -114,38 +118,36 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
     };
   }, [isOpen, onClose]);
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
     const link = `https://example.com/share/${cardId}`;
-    navigator.clipboard.writeText(link);
-    alert("Link copied to clipboard!");
+    await navigator.clipboard.writeText(link);
   };
 
   const handleInvite = () => {
-    if (emails.trim()) {
-      // Parse comma-separated emails
-      const emailList = emails.split(",").map((email) => email.trim()).filter((email) => email);
+    if (!emails.trim()) return;
 
-      // Add each email to invited people
-      const newPeople: InvitedPerson[] = emailList.map((email) => ({
-        id: Date.now().toString() + Math.random(),
-        name: email.split("@")[0], // Use email prefix as name
-        email: email,
-        permission: permission,
-      }));
+    const emailList = emails
+      .split(",")
+      .map((email) => email.trim())
+      .filter(Boolean);
 
-      setInvitedPeople([...invitedPeople, ...newPeople]);
-      setEmails("");
-    }
+    const newPeople: InvitedPerson[] = emailList.map((email) => ({
+      id: `${Date.now()}-${Math.random()}`,
+      name: email.split("@")[0],
+      email,
+      permission,
+    }));
+
+    setInvitedPeople((prev) => [...prev, ...newPeople]);
+    setEmails("");
   };
 
   const updatePersonPermission = (personId: string, newPermission: string) => {
     if (newPermission === "Remove") {
-      setInvitedPeople(invitedPeople.filter((p) => p.id !== personId));
+      setInvitedPeople((prev) => prev.filter((p) => p.id !== personId));
     } else {
-      setInvitedPeople(
-        invitedPeople.map((p) =>
-          p.id === personId ? { ...p, permission: newPermission } : p
-        )
+      setInvitedPeople((prev) =>
+        prev.map((p) => (p.id === personId ? { ...p, permission: newPermission } : p))
       );
     }
     setShowPersonPermissionDropdown(null);
@@ -158,15 +160,11 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
         const parent = newTree.find((n) => n.id === parentId);
         if (parent?.children) {
           const child = parent.children.find((c) => c.id === nodeId);
-          if (child) {
-            child.checked = !child.checked;
-          }
+          if (child) child.checked = !child.checked;
         }
       } else {
         const node = newTree.find((n) => n.id === nodeId);
-        if (node) {
-          node.expanded = !node.expanded;
-        }
+        if (node) node.expanded = !node.expanded;
       }
       return newTree;
     });
@@ -175,52 +173,50 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-[200]">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30">
       <div
         ref={modalRef}
-        className="bg-white rounded-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08)] w-[320px] p-[24px]"
+        className="w-[320px] rounded-[12px] border border-border bg-background p-[24px] text-foreground shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08)] dark:shadow-[0px_16px_40px_rgba(0,0,0,0.35)]"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-[24px]">
+        <div className="mb-[24px] flex items-center justify-between">
           <h2
-            className="font-['Roboto:Medium',sans-serif] font-medium text-[16px] text-[#333] tracking-[-0.08px] leading-[24px]"
+            className="font-['Roboto:Medium',sans-serif] text-[16px] font-medium leading-[24px] tracking-[-0.08px] text-foreground"
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
             Invite People
           </h2>
           <button
             onClick={onClose}
-            className="flex items-center justify-center size-[24px] text-[#828282] hover:text-[#333] transition-colors"
+            className="flex size-[24px] items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
             aria-label="Close"
           >
             <X className="size-[16px]" />
           </button>
         </div>
 
-        {/* Email Input */}
         <div className="mb-[16px]">
           <div className="flex gap-[8px]">
             <input
               type="text"
               value={emails}
               onChange={(e) => setEmails(e.target.value)}
-              placeholder="Email, Comma Separate"
-              className="flex-1 h-[36px] px-[12px] py-[8px] bg-white border border-[#e0e0e0] rounded-[8px] font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#333] tracking-[-0.08px] leading-[18px] focus:outline-none focus:border-[#248bf2]"
+              placeholder="Email, comma separated"
+              className="h-[36px] flex-1 rounded-[8px] border border-border bg-background px-[12px] py-[8px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
               style={{ fontVariationSettings: "'wdth' 100" }}
             />
+
             <div className="relative">
               <button
                 onClick={() => setShowPermissionDropdown(!showPermissionDropdown)}
-                className="h-[36px] px-[12px] py-[8px] bg-white border border-[#e0e0e0] rounded-[8px] font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#248bf2] tracking-[-0.08px] leading-[18px] flex items-center gap-[4px] hover:bg-[#f5f5f5] transition-colors whitespace-nowrap"
+                className="flex h-[36px] items-center gap-[4px] whitespace-nowrap rounded-[8px] border border-border bg-background px-[12px] py-[8px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-primary transition-colors hover:bg-accent"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 {permission}
                 <ChevronDown className="size-[12px]" />
               </button>
 
-              {/* Permission Dropdown */}
               {showPermissionDropdown && (
-                <div className="absolute right-0 top-[calc(100%+4px)] bg-white rounded-[8px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] py-[4px] min-w-[120px] z-[210]">
+                <div className="absolute right-0 top-[calc(100%+4px)] z-[210] min-w-[120px] rounded-[8px] border border-border bg-popover py-[4px] shadow-lg">
                   {["Can View", "Can Edit", "Can Comment"].map((perm) => (
                     <button
                       key={perm}
@@ -228,7 +224,7 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
                         setPermission(perm);
                         setShowPermissionDropdown(false);
                       }}
-                      className="w-full px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#333] hover:bg-[#f5f5f5] transition-colors tracking-[-0.08px]"
+                      className="w-full px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] text-foreground transition-colors hover:bg-accent"
                       style={{ fontVariationSettings: "'wdth' 100" }}
                     >
                       {perm}
@@ -240,37 +236,35 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
           </div>
         </div>
 
-        {/* What can users view */}
         <div className="mb-[16px]">
           <p
-            className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#828282] tracking-[-0.08px] leading-[18px] mb-[8px]"
+            className="mb-[8px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-muted-foreground"
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
-            What can users view ?
+            What can users view?
           </p>
           <div className="relative">
             <button
               onClick={() => setShowContentDropdown(!showContentDropdown)}
-              className="w-full h-[36px] px-[12px] py-[8px] bg-white border border-[#e0e0e0] rounded-[8px] font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#333] tracking-[-0.08px] leading-[18px] flex items-center justify-between hover:bg-[#f5f5f5] transition-colors"
+              className="flex h-[36px] w-full items-center justify-between rounded-[8px] border border-border bg-background px-[12px] py-[8px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-foreground transition-colors hover:bg-accent"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               {selectedContent}
-              <ChevronDown className="size-[12px] text-[#828282]" />
+              <ChevronDown className="size-[12px] text-muted-foreground" />
             </button>
 
-            {/* Content Dropdown with Tree */}
             {showContentDropdown && (
-              <div className="absolute left-0 top-[calc(100%+4px)] bg-white rounded-[8px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] py-[8px] w-full z-[210] max-h-[240px] overflow-y-auto">
+              <div className="absolute left-0 top-[calc(100%+4px)] z-[210] max-h-[240px] w-full overflow-y-auto rounded-[8px] border border-border bg-popover py-[8px] shadow-lg">
                 {viewTree.map((node) => (
                   <div key={node.id}>
                     <button
                       onClick={() => toggleNode(node.id)}
-                      className="w-full px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#333] hover:bg-[#f5f5f5] transition-colors tracking-[-0.08px] flex items-center gap-[6px]"
+                      className="flex w-full items-center gap-[6px] px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] text-foreground transition-colors hover:bg-accent"
                       style={{ fontVariationSettings: "'wdth' 100" }}
                     >
                       {node.children && node.children.length > 0 && (
                         <ChevronRight
-                          className={`size-[12px] text-[#828282] transition-transform ${
+                          className={`size-[12px] text-muted-foreground transition-transform ${
                             node.expanded ? "rotate-90" : ""
                           }`}
                         />
@@ -282,24 +276,21 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
                           e.stopPropagation();
                           const newTree = [...viewTree];
                           const foundNode = newTree.find((n) => n.id === node.id);
-                          if (foundNode) {
-                            foundNode.checked = !foundNode.checked;
-                          }
+                          if (foundNode) foundNode.checked = !foundNode.checked;
                           setViewTree(newTree);
                         }}
-                        className="size-[14px] accent-[#ff9500]"
+                        className="size-[14px]"
                       />
                       <span>{node.label}</span>
                     </button>
 
-                    {/* Children */}
                     {node.expanded && node.children && (
                       <div className="pl-[28px]">
                         {node.children.map((child) => (
                           <button
                             key={child.id}
                             onClick={() => toggleNode(child.id, node.id)}
-                            className="w-full px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#333] hover:bg-[#f5f5f5] transition-colors tracking-[-0.08px] flex items-center gap-[6px]"
+                            className="flex w-full items-center gap-[6px] px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] text-foreground transition-colors hover:bg-accent"
                             style={{ fontVariationSettings: "'wdth' 100" }}
                           >
                             <input
@@ -309,7 +300,7 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
                                 e.stopPropagation();
                                 toggleNode(child.id, node.id);
                               }}
-                              className="size-[14px] accent-[#ff9500]"
+                              className="size-[14px]"
                             />
                             <span>{child.label}</span>
                           </button>
@@ -323,231 +314,181 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
           </div>
         </div>
 
-        {/* Invite Button */}
         <button
           onClick={handleInvite}
           disabled={!emails.trim()}
-          className="w-full h-[36px] px-[16px] py-[8px] bg-[#e0e0e0] text-[#828282] rounded-[8px] font-['Roboto:Regular',sans-serif] font-normal text-[13px] tracking-[-0.08px] leading-[18px] hover:bg-[#d0d0d0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-[24px]"
+          className="mb-[24px] h-[36px] w-full rounded-[8px] bg-secondary px-[16px] py-[8px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
           style={{ fontVariationSettings: "'wdth' 100" }}
         >
           Invite
         </button>
 
-        {/* Invited People Section */}
         {invitedPeople.length > 0 && (
-          <>
-            <div className="mb-[16px]">
-              <h3
-                className="font-['Roboto:Medium',sans-serif] font-medium text-[13px] text-[#333] tracking-[-0.08px] leading-[18px] mb-[12px]"
-                style={{ fontVariationSettings: "'wdth' 100" }}
-              >
-                Invited People
-              </h3>
+          <div className="mb-[16px]">
+            <h3
+              className="mb-[12px] font-['Roboto:Medium',sans-serif] text-[13px] font-medium leading-[18px] tracking-[-0.08px] text-foreground"
+              style={{ fontVariationSettings: "'wdth' 100" }}
+            >
+              Invited People
+            </h3>
 
-              {invitedPeople.map((person) => (
-                <div
-                  key={person.id}
-                  className="flex items-center justify-between mb-[12px]"
-                >
-                  {/* Person Info */}
-                  <div className="flex items-center gap-[12px]">
-                    <div className="size-[32px] rounded-full bg-[#e0e0e0] flex items-center justify-center">
-                      <UserCircle className="size-[20px] text-[#828282]" />
-                    </div>
-                    <div>
-                      <p
-                        className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#333] tracking-[-0.08px] leading-[18px]"
-                        style={{ fontVariationSettings: "'wdth' 100" }}
-                      >
-                        {person.name}
-                      </p>
-                      <p
-                        className="font-['Roboto:Regular',sans-serif] font-normal text-[11px] text-[#828282] tracking-[-0.08px] leading-[16px]"
-                        style={{ fontVariationSettings: "'wdth' 100" }}
-                      >
-                        {person.email}
-                      </p>
-                    </div>
+            {invitedPeople.map((person) => (
+              <div key={person.id} className="mb-[12px] flex items-center justify-between">
+                <div className="flex items-center gap-[12px]">
+                  <div className="flex size-[32px] items-center justify-center rounded-full bg-muted">
+                    <UserCircle className="size-[20px] text-muted-foreground" />
                   </div>
-
-                  {/* Controls */}
-                  <div className="flex items-center gap-[8px]">
-                    {/* View Content Button */}
-                    <div className="relative">
-                      <button
-                        onClick={() =>
-                          setShowPersonContentDropdown(
-                            showPersonContentDropdown === person.id ? null : person.id
-                          )
-                        }
-                        className="size-[24px] flex items-center justify-center text-[#248bf2] hover:bg-[#f5f5f5] rounded-[4px] transition-colors"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 14 14"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <rect x="0.5" y="0.5" width="5" height="5" stroke="currentColor" fill="none" />
-                          <rect x="8.5" y="0.5" width="5" height="5" stroke="currentColor" fill="none" />
-                          <rect x="0.5" y="8.5" width="5" height="5" stroke="currentColor" fill="none" />
-                          <rect x="8.5" y="8.5" width="5" height="5" stroke="currentColor" fill="none" />
-                        </svg>
-                      </button>
-
-                      {/* Content Access Dropdown */}
-                      {showPersonContentDropdown === person.id && (
-                        <div className="absolute right-0 top-[calc(100%+4px)] bg-white rounded-[8px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.12)] p-[12px] min-w-[200px] z-[220]">
-                          <p
-                            className="font-['Roboto:Medium',sans-serif] font-medium text-[12px] text-[#333] tracking-[-0.08px] leading-[16px] mb-[8px]"
-                            style={{ fontVariationSettings: "'wdth' 100" }}
-                          >
-                            What can {person.name} view?
-                          </p>
-                          {viewTree.map((node) => (
-                            <div key={node.id}>
-                              <button
-                                onClick={() => toggleNode(node.id)}
-                                className="w-full px-[8px] py-[4px] text-left font-['Roboto:Regular',sans-serif] font-normal text-[12px] text-[#333] hover:bg-[#f5f5f5] transition-colors tracking-[-0.08px] flex items-center gap-[6px]"
-                                style={{ fontVariationSettings: "'wdth' 100" }}
-                              >
-                                {node.children && node.children.length > 0 && (
-                                  <ChevronRight
-                                    className={`size-[10px] text-[#828282] transition-transform ${
-                                      node.expanded ? "rotate-90" : ""
-                                    }`}
-                                  />
-                                )}
-                                <input
-                                  type="checkbox"
-                                  checked={node.checked}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    const newTree = [...viewTree];
-                                    const foundNode = newTree.find((n) => n.id === node.id);
-                                    if (foundNode) {
-                                      foundNode.checked = !foundNode.checked;
-                                    }
-                                    setViewTree(newTree);
-                                  }}
-                                  className="size-[12px] accent-[#ff9500]"
-                                />
-                                <span>{node.label}</span>
-                              </button>
-
-                              {/* Children */}
-                              {node.expanded && node.children && (
-                                <div className="pl-[20px]">
-                                  {node.children.map((child) => (
-                                    <button
-                                      key={child.id}
-                                      onClick={() => toggleNode(child.id, node.id)}
-                                      className="w-full px-[8px] py-[4px] text-left font-['Roboto:Regular',sans-serif] font-normal text-[12px] text-[#333] hover:bg-[#f5f5f5] transition-colors tracking-[-0.08px] flex items-center gap-[6px]"
-                                      style={{ fontVariationSettings: "'wdth' 100" }}
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        checked={child.checked}
-                                        onChange={(e) => {
-                                          e.stopPropagation();
-                                          toggleNode(child.id, node.id);
-                                        }}
-                                        className="size-[12px] accent-[#ff9500]"
-                                      />
-                                      <span>{child.label}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Permission Dropdown Button */}
-                    <div className="relative">
-                      <button
-                        onClick={() =>
-                          setShowPersonPermissionDropdown(
-                            showPersonPermissionDropdown === person.id ? null : person.id
-                          )
-                        }
-                        className="size-[24px] flex items-center justify-center text-[#248bf2] hover:bg-[#f5f5f5] rounded-[4px] transition-colors"
-                      >
-                        <MoreVertical className="size-[14px]" />
-                      </button>
-
-                      {/* Permission Dropdown Menu */}
-                      {showPersonPermissionDropdown === person.id && (
-                        <div className="absolute right-0 top-[calc(100%+4px)] bg-white rounded-[8px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.12)] py-[4px] min-w-[160px] z-[220]">
-                          <p
-                            className="px-[12px] py-[4px] font-['Roboto:Medium',sans-serif] font-medium text-[11px] text-[#828282] tracking-[-0.08px] leading-[16px]"
-                            style={{ fontVariationSettings: "'wdth' 100" }}
-                          >
-                            {person.name}&apos;s authority
-                          </p>
-                          {["Can View", "Can Edit Content", "Have Full Access Edit"].map((perm) => (
-                            <button
-                              key={perm}
-                              onClick={() => updatePersonPermission(person.id, perm)}
-                              className="w-full px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#333] hover:bg-[#f5f5f5] transition-colors tracking-[-0.08px] flex items-center gap-[8px]"
-                              style={{ fontVariationSettings: "'wdth' 100" }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={person.permission === perm}
-                                readOnly
-                                className="size-[14px] accent-[#ff9500]"
-                              />
-                              {perm}
-                            </button>
-                          ))}
-                          <div className="border-t border-[#f2f2f2] my-[4px]" />
-                          <button
-                            onClick={() => updatePersonPermission(person.id, "Remove")}
-                            className="w-full px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#f44336] hover:bg-[#ffebee] transition-colors tracking-[-0.08px]"
-                            style={{ fontVariationSettings: "'wdth' 100" }}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                  <div>
+                    <p
+                      className="font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-foreground"
+                      style={{ fontVariationSettings: "'wdth' 100" }}
+                    >
+                      {person.name}
+                    </p>
+                    <p
+                      className="font-['Roboto:Regular',sans-serif] text-[11px] font-normal leading-[16px] tracking-[-0.08px] text-muted-foreground"
+                      style={{ fontVariationSettings: "'wdth' 100" }}
+                    >
+                      {person.email}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </>
+
+                <div className="flex items-center gap-[8px]">
+                  <div className="relative">
+                    <button
+                      onClick={() =>
+                        setShowPersonContentDropdown(
+                          showPersonContentDropdown === person.id ? null : person.id
+                        )
+                      }
+                      className="flex size-[24px] items-center justify-center rounded-[4px] text-primary transition-colors hover:bg-accent"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <rect x="0.5" y="0.5" width="5" height="5" stroke="currentColor" fill="none" />
+                        <rect x="8.5" y="0.5" width="5" height="5" stroke="currentColor" fill="none" />
+                        <rect x="0.5" y="8.5" width="5" height="5" stroke="currentColor" fill="none" />
+                        <rect x="8.5" y="8.5" width="5" height="5" stroke="currentColor" fill="none" />
+                      </svg>
+                    </button>
+
+                    {showPersonContentDropdown === person.id && (
+                      <div className="absolute right-0 top-[calc(100%+4px)] z-[220] min-w-[200px] rounded-[8px] border border-border bg-popover p-[12px] shadow-lg">
+                        <p
+                          className="mb-[8px] font-['Roboto:Medium',sans-serif] text-[12px] font-medium leading-[16px] tracking-[-0.08px] text-foreground"
+                          style={{ fontVariationSettings: "'wdth' 100" }}
+                        >
+                          What can {person.name} view?
+                        </p>
+                        {viewTree.map((node) => (
+                          <div key={node.id}>
+                            <button
+                              onClick={() => toggleNode(node.id)}
+                              className="flex w-full items-center gap-[6px] px-[8px] py-[4px] text-left font-['Roboto:Regular',sans-serif] text-[12px] font-normal tracking-[-0.08px] text-foreground transition-colors hover:bg-accent"
+                              style={{ fontVariationSettings: "'wdth' 100" }}
+                            >
+                              {node.children && node.children.length > 0 && (
+                                <ChevronRight
+                                  className={`size-[10px] text-muted-foreground transition-transform ${
+                                    node.expanded ? "rotate-90" : ""
+                                  }`}
+                                />
+                              )}
+                              <input type="checkbox" checked={node.checked} readOnly className="size-[12px]" />
+                              <span>{node.label}</span>
+                            </button>
+
+                            {node.expanded && node.children && (
+                              <div className="pl-[20px]">
+                                {node.children.map((child) => (
+                                  <button
+                                    key={child.id}
+                                    className="flex w-full items-center gap-[6px] px-[8px] py-[4px] text-left font-['Roboto:Regular',sans-serif] text-[12px] font-normal tracking-[-0.08px] text-foreground transition-colors hover:bg-accent"
+                                    style={{ fontVariationSettings: "'wdth' 100" }}
+                                  >
+                                    <input type="checkbox" checked={child.checked} readOnly className="size-[12px]" />
+                                    <span>{child.label}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <button
+                      onClick={() =>
+                        setShowPersonPermissionDropdown(
+                          showPersonPermissionDropdown === person.id ? null : person.id
+                        )
+                      }
+                      className="flex size-[24px] items-center justify-center rounded-[4px] text-primary transition-colors hover:bg-accent"
+                    >
+                      <MoreVertical className="size-[14px]" />
+                    </button>
+
+                    {showPersonPermissionDropdown === person.id && (
+                      <div className="absolute right-0 top-[calc(100%+4px)] z-[220] min-w-[160px] rounded-[8px] border border-border bg-popover py-[4px] shadow-lg">
+                        <p
+                          className="px-[12px] py-[4px] font-['Roboto:Medium',sans-serif] text-[11px] font-medium leading-[16px] tracking-[-0.08px] text-muted-foreground"
+                          style={{ fontVariationSettings: "'wdth' 100" }}
+                        >
+                          {person.name}&apos;s authority
+                        </p>
+                        {["Can View", "Can Edit Content", "Have Full Access Edit"].map((perm) => (
+                          <button
+                            key={perm}
+                            onClick={() => updatePersonPermission(person.id, perm)}
+                            className="flex w-full items-center gap-[8px] px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] text-foreground transition-colors hover:bg-accent"
+                            style={{ fontVariationSettings: "'wdth' 100" }}
+                          >
+                            <input type="checkbox" checked={person.permission === perm} readOnly className="size-[14px]" />
+                            {perm}
+                          </button>
+                        ))}
+                        <div className="my-[4px] border-t border-border" />
+                        <button
+                          onClick={() => updatePersonPermission(person.id, "Remove")}
+                          className="w-full px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] text-destructive transition-colors hover:bg-accent"
+                          style={{ fontVariationSettings: "'wdth' 100" }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
-        {/* Divider */}
-        <div className="border-t border-[#f2f2f2] mb-[16px]" />
+        <div className="mb-[16px] border-t border-border" />
 
-        {/* Copy Link Section */}
         <button
           onClick={handleCopyLink}
-          className="flex items-center gap-[8px] mb-[12px] text-[#248bf2] hover:text-[#1a6bc4] transition-colors"
+          className="mb-[12px] flex items-center gap-[8px] text-primary transition-colors hover:text-primary/80"
         >
           <Link className="size-[18px]" />
           <span
-            className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] tracking-[-0.08px] leading-[18px]"
+            className="font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px]"
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
             Copy Link
           </span>
         </button>
 
-        {/* Link Sharing Mode Toggle */}
         <div className="mb-[12px]">
-          <div className="flex gap-[8px] mb-[8px]">
+          <div className="mb-[8px] flex gap-[8px]">
             <button
               onClick={() => setLinkSharingMode("anyone")}
-              className={`flex-1 h-[32px] px-[12px] py-[6px] rounded-[6px] font-['Roboto:Regular',sans-serif] font-normal text-[12px] tracking-[-0.08px] leading-[18px] transition-colors ${
+              className={`flex-1 rounded-[6px] px-[12px] py-[6px] font-['Roboto:Regular',sans-serif] text-[12px] font-normal leading-[18px] tracking-[-0.08px] transition-colors ${
                 linkSharingMode === "anyone"
-                  ? "bg-[#248bf2] text-white"
-                  : "bg-[#f5f5f5] text-[#828282] hover:bg-[#e0e0e0]"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground hover:bg-accent"
               }`}
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
@@ -555,10 +496,10 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
             </button>
             <button
               onClick={() => setLinkSharingMode("restricted")}
-              className={`flex-1 h-[32px] px-[12px] py-[6px] rounded-[6px] font-['Roboto:Regular',sans-serif] font-normal text-[12px] tracking-[-0.08px] leading-[18px] transition-colors ${
+              className={`flex-1 rounded-[6px] px-[12px] py-[6px] font-['Roboto:Regular',sans-serif] text-[12px] font-normal leading-[18px] tracking-[-0.08px] transition-colors ${
                 linkSharingMode === "restricted"
-                  ? "bg-[#248bf2] text-white"
-                  : "bg-[#f5f5f5] text-[#828282] hover:bg-[#e0e0e0]"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground hover:bg-accent"
               }`}
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
@@ -567,36 +508,34 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
           </div>
         </div>
 
-        {/* Link Permission - Only show if "Anyone with link" is selected */}
         {linkSharingMode === "anyone" && (
-          <div className="flex items-center gap-[4px] mb-[4px]">
+          <div className="mb-[4px] flex items-center gap-[4px]">
             <p
-              className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#828282] tracking-[-0.08px] leading-[18px]"
+              className="font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-muted-foreground"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
-              Anyone of the link
+              Anyone with the link
             </p>
             <div className="relative">
               <button
                 onClick={() => setShowLinkPermissionDropdown(!showLinkPermissionDropdown)}
-                className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#248bf2] tracking-[-0.08px] leading-[18px] flex items-center gap-[4px] hover:text-[#1a6bc4] transition-colors"
+                className="flex items-center gap-[4px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-primary transition-colors hover:text-primary/80"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 {linkPermission}
                 <ChevronDown className="size-[10px]" />
               </button>
 
-              {/* Link Permission Dropdown */}
               {showLinkPermissionDropdown && (
-                <div className="absolute left-0 top-[calc(100%+4px)] bg-white rounded-[8px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.08)] py-[4px] min-w-[100px] z-[210]">
-                  {["can View", "can Edit", "can Comment"].map((perm) => (
+                <div className="absolute left-0 top-[calc(100%+4px)] z-[210] min-w-[100px] rounded-[8px] border border-border bg-popover py-[4px] shadow-lg">
+                  {["Can View", "Can Edit", "Can Comment"].map((perm) => (
                     <button
                       key={perm}
                       onClick={() => {
                         setLinkPermission(perm);
                         setShowLinkPermissionDropdown(false);
                       }}
-                      className="w-full px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#333] hover:bg-[#f5f5f5] transition-colors tracking-[-0.08px]"
+                      className="w-full px-[12px] py-[6px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] text-foreground transition-colors hover:bg-accent"
                       style={{ fontVariationSettings: "'wdth' 100" }}
                     >
                       {perm}
@@ -608,10 +547,9 @@ export function ShareModal({ isOpen, onClose, cardId, cardType }: ShareModalProp
           </div>
         )}
 
-        {/* Restricted Message - Only show if "Restricted" is selected */}
         {linkSharingMode === "restricted" && (
           <p
-            className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#828282] tracking-[-0.08px] leading-[18px] mb-[4px]"
+            className="mb-[4px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-muted-foreground"
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
             Only people with access can view

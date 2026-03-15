@@ -422,23 +422,23 @@ export default function SpaceDetailPage() {
   if (spaceError) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
           <div className="text-center">
             <h1
-              className="text-[24px] font-['Roboto:Bold',sans-serif] font-bold text-[#333] mb-2"
+              className="text-[24px] font-['Roboto:Bold',sans-serif] font-bold text-foreground mb-2"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               Space not found
             </h1>
             <p
-              className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] mb-4"
+              className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground mb-4"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               The space you&apos;re looking for doesn&apos;t exist.
             </p>
             <button
               onClick={() => router.push('/spaces')}
-              className="h-[36px] px-[20px] bg-[#248bf2] rounded-[100px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[14px] text-white tracking-[-0.24px] hover:bg-[#1a6bc4] transition-colors"
+              className="h-[36px] rounded-[100px] bg-primary px-[20px] font-['Roboto:SemiBold',sans-serif] text-[14px] font-semibold tracking-[-0.24px] text-primary-foreground transition hover:opacity-90"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               Back to Spaces
@@ -451,7 +451,7 @@ export default function SpaceDetailPage() {
 
   return (
     <ProtectedRoute>
-      <div className="bg-white min-h-screen relative">
+      <div className="bg-background text-foreground min-h-screen relative">
         <Header
           onMenuClick={toggleSidebar}
           onBackClick={handleBackClick}
@@ -503,7 +503,7 @@ export default function SpaceDetailPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search nodes by title, content, or entity type..."
-                className="h-[42px] w-full max-w-[360px] rounded-xl border border-[#e5e7eb] bg-white px-4 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe]"
+                className="h-[42px] w-full max-w-[320px] rounded-xl border border-border bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
 
               <select
@@ -513,7 +513,7 @@ export default function SpaceDetailPage() {
                     e.target.value as 'ALL' | 'REGULAR' | 'CONTEXT' | 'ASSUMPTION' | 'TEMPLATE'
                   )
                 }
-                className="h-[42px] rounded-xl border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe]"
+                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               >
                 <option value="ALL">All node types</option>
                 <option value="REGULAR">Regular</option>
@@ -529,7 +529,7 @@ export default function SpaceDetailPage() {
                     e.target.value as 'ALL' | '' | 'person' | 'place' | 'action' | 'topic' | 'event'
                   )
                 }
-                className="h-[42px] rounded-xl border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe]"
+                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               >
                 <option value="ALL">All entity types</option>
                 <option value="">No entity type</option>
@@ -542,11 +542,11 @@ export default function SpaceDetailPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[13px] font-medium text-[#6b7280]">Sort by</span>
+              <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
-                className="h-[42px] rounded-xl border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe]"
+                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               >
                 <option value="updatedAt">Date modified</option>
                 <option value="createdAt">Date created</option>
@@ -557,12 +557,12 @@ export default function SpaceDetailPage() {
 
           {isLoading ? (
             <div className="flex items-center justify-center h-[400px]">
-              <div className="animate-spin h-8 w-8 border-4 border-[#248bf2] border-t-transparent rounded-full" />
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           ) : visibleNodes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[400px] text-center">
               <p
-                className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] tracking-[-0.24px]"
+                className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground tracking-[-0.24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 {searchTerm.trim() || filterNodeType !== 'ALL' || filterEntityType !== 'ALL'
@@ -570,7 +570,7 @@ export default function SpaceDetailPage() {
                   : 'No nodes in this space'}
               </p>
               <p
-                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-[#bdbdbd] mt-2 tracking-[-0.24px]"
+                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground/70 mt-2 tracking-[-0.24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 {searchTerm.trim() || filterNodeType !== 'ALL' || filterEntityType !== 'ALL'
@@ -696,15 +696,15 @@ export default function SpaceDetailPage() {
         {/* Clear Space Confirmation Dialog */}
         {showClearSpaceDialog && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-[16px] p-[24px] w-[400px] shadow-lg">
+            <div className="bg-background border border-border rounded-[16px] p-[24px] w-[400px] shadow-lg">
               <h2
-                className="text-[18px] font-['Roboto:Bold',sans-serif] font-bold text-[#333] mb-[12px]"
+                className="text-[18px] font-['Roboto:Bold',sans-serif] font-bold text-foreground mb-[12px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 Clear Space
               </h2>
               <p
-                className="text-[14px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] mb-[24px]"
+                className="text-[14px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground mb-[24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 Are you sure you want to delete all {nodes?.length || 0} nodes in this space? This action cannot be undone.
@@ -713,7 +713,7 @@ export default function SpaceDetailPage() {
                 <button
                   onClick={() => setShowClearSpaceDialog(false)}
                   disabled={isClearingSpace}
-                  className="h-[36px] px-[20px] bg-[#f5f5f5] rounded-[100px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[14px] text-[#333] tracking-[-0.24px] hover:bg-[#e5e5e5] transition-colors disabled:opacity-50"
+                  className="h-[36px] px-[20px] bg-secondary rounded-[100px] font-['Roboto:SemiBold',sans-serif] font-semibold text-[14px] text-foreground tracking-[-0.24px] hover:bg-accent transition-colors disabled:opacity-50"
                   style={{ fontVariationSettings: "'wdth' 100" }}
                 >
                   Cancel

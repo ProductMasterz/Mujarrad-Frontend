@@ -409,14 +409,14 @@ export function NewNodeModal({
       <div className="absolute inset-0 bg-[rgba(41,41,41,0.5)]" onClick={handleClose} />
 
       {/* Modal */}
-      <div className="relative bg-white w-[1100px] h-[729px] rounded-[37px] shadow-2xl flex flex-col">
+      <div className="relative flex h-[729px] w-[1100px] flex-col rounded-[37px] bg-white shadow-2xl dark:bg-[#111827]">
         {/* Top bar */}
         <div className="flex items-center justify-between px-[24px] pt-[19px] pb-[12px]">
           <div className="flex items-center gap-[12px]">
             {/* Expand button */}
             <button
               onClick={handleExpand}
-              className="size-6 flex items-center justify-center text-[#828282] hover:text-[#333] transition-colors"
+              className="flex size-6 items-center justify-center text-[#828282] transition-colors hover:text-[#333] dark:text-[#9ca3af] dark:hover:text-white"
               title="Open in full page"
             >
               <Maximize2 className="size-5" strokeWidth={1.5} />
@@ -426,21 +426,21 @@ export function NewNodeModal({
             <div className="relative" ref={typeDropdownRef}>
               <button
                 onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-                className="bg-[#e4f1ff] h-[32px] px-[12px] rounded-[100px] flex items-center gap-[8px] hover:bg-[#d5e8ff] transition-colors"
+                className="flex h-[32px] items-center gap-[8px] rounded-[100px] bg-[#e4f1ff] px-[12px] transition-colors hover:bg-[#d5e8ff] dark:bg-[#1e3a5f] dark:hover:bg-[#24476f]"
               >
-                <span className="text-[#248bf2]">{ENTITY_ICONS[entityType]}</span>
+                <span className="text-[#248bf2] dark:text-[#93c5fd]">{ENTITY_ICONS[entityType]}</span>
                 <span
-                  className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#248bf2] tracking-[-0.08px]"
+                  className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#248bf2] tracking-[-0.08px] dark:text-[#93c5fd]"
                   style={{ fontVariationSettings: "'wdth' 100" }}
                 >
                   {ENTITY_LABELS[entityType]}
                 </span>
-                <ChevronDown className="size-4 text-[#248bf2]" strokeWidth={1.5} />
+                <ChevronDown className="size-4 text-[#248bf2] dark:text-[#93c5fd]" strokeWidth={1.5} />
               </button>
 
               {/* Type Dropdown Menu */}
               {showTypeDropdown && (
-                <div className="absolute left-0 top-[38px] bg-white rounded-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] w-[188px] py-[12px] px-[12px] z-10">
+                <div className="absolute left-0 top-[38px] z-10 w-[188px] rounded-[12px] bg-white px-[12px] py-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] dark:bg-[#111827] dark:shadow-[0px_8px_24px_0px_rgba(0,0,0,0.35)]">
                   {resolvedAvailableTypes.map((type) => (
                     <button
                       key={type}
@@ -456,14 +456,14 @@ export function NewNodeModal({
                         setShowTypeDropdown(false);
                       }}
                       className={clsx(
-                        "w-full text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] tracking-[-0.08px] py-[6px] px-[8px] rounded-[6px] flex items-center gap-[8px] transition-colors",
+                        "w-full rounded-[6px] px-[8px] py-[6px] text-left font-['Roboto:Regular',sans-serif] font-normal text-[13px] tracking-[-0.08px] flex items-center gap-[8px] transition-colors",
                         entityType === type
-                          ? "text-[#248bf2] bg-[#e4f1ff]"
-                          : "text-[#828282] hover:text-[#333] hover:bg-[#f5f5f5]"
+                          ? "bg-[#e4f1ff] text-[#248bf2] dark:bg-[#1e3a5f] dark:text-[#93c5fd]"
+                          : "text-[#828282] hover:bg-[#f5f5f5] hover:text-[#333] dark:text-[#9ca3af] dark:hover:bg-[#1f2937] dark:hover:text-white"
                       )}
                       style={{ fontVariationSettings: "'wdth' 100" }}
                     >
-                      <span className={entityType === type ? "text-[#248bf2]" : "text-[#828282]"}>
+                      <span className={entityType === type ? "text-[#248bf2] dark:text-[#93c5fd]" : "text-[#828282] dark:text-[#9ca3af]"}>
                         {ENTITY_ICONS[type]}
                       </span>
                       {ENTITY_LABELS[type]}
@@ -477,7 +477,7 @@ export function NewNodeModal({
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="text-[#828282] hover:text-[#333] transition-colors"
+            className="text-[#828282] transition-colors hover:text-[#333] dark:text-[#9ca3af] dark:hover:text-white"
           >
             <X className="size-6" strokeWidth={1.5} />
           </button>
@@ -500,7 +500,7 @@ export function NewNodeModal({
               }
             }}
             placeholder="Untitled"
-            className="w-full text-[32px] font-['Roboto:Bold',sans-serif] font-bold text-[#333] mb-2 outline-none border-none bg-transparent placeholder:text-[#bdbdbd]"
+            className="mb-2 w-full border-none bg-transparent text-[32px] font-['Roboto:Bold',sans-serif] font-bold text-[#333] outline-none placeholder:text-[#bdbdbd] dark:text-white dark:placeholder:text-[#6b7280]"
             style={{ fontVariationSettings: "'wdth' 100" }}
           />
 
@@ -508,7 +508,7 @@ export function NewNodeModal({
             // Space mode - simple form with description and create button
             <>
               <p
-                className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#bdbdbd] tracking-[-0.08px] leading-[18px] mb-[24px]"
+                className="mb-[24px] font-['Roboto:Regular',sans-serif] font-normal text-[13px] tracking-[-0.08px] leading-[18px] text-[#bdbdbd] dark:text-[#6b7280]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 Enter a name for your new space
@@ -516,11 +516,11 @@ export function NewNodeModal({
 
               <div className="flex flex-col items-center justify-center min-h-[200px]">
                 <div className="text-center mb-[24px]">
-                  <div className="size-16 mx-auto mb-4 rounded-[16px] bg-[#e4f1ff] flex items-center justify-center">
+                  <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-[16px] bg-[#e4f1ff] dark:bg-[#1e3a5f]">
                     <FolderPlus className="size-8 text-[#248bf2]" />
                   </div>
                   <p
-                    className="font-['Roboto:Regular',sans-serif] font-normal text-[15px] text-[#828282] tracking-[-0.08px]"
+                    className="font-['Roboto:Regular',sans-serif] font-normal text-[15px] text-[#828282] tracking-[-0.08px] dark:text-[#9ca3af]"
                     style={{ fontVariationSettings: "'wdth' 100" }}
                   >
                     A space is a container for your nodes and contexts
@@ -551,7 +551,7 @@ export function NewNodeModal({
             
             <>
               <p
-                className="mb-[24px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-[#9ca3af]"
+                className="mb-[24px] font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-[#9ca3af] dark:text-[#6b7280]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 Fill in the node details, then create it directly or open it in the full editor.
@@ -560,33 +560,33 @@ export function NewNodeModal({
               <div className="grid grid-cols-12 gap-6">
                 <div className="col-span-7 space-y-5">
                   <div>
-                    <label className="mb-2 block text-[13px] font-medium text-[#374151]">
+                    <label className="mb-2 block text-[13px] font-medium text-[#374151] dark:text-[#e5e7eb]">
                       Initial content
                     </label>
                     <textarea
                       value={initialContent}
                       onChange={(e) => setInitialContent(e.target.value)}
                       placeholder="Add a short description, notes, or starting content..."
-                      className="min-h-[220px] w-full rounded-[18px] border border-[#e5e7eb] bg-[#fafafa] px-4 py-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:bg-white focus:ring-2 focus:ring-[#dbeafe]"
+                      className="min-h-[220px] w-full rounded-[18px] border border-[#e5e7eb] bg-[#fafafa] px-4 py-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:bg-white focus:ring-2 focus:ring-[#dbeafe] dark:border-[#374151] dark:bg-[#111827] dark:text-white dark:focus:border-[#60a5fa] dark:focus:bg-[#111827] dark:focus:ring-[#1d4ed8]/30"
                     />
                   </div>
                 </div>
 
                 <div className="col-span-5">
-                  <div className="rounded-[22px] border border-[#e5e7eb] bg-[#fcfcfd] p-5 shadow-sm">
+                  <div className="rounded-[22px] border border-[#e5e7eb] bg-[#fcfcfd] p-5 shadow-sm dark:border-[#374151] dark:bg-[#0f172a]">
                     <div className="mb-4">
-                      <h3 className="text-[15px] font-semibold text-[#111827]">
+                      <h3 className="text-[15px] font-semibold text-[#111827] dark:text-white">
                         {ENTITY_LABELS[entityType]} settings
                       </h3>
-                      <p className="mt-1 text-[12px] leading-5 text-[#9ca3af]">
+                      <p className="mt-1 text-[12px] leading-5 text-[#9ca3af] dark:text-[#6b7280]">
                         Configure how this {entityType} appears in the workspace.
                       </p>
                     </div>
 
                     <div className="space-y-4">
                       <div>
-                        <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151]">
-                          <Box className="h-4 w-4 text-[#94a3b8]" />
+                        <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151] dark:text-[#e5e7eb]">
+                          <Box className="h-4 w-4 text-[#94a3b8] dark:text-[#9ca3af]" />
                           System type
                         </label>
                         <select
@@ -594,7 +594,7 @@ export function NewNodeModal({
                           onChange={(e) =>
                             setManualSystemNodeType(e.target.value as ManualSystemNodeType)
                           }
-                          className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe]"
+                          className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe] dark:border-[#374151] dark:bg-[#111827] dark:text-white dark:focus:border-[#60a5fa] dark:focus:ring-[#1d4ed8]/30"
                         >
                           {MANUAL_SYSTEM_NODE_TYPE_OPTIONS.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -605,14 +605,14 @@ export function NewNodeModal({
                       </div>
 
                       <div>
-                        <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151]">
-                          <Tag className="h-4 w-4 text-[#94a3b8]" />
+                        <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151] dark:text-[#e5e7eb]">
+                          <Tag className="h-4 w-4 text-[#94a3b8] dark:text-[#9ca3af]" />
                           Entity type
                         </label>
                         <select
                           value={manualEntityType}
                           onChange={(e) => setManualEntityType(e.target.value as ManualEntityType)}
-                          className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe]"
+                          className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe] dark:border-[#374151] dark:bg-[#111827] dark:text-white dark:focus:border-[#60a5fa] dark:focus:ring-[#1d4ed8]/30"
                         >
                           {MANUAL_ENTITY_TYPE_OPTIONS.map((option) => (
                             <option key={option.value || "none"} value={option.value}>
@@ -623,11 +623,11 @@ export function NewNodeModal({
                       </div>
 
                       <div>
-                        <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151]">
-                          <Sparkles className="h-4 w-4 text-[#94a3b8]" />
+                        <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151] dark:text-[#e5e7eb]">
+                          <Sparkles className="h-4 w-4 text-[#94a3b8] dark:text-[#9ca3af]" />
                           Source
                         </label>
-                        <div className="flex h-[42px] items-center rounded-[14px] border border-[#e5e7eb] bg-[#f9fafb] px-3 text-[14px] text-[#4b5563]">
+                        <div className="flex h-[42px] items-center rounded-[14px] border border-[#e5e7eb] bg-[#f9fafb] px-3 text-[14px] text-[#4b5563] dark:border-[#374151] dark:bg-[#111827] dark:text-[#d1d5db]">
                           Manual
                         </div>
                       </div>
@@ -647,7 +647,7 @@ export function NewNodeModal({
                       <button
                         onClick={handleExpand}
                         disabled={isCreating || createNodeMutation.isPending}
-                        className="h-[42px] rounded-[100px] border border-[#dbe3ee] bg-white px-5 text-[14px] font-semibold text-[#374151] transition hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="h-[42px] rounded-[100px] border border-[#dbe3ee] bg-white px-5 text-[14px] font-semibold text-[#374151] transition hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#374151] dark:bg-[#111827] dark:text-[#e5e7eb] dark:hover:bg-[#1f2937]"
                         type="button"
                       >
                         Create and open
@@ -662,16 +662,16 @@ export function NewNodeModal({
 
         {/* Status bar - only for nodes/contexts */}
         {!isSpaceMode && createdEntityId && (
-          <div className="px-[24px] py-[12px] border-t border-[#f2f2f2] flex items-center justify-between">
+          <div className="flex items-center justify-between border-t border-[#f2f2f2] px-[24px] py-[12px] dark:border-[#374151]">
             <span
-              className="font-['Roboto:Regular',sans-serif] font-normal text-[12px] text-[#bdbdbd] tracking-[-0.08px]"
+              className="font-['Roboto:Regular',sans-serif] font-normal text-[12px] text-[#bdbdbd] tracking-[-0.08px] dark:text-[#6b7280]"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               Created successfully
             </span>
             <button
               onClick={handleExpand}
-              className="font-['Roboto:Regular',sans-serif] font-normal text-[12px] text-[#248bf2] tracking-[-0.08px] hover:underline"
+              className="font-['Roboto:Regular',sans-serif] font-normal text-[12px] text-[#248bf2] tracking-[-0.08px] hover:underline dark:text-[#93c5fd]"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               Open full page →

@@ -16,7 +16,7 @@ type ShortcutCategory = {
 
 const shortcutCategories: ShortcutCategory[] = [
   {
-    name: "Category name",
+    name: "General",
     shortcuts: [
       { label: "Add information", keys: ["⌘", "I"] },
       { label: "Open Search", keys: ["⌘", "P"] },
@@ -47,26 +47,22 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-[16px] w-[560px] max-h-[80vh] overflow-hidden shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)]">
-        {/* Close Button */}
+      <div className="relative max-h-[80vh] w-[560px] overflow-hidden rounded-[16px] border border-border bg-background text-foreground shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] dark:shadow-[0px_16px_40px_rgba(0,0,0,0.35)]">
         <button
           onClick={onClose}
-          className="absolute top-[20px] right-[20px] text-[#828282] hover:text-[#4f4f4f] transition-colors z-10"
+          className="absolute right-[20px] top-[20px] z-10 text-muted-foreground transition-colors hover:text-foreground"
           aria-label="Close"
         >
           <X className="size-6" strokeWidth={1.5} />
         </button>
 
-        {/* Content */}
-        <div className="p-[30px] overflow-y-auto max-h-[80vh]">
+        <div className="max-h-[80vh] overflow-y-auto p-[30px]">
           {shortcutCategories.map((category, categoryIndex) => (
             <div key={categoryIndex} className="mb-[30px] last:mb-0">
               <h3
-                className="font-['Roboto:Medium',sans-serif] font-medium text-[15px] text-black tracking-[-0.24px] leading-[24px] mb-[20px]"
+                className="mb-[20px] font-['Roboto:Medium',sans-serif] text-[15px] font-medium leading-[24px] tracking-[-0.24px] text-foreground"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 {category.name}
@@ -79,7 +75,7 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
                     className="flex items-center justify-between"
                   >
                     <span
-                      className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#4f4f4f] tracking-[-0.08px] leading-[18px]"
+                      className="font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-foreground"
                       style={{ fontVariationSettings: "'wdth' 100" }}
                     >
                       {shortcut.label}
@@ -89,10 +85,10 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
                       {shortcut.keys.map((key, keyIndex) => (
                         <div
                           key={keyIndex}
-                          className="min-w-[32px] h-[24px] px-[8px] flex items-center justify-center bg-[#f5f5f5] rounded-[4px] border border-[#e0e0e0]"
+                          className="flex h-[24px] min-w-[32px] items-center justify-center rounded-[4px] border border-border bg-secondary px-[8px]"
                         >
                           <span
-                            className="font-['Roboto:Medium',sans-serif] font-medium text-[11px] text-[#4f4f4f] tracking-[-0.08px]"
+                            className="font-['Roboto:Medium',sans-serif] text-[11px] font-medium tracking-[-0.08px] text-foreground"
                             style={{ fontVariationSettings: "'wdth' 100" }}
                           >
                             {key}
@@ -106,10 +102,9 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
             </div>
           ))}
 
-          {/* Empty State for more categories */}
-          <div className="text-center py-[40px]">
+          <div className="py-[40px] text-center">
             <p
-              className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#bdbdbd] tracking-[-0.08px]"
+              className="font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] text-muted-foreground"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               More shortcuts coming soon...

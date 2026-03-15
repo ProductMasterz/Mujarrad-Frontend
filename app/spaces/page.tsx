@@ -319,7 +319,7 @@ export default function SpacesPage() {
   );
   return (
     <ProtectedRoute>
-      <div className="bg-white min-h-screen relative">
+      <div className="bg-background text-foreground min-h-screen relative">
         <Header
           onMenuClick={toggleSidebar}
           onBackClick={handleBackClick}
@@ -367,15 +367,16 @@ export default function SpacesPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search spaces..."
-              className="h-[42px] w-full max-w-[320px] rounded-xl border border-[#e5e7eb] bg-white px-4 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe]"
+              className="h-[42px] w-full max-w-[320px] rounded-xl border border-border bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+
             />
 
             <div className="flex items-center gap-2">
-              <span className="text-[13px] font-medium text-[#6b7280]">Sort by</span>
+              <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
-                className="h-[42px] rounded-xl border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe]"
+                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               >
                 <option value="updatedAt">Date modified</option>
                 <option value="createdAt">Date created</option>
@@ -397,7 +398,7 @@ export default function SpacesPage() {
                 Error loading spaces
               </p>
               <p
-                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] mt-2 tracking-[-0.24px]"
+                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground mt-2 tracking-[-0.24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 {error.message || 'An unknown error occurred'}
@@ -406,13 +407,13 @@ export default function SpacesPage() {
           ) : cards.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[400px] text-center">
               <p
-                className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] tracking-[-0.24px]"
+                className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground tracking-[-0.24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 {searchTerm.trim() ? 'No matching spaces' : 'No spaces yet'}
               </p>
               <p
-                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-[#bdbdbd] mt-2 tracking-[-0.24px]"
+                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground/70 mt-2 tracking-[-0.24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 {searchTerm.trim()

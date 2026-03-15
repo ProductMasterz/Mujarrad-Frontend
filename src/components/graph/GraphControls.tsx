@@ -24,12 +24,12 @@ function Toggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm text-[#4f4f4f] cursor-pointer">
+    <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="rounded"
+        className="rounded border-border bg-background text-primary focus:ring-primary/20"
       />
       <span>{label}</span>
     </label>
@@ -52,18 +52,18 @@ function DropdownSection({
       <button
         type="button"
         onClick={onToggle}
-        className="inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 text-sm font-medium text-[#111827] shadow-sm transition hover:bg-[#f9fafb]"
+        className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted"
       >
         <span>{title}</span>
         {open ? (
-          <ChevronDown className="h-4 w-4 text-[#6b7280]" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
         ) : (
-          <ChevronRight className="h-4 w-4 text-[#6b7280]" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
         )}
       </button>
 
       {open && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-[250px] rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-[0px_10px_30px_0px_rgba(0,0,0,0.10),0px_2px_10px_0px_rgba(0,0,0,0.05)]">
+        <div className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-[250px] rounded-xl border border-border bg-background p-4 shadow-[0px_10px_30px_0px_rgba(0,0,0,0.10),0px_2px_10px_0px_rgba(0,0,0,0.05)] dark:shadow-[0px_10px_30px_0px_rgba(0,0,0,0.35),0px_2px_10px_0px_rgba(0,0,0,0.20)]">
           <div className="space-y-3">{children}</div>
         </div>
       )}
@@ -136,10 +136,10 @@ export function GraphControls({ viewMode, onViewModeChange }: GraphControlsProps
   return (
     <div
       ref={containerRef}
-      className="border-b border-[#e6e6e6] bg-[#fafafa] px-4 py-3"
+      className="border-b border-border bg-muted/30 px-4 py-3"
     >
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="text-sm font-medium text-[#4f4f4f] mr-1">Filters:</div>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="mr-1 text-sm font-medium text-foreground">Filters:</div>
 
         <DropdownSection
           title="Chat"

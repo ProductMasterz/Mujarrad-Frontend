@@ -161,7 +161,7 @@ function SidebarItem({
             {/* Add button */}
             <button
               onClick={handleAddSibling}
-              className="absolute right-0 top-1/2 -translate-y-1/2 text-[#248bf2] hover:text-[#1976d2] transition-colors bg-white rounded-full"
+              className="absolute right-0 top-1/2 -translate-y-1/2 text-[#248bf2] hover:text-[#1976d2] transition-colors bg-white rounded-full dark:bg-[#111827]"
             >
               <svg className="size-5" fill="none" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
@@ -188,10 +188,10 @@ function SidebarItem({
           className={clsx(
             "flex w-full items-center gap-[12px] rounded-xl px-[8px] py-[7px] text-left transition-all",
             level === 0
-              ? "font-['Roboto:Medium',sans-serif] font-medium text-[#4f4f4f]"
-              : "font-['Roboto:Regular',sans-serif] font-normal text-[#828282]",
-            isSelected && "bg-[#eef2ff] text-[#2563eb] shadow-sm",
-            isHoveringItem && !isSelected && "bg-[#f7f8fa]"
+              ? "font-['Roboto:Medium',sans-serif] font-medium text-[#4f4f4f] dark:text-[#f3f4f6]"
+              : "font-['Roboto:Regular',sans-serif] font-normal text-[#828282] dark:text-[#9ca3af]",
+            isSelected && "bg-[#eef2ff] text-[#2563eb] shadow-sm dark:bg-[#1e293b] dark:text-[#60a5fa]",
+            isHoveringItem && !isSelected && "bg-[#f7f8fa] dark:bg-[#1f2937]"
           )}
         >
           {hasChildren ? (
@@ -220,7 +220,7 @@ function SidebarItem({
         {isHoveringItem && (
           <button
             onClick={handleAddChild}
-            className="absolute right-[4px] top-1/2 -translate-y-1/2 text-[#828282] hover:text-[#248bf2] transition-colors"
+            className="absolute right-[4px] top-1/2 -translate-y-1/2 text-[#828282] hover:text-[#248bf2] transition-colors dark:text-[#9ca3af] dark:hover:text-[#60a5fa]"
           >
             <svg className="size-5" fill="none" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
@@ -277,7 +277,7 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
   return (
     <div
       className={clsx(
-        "fixed left-0 top-[76px] z-10 h-[calc(100vh-76px)] border-r border-[#eceff3] bg-[#fcfcfd] transition-all duration-300 ease-in-out",
+          'fixed left-0 top-[76px] z-10 h-[calc(100vh-76px)] border-r border-[#eceff3] bg-[#fcfcfd] transition-all duration-300 ease-in-out dark:border-[#374151] dark:bg-[#0f172a]',
         isOpen ? "w-[276px]" : "w-0"
       )}
       style={{ overflow: isOpen ? "visible" : "hidden" }}
@@ -303,11 +303,11 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
         </div>
 
         {/* Bottom Icons */}
-        <div className="mx-[16px] mb-[20px] mt-[12px] flex items-center justify-between rounded-2xl border border-[#e5e7eb] bg-white px-[14px] py-[12px] shadow-sm">
+        <div className="mx-[16px] mb-[20px] mt-[12px] flex items-center justify-between rounded-2xl border border-[#e5e7eb] bg-white px-[14px] py-[12px] shadow-sm dark:border-[#374151] dark:bg-[#111827]">
           <div className="relative group">
             <button
               onClick={handleUserClick}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="text-[#828282] hover:text-[#4f4f4f] dark:text-[#9ca3af] dark:hover:text-white"
             >
               <svg className="size-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M20 22H18V20C18 19.2044 17.6839 18.4413 17.1213 17.8787C16.5587 17.3161 15.7956 17 15 17H9C8.20435 17 7.44129 17.3161 6.87868 17.8787C6.31607 18.4413 6 19.2044 6 20V22H4V20C4 18.6739 4.52678 17.4021 5.46447 16.4645C6.40215 15.5268 7.67392 15 9 15H15C16.3261 15 17.5979 15.5268 18.5355 16.4645C19.4732 17.4021 20 18.6739 20 20V22ZM12 13C11.2121 13 10.4319 12.8448 9.7039 12.5433C8.97595 12.2417 8.31451 11.7998 7.75736 11.2426C7.20021 10.6855 6.75825 10.0241 6.45672 9.2961C6.15519 8.56815 6 7.78793 6 7C6 6.21207 6.15519 5.43185 6.45672 4.7039C6.75825 3.97595 7.20021 3.31451 7.75736 2.75736C8.31451 2.20021 8.97595 1.75825 9.7039 1.45672C10.4319 1.15519 11.2121 1 12 1C13.5913 1 15.1174 1.63214 16.2426 2.75736C17.3679 3.88258 18 5.4087 18 7C18 8.5913 17.3679 10.1174 16.2426 11.2426C15.1174 12.3679 13.5913 13 12 13ZM12 11C13.0609 11 14.0783 10.5786 14.8284 9.82843C15.5786 9.07828 16 8.06087 16 7C16 5.93913 15.5786 4.92172 14.8284 4.17157C14.0783 3.42143 13.0609 3 12 3C10.9391 3 9.92172 3.42143 9.17157 4.17157C8.42143 4.92172 8 5.93913 8 7C8 8.06087 8.42143 9.07828 9.17157 9.82843C9.92172 10.5786 10.9391 11 12 11Z" />
@@ -318,7 +318,7 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
             </div>
           </div>
           <div className="relative group">
-            <button className="text-[#828282] hover:text-[#4f4f4f] transition-colors">
+            <button className="text-[#828282] hover:text-[#4f4f4f] dark:text-[#9ca3af] dark:hover:text-white">
               <svg className="size-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M4 11.333L0 9L12 2L24 9V17.5H22V10.167L20 11.333V18.011L19.777 18.286C18.8404 19.4467 17.6557 20.3827 16.3099 21.0255C14.9641 21.6682 13.4914 22.0012 12 22C10.5086 22.0012 9.03588 21.6682 7.69007 21.0255C6.34426 20.3827 5.15955 19.4467 4.223 18.286L4 18.011V11.333ZM6 12.5V17.292C6.74991 18.1442 7.67304 18.8266 8.70772 19.2936C9.7424 19.7606 10.8648 20.0014 12 20C13.1352 20.0015 14.2576 19.7607 15.2923 19.2937C16.327 18.8267 17.2501 18.1443 18 17.292V12.5L12 16L6 12.5ZM3.97 9L12 13.685L20.03 9L12 4.315L3.97 9Z" />
               </svg>
@@ -330,7 +330,7 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
           <div className="relative group">
             <button
               onClick={handleShortcutClick}
-              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              className="text-[#828282] hover:text-[#4f4f4f] dark:text-[#9ca3af] dark:hover:text-white"
             >
               <svg className="size-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M13 3V10.267L19.294 6.634L20.294 8.366L14 11.999L20.294 15.634L19.294 17.366L12.999 13.732V21H10.999V13.732L4.705 17.366L3.705 15.634L9.998 12L3.705 8.366L4.705 6.634L11 10.267V3H13Z" />

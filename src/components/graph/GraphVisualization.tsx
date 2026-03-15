@@ -16,7 +16,7 @@ import { buildGraphData } from '@/lib/graph-utils';
 import { useGraphStore } from '@/stores/graphStore';
 import { GraphControls } from './GraphControls';
 import { CustomNode } from './CustomNode';
-
+import { useTheme } from 'next-themes';
 interface GraphVisualizationProps {
   nodes: Node[];
   attributes: Attribute[];
@@ -35,7 +35,8 @@ export function GraphVisualization({
   const viewMode = useGraphStore((state) => state.viewMode);
   const selectedNodeId = useGraphStore((state) => state.selectedNodeId);
   const setSelectedNode = useGraphStore((state) => state.setSelectedNode);
-
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const graphData = useMemo(() => {
     return buildGraphData(nodes, attributes, viewMode, selectedNodeId);
   }, [nodes, attributes, viewMode, selectedNodeId]);
@@ -57,13 +58,15 @@ export function GraphVisualization({
       label: edge.data.label,
       animated: edge.animated,
       style: edge.style,
-      labelStyle: {
+        labelStyle: {
         fontSize: 12,
         fontWeight: 600,
+        fill: isDark ? '#ffffff' : '#111827',
+        color: isDark ? '#ffffff' : '#111827',
       },
       labelBgStyle: {
-        fill: '#fff',
-        fillOpacity: 0.9,
+        fill: isDark ? '#0f172a' : '#ffffff',
+        fillOpacity: 0.92,
       },
       labelBgPadding: [6, 3] as [number, number],
       labelBgBorderRadius: 4,
@@ -93,16 +96,18 @@ export function GraphVisualization({
         labelStyle: {
           fontSize: 12,
           fontWeight: 600,
+          fill: isDark ? '#ffffff' : '#111827',
+          color: isDark ? '#ffffff' : '#111827',
         },
         labelBgStyle: {
-          fill: '#fff',
-          fillOpacity: 0.9,
+          fill: isDark ? '#0f172a' : '#ffffff',
+          fillOpacity: 0.92,
         },
         labelBgPadding: [6, 3] as [number, number],
         labelBgBorderRadius: 4,
       }))
     );
-  }, [graphData.edges, setFlowEdges]);
+  }, [graphData.edges, setFlowEdges, isDark]);
 
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: ReactFlowNode) => {
@@ -116,21 +121,21 @@ export function GraphVisualization({
     useGraphStore.setState((state) => ({
       viewMode: { ...state.viewMode, ...mode },
     }));
-  }, [viewMode]);
+  }, []);
 
   if (nodes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
+      <div className="flex h-full items-center justify-center text-muted-foreground">
         No nodes to display in graph
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex h-full flex-col bg-background text-foreground">
       <GraphControls viewMode={viewMode} onViewModeChange={handleViewModeChange} />
 
-      <div className="flex-1">
+      <div className="flex-1 overflow-hidden rounded-[20px] border border-border bg-background">
         <ReactFlow
           nodes={flowNodes}
           edges={flowEdges}
@@ -140,9 +145,16 @@ export function GraphVisualization({
           nodeTypes={nodeTypes}
           fitView
         >
-          <Background />
+          <Background color="hsl(var(--border))" gap={20} />
           <Controls />
-          <MiniMap />
+          <MiniMap
+            pannable
+            zoomable
+            style={{
+              backgroundColor: 'hsl(var(--background))',
+              border: '1px solid hsl(var(--border))',
+            }}
+          />
         </ReactFlow>
       </div>
     </div>

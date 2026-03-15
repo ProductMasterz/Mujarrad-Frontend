@@ -3,4 +3,8 @@
  */
 
 export { WhiteboardCanvas } from './WhiteboardCanvas';
-export { default } from './WhiteboardCanvas';
+export type { WhiteboardCanvasRef } from './WhiteboardCanvas';
+
+export { default as SyncStatusIndicator } from './SyncStatusIndicator';
+export { WhiteboardContextMenu } from './WhiteboardContextMenu';
+export { DeleteLinkedFrameDialog } from './DeleteLinkedFrameDialog';

@@ -1,7 +1,22 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, PenTool, Trash2, Share2, ExternalLink, Maximize2, Lock, MoveRight, Settings, GitBranch } from "lucide-react";
-import { useNavigationStore, MoreAction, MORE_ACTION_LABELS } from "@/stores/navigationStore";
+import {
+  ChevronRight,
+  PenTool,
+  Trash2,
+  Share2,
+  ExternalLink,
+  Maximize2,
+  Lock,
+  MoveRight,
+  Settings,
+  GitBranch,
+} from "lucide-react";
+import {
+  useNavigationStore,
+  MoreAction,
+  MORE_ACTION_LABELS,
+} from "@/stores/navigationStore";
 
 type MoreMenuDropdownProps = {
   onClose: () => void;
@@ -17,7 +32,6 @@ type MoreMenuDropdownProps = {
   onMoveTo?: () => void;
 };
 
-// Icons for each action
 const ACTION_ICONS: Partial<Record<MoreAction, React.ReactNode>> = {
   share: <Share2 className="size-[14px]" />,
   open_new_tab: <ExternalLink className="size-[14px]" />,
@@ -48,7 +62,6 @@ export function MoreMenuDropdown({
   const menuRef = useRef<HTMLDivElement>(null);
   const moreActions = useNavigationStore((state) => state.moreActions);
 
-  // Action handlers mapping
   const actionHandlers: Record<MoreAction, (() => void) | undefined> = {
     share: onShare,
     open_new_tab: onOpenInNewTab,
@@ -59,15 +72,13 @@ export function MoreMenuDropdown({
     delete: onDelete,
     clear_space: onClearSpace,
     move_to: onMoveTo,
-    settings: () => router.push('/settings'),
+    settings: () => router.push("/settings"),
   };
 
-  // Special styling for dangerous actions
   const isDangerousAction = (action: MoreAction) =>
-    action === 'delete' || action === 'clear_space';
+    action === "delete" || action === "clear_space";
 
-  // Actions that show chevron (sub-menu indicator)
-  const hasSubmenu = (action: MoreAction) => action === 'move_to';
+  const hasSubmenu = (action: MoreAction) => action === "move_to";
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -99,6 +110,18 @@ export function MoreMenuDropdown({
   if (!anchorEl) return null;
 
   const rect = anchorEl.getBoundingClientRect();
+  const menuWidth = 205;
+  const padding = 8;
+
+  const menuLeft = Math.min(
+    Math.max(padding, rect.right - menuWidth),
+    window.innerWidth - menuWidth - padding
+  );
+
+  const menuTop = Math.min(
+    rect.bottom + 8,
+    window.innerHeight - 320
+  );
 
   const handleActionClick = (action: MoreAction) => {
     const handler = actionHandlers[action];
@@ -108,16 +131,13 @@ export function MoreMenuDropdown({
     onClose();
   };
 
-  // Position menu, ensuring it doesn't go off-screen
-  const menuLeft = Math.max(8, rect.right - 205);
-
   return (
     <div
       ref={menuRef}
-      className="fixed bg-white rounded-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] min-w-[180px] z-[100] py-[8px] px-[8px]"
+      className="fixed z-[100] min-w-[180px] rounded-[12px] border border-border bg-background px-[8px] py-[8px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] dark:shadow-[0px_10px_30px_rgba(0,0,0,0.35)]"
       style={{
         left: `${menuLeft}px`,
-        top: `${rect.bottom + 8}px`,
+        top: `${menuTop}px`,
       }}
     >
       <div className="flex flex-col gap-[4px]">
@@ -126,26 +146,34 @@ export function MoreMenuDropdown({
             key={action}
             onClick={() => handleActionClick(action)}
             className={`
-              font-['Roboto:Regular',sans-serif] font-normal text-[13px] tracking-[-0.08px] leading-[18px]
-              text-left py-[8px] px-[12px] rounded-[8px] transition-colors flex items-center gap-[10px]
+              flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left
+              font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] leading-[18px]
+              transition-colors
               ${isDangerousAction(action)
-                ? 'text-[#d4183d] hover:bg-[#fef2f2]'
-                : 'text-[#4f4f4f] hover:bg-[#f5f5f5]'
+                ? "text-[#d4183d] hover:bg-[#fef2f2] dark:hover:bg-[#3a161c]"
+                : "text-foreground hover:bg-accent"
               }
-              ${hasSubmenu(action) ? 'justify-between' : ''}
+              ${hasSubmenu(action) ? "justify-between" : ""}
             `}
             style={{ fontVariationSettings: "'wdth' 100" }}
           >
             <span className="flex items-center gap-[10px]">
               {ACTION_ICONS[action] && (
-                <span className={isDangerousAction(action) ? 'text-[#d4183d]' : 'text-[#828282]'}>
+                <span
+                  className={
+                    isDangerousAction(action)
+                      ? "text-[#d4183d]"
+                      : "text-muted-foreground"
+                  }
+                >
                   {ACTION_ICONS[action]}
                 </span>
               )}
               {MORE_ACTION_LABELS[action]}
             </span>
+
             {hasSubmenu(action) && (
-              <ChevronRight className="size-[12px] text-[#828282]" />
+              <ChevronRight className="size-[12px] text-muted-foreground" />
             )}
           </button>
         ))}
