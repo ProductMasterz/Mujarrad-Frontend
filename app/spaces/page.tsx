@@ -119,6 +119,7 @@ export default function SpacesPage() {
       );
     });
 
+    
     const sorted = [...filtered].sort((a, b) => {
       if (sortBy === 'name') {
         return a.name.localeCompare(b.name);
@@ -141,6 +142,16 @@ export default function SpacesPage() {
   }, [apiSpaces, searchTerm, sortBy]);
 
   const cards = useMemo(() => filteredAndSortedSpaces.map(spaceToCard), [filteredAndSortedSpaces]);
+
+  const chatAvailableSpaces = useMemo(
+    () =>
+      apiSpaces.map((space) => ({
+        id: space.id,
+        name: space.name,
+        slug: space.slug,
+      })),
+    [apiSpaces]
+  );
 
   // Build breadcrumb
   const breadcrumbPath = useMemo(() => {
@@ -178,6 +189,17 @@ export default function SpacesPage() {
   const handleBreadcrumbClick = (index: number) => {
     if (index === -1 || index === 0) {
       router.push('/spaces');
+    }
+  };
+
+  const handleCreateSpaceFromChat = async () => {
+    try {
+      const created = await spaceService.createSpace({ name: 'Untitled' });
+      const updatedSpaces = await spaceService.getSpaces();
+      setApiSpaces(Array.isArray(updatedSpaces) ? updatedSpaces : []);
+      router.push(`/spaces/${created.slug}`);
+    } catch (error) {
+      console.error('Failed to create space from chat:', error);
     }
   };
 
@@ -330,7 +352,7 @@ export default function SpacesPage() {
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
           // Add menu actions - only create space at spaces level
-          onCreateSpace={handleAddClick}
+          onCreateSpace={handleCreateSpaceFromChat}
           // More menu actions
           onShare={handleShareClick}
           onOpenInNewTab={handleOpenInNewTab}
@@ -340,6 +362,9 @@ export default function SpacesPage() {
           onTabClose={handleTabClose}
           onNewTab={handleNewTab}
           onFeedback={handleFeedback}
+          chatAvailableSpaces={chatAvailableSpaces}
+          onChatChangeSpace={(nextSpaceSlug) => {router.push(`/spaces/${nextSpaceSlug}`); }}
+          showChatCreateSpace={false}
         />
 
         <Sidebar

@@ -43,6 +43,9 @@ type HeaderProps = {
   onTabClose: (tabId: string) => void;
   onNewTab: () => void;
   onFeedback: () => void;
+  chatAvailableSpaces?: Array<{ id: string; name: string; slug: string }>;
+  onChatChangeSpace?: (nextSpaceSlug: string) => void;
+  showChatCreateSpace?: boolean;
 };
 
 export function Header({
@@ -72,6 +75,9 @@ export function Header({
   onTabClose,
   onNewTab,
   onFeedback,
+  chatAvailableSpaces = [],
+  onChatChangeSpace,
+  showChatCreateSpace = false,
 }: HeaderProps) {
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const [notificationAnchor, setNotificationAnchor] = useState<HTMLElement | null>(null);
@@ -344,6 +350,19 @@ export function Header({
             title="Chat"
             embedded={true}
             onClose={() => setChatOpen(false)}
+            availableSpaces={chatAvailableSpaces}
+            onChangeSpace={(nextSpaceSlug) => {
+              setChatOpen(false);
+              onChatChangeSpace?.(nextSpaceSlug);
+            }}
+            onCreateSpace={
+              showChatCreateSpace && onCreateSpace
+                ? async () => {
+                  setChatOpen(false);
+                  await onCreateSpace();
+                }
+                : undefined
+            }
           />
         </div>
       )}
