@@ -3,131 +3,54 @@
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SendHorizontal } from 'lucide-react';
+import {
+  AssistantRuntimeProvider,
+  ComposerPrimitive,
+  MessagePrimitive,
+  ThreadPrimitive,
+} from '@assistant-ui/react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { useMujarradExternalStoreRuntime } from '@/components/chat/useMujarradExternalStoreRuntime';
 
-type Message = {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-};
+function getMessageMarkdownText(parts: readonly unknown[]): string {
+  return parts
+    .filter((part): part is { text: string } => {
+      if (!part || typeof part !== 'object') return false;
+      return typeof (part as { text?: unknown }).text === 'string';
+    })
+    .map((part) => part.text)
+    .join('\n')
+    .trim();
+}
 
-type AgentProcessResponse = {
-  nodes?: unknown[];
-  relationships?: unknown[];
-  report?: string;
-  error?: boolean;
-  message?: string;
-  code?: string;
-};
+function renderAssistantMessage(parts: readonly unknown[]) {
+  const markdownContent = getMessageMarkdownText(parts);
 
-async function getAgentResponse(
-  agentServiceUrl: string | undefined,
-  text: string,
-  spaceSlug: string,
-): Promise<AgentProcessResponse> {
-  // Demo mode gives a visible working flow even when backend URL is not configured.
-  if (!agentServiceUrl) {
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    return {
-      report: [
-        '# Demo Summary',
-        '',
-        `**Input:** ${text}`,
-        '',
-        '## Extracted',
-        '- 1 node idea',
-        '- 1 relationship idea',
-        '',
-        '```ts',
-        "const spaceSlug = '" + spaceSlug + "';",
-        '```',
-        '',
-        '[Open space](#/spaces)',
-      ].join('\n'),
-    };
+  if (!markdownContent) {
+    return <MessagePrimitive.Parts />;
   }
 
-  const response = await fetch(`${agentServiceUrl}/api/agents/process`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      text,
-      space_slug: spaceSlug,
-    }),
-  });
-
-  const data: AgentProcessResponse = await response.json();
-
-  if (!response.ok || data.error) {
-    throw new Error(data.message || 'The agent service returned an error.');
-  }
-
-  return data;
+  return (
+    <MarkdownRenderer
+      content={markdownContent}
+      className="markdown-content prose-sm max-w-none"
+    />
+  );
 }
 
 export default function ChatPage() {
   const searchParams = useSearchParams();
-  const [input, setInput] = useState('');
-  const [isSending, setIsSending] = useState(false);
   const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(null);
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content: 'Welcome to Mujarrad chat. This is the initial chat shell for Squad A.',
-    },
-  ]);
-
   const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
-  const isDemoMode = !agentServiceUrl;
   const spaceSlug = searchParams.get('space_slug') || 'demo-space';
-
-  const appendMessage = (role: 'user' | 'assistant', content: string) => {
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        role,
-        content,
-      },
-    ]);
-  };
-
-  const handleSend = async () => {
-    const trimmed = input.trim();
-    if (!trimmed || isSending) return;
-
-    appendMessage('user', trimmed);
-    setInput('');
-    setIsSending(true);
-
-    const startedAt = Date.now();
-    try {
-      const data = await getAgentResponse(agentServiceUrl, trimmed, spaceSlug);
-      setLastLatencyMs(Date.now() - startedAt);
-
-      appendMessage(
-        'assistant',
-        data.report || 'Your message was processed successfully.',
-      );
-    } catch (error) {
-      appendMessage(
-        'assistant',
-        error instanceof Error
-          ? error.message
-          : 'Could not reach the agent service. Please try again.',
-      );
-      setLastLatencyMs(Date.now() - startedAt);
-    } finally {
-      setIsSending(false);
-    }
-  };
+  const { runtime, isDemoMode, isRunning } = useMujarradExternalStoreRuntime({
+    agentServiceUrl,
+    spaceSlug,
+    onLatencyUpdate: setLastLatencyMs,
+  });
 
   return (
     <div className="container mx-auto px-6 py-6">
@@ -146,61 +69,50 @@ export default function ChatPage() {
       </div>
 
       <Card className="flex h-[calc(100vh-220px)] min-h-[500px] flex-col overflow-hidden">
-        <div className="flex-1 space-y-4 overflow-y-auto p-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-foreground'
-                }`}
-              >
-                {message.role === 'assistant' ? (
-                  <MarkdownRenderer
-                    content={message.content}
-                    className="markdown-content prose-sm max-w-none"
-                  />
-                ) : (
-                  message.content
+        <AssistantRuntimeProvider runtime={runtime}>
+          <ThreadPrimitive.Root className="flex h-full flex-col">
+            <ThreadPrimitive.Viewport className="flex-1 space-y-4 overflow-y-auto p-4" autoScroll>
+              <ThreadPrimitive.Messages>
+                {({ message }) => (
+                  <MessagePrimitive.Root
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+                        message.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-foreground'
+                      }`}
+                    >
+                      <div className="whitespace-pre-wrap">
+                        {message.role === 'assistant' ? (
+                          renderAssistantMessage(message.content)
+                        ) : (
+                          <MessagePrimitive.Parts />
+                        )}
+                      </div>
+                    </div>
+                  </MessagePrimitive.Root>
                 )}
-              </div>
-            </div>
-          ))}
+              </ThreadPrimitive.Messages>
+            </ThreadPrimitive.Viewport>
 
-          {isSending && (
-            <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-3 text-sm text-foreground">
-                Processing...
-              </div>
+            <div className="border-t p-4">
+              <ComposerPrimitive.Root className="flex items-end gap-3">
+                <ComposerPrimitive.Input
+                  placeholder="Type your message..."
+                  className="min-h-[60px] w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <ComposerPrimitive.Send asChild>
+                  <Button className="gap-2" disabled={isRunning}>
+                    <SendHorizontal className="h-4 w-4" />
+                    {isRunning ? 'Sending...' : 'Send'}
+                  </Button>
+                </ComposerPrimitive.Send>
+              </ComposerPrimitive.Root>
             </div>
-          )}
-        </div>
-
-        <div className="border-t p-4">
-          <div className="flex items-end gap-3">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              className="min-h-[60px] resize-none"
-              disabled={isSending}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  void handleSend();
-                }
-              }}
-            />
-            <Button onClick={() => void handleSend()} className="gap-2" disabled={isSending}>
-              <SendHorizontal className="h-4 w-4" />
-              {isSending ? 'Sending...' : 'Send'}
-            </Button>
-          </div>
-        </div>
+          </ThreadPrimitive.Root>
+        </AssistantRuntimeProvider>
       </Card>
     </div>
   );

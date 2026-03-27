@@ -1,6 +1,7 @@
-import { Menu, ArrowLeft, Plus, Bell, Search, MoreVertical, HelpCircle } from "lucide-react";
+import { Menu, ArrowLeft, Plus, Bell, Search, MoreVertical, HelpCircle, MessageSquare } from "lucide-react";
 import { Breadcrumb } from "./Breadcrumb";
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { MoreMenuDropdown } from "./MoreMenuDropdown";
 import { AddMenuDropdown } from "./AddMenuDropdown";
@@ -70,12 +71,17 @@ export function Header({
   onNewTab,
   onFeedback,
 }: HeaderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const [notificationAnchor, setNotificationAnchor] = useState<HTMLElement | null>(null);
   const [addMenuAnchor, setAddMenuAnchor] = useState<HTMLElement | null>(null);
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<HTMLElement | null>(null);
   const [helpAnchor, setHelpAnchor] = useState<HTMLElement | null>(null);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+
+  const currentSpaceSlug = pathname.match(/^\/spaces\/([^/]+)/)?.[1];
+  const chatHref = currentSpaceSlug ? `/chat?space_slug=${currentSpaceSlug}` : '/chat';
 
   // Get tooltip from navigation store
   const addButtonTooltip = useNavigationStore((state) => state.addButtonTooltip);
@@ -195,6 +201,23 @@ export function Header({
             {hoveredButton === "notification" && !notificationAnchor && (
               <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-[#333] text-white text-[11px] px-[8px] py-[4px] rounded whitespace-nowrap font-['Roboto:Regular',sans-serif]">
                 Notifications
+              </div>
+            )}
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={() => router.push(chatHref)}
+              onMouseEnter={() => setHoveredButton("chat")}
+              onMouseLeave={() => setHoveredButton(null)}
+              className="text-[#828282] hover:text-[#4f4f4f] transition-colors"
+              aria-label="Chat"
+            >
+              <MessageSquare className="size-6" strokeWidth={1.5} />
+            </button>
+            {hoveredButton === "chat" && (
+              <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-[#333] text-white text-[11px] px-[8px] py-[4px] rounded whitespace-nowrap font-['Roboto:Regular',sans-serif]">
+                Open Chatbot
               </div>
             )}
           </div>

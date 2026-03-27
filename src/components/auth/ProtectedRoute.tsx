@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores';
 import { getAuthToken } from '@/services/api/client';
-import { isAuthBypassEnabled } from '@/lib/auth-bypass';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -13,11 +12,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
-    if (isAuthBypassEnabled()) {
-      setIsChecking(false);
-      return;
-    }
-
     // Check if token exists
     const token = getAuthToken();
 

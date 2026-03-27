@@ -3,7 +3,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { ProblemDetail } from '@/types/errors';
 import { ApiError } from '@/lib/errors';
-import { isAuthBypassEnabled } from '@/lib/auth-bypass';
 
 /**
  * Retry configuration for network requests
@@ -116,7 +115,7 @@ apiClient.interceptors.response.use(
 
       // Handle 401 Unauthorized - redirect to login (but not if already on login page)
       if (status === 401) {
-        if (typeof window !== 'undefined' && !isAuthBypassEnabled()) {
+        if (typeof window !== 'undefined') {
           localStorage.removeItem('auth_token');
 
           const currentPath = window.location.pathname;

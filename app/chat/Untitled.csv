@@ -1,0 +1,20 @@
+Column_name,Type,Computed,Length,Prec,Scale,Nullable,TrimTrailingBlanks,FixedLenNullInSource,Collation
+ExchangeRateID,int,no,4,"10   ","0    ",no,(n/a),(n/a),NULL
+CurrencyID,int,no,4,"10   ","0    ",no,(n/a),(n/a),NULL
+CurrencyCode,nvarchar,no,20,"     ","     ",no,(n/a),(n/a),SQL_Latin1_General_CP1_CI_AS
+CurrencyName_AR,nvarchar,no,200,"     ","     ",no,(n/a),(n/a),SQL_Latin1_General_CP1_CI_AS
+CurrencyName_EN,nvarchar,no,200,"     ","     ",no,(n/a),(n/a),SQL_Latin1_General_CP1_CI_AS
+ExchangeRateToJD,decimal,no,9,"18   ","9    ",no,(n/a),(n/a),NULL
+JDToExchangeRate,decimal,no,9,"18   ","9    ",no,(n/a),(n/a),NULL
+GroupUnitName_AR,nvarchar,no,100,"     ","     ",yes,(n/a),(n/a),SQL_Latin1_General_CP1_CI_AS
+GroupUnitName_EN,nvarchar,no,100,"     ","     ",yes,(n/a),(n/a),SQL_Latin1_General_CP1_CI_AS
+SmallUnitName_AR,nvarchar,no,100,"     ","     ",yes,(n/a),(n/a),SQL_Latin1_General_CP1_CI_AS
+SmallUnitName_EN,nvarchar,no,100,"     ","     ",yes,(n/a),(n/a),SQL_Latin1_General_CP1_CI_AS
+IsActive,bit,no,1,"     ","     ",no,(n/a),(n/a),NULL
+CreatedBy,nvarchar,no,510,"     ","     ",no,(n/a),(n/a),SQL_Latin1_General_CP1_CI_AS
+CreatedDate,datetime,no,8,"     ","     ",no,(n/a),(n/a),NULL
+ModifiedBy,nvarchar,no,510,"     ","     ",yes,(n/a),(n/a),SQL_Latin1_General_CP1_CI_AS
+ModifiedDate,datetime,no,8,"     ","     ",yes,(n/a),(n/a),NULL
+OrderID,int,no,4,"10   ","0    ",yes,(n/a),(n/a),NULL
+CurrencyUnitName_AR_Singular,nvarchar,no,200,"     ","     ",yes,(n/a),(n/a),SQL_Latin1_General_CP1_CI_AS
+NumberOfDigits,int,no,4,"10   ","0    ",yes,(n/a),(n/a),NULL
