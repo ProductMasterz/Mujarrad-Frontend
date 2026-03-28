@@ -9,6 +9,7 @@ import { SearchModal } from "./SearchModal";
 import { TabsBar, Tab } from "./TabsBar";
 import { HelpDropdown } from "./HelpDropdown";
 import { useNavigationStore } from "@/stores/navigationStore";
+import { useChatPanelStore } from "@/stores/chatPanel.store";
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -73,6 +74,7 @@ export function Header({
 }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const openChat = useChatPanelStore((state) => state.openChat);
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const [notificationAnchor, setNotificationAnchor] = useState<HTMLElement | null>(null);
   const [addMenuAnchor, setAddMenuAnchor] = useState<HTMLElement | null>(null);
@@ -81,7 +83,6 @@ export function Header({
   const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   const currentSpaceSlug = pathname.match(/^\/spaces\/([^/]+)/)?.[1];
-  const chatHref = currentSpaceSlug ? `/chat?space_slug=${currentSpaceSlug}` : '/chat';
 
   // Get tooltip from navigation store
   const addButtonTooltip = useNavigationStore((state) => state.addButtonTooltip);
@@ -207,7 +208,7 @@ export function Header({
 
           <div className="relative">
             <button
-              onClick={() => router.push(chatHref)}
+              onClick={() => openChat(currentSpaceSlug)}
               onMouseEnter={() => setHoveredButton("chat")}
               onMouseLeave={() => setHoveredButton(null)}
               className="text-[#828282] hover:text-[#4f4f4f] transition-colors"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   useExternalStoreRuntime,
   type AppendMessage,
@@ -94,7 +94,29 @@ async function getAgentResponse(
   signal?: AbortSignal,
 ): Promise<AgentProcessResponse> {
   if (!agentServiceUrl) {
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    await new Promise<void>((resolve, reject) => {
+      const onAbort = () => {
+        clearTimeout(timeoutId);
+        const abortError = new Error('Request canceled.');
+        abortError.name = 'AbortError';
+        reject(abortError);
+      };
+
+      const timeoutId = setTimeout(() => {
+        signal?.removeEventListener('abort', onAbort);
+        resolve();
+      }, 900);
+
+      if (!signal) return;
+
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
+
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+
     return {
       report: [
         '# Demo Summary',
@@ -145,78 +167,76 @@ export function useMujarradExternalStoreRuntime({
   ]);
   const [isRunning, setIsRunning] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isRunningRef = useRef(false);
 
-  const onNew = useMemo(() => {
-    return async (message: AppendMessage) => {
-      const userText = extractTextFromAppendMessage(message);
-      if (!userText || isRunning) return;
+  const onNew = useCallback(async (message: AppendMessage) => {
+    const userText = extractTextFromAppendMessage(message);
+    if (!userText || isRunningRef.current) return;
 
-      const userMessage = createUserMessage(userText);
-      setMessages((prev) => [...prev, userMessage]);
-      setIsRunning(true);
+    isRunningRef.current = true;
+    setMessages((prev) => [...prev, createUserMessage(userText)]);
+    setIsRunning(true);
 
-      const startedAt = Date.now();
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
+    const startedAt = Date.now();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-      try {
-        const data = await getAgentResponse(
-          agentServiceUrl,
-          userText,
-          spaceSlug,
-          controller.signal,
-        );
+    try {
+      const data = await getAgentResponse(
+        agentServiceUrl,
+        userText,
+        spaceSlug,
+        controller.signal,
+      );
 
-        const assistantText = data.report || 'Your message was processed successfully.';
-        const assistantMessage = createAssistantMessage(assistantText);
-        setMessages((prev) => [...prev, assistantMessage]);
+      const assistantText = data.report || 'Your message was processed successfully.';
+      setMessages((prev) => [...prev, createAssistantMessage(assistantText)]);
 
-        if (agentServiceUrl) {
-          try {
-            await Promise.all([
-              persistMessageAsNode(spaceSlug, 'user', userText),
-              persistMessageAsNode(spaceSlug, 'assistant', assistantText),
-            ]);
-          } catch (persistError) {
-            console.warn('[Chat Runtime] Message persistence failed:', persistError);
-          }
-        }
-      } catch (error) {
-        if ((error as { name?: string } | null)?.name === 'AbortError') {
-          const canceledMessage = createAssistantMessage('Request canceled.');
-          setMessages((prev) => [...prev, canceledMessage]);
-        } else {
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : 'Could not reach the agent service. Please try again.';
-          setMessages((prev) => [...prev, createAssistantMessage(errorMessage)]);
-        }
-      } finally {
-        onLatencyUpdate?.(Date.now() - startedAt);
-        setIsRunning(false);
-        abortControllerRef.current = null;
+      if (agentServiceUrl) {
+        // Persistence should never block chat completion state.
+        void Promise.all([
+          persistMessageAsNode(spaceSlug, 'user', userText),
+          persistMessageAsNode(spaceSlug, 'assistant', assistantText),
+        ]).catch((persistError) => {
+          console.warn('[Chat Runtime] Message persistence failed:', persistError);
+        });
       }
-    };
-  }, [agentServiceUrl, isRunning, onLatencyUpdate, spaceSlug]);
-
-  const onCancel = useMemo(() => {
-    return async () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+    } catch (error) {
+      if ((error as { name?: string } | null)?.name === 'AbortError') {
+        setMessages((prev) => [...prev, createAssistantMessage('Request canceled.')]);
+      } else {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Could not reach the agent service. Please try again.';
+        setMessages((prev) => [...prev, createAssistantMessage(errorMessage)]);
       }
+    } finally {
+      onLatencyUpdate?.(Date.now() - startedAt);
       setIsRunning(false);
-    };
+      isRunningRef.current = false;
+      abortControllerRef.current = null;
+    }
+  }, [agentServiceUrl, onLatencyUpdate, spaceSlug]);
+
+  const onCancel = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    isRunningRef.current = false;
+    setIsRunning(false);
   }, []);
 
   const adapter = useMemo<ExternalStoreAdapter<ThreadMessage>>(
     () => ({
       messages,
-      isRunning,
+      // Keep runtime auto-optimistic placeholders disabled; we control pending UI explicitly.
+      isRunning: false,
+      setMessages: (nextMessages) => setMessages([...nextMessages]),
       onNew,
       onCancel,
     }),
-    [isRunning, messages, onCancel, onNew],
+    [messages, onCancel, onNew],
   );
 
   const runtime = useExternalStoreRuntime(adapter);
@@ -225,5 +245,6 @@ export function useMujarradExternalStoreRuntime({
     runtime,
     isRunning,
     isDemoMode: !agentServiceUrl,
+    messages,
   };
 }

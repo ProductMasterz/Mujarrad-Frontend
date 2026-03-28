@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
 import { Search, Home, Network, Settings, User, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useChatPanelStore } from '@/stores/chatPanel.store';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +24,7 @@ export function Navbar({ className }: NavbarProps) {
   const pathname = usePathname();
   const params = useParams();
   const [searchOpen, setSearchOpen] = useState(false);
+  const openChat = useChatPanelStore((state) => state.openChat);
 
   // Get current space slug from URL if available
   const currentSpaceSlug = params?.slug as string | undefined;
@@ -82,16 +84,15 @@ export function Navbar({ className }: NavbarProps) {
             </Button>
           </Link>
 
-          <Link href={currentSpaceSlug ? `/chat?space_slug=${currentSpaceSlug}` : '/chat'}>
-            <Button
-              variant={isActive('/chat') ? 'secondary' : 'ghost'}
-              size="sm"
-              className="gap-2"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Chat
-            </Button>
-          </Link>
+          <Button
+            variant={isActive('/chat') ? 'secondary' : 'ghost'}
+            size="sm"
+            className="gap-2"
+            onClick={() => openChat(currentSpaceSlug)}
+          >
+            <MessageSquare className="h-4 w-4" />
+            Chat
+          </Button>
         </div>
 
         {/* Search */}

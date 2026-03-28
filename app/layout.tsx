@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from './providers'
 import { Navbar } from '@/components/layout/Navbar'
+import { ChatSidePanelHost } from '@/components/chat/ChatSidePanelHost'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,6 +26,7 @@ export default function RootLayout({
             <Navbar />
             <main className="flex-1">{children}</main>
           </div>
+          <ChatSidePanelHost />
         </Providers>
       </body>
     </html>
