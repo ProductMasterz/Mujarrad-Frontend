@@ -1,19 +1,24 @@
 "use client";
 
-import { Thread, Composer } from "@assistant-ui/react-ui";
+import { AssistantRuntimeProvider } from "@assistant-ui/react";
+import { Thread } from "@assistant-ui/react-ui";
+import { useChatRuntime } from "@/hooks/api/useChatRuntime";
+import "./chat.css";
 
 export function ChatWindow() {
+  const { runtime } = useChatRuntime();
+
   return (
-    <div className="flex flex-col h-full w-full bg-white rounded-xl shadow-sm overflow-hidden">
+    <AssistantRuntimeProvider runtime={runtime}>
+      <div className="chat-page">
+        <div className="chat-header">
+          Chat Assistant
+        </div>
 
-      <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
-        <Thread />
+        <div className="chat-body">
+          <Thread />
+        </div>
       </div>
-
-      <div className="border-t p-4 bg-white">
-        <Composer />
-      </div>
-
-    </div>
+    </AssistantRuntimeProvider>
   );
 }
