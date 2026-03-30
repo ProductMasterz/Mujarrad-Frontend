@@ -1,0 +1,225 @@
+
+/* each message row */
+.aui-user-message-root,
+.aui-assistant-message-root {
+  display: flex;
+  width: 100%;
+  margin: 6px 0;
+}
+
+/* USER → RIGHT */
+.aui-user-message-root {
+  justify-content: flex-end;
+}
+
+/* ASSISTANT → LEFT */
+.aui-assistant-message-root {
+  justify-content: flex-start;
+}
+
+/* message content wrapper (IMPORTANT FIX) */
+.aui-user-message-content,
+.aui-assistant-message-content {
+  display: flex;
+  width: 100%;
+}
+
+/* USER → RIGHT */
+.aui-user-message-content {
+  justify-content: flex-end;
+}
+
+/* ASSISTANT → LEFT */
+.aui-assistant-message-content {
+  justify-content: flex-start;
+}
+
+/* TEXT BUBBLE */
+.aui-text {
+  display: inline-block;
+  width: fit-content;          /* 🔥 KEY FIX */
+  max-width: 70%;
+
+  padding: 10px 14px;
+  border-radius: 16px;
+
+  white-space: pre-wrap;
+  word-break: break-word;      /* prevents overflow */
+}
+
+/* USER bubble */
+.aui-user-message-root .aui-text {
+  background: #d9fdd3;
+}
+
+/* ASSISTANT bubble */
+.aui-assistant-message-root .aui-text {
+  background: white;
+  border: 1px solid #e6e6e6;
+}
+
+.aui-text {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* footer container (important spacing) */
+.aui-thread-viewport-footer {
+  position: sticky;
+  bottom: 0;
+  background: #f7f7f8;
+  padding: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+/* composer wrapper */
+.aui-composer-root {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  width: 100%;
+  max-width: 720px;
+
+  padding: 8px 12px;
+
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 24px;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* textarea */
+.aui-composer-input {
+  flex: 1;
+
+  border: none;
+  outline: none;
+  resize: none;
+
+  font-size: 14px;
+  line-height: 1.5;
+
+  background: transparent;
+
+  padding: 6px 4px;
+
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* placeholder style */
+.aui-composer-input::placeholder {
+  color: #999;
+}
+
+
+
+/* REMOVE default button styles first */
+/* FULL RESET (very important) */
+.aui-composer-send {
+  all: unset;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 50%;
+  background: #10a37f;
+
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+/* icon */
+.aui-composer-send svg {
+  width: 16px;
+  height: 16px;
+  stroke: white;
+  stroke-width: 2.5;
+}
+
+/* hover */
+.aui-composer-send:hover:not(:disabled) {
+  background: #0d8f6d;
+}
+
+/* click */
+.aui-composer-send:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+/* disabled */
+.aui-composer-send:disabled {
+  background: #e5e7eb;
+  cursor: not-allowed;
+}
+
+.aui-composer-send:disabled svg {
+  stroke: #9ca3af;
+}
+
+
+/* remove any default background/border */
+.aui-composer-send {
+  all: unset;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 50%;
+
+  background: #10a37f; /* your green */
+  cursor: pointer;
+}
+
+/* remove gray styles from inherited classes */
+.aui-composer-send.aui-button,
+.aui-composer-send.aui-button-primary,
+.aui-composer-send.aui-button-icon {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* icon */
+.aui-composer-send svg {
+  width: 16px;
+  height: 16px;
+  stroke: white;
+}
+
+/* disabled (empty input) */
+.aui-composer-send:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.aui-composer-send {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* icon sizing */
+.aui-composer-send svg {
+  width: 18px;
+  height: 18px;
+}
+
+.aui-composer-root:focus-within {
+  border-color: #10a37f;
+}
+
+.aui-thread-scroll-to-bottom,
+button.aui-thread-scroll-to-bottom {
+  display: none !important;
+}
