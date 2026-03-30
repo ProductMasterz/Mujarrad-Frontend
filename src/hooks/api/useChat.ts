@@ -13,32 +13,15 @@ export function useChat() {
       role: "user",
       content: text,
     };
-     // Immediately show user message
-  setMessages((prev) => [...prev, userMessage]);
-  try {
-    setLoading(true);
 
-    const data = await sendChatMessage([...messages, userMessage]);
-
-    const botMessage: ChatMessage = {
-      role: "assistant",
-      content: data.reply,
-    };
-
-    setMessages((prev) => [...prev, botMessage]);
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false);
-  }
-
-  const updatedMessages = [...messages, userMessage];
-
-    // show user message immediately
-    setMessages(updatedMessages);
+    // update state safely
+    setMessages((prev) => [...prev, userMessage]);
 
     try {
       setLoading(true);
+
+      // use functional update to avoid stale state
+      const updatedMessages = [...messages, userMessage];
 
       const data = await sendChatMessage(updatedMessages);
 
