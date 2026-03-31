@@ -1,97 +1,122 @@
-
-/* each message row */
+/* ============================= */
+/* MESSAGE ROW */
+/* ============================= */
 .aui-user-message-root,
 .aui-assistant-message-root {
   display: flex;
   width: 100%;
-  margin: 6px 0;
+  margin: 10px 0;
+  animation: fadeIn 0.2s ease-in-out;
 }
 
-/* USER → RIGHT */
+/* alignment */
 .aui-user-message-root {
   justify-content: flex-end;
 }
 
-/* ASSISTANT → LEFT */
 .aui-assistant-message-root {
   justify-content: flex-start;
 }
 
-/* message content wrapper (IMPORTANT FIX) */
+/* content wrapper */
 .aui-user-message-content,
 .aui-assistant-message-content {
   display: flex;
   width: 100%;
 }
 
-/* USER → RIGHT */
 .aui-user-message-content {
   justify-content: flex-end;
 }
 
-/* ASSISTANT → LEFT */
 .aui-assistant-message-content {
   justify-content: flex-start;
 }
 
-/* TEXT BUBBLE */
+/* ============================= */
+/* MESSAGE BUBBLE */
+/* ============================= */
 .aui-text {
   display: inline-block;
-  width: fit-content;          /* 🔥 KEY FIX */
-  max-width: 70%;
+  width: fit-content;
+  max-width: 68%;
 
-  padding: 10px 14px;
-  border-radius: 16px;
+  padding: 12px 16px;
+  border-radius: 18px;
+
+  font-size: 14px;
+  line-height: 1.5;
 
   white-space: pre-wrap;
-  word-break: break-word;      /* prevents overflow */
+  word-break: break-word;
+
+  transition: all 0.15s ease;
 }
 
 /* USER bubble */
 .aui-user-message-root .aui-text {
-  background: #d9fdd3;
+  background: linear-gradient(135deg, #d9fdd3, #c7f7be);
+  color: #1a1a1a;
+  border-bottom-right-radius: 6px;
 }
 
 /* ASSISTANT bubble */
 .aui-assistant-message-root .aui-text {
-  background: white;
-  border: 1px solid #e6e6e6;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-bottom-left-radius: 6px;
+
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
-.aui-text {
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-/* footer container (important spacing) */
+/* ============================= */
+/* THREAD FOOTER */
+/* ============================= */
 .aui-thread-viewport-footer {
   position: sticky;
   bottom: 0;
-  background: #f7f7f8;
-  padding: 12px;
+
+  background: rgba(247, 247, 248, 0.9);
+  backdrop-filter: blur(6px);
+
+  padding: 14px;
   display: flex;
   justify-content: center;
+
+  border-top: 1px solid #eee;
 }
 
-/* composer wrapper */
+/* ============================= */
+/* COMPOSER */
+/* ============================= */
 .aui-composer-root {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 
   width: 100%;
   max-width: 720px;
 
-  padding: 8px 12px;
+  padding: 10px 14px;
 
   background: white;
-  border: 1px solid #e5e5e5;
-  border-radius: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 28px;
 
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 
-/* textarea */
+/* focus effect */
+.aui-composer-root:focus-within {
+  border-color: #10a37f;
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.15);
+}
+
+/* ============================= */
+/* TEXTAREA */
+/* ============================= */
 .aui-composer-input {
   flex: 1;
 
@@ -100,7 +125,7 @@
   resize: none;
 
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
 
   background: transparent;
 
@@ -110,15 +135,17 @@
   overflow-y: auto;
 }
 
-/* placeholder style */
+/* placeholder */
 .aui-composer-input::placeholder {
-  color: #999;
+  color: #9ca3af;
 }
 
-
-
-/* REMOVE default button styles first */
-/* FULL RESET (very important) */
+/* ============================= */
+/* SEND BUTTON */
+/* ============================= */
+/* ============================= */
+/* SEND BUTTON - CLEAN VERSION */
+/* ============================= */
 .aui-composer-send {
   all: unset;
 
@@ -126,35 +153,48 @@
   align-items: center;
   justify-content: center;
 
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
 
   border-radius: 50%;
   background: #10a37f;
 
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
-/* icon */
+/* remove inherited styles COMPLETELY */
+.aui-composer-send.aui-button,
+.aui-composer-send.aui-button-primary,
+.aui-composer-send.aui-button-icon {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ICON */
 .aui-composer-send svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
+
   stroke: white;
   stroke-width: 2.5;
+
+  transition: transform 0.15s ease;
 }
 
-/* hover */
+/* HOVER */
 .aui-composer-send:hover:not(:disabled) {
   background: #0d8f6d;
 }
 
-/* click */
-.aui-composer-send:active:not(:disabled) {
+/* CLICK */
+.aui-composer-send:active:not(:disabled) svg {
   transform: scale(0.9);
 }
 
-/* disabled */
+/* DISABLED (EMPTY INPUT) */
 .aui-composer-send:disabled {
   background: #e5e7eb;
   cursor: not-allowed;
@@ -164,62 +204,69 @@
   stroke: #9ca3af;
 }
 
-
-/* remove any default background/border */
 .aui-composer-send {
-  all: unset;
+  box-shadow: 0 2px 6px rgba(16, 163, 127, 0.25);
+}
+
+.aui-composer-send:hover:not(:disabled) {
+  background: #0d8f6d;
+  transform: translateY(-1px);
+}
+
+.aui-composer-send span {
+  display: none;
+}
+
+.aui-composer-send {
+  gap: 0; /* remove spacing between icon & text */
+}
+
+.aui-composer-send,
+.aui-composer-send.aui-button,
+.aui-composer-send.aui-button-primary,
+.aui-composer-send.aui-button-icon {
+  all: unset !important;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
 
   border-radius: 50%;
 
-  background: #10a37f; /* your green */
+  background: transparent !important; /* 🔥 removes gray */
+  box-shadow: none !important;
+  border: none !important;
+
   cursor: pointer;
 }
 
-/* remove gray styles from inherited classes */
-.aui-composer-send.aui-button,
-.aui-composer-send.aui-button-primary,
-.aui-composer-send.aui-button-icon {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+.aui-composer-send:not(:disabled) {
+  background: gray;
 }
 
-/* icon */
-.aui-composer-send svg {
-  width: 16px;
-  height: 16px;
-  stroke: white;
-}
 
-/* disabled (empty input) */
-.aui-composer-send:disabled {
-  background: #d1d5db;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.aui-composer-send {
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-/* icon sizing */
-.aui-composer-send svg {
-  width: 18px;
-  height: 18px;
-}
-
-.aui-composer-root:focus-within {
-  border-color: #10a37f;
-}
-
+/* ============================= */
+/* SCROLL TO BOTTOM (hidden) */
+/* ============================= */
 .aui-thread-scroll-to-bottom,
 button.aui-thread-scroll-to-bottom {
   display: none !important;
 }
+
+/* ============================= */
+/* ANIMATIONS */
+/* ============================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
