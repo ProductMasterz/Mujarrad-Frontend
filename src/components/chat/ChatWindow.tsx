@@ -1,22 +1,40 @@
 "use client";
 
-import { AssistantRuntimeProvider } from "@assistant-ui/react";
+import { AssistantRuntimeProvider, ThreadMessage } from "@assistant-ui/react";
 import { Thread } from "@assistant-ui/react-ui";
 import { useChatRuntime } from "@/hooks/api/useChatRuntime";
 import "./chat.css";
+import { MarkdownMessage } from "./MarkdownMessage";
 
 export function ChatWindow() {
   const { runtime } = useChatRuntime();
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <div className="chat-page">
-        <div className="chat-header">
+      <div >
+        <div >
           Chat Assistant
         </div>
+        <div >
+       <Thread
+            components={{
+             AssistantMessage: (props: any) => {
+              const message = props?.message;
 
-        <div className="chat-body">
-          <Thread />
+              if (!message || !message.content) return null;
+
+              return (
+                <div className="aui-assistant-message-root">
+                  <div className="aui-assistant-message-content">
+                    <div className="aui-text">
+                      <MarkdownMessage content={message.content} />
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            }}
+          />
         </div>
       </div>
     </AssistantRuntimeProvider>
