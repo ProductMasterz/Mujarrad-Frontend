@@ -6,6 +6,16 @@ import { useChatRuntime } from "@/hooks/api/useChatRuntime";
 import "./chat.css";
 import { MarkdownMessage } from "./MarkdownMessage";
 
+function normalizeContent(content: any): string {
+  if (typeof content === "string") return content;
+
+  if (Array.isArray(content)) {
+    return content.map((p) => p?.text ?? "").join("");
+  }
+
+  return "";
+}
+
 export function ChatWindow() {
   const { runtime } = useChatRuntime();
 
@@ -27,12 +37,15 @@ export function ChatWindow() {
                 <div className="aui-assistant-message-root">
                   <div className="aui-assistant-message-content">
                     <div className="aui-text">
-                      <MarkdownMessage content={message.content} />
+                      
+                      <MarkdownMessage content={normalizeContent(message.content)} />
                     </div>
                   </div>
                 </div>
               );
             }
+
+            
             }}
           />
         </div>
