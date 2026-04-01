@@ -8,6 +8,9 @@ import VuesaxLinearContext from "../imports/VuesaxLinearContext";
 import VuesaxLinearNode from "../imports/VuesaxLinearNode";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 
+
+
+
 type SidebarProps = {
   isOpen: boolean;
   onItemClick: (id: string) => void;
