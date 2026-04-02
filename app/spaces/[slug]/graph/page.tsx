@@ -5,14 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { GraphVisualization } from '@/components/graph/GraphVisualization';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
 import { useSpace } from '@/hooks/api';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
 import { useState } from 'react';
-import { MessageSquare } from 'lucide-react';
 import { ChatPanel } from '@/components/chat/ChatPanel';
-
+import { spaceService } from '@/services/api';
+import { ArrowLeft, MessageSquare } from 'lucide-react';
 export default function SpaceGraphPage() {
   const params = useParams();
   const router = useRouter();
@@ -21,6 +20,20 @@ export default function SpaceGraphPage() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const { data: space, isLoading: spaceLoading } = useSpace(slug);
+
+
+  const { data: spaces = [] } = useQuery({
+    queryKey: ['spaces'],
+    queryFn: () => spaceService.getSpaces(),
+  });
+
+  const chatAvailableSpaces = Array.isArray(spaces)
+    ? spaces.map((space) => ({
+        id: space.id,
+        name: space.name,
+        slug: space.slug,
+      }))
+    : [];
 
   const { data: nodes = [], isLoading: nodesLoading } = useQuery({
     queryKey: ['spaces', slug, 'graph-page', 'nodes'],
@@ -48,6 +61,9 @@ export default function SpaceGraphPage() {
     },
     enabled: nodes.length > 0,
   });
+
+
+
 
   const { data: selectedNode } = useQuery({
     queryKey: ['spaces', slug, 'graph-page', 'selected-node', selectedNodeId],
@@ -186,7 +202,7 @@ export default function SpaceGraphPage() {
         <div
           className="flex-1 transition-all duration-300"
           style={{
-            marginRight: `${(selectedNodeId ? 430 : 0) + (chatOpen ? 620 : 0)}px`,
+            marginRight: `${chatOpen ? 620 : selectedNodeId ? 430 : 0}px`,
           }}
         >
           {isLoading ? (
@@ -197,12 +213,15 @@ export default function SpaceGraphPage() {
             <GraphVisualization
               nodes={nodes}
               attributes={attributes}
-              onNodeClick={(nodeId) => setSelectedNodeId(nodeId)}
+              onNodeClick={(nodeId) => {
+                setChatOpen(false);
+                setSelectedNodeId(nodeId);
+              }}
             />
           )}
         </div>
 
-        {selectedNodeId && selectedNode && (
+        {!chatOpen && selectedNodeId && selectedNode && (
           <div className="fixed right-0 top-16 z-[70] h-[calc(100vh-64px)] w-[430px] overflow-y-auto border-l border-border bg-background shadow-2xl">
             <div className="sticky top-0 z-10 border-b border-border bg-background px-5 py-4">
               <div className="flex items-start justify-between gap-3">
@@ -350,12 +369,18 @@ export default function SpaceGraphPage() {
           </div>
         )}
         {chatOpen && (
-          <div className="fixed right-0 top-16 z-[80] h-[calc(100vh-64px)] w-[620px] border-l border-border bg-background shadow-2xl">
+          <div className="fixed right-4 top-20 z-[80] h-[calc(100vh-96px)] w-[620px] overflow-hidden rounded-[24px] border border-border bg-background shadow-2xl">
             <ChatPanel
               spaceSlug={slug}
               title="Chat"
               embedded={true}
               onClose={() => setChatOpen(false)}
+              availableSpaces={chatAvailableSpaces}
+              onChangeSpace={(nextSpaceSlug) => {
+                setSelectedNodeId(null);
+                setChatOpen(false);
+                router.push(`/spaces/${nextSpaceSlug}/graph`);
+              }}
             />
           </div>
         )}

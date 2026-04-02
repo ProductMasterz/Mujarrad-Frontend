@@ -4,7 +4,7 @@
  * Whiteboard Page - Route for space whiteboard
  */
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { WhiteboardCanvas, WhiteboardCanvasRef } from '@/components/whiteboard/WhiteboardCanvas';
@@ -14,10 +14,11 @@ import { useSpace } from '@/hooks/api/useSpaces';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { nodeKeys } from '@/hooks/api/useNodes';
 import { nodeService } from '@/services/api/node.service';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { ChatPanel } from '@/components/chat/ChatPanel';
+import { spaceService } from '@/services/api';
 
 export default function WhiteboardPage() {
   const params = useParams();
@@ -30,6 +31,8 @@ export default function WhiteboardPage() {
   const canvasRef = useRef<WhiteboardCanvasRef>(null);
 
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(spaceSlug);
+
+  const { data: allSpaces = [] } = useQuery({queryKey: ['spaces'], queryFn: () => spaceService.getSpaces(),});
 
   useEffect(() => {
     if (space) {
@@ -88,6 +91,16 @@ export default function WhiteboardPage() {
     isError: whiteboardError,
     error,
   } = useWhiteboardState(spaceSlug);
+
+  const chatAvailableSpaces = useMemo(
+    () =>
+      (Array.isArray(allSpaces) ? allSpaces : []).map((space) => ({
+        id: space.id,
+        name: space.name,
+        slug: space.slug,
+      })),
+    [allSpaces]
+  );
 
   const { isSaving, lastSaved, error: saveError, reset } = useWhiteboardStore();
 
@@ -239,6 +252,11 @@ export default function WhiteboardPage() {
             title="Chat"
             embedded={true}
             onClose={() => setChatOpen(false)}
+            availableSpaces={chatAvailableSpaces}
+            onChangeSpace={(nextSpaceSlug) => {
+              setChatOpen(false);
+              router.push(`/spaces/${nextSpaceSlug}/whiteboard`);
+            }}
           />
         </div>
       )}

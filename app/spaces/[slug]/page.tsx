@@ -21,6 +21,7 @@ import { useNavigationStore } from '@/stores/navigationStore';
 import type { Node } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
 import { NodeCard } from '@/shell/components/NodeCard';
+import { spaceService } from '@/services/api';
 
 function isAgentCreatedNode(node: Node): boolean {
   let details: Record<string, unknown> | undefined;
@@ -93,6 +94,11 @@ export default function SpaceDetailPage() {
     queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }),
     queryFn: () => nodeService.getNodes(slug, { page: 1, size: 1000 }),
     enabled: !!space,
+  });
+
+  const { data: allSpaces = [] } = useQuery({
+    queryKey: ['spaces'],
+    queryFn: () => spaceService.getSpaces(),
   });
 
   // UI State
@@ -206,6 +212,17 @@ export default function SpaceDetailPage() {
       });
   }, [nodes, searchTerm, sortBy, filterNodeType, filterEntityType]);
   const sidebarData = useMemo(() => visibleNodes.map(nodeToCard), [visibleNodes]);
+
+  const chatAvailableSpaces = useMemo(
+    () =>
+      (Array.isArray(allSpaces) ? allSpaces : []).map((space) => ({
+        id: space.id,
+        name: space.name,
+        slug: space.slug,
+      })),
+    [allSpaces]
+  );
+
 
   // Build breadcrumb
   const breadcrumbPath = useMemo(() => {
@@ -477,6 +494,11 @@ export default function SpaceDetailPage() {
           onTabClose={handleTabClose}
           onNewTab={handleNewTab}
           onFeedback={handleFeedback}
+          chatAvailableSpaces={chatAvailableSpaces}
+          onChatChangeSpace={(nextSpaceSlug) => {
+            router.push(`/spaces/${nextSpaceSlug}`);
+          }}
+          showChatCreateSpace={false}
         />
 
         <Sidebar

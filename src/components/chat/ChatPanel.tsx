@@ -17,9 +17,13 @@ import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { useQueryClient } from '@tanstack/react-query';
 import { nodeKeys } from '@/hooks/api';
 
+
+type AgentProcessNode = Record<string, unknown>;
+type AgentProcessRelationship = Record<string, unknown>;
+
 type AgentProcessResponse = {
-  nodes?: unknown[];
-  relationships?: unknown[];
+  nodes?: AgentProcessNode[];
+  relationships?: AgentProcessRelationship[];
   report?: string;
   error?: boolean;
   message?: string;
@@ -45,6 +49,9 @@ interface ChatPanelProps {
   title?: string;
   embedded?: boolean;
   onClose?: () => void;
+  onChangeSpace?: (nextSpaceSlug: string) => void;
+  onCreateSpace?: () => Promise<void> | void;
+  availableSpaces?: Array<{ id: string; name: string; slug: string }>;
 }
 
 function parseNodeDetails(node: Node): Record<string, unknown> | undefined {
@@ -78,6 +85,22 @@ function isMessageNode(node: Node): boolean {
     (details?.createdFrom === 'chat' &&
       (details?.role === 'user' || details?.role === 'assistant'))
   );
+}
+
+function getAgentSummary(data: AgentProcessResponse | null) {
+  const nodes = Array.isArray(data?.nodes) ? data!.nodes : [];
+  const relationships = Array.isArray(data?.relationships) ? data!.relationships : [];
+  const report = typeof data?.report === 'string' ? data.report : '';
+  const message = typeof data?.message === 'string' ? data.message : '';
+  const code = typeof data?.code === 'string' ? data.code : '';
+
+  return {
+    nodes,
+    relationships,
+    report,
+    message,
+    code,
+  };
 }
 
 function formatMessageTime(value: string) {
@@ -213,6 +236,9 @@ function ChatPanelShell({
   isBootstrapping,
   searchTerm,
   onSearchTermChange,
+  availableSpaces,
+  onChangeSpace,
+  onCreateSpace,
 }: {
   hasActiveSpace: boolean;
   isRunning: boolean;
@@ -232,7 +258,11 @@ function ChatPanelShell({
   isBootstrapping: boolean;
   searchTerm: string;
   onSearchTermChange: (value: string) => void;
+  availableSpaces: Array<{ id: string; name: string; slug: string }>;
+  onChangeSpace?: (nextSpaceSlug: string) => void;
+  onCreateSpace?: () => Promise<void> | void;
 }) {
+  const [showSpaceMenu, setShowSpaceMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const isResizingRef = useRef(false);
@@ -247,11 +277,16 @@ function ChatPanelShell({
   const [deleteTarget, setDeleteTarget] = useState<ChatSession | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
+  const spaceMenuRef = useRef<HTMLDivElement | null>(null);
   const autoResizeTextarea = (el: HTMLTextAreaElement) => {
     el.style.height = '0px';
     el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
   };
+
+  const currentSpaceName =
+    availableSpaces.find((space) => space.slug === spaceSlug)?.name ||
+    (spaceSlug?.trim() ? spaceSlug : 'No space selected');
+
 
   const openRenameModal = (session: ChatSession) => {
     setRenameTarget(session);
@@ -304,6 +339,26 @@ function ChatPanelShell({
   const handleResizeStart = () => {
     isResizingRef.current = true;
   };
+
+  useEffect(() => {
+    setShowSpaceMenu(false);
+  }, [spaceSlug]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        spaceMenuRef.current &&
+        !spaceMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowSpaceMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isRunning && composerInputRef.current) {
@@ -514,12 +569,69 @@ function ChatPanelShell({
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold text-foreground">{title}</h2>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <div ref={spaceMenuRef} className="relative mt-1 text-xs text-muted-foreground">
                 Space:{' '}
-                <span className="font-medium text-foreground">
-                  {spaceSlug?.trim() ? spaceSlug : 'No space selected'}
-                </span>
-              </p>
+                <button
+                  type="button"
+                  onClick={() => setShowSpaceMenu((prev) => !prev)}
+                  className="font-medium text-foreground underline-offset-2 hover:underline"
+                >
+                  {currentSpaceName}
+                </button>
+
+                {showSpaceMenu && (
+                  <div className="absolute left-0 top-[calc(100%+8px)] z-50 w-[260px] rounded-2xl border border-border bg-background p-2 shadow-2xl">
+                    <div className="mb-2 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Switch space
+                    </div>
+
+                    <div className="max-h-[240px] overflow-y-auto">
+                      {availableSpaces.length === 0 ? (
+                        <div className="px-2 py-2 text-sm text-muted-foreground">
+                          No spaces available
+                        </div>
+                      ) : (
+                        availableSpaces.map((space) => (
+                          <button
+                            key={space.id}
+                            type="button"
+                            onClick={() => {
+                              setShowSpaceMenu(false);
+                              if (space.slug !== spaceSlug) {
+                                onChangeSpace?.(space.slug);
+                              }
+                            }}
+                            className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition hover:bg-muted ${
+                              space.slug === spaceSlug ? 'bg-muted font-medium text-foreground' : 'text-foreground'
+                            }`}
+                          >
+                            <span className="truncate">{space.name}</span>
+                            {space.slug === spaceSlug && (
+                              <span className="ml-2 text-[11px] text-muted-foreground">Current</span>
+                            )}
+                          </button>
+                        ))
+                      )}
+                    </div>
+
+                    {onCreateSpace && (
+                      <div className="mt-2 border-t border-border pt-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            console.log('Create new space clicked from chat menu');
+                            setShowSpaceMenu(false);
+                            await onCreateSpace?.();
+                          }}
+                          className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground transition hover:bg-muted"
+                        >
+                          + Create new space
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -750,6 +862,9 @@ export function ChatPanel({
   title = 'Chat',
   embedded = false,
   onClose,
+  onChangeSpace,
+  onCreateSpace,
+  availableSpaces = [],
 }: ChatPanelProps) {
   const hasActiveSpace = !!spaceSlug?.trim();
   const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
@@ -899,6 +1014,8 @@ export function ChatPanel({
   };
 
   const ensureConversationNode = async () => {
+    if (!spaceSlug) return null;
+
     if (conversationNodeIdRef.current) {
       return conversationNodeIdRef.current;
     }
@@ -908,7 +1025,7 @@ export function ChatPanel({
       return activeSessionId;
     }
 
-    return createConversationSession();
+    return await createConversationSession();
   };
 
   const persistMessageNode = async (
@@ -1149,6 +1266,15 @@ export function ChatPanel({
       return;
     }
 
+    setSessions([]);
+    setActiveSessionId(null);
+    setSessionSearchIndex({});
+    setSessionPreviewIndex({});
+    setSearchTerm('');
+    conversationNodeIdRef.current = null;
+    messageOrderRef.current = 1;
+    setIsBootstrapping(true);
+
     bootstrapSessions();
   }, [spaceSlug, hasActiveSpace]);
 
@@ -1226,25 +1352,27 @@ export function ChatPanel({
   };
   const refreshWorkspaceViews = async () => {
     if (!spaceSlug) return;
-    await queryClient.invalidateQueries({
-      queryKey: nodeKeys.list(spaceSlug, { page: 1, size: 1000 }),
-    });
 
-    await queryClient.invalidateQueries({
-      queryKey: ['spaces', spaceSlug, 'graph-page', 'nodes'],
-    });
-
-    await queryClient.invalidateQueries({
-      queryKey: ['spaces', spaceSlug, 'graph-page', 'node-attributes'],
-    });
-
-    await queryClient.invalidateQueries({
-      queryKey: ['spaces', spaceSlug, 'graph-page', 'selected-node'],
-    });
-
-    await queryClient.invalidateQueries({
-      queryKey: ['spaces', spaceSlug, 'graph-page', 'selected-node-attributes'],
-    });
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: nodeKeys.list(spaceSlug, { page: 1, size: 1000 }),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ['spaces'],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ['spaces', spaceSlug, 'graph-page', 'nodes'],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ['spaces', spaceSlug, 'graph-page', 'node-attributes'],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ['spaces', spaceSlug, 'graph-page', 'selected-node'],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ['spaces', spaceSlug, 'graph-page', 'selected-node-attributes'],
+      }),
+    ]);
   };
 
 
@@ -1318,14 +1446,34 @@ export function ChatPanel({
               }),
             });
 
-            const data: AgentProcessResponse = await response.json();
+            let data: AgentProcessResponse | null = null;
 
-            if (!response.ok || data.error) {
-              assistantText = data.message || 'The agent service returned an error.';
-            } else {
-              assistantText = data.report || 'Your message was processed successfully.';
+            try {
+              data = await response.json();
+            } catch {
+              data = null;
             }
-          } catch {
+
+            const { nodes, relationships, report, message, code } = getAgentSummary(data);
+
+            console.log('Agent /process response:', {
+              ok: response.ok,
+              status: response.status,
+              code,
+              nodesCount: nodes.length,
+              relationshipsCount: relationships.length,
+              data,
+            });
+
+            if (!response.ok || data?.error) {
+              assistantText = message || 'The agent service returned an error.';
+            } else {
+              assistantText =
+                report ||
+                `Processed successfully. Returned ${nodes.length} nodes and ${relationships.length} relationships.`;
+            }
+          } catch (error) {
+            console.error('Could not reach agent service:', error);
             assistantText = 'Could not reach the agent service. Please try again.';
           }
         }
@@ -1339,23 +1487,25 @@ export function ChatPanel({
 
         setMessages((current) => [...current, assistantMessage]);
         await persistMessageNode(conversationNodeId, 'assistant', assistantText);
-        const activeSession = sessions.find((session) => session.id === conversationNodeId);
-        if (activeSession) {
-          const [updatedSearchText, updatedPreview] = await Promise.all([
-            buildConversationSearchText(conversationNodeId, activeSession.title),
-            buildConversationPreview(conversationNodeId),
-          ]);
+        const conversationNode = sessions.find((session) => session.id === conversationNodeId);
 
-          setSessionSearchIndex((prev) => ({
-            ...prev,
-            [conversationNodeId]: updatedSearchText,
-          }));
+        const conversationTitle =
+          conversationNode?.title || `Conversation ${new Date().toLocaleString()}`;
 
-          setSessionPreviewIndex((prev) => ({
-            ...prev,
-            [conversationNodeId]: updatedPreview,
-          }));
-        }
+        const [updatedSearchText, updatedPreview] = await Promise.all([
+          buildConversationSearchText(conversationNodeId, conversationTitle),
+          buildConversationPreview(conversationNodeId),
+        ]);
+
+        setSessionSearchIndex((prev) => ({
+          ...prev,
+          [conversationNodeId]: updatedSearchText,
+        }));
+
+        setSessionPreviewIndex((prev) => ({
+          ...prev,
+          [conversationNodeId]: updatedPreview,
+        }));
         await refreshWorkspaceViews();
       } finally {
         setIsRunning(false);
@@ -1390,6 +1540,9 @@ export function ChatPanel({
         onRenameSession={renameSession}
         onDeleteSession={deleteSession}
         isBootstrapping={isBootstrapping}
+        availableSpaces={availableSpaces}
+        onChangeSpace={onChangeSpace}
+        onCreateSpace={onCreateSpace}
       />
     </AssistantRuntimeProvider>
   );
