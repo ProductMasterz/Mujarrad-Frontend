@@ -192,16 +192,6 @@ export default function SpacesPage() {
     }
   };
 
-  const handleCreateSpaceFromChat = async () => {
-    try {
-      const created = await spaceService.createSpace({ name: 'Untitled' });
-      const updatedSpaces = await spaceService.getSpaces();
-      setApiSpaces(Array.isArray(updatedSpaces) ? updatedSpaces : []);
-      router.push(`/spaces/${created.slug}`);
-    } catch (error) {
-      console.error('Failed to create space from chat:', error);
-    }
-  };
 
   const handleAddClick = () => {
     setShowNewNodeModal(true);
@@ -352,7 +342,7 @@ export default function SpacesPage() {
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
           // Add menu actions - only create space at spaces level
-          onCreateSpace={handleCreateSpaceFromChat}
+          onCreateSpace={handleAddClick}
           // More menu actions
           onShare={handleShareClick}
           onOpenInNewTab={handleOpenInNewTab}

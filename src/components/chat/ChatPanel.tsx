@@ -16,7 +16,7 @@ import { AttributeTypeMode, NodeType, type Node } from '@/types/backend-dtos';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { useQueryClient } from '@tanstack/react-query';
 import { nodeKeys } from '@/hooks/api';
-
+import { useAuthStore } from '@/stores/auth.store';
 
 type AgentProcessNode = Record<string, unknown>;
 type AgentProcessRelationship = Record<string, unknown>;
@@ -866,6 +866,7 @@ export function ChatPanel({
   onCreateSpace,
   availableSpaces = [],
 }: ChatPanelProps) {
+  const token = useAuthStore((state) => state.token);
   const hasActiveSpace = !!spaceSlug?.trim();
   const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
   const queryClient = useQueryClient();
@@ -1435,17 +1436,19 @@ export function ChatPanel({
           assistantText = 'Agent service is not available yet. Squad B backend is not connected.';
         } else {
           try {
+            console.log('CHAT TOKEN FROM STORE:', token);
+            console.log('AUTH STORE SNAPSHOT:', useAuthStore.getState());
             const response = await fetch(`${agentServiceUrl}/api/agents/process`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
               },
               body: JSON.stringify({
                 text: userText,
                 space_slug: spaceSlug,
               }),
             });
-
             let data: AgentProcessResponse | null = null;
 
             try {
