@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, SendHorizontal } from 'lucide-react';
+import { Check, Copy, SendHorizontal, Search } from 'lucide-react';
 import {
   AssistantRuntimeProvider,
   ComposerPrimitive,
@@ -10,7 +10,29 @@ import {
 } from '@assistant-ui/react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { useMujarradExternalStoreRuntime } from '@/components/chat/useMujarradExternalStoreRuntime';
 
 type ChatWorkspaceProps = {
@@ -106,13 +128,21 @@ function renderAssistantMessage(markdownContent: string, isRunning: boolean) {
 export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) {
   const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
   const copiedResetTimeoutRef = useRef<number | null>(null);
 
   const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
-  const { runtime, isDemoMode, isRunning } = useMujarradExternalStoreRuntime({
+  const { runtime, isDemoMode, isRunning, conversations, activeConversationId, loadConversationById, startNewConversation, deleteConversation, renameConversation } = useMujarradExternalStoreRuntime({
     agentServiceUrl,
     spaceSlug,
     onLatencyUpdate: setLastLatencyMs,
+  });
+
+  const filteredConversations = conversations.filter(c => {
+    if (!searchQuery) return true;
+    return c.searchableContent?.includes(searchQuery.toLowerCase());
   });
 
   const isPanel = mode === 'panel';
@@ -143,10 +173,127 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
   return (
     <div className={isPanel ? 'flex h-full flex-col p-4' : 'container mx-auto px-6 py-6'}>
       <div className={isPanel ? 'mb-4' : 'mb-6'}>
-        <h1 className={isPanel ? 'text-lg font-semibold tracking-tight' : 'text-2xl font-semibold tracking-tight'}>
-          Chat
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between bg-transparent mt-2 gap-y-2">
+          <h1 className={isPanel ? 'text-lg font-semibold tracking-tight' : 'text-2xl font-semibold tracking-tight'}>
+            Chat
+          </h1>
+          <div className="flex flex-wrap items-center justify-end gap-2 shrink-0 max-w-full">
+            {conversations.length > 0 && (
+              <select
+                className="text-sm bg-background border rounded px-2 py-1 max-w-[200px] truncate"
+                onChange={(e) => void loadConversationById(e.target.value)}
+                value={activeConversationId ?? ''}
+                aria-label="Select conversation history"
+              >
+                <option value="" disabled hidden>Select conversation</option>
+                {filteredConversations.map((c) => {
+                  const fallbackDate = new Date(c.createdAt);
+                  const dateStr = fallbackDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                  const timeStr = fallbackDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {c.title || `Conversation (${dateStr} ${timeStr})`}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
+            <Button variant="outline" size="sm" onClick={() => void startNewConversation()}>
+              New
+            </Button>
+            {activeConversationId && (
+              <>
+                <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const currentConv = conversations.find(c => c.id === activeConversationId);
+                        setNewTitle(currentConv?.title || '');
+                      }}
+                    >
+                      Rename
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Rename Conversation</DialogTitle>
+                      <DialogDescription>
+                        Enter a new title for this conversation.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <Input
+                      autoFocus
+                      placeholder="Title"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          void renameConversation(activeConversationId, newTitle);
+                          setRenameDialogOpen(false);
+                        }
+                      }}
+                    />
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                      </DialogClose>
+                      <Button
+                        onClick={() => {
+                          void renameConversation(activeConversationId, newTitle);
+                          setRenameDialogOpen(false);
+                        }}
+                      >
+                        Save
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this conversation? This will permanently remove all messages within it.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => void deleteConversation(activeConversationId)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              </>
+            )}
+          </div>
+        </div>
+        
+        {conversations.length > 0 && (
+          <div className="mt-3 relative max-w-full">
+            <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="h-8 pl-9 text-sm w-full bg-background"
+              placeholder="Search past conversations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        )}
+
+        <p className="mt-2 text-sm text-muted-foreground">
           Interact with Mujarrad through text.
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
