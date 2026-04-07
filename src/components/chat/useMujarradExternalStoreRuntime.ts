@@ -9,7 +9,7 @@ import {
 } from '@assistant-ui/react';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
-import { NodeType, AttributeKey, AttributeTypeMode } from '@/types/backend-dtos';
+import { NodeType, AttributeKey, AttributeTypeMode, type Node, type Attribute } from '@/types/backend-dtos';
 
 type AgentProcessResponse = {
   nodes?: unknown[];
@@ -25,6 +25,51 @@ type RuntimeOptions = {
   spaceSlug: string;
   onLatencyUpdate?: (ms: number) => void;
 };
+
+function parseNodeDetails(node: Node): Record<string, unknown> {
+  const rawDetails = (node as unknown as { nodeDetails?: unknown }).nodeDetails;
+
+  if (!rawDetails) return {};
+
+  if (typeof rawDetails === 'string') {
+    try {
+      const parsed = JSON.parse(rawDetails) as unknown;
+      return typeof parsed === 'object' && parsed !== null
+        ? (parsed as Record<string, unknown>)
+        : {};
+    } catch {
+      return {};
+    }
+  }
+
+  if (typeof rawDetails === 'object') {
+    return rawDetails as Record<string, unknown>;
+  }
+
+  return {};
+}
+
+function isContainsAttribute(attr: Attribute): boolean {
+  const attrKey = (attr.attributeName || attr.attributeType || '').toLowerCase();
+  return attrKey === AttributeKey.CONTAINS;
+}
+
+function getMessageRole(node: Node): 'user' | 'assistant' {
+  const details = parseNodeDetails(node);
+  const detailsRole = details.chatRole || details.role;
+
+  if (detailsRole === 'user' || node.title === 'user-message') {
+    return 'user';
+  }
+
+  return 'assistant';
+}
+
+function getMessageText(node: Node): string {
+  const fallbackDescription = (node as unknown as { description?: string }).description;
+  const text = node.content || fallbackDescription || '';
+  return String(text);
+}
 
 function createUserMessage(text: string): ThreadMessage {
   return {
@@ -93,36 +138,34 @@ async function createMessageNode(
   conversationNodeId: string,
   role: 'user' | 'assistant',
   content: string,
-): Promise<void> {
-  try {
-    const title = role === 'user' ? 'user-message' : 'agent-message';
-    
-    // Create message node
-    const messageNode = await nodeService.createNode(spaceSlug, {
-      title,
-      nodeType: NodeType.REGULAR,
-      content,
-      nodeDetails: {
-        source: 'chat-runtime',
-        chatNodeType: 'message',
-        chatRole: role,
-        persistedAt: new Date().toISOString(),
-        showInSpaceList: false,
-      },
-    });
+): Promise<string> {
+  const title = role === 'user' ? 'user-message' : 'agent-message';
 
-    // Create contains relationship attribute linking conversation->message
-    await attributeService.createAttribute(conversationNodeId, {
-      sourceNodeId: conversationNodeId,
-      targetNodeId: messageNode.id,
-      attributeType: AttributeKey.CONTAINS,
-      attributeTypeMode: AttributeTypeMode.TYPED,
-      attributeName: 'contains',
-      attributeValue: { role, date: new Date().toISOString() },
-    });
-  } catch (error) {
-    console.error('[Chat Runtime] Failed to create message node and attribute:', error);
-  }
+  // Create message node
+  const messageNode = await nodeService.createNode(spaceSlug, {
+    title,
+    nodeType: NodeType.REGULAR,
+    content,
+    nodeDetails: {
+      source: 'chat-runtime',
+      chatNodeType: 'message',
+      chatRole: role,
+      persistedAt: new Date().toISOString(),
+      showInSpaceList: false,
+    },
+  });
+
+  // Create contains relationship attribute linking conversation->message
+  await attributeService.createAttribute(conversationNodeId, {
+    sourceNodeId: conversationNodeId,
+    targetNodeId: messageNode.id,
+    attributeType: AttributeKey.CONTAINS,
+    attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+    attributeName: 'contains',
+    attributeValue: { role, date: new Date().toISOString() },
+  });
+
+  return messageNode.id;
 }
 
 async function getAgentResponse(
@@ -174,10 +217,13 @@ async function getAgentResponse(
     };
   }
 
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
   const response = await fetch(`${agentServiceUrl}/api/agents/process`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     signal,
     body: JSON.stringify({
@@ -209,22 +255,43 @@ export function useMujarradExternalStoreRuntime({
   const isRunningRef = useRef(false);
   const conversationNodeIdRef = useRef<string | null>(null);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  
+  // Performance Cache for Chat graph
+  const nodesCacheRef = useRef<Node[] | null>(null);
+  const edgesCacheRef = useRef<Attribute[] | null>(null);
+  const cacheSpaceSlugRef = useRef<string | null>(null);
 
-  const fetchConversations = useCallback(async () => {
+  const fetchConversations = useCallback(async (forceRefresh = false) => {
     try {
-      const allNodes = await nodeService.getNodes(spaceSlug);
-      const allEdges = await attributeService.getSpaceAttributes(spaceSlug).catch(() => []);
+      if (
+        forceRefresh ||
+        cacheSpaceSlugRef.current !== spaceSlug ||
+        !nodesCacheRef.current ||
+        !edgesCacheRef.current
+      ) {
+        const [fetchedEdges, fetchedNodes] = await Promise.all([
+          attributeService.getSpaceAttributes(spaceSlug).catch(() => []),
+          nodeService.getNodes(spaceSlug, { size: 1000 }).catch(() => [])
+        ]);
+        edgesCacheRef.current = fetchedEdges;
+        nodesCacheRef.current = fetchedNodes;
+        cacheSpaceSlugRef.current = spaceSlug;
+      }
+
+      const allNodes = nodesCacheRef.current!;
+      const allEdges = edgesCacheRef.current!;
 
       const messageToConversationMap = new Map<string, string>();
       for (const edge of allEdges) {
-        if (edge.attributeType === AttributeKey.CONTAINS) {
+        if (isContainsAttribute(edge)) {
           messageToConversationMap.set(edge.targetNodeId, edge.sourceNodeId);
         }
       }
 
       const conversationTextMap = new Map<string, string[]>();
       for (const node of allNodes) {
-        if (node.nodeDetails?.chatNodeType === 'message') {
+        const details = parseNodeDetails(node);
+        if (details.chatNodeType === 'message' || node.title?.toLowerCase().includes('message')) {
           const convId = messageToConversationMap.get(node.id);
           if (convId) {
             const existing = conversationTextMap.get(convId) || [];
@@ -235,7 +302,10 @@ export function useMujarradExternalStoreRuntime({
       }
 
       const convs = allNodes
-        .filter((n) => n.nodeDetails?.chatNodeType === 'conversation')
+        .filter((n) => {
+          const details = parseNodeDetails(n);
+          return details.chatNodeType === 'conversation';
+        })
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .map(n => {
           const title = n.title || '';
@@ -256,7 +326,7 @@ export function useMujarradExternalStoreRuntime({
       conversationNodeIdRef.current = newId;
       setActiveConversationId(newId);
       setMessages([]);
-      await fetchConversations();
+      await fetchConversations(true);
       return newId;
     } catch (error) {
       console.error('[Chat Runtime] Failed to start new conversation:', error);
@@ -268,7 +338,7 @@ export function useMujarradExternalStoreRuntime({
     try {
       if (!newTitle.trim()) return;
       await nodeService.updateNode(spaceSlug, id, { title: newTitle.trim() });
-      await fetchConversations();
+      await fetchConversations(true);
     } catch (error) {
       console.error('[Chat Runtime] Failed to rename conversation:', error);
     }
@@ -276,12 +346,13 @@ export function useMujarradExternalStoreRuntime({
 
   const deleteConversation = useCallback(async (id: string) => {
     try {
-      const attributes = await attributeService.getNodeAttributes(id, {
-        attributeType: AttributeKey.CONTAINS,
-      });
+      const nodeEdges = await attributeService.getNodeAttributes(id).catch(() => []);
+      const attributes = nodeEdges.filter(
+        (attr) => attr.sourceNodeId === id && isContainsAttribute(attr)
+      );
 
       // Delete all child message nodes
-      await Promise.all(
+      await Promise.allSettled(
         attributes.map((attr) => nodeService.deleteNode(spaceSlug, attr.targetNodeId))
       );
 
@@ -294,35 +365,73 @@ export function useMujarradExternalStoreRuntime({
         setMessages([]);
       }
 
-      await fetchConversations();
+      await fetchConversations(true);
     } catch (error) {
       console.error('[Chat Runtime] Failed to delete conversation:', error);
     }
   }, [spaceSlug, fetchConversations]);
 
-  const loadConversationById = useCallback(async (id: string) => {
+  const loadConversationById = useCallback(async (id: string, cachedMode = true) => {
     try {
       conversationNodeIdRef.current = id;
       setActiveConversationId(id);
       setMessages([]); // Clear chat immediately upon selecting a new conversation to switch
-      const attributes = await attributeService.getNodeAttributes(id, {
-        attributeType: AttributeKey.CONTAINS,
+      
+      let allNodes = nodesCacheRef.current;
+
+      if (!cachedMode || cacheSpaceSlugRef.current !== spaceSlug || !allNodes) {
+        // Request max size to avoid missing nodes in pagination limit 
+        allNodes = await nodeService.getNodes(spaceSlug, { size: 1000 }).catch(() => []);
+        nodesCacheRef.current = allNodes;
+        cacheSpaceSlugRef.current = spaceSlug;
+      }
+      
+      // We must fetch edges specifically for this node, global endpoint might fail or be paginated.
+      const nodeEdges = await attributeService.getNodeAttributes(id).catch((e) => {
+        console.error('Failed to fetch nodeEdges:', e);
+        return [];
       });
 
+      let attributes = nodeEdges.filter((attr) => 
+        attr.sourceNodeId === id && isContainsAttribute(attr)
+      );
+
+      // Fallback for inconsistent attribute endpoints on some environments.
       if (!attributes.length) {
-        setMessages([createAssistantMessage('No messages in this conversation yet.')]);
+        const fallbackEdges = edgesCacheRef.current || await attributeService.getSpaceAttributes(spaceSlug).catch(() => []);
+        attributes = fallbackEdges.filter((attr) =>
+          attr.sourceNodeId === id && isContainsAttribute(attr)
+        );
+      }
+
+      if (!attributes.length) {
+        setMessages([createAssistantMessage('No messages in this conversation yet. Start chatting above!')]);
         return;
       }
 
-      const messageNodes = await Promise.all(
-        attributes.map((attr) => nodeService.getNode(spaceSlug, attr.targetNodeId))
+      const targetIds = new Set(attributes.map(a => a.targetNodeId));
+      let messageNodes = allNodes.filter(node => 
+        targetIds.has(node.id)
       );
+      
+      // If we didn't find all messages in the cache, some might be new. Fallback to individual fetches
+      if (messageNodes.length !== targetIds.size) {
+        const results = await Promise.allSettled(
+          Array.from(targetIds).map((targetId) => nodeService.getNode(spaceSlug, targetId))
+        );
+        
+        const fetchedNodes = results
+          .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
+          .map((r) => r.value);
+          
+        messageNodes = fetchedNodes.filter((node) => node && targetIds.has(node.id));
+      }
 
       const restoredMessages = messageNodes
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
         .map((node) => {
-          const role = node.title === 'user-message' ? 'user' : 'assistant';
-          const textContent = node.content || '';
+          const role = getMessageRole(node);
+          const textContent = getMessageText(node);
           const msgId = node.id || crypto.randomUUID();
           const createdAt = new Date(node.createdAt);
           
@@ -337,22 +446,34 @@ export function useMujarradExternalStoreRuntime({
 
       if (restoredMessages.length > 0) {
         setMessages(restoredMessages);
+      } else {
+        setMessages([createAssistantMessage('No messages in this conversation yet.')]);
       }
     } catch (error) {
       console.error('[Chat Runtime] Failed to load specific conversation:', error);
     }
   }, [spaceSlug]);
 
-  // Load conversation history on mount
+  // Load conversation history when the space changes.
   useEffect(() => {
-    let mounted = true;
+    let cancelled = false;
+
+    conversationNodeIdRef.current = null;
+    setActiveConversationId(null);
+    setMessages([
+      createAssistantMessage('Welcome to Mujarrad chat. This is the initial chat shell for Squad A.'),
+    ]);
+    setConversations([]);
+    nodesCacheRef.current = null;
+    edgesCacheRef.current = null;
+    cacheSpaceSlugRef.current = null;
 
     async function loadHistory() {
-      const convs = await fetchConversations();
+      const convs = await fetchConversations(true);
       if (!convs.length) return;
 
       const latestConversation = convs[0];
-      if (mounted) {
+      if (!cancelled) {
         await loadConversationById(latestConversation.id);
       }
     }
@@ -360,9 +481,9 @@ export function useMujarradExternalStoreRuntime({
     loadHistory();
 
     return () => {
-      mounted = false;
+      cancelled = true;
     };
-  }, [fetchConversations, loadConversationById]);
+  }, [spaceSlug, fetchConversations, loadConversationById]);
 
   const onNew = useCallback(async (message: AppendMessage) => {
     const userText = extractTextFromAppendMessage(message);
@@ -387,22 +508,25 @@ export function useMujarradExternalStoreRuntime({
       const assistantText = data.report || 'Your message was processed successfully.';
       setMessages((prev) => [...prev, createAssistantMessage(assistantText)]);
 
-      if (agentServiceUrl) {
-        // Persistence should never block chat completion state.
-        (async () => {
-          try {
-            if (!conversationNodeIdRef.current) {
-              const newId = await createConversationNode(spaceSlug);
-              conversationNodeIdRef.current = newId;
-              setActiveConversationId(newId);
-              await fetchConversations();
-            }
-            await createMessageNode(spaceSlug, conversationNodeIdRef.current, 'user', userText);
-            await createMessageNode(spaceSlug, conversationNodeIdRef.current, 'assistant', assistantText);
-          } catch (persistError) {
-            console.warn('[Chat Runtime] Message persistence failed:', persistError);
-          }
-        })();
+      try {
+        if (!conversationNodeIdRef.current) {
+          const newId = await createConversationNode(spaceSlug);
+          conversationNodeIdRef.current = newId;
+          setActiveConversationId(newId);
+          await fetchConversations(true);
+        }
+
+        await createMessageNode(spaceSlug, conversationNodeIdRef.current, 'user', userText);
+        await createMessageNode(spaceSlug, conversationNodeIdRef.current, 'assistant', assistantText);
+
+        // Refresh synchronously so history is available immediately after reopening.
+        await fetchConversations(true);
+      } catch (persistError) {
+        console.error('[Chat Runtime] Message persistence failed:', persistError);
+        setMessages((prev) => [
+          ...prev,
+          createAssistantMessage('Warning: message was shown but could not be saved to history.'),
+        ]);
       }
     } catch (error) {
       if ((error as { name?: string } | null)?.name === 'AbortError') {
