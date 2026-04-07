@@ -15,7 +15,6 @@ export function useCurrentUser() {
     retry: false,
   });
 
-  // Handle success/error side effects
   useEffect(() => {
     if (query.isSuccess && query.data) {
       setUser(query.data);
@@ -29,13 +28,13 @@ export function useCurrentUser() {
 }
 
 export function useLogin() {
-  const setUser = useAuthStore((state) => state.setUser);
+  const setAuth = useAuthStore((state) => state.setAuth);
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: LoginRequest) => authService.login(data),
     onSuccess: (response) => {
-      setUser(response.user);
+      setAuth(response.user, response.token);
       queryClient.invalidateQueries({ queryKey: ['auth'] });
     },
   });
