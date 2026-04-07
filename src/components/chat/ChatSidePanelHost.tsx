@@ -23,7 +23,7 @@ export function ChatSidePanelHost() {
       }`}
     >
       <aside
-        className={`pointer-events-auto absolute bottom-3 right-3 top-3 flex w-[min(560px,calc(100%-1.5rem))] flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl transition-transform duration-300 ease-out ${
+        className={`pointer-events-auto absolute bottom-3 right-3 top-3 flex w-[min(560px,calc(100%-1.5rem))] flex-col overflow-visible rounded-2xl border bg-background shadow-2xl transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-[105%]'
         }`}
       >

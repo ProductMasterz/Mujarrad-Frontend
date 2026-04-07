@@ -131,6 +131,7 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
   const [searchQuery, setSearchQuery] = useState('');
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [historyExtensionOpen, setHistoryExtensionOpen] = useState(false);
   const copiedResetTimeoutRef = useRef<number | null>(null);
 
   const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
@@ -144,6 +145,7 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
     if (!searchQuery) return true;
     return c.searchableContent?.includes(searchQuery.toLowerCase());
   });
+  const activeConversation = conversations.find((c) => c.id === activeConversationId) || null;
 
   const isPanel = mode === 'panel';
 
@@ -173,125 +175,14 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
   return (
     <div className={isPanel ? 'flex h-full flex-col p-4' : 'container mx-auto px-6 py-6'}>
       <div className={isPanel ? 'mb-4' : 'mb-6'}>
-        <div className="flex flex-wrap items-center justify-between bg-transparent mt-2 gap-y-2">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-y-2 bg-transparent">
           <h1 className={isPanel ? 'text-lg font-semibold tracking-tight' : 'text-2xl font-semibold tracking-tight'}>
             Chat
           </h1>
-          <div className="flex flex-wrap items-center justify-end gap-2 shrink-0 max-w-full">
-            {conversations.length > 0 && (
-              <select
-                className="text-sm bg-background border rounded px-2 py-1 max-w-[200px] truncate"
-                onChange={(e) => void loadConversationById(e.target.value)}
-                value={activeConversationId ?? ''}
-                aria-label="Select conversation history"
-              >
-                <option value="" disabled hidden>Select conversation</option>
-                {filteredConversations.map((c) => {
-                  const fallbackDate = new Date(c.createdAt);
-                  const dateStr = fallbackDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-                  const timeStr = fallbackDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-                  return (
-                    <option key={c.id} value={c.id}>
-                      {c.title || `Conversation (${dateStr} ${timeStr})`}
-                    </option>
-                  );
-                })}
-              </select>
-            )}
-            <Button variant="outline" size="sm" onClick={() => void startNewConversation()}>
-              New
-            </Button>
-            {activeConversationId && (
-              <>
-                <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const currentConv = conversations.find(c => c.id === activeConversationId);
-                        setNewTitle(currentConv?.title || '');
-                      }}
-                    >
-                      Rename
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Rename Conversation</DialogTitle>
-                      <DialogDescription>
-                        Enter a new title for this conversation.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <Input
-                      autoFocus
-                      placeholder="Title"
-                      value={newTitle}
-                      onChange={(e) => setNewTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          void renameConversation(activeConversationId, newTitle);
-                          setRenameDialogOpen(false);
-                        }
-                      }}
-                    />
-                    <DialogFooter>
-                      <DialogClose asChild>
-                        <Button variant="outline">Cancel</Button>
-                      </DialogClose>
-                      <Button
-                        onClick={() => {
-                          void renameConversation(activeConversationId, newTitle);
-                          setRenameDialogOpen(false);
-                        }}
-                      >
-                        Save
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-
-                <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete this conversation? This will permanently remove all messages within it.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => void deleteConversation(activeConversationId)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              </>
-            )}
-          </div>
+          <Button variant="outline" size="sm" onClick={() => void startNewConversation()}>
+            New Conversation
+          </Button>
         </div>
-        
-        {conversations.length > 0 && (
-          <div className="mt-3 relative max-w-full">
-            <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
-            <Input
-              className="h-8 pl-9 text-sm w-full bg-background"
-              placeholder="Search past conversations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        )}
 
         <p className="mt-2 text-sm text-muted-foreground">
           Interact with Mujarrad through text.
@@ -305,19 +196,178 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
         </p>
       </div>
 
-      <Card className={isPanel ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'flex h-[calc(100vh-220px)] min-h-[500px] flex-col overflow-hidden'}>
+      <Card className={isPanel ? 'flex min-h-0 flex-1 flex-col overflow-visible' : 'flex h-[calc(100vh-220px)] min-h-[500px] flex-col overflow-visible'}>
         <AssistantRuntimeProvider runtime={runtime}>
-          <ThreadPrimitive.Root className="flex h-full flex-col">
-            <ThreadPrimitive.Viewport
-              className="flex-1 space-y-4 overflow-y-auto p-4 scroll-smooth"
-              autoScroll
-              turnAnchor="bottom"
-              scrollToBottomOnRunStart
-              scrollToBottomOnInitialize
-              scrollToBottomOnThreadSwitch
+          <div className="relative h-full min-h-0">
+            <aside
+              className={`absolute inset-y-0 right-full z-20 mr-3 flex w-[min(18rem,80vw)] flex-col rounded-xl border bg-background shadow-lg transition-all duration-200 ${
+                historyExtensionOpen
+                  ? 'translate-x-0 opacity-100'
+                  : 'pointer-events-none translate-x-3 opacity-0'
+              }`}
             >
-              <ThreadPrimitive.Messages>
-                {({ message }) => (
+              <div className="flex items-center justify-between border-b px-3 py-2">
+                <p className="text-sm font-semibold">Conversations</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setHistoryExtensionOpen(false)}
+                >
+                  Hide
+                </Button>
+              </div>
+
+              <div className="space-y-3 p-3">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="h-8 w-full bg-background pl-9 text-sm"
+                    placeholder="Search conversations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <Button variant="outline" className="w-full justify-start" onClick={() => void startNewConversation()}>
+                  New chat
+                </Button>
+              </div>
+
+              <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3">
+                {filteredConversations.length > 0 ? (
+                  filteredConversations.map((c) => {
+                    const fallbackDate = new Date(c.createdAt);
+                    const dateStr = fallbackDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    const timeStr = fallbackDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                    const isActive = c.id === activeConversationId;
+
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => void loadConversationById(c.id)}
+                        className={`w-full rounded-lg border px-3 py-2 text-left transition ${
+                          isActive
+                            ? 'border-primary/50 bg-primary/10'
+                            : 'border-transparent hover:border-border hover:bg-background/70'
+                        }`}
+                        aria-label={`Open conversation ${c.title || c.id}`}
+                      >
+                        <p className="truncate text-sm font-medium">{c.title || 'Untitled conversation'}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{dateStr} {timeStr}</p>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                    {searchQuery ? 'No conversations match your search.' : 'No saved conversations yet.'}
+                  </div>
+                )}
+              </div>
+
+              {activeConversationId ? (
+                <div className="border-t p-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setNewTitle(activeConversation?.title || '');
+                          }}
+                        >
+                          Rename
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Rename Conversation</DialogTitle>
+                          <DialogDescription>
+                            Enter a new title for this conversation.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <Input
+                          autoFocus
+                          placeholder="Title"
+                          value={newTitle}
+                          onChange={(e) => setNewTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              void renameConversation(activeConversationId, newTitle);
+                              setRenameDialogOpen(false);
+                            }
+                          }}
+                        />
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                          <Button
+                            onClick={() => {
+                              void renameConversation(activeConversationId, newTitle);
+                              setRenameDialogOpen(false);
+                            }}
+                          >
+                            Save
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this conversation? This will permanently remove all messages within it.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => void deleteConversation(activeConversationId)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ) : null}
+            </aside>
+
+            <ThreadPrimitive.Root className="flex h-full min-h-0 flex-col overflow-hidden rounded-[inherit]">
+              <div className="flex items-center gap-2 border-b px-4 py-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0 px-2"
+                  onClick={() => setHistoryExtensionOpen((current) => !current)}
+                >
+                  {historyExtensionOpen ? 'Hide conversations' : 'Conversations'}
+                </Button>
+                <p className="min-w-0 flex-1 truncate text-sm font-medium">{activeConversation?.title || 'Current conversation'}</p>
+              </div>
+
+              <ThreadPrimitive.Viewport
+                className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 scroll-smooth"
+                autoScroll
+                turnAnchor="bottom"
+                scrollToBottomOnRunStart
+                scrollToBottomOnInitialize
+                scrollToBottomOnThreadSwitch
+              >
+                <ThreadPrimitive.Messages>
+                  {({ message }) => (
                     (() => {
                       const messageText = getMessageMarkdownText(message.content as readonly unknown[]);
                       const isCopied = copiedMessageId === message.id;
@@ -325,7 +375,7 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
                       if (message.role === 'user') {
                         return (
                           <MessagePrimitive.Root className="flex justify-end">
-                            <div className="max-w-[80%]">
+                            <div className="max-w-[88%] lg:max-w-[82%]">
                               <div className="rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground">
                                 <div className="whitespace-pre-wrap">
                                   <MessagePrimitive.Parts />
@@ -359,91 +409,92 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
 
                       return (
                         <MessagePrimitive.Root className="flex justify-start">
-                          <div className="max-w-[80%]">
+                          <div className="max-w-[88%] lg:max-w-[82%]">
                             <div className="rounded-2xl bg-muted px-4 py-3 text-sm text-foreground">
                               <div className="whitespace-pre-wrap">
                                 {renderAssistantMessage(assistantMarkdown, isRunning)}
                               </div>
                             </div>
-                              {assistantMarkdown ? (
-                                <div className="mt-1 flex justify-start">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 gap-1.5 px-2 text-[11px]"
-                                    onClick={() => void handleCopyMessage(message.id, assistantMarkdown)}
-                                    aria-label="Copy message"
-                                  >
-                                    {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                                    {isCopied ? 'Copied' : 'Copy'}
-                                  </Button>
-                                </div>
-                              ) : null}
+                            {assistantMarkdown ? (
+                              <div className="mt-1 flex justify-start">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 gap-1.5 px-2 text-[11px]"
+                                  onClick={() => void handleCopyMessage(message.id, assistantMarkdown)}
+                                  aria-label="Copy message"
+                                >
+                                  {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                  {isCopied ? 'Copied' : 'Copy'}
+                                </Button>
+                              </div>
+                            ) : null}
                           </div>
                         </MessagePrimitive.Root>
                       );
                     })()
-                )}
-              </ThreadPrimitive.Messages>
+                  )}
+                </ThreadPrimitive.Messages>
 
-              {isRunning ? (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%]">
-                    <div className="rounded-2xl bg-muted px-4 py-3 text-sm text-foreground">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">Mujarrad is thinking</span>
-                      </div>
-                      <div className="mt-2 flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-foreground/45 animate-bounce" />
-                        <span
-                          className="h-2 w-2 rounded-full bg-foreground/45 animate-bounce"
-                          style={{ animationDelay: '120ms' }}
-                        />
-                        <span
-                          className="h-2 w-2 rounded-full bg-foreground/45 animate-bounce"
-                          style={{ animationDelay: '240ms' }}
-                        />
+                {isRunning ? (
+                  <div className="flex justify-start">
+                    <div className="max-w-[88%] lg:max-w-[82%]">
+                      <div className="rounded-2xl bg-muted px-4 py-3 text-sm text-foreground">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">Mujarrad is thinking</span>
+                        </div>
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <span className="h-2 w-2 rounded-full bg-foreground/45 animate-bounce" />
+                          <span
+                            className="h-2 w-2 rounded-full bg-foreground/45 animate-bounce"
+                            style={{ animationDelay: '120ms' }}
+                          />
+                          <span
+                            className="h-2 w-2 rounded-full bg-foreground/45 animate-bounce"
+                            style={{ animationDelay: '240ms' }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : null}
-            </ThreadPrimitive.Viewport>
+                ) : null}
+              </ThreadPrimitive.Viewport>
 
-            <div className="border-t p-4">
-              <ComposerPrimitive.Root className="flex items-end gap-3">
-                <ComposerPrimitive.Input
-                  placeholder="Type your message..."
-                  submitMode="enter"
-                  onKeyDown={(event) => {
-                    const isPlainEnter =
-                      event.key === 'Enter' &&
-                      !event.shiftKey &&
-                      !event.altKey &&
-                      !event.ctrlKey &&
-                      !event.metaKey;
+              <div className="border-t p-4">
+                <ComposerPrimitive.Root className="flex items-end gap-3">
+                  <ComposerPrimitive.Input
+                    placeholder="Type your message..."
+                    submitMode="enter"
+                    onKeyDown={(event) => {
+                      const isPlainEnter =
+                        event.key === 'Enter' &&
+                        !event.shiftKey &&
+                        !event.altKey &&
+                        !event.ctrlKey &&
+                        !event.metaKey;
 
-                    if (!isPlainEnter) return;
-                    if (event.nativeEvent.isComposing) return;
+                      if (!isPlainEnter) return;
+                      if (event.nativeEvent.isComposing) return;
 
-                    // Block Enter-submit while local request state is still running.
-                    if (isRunning) {
-                      event.preventDefault();
-                    }
-                  }}
-                  className="min-h-[60px] w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                />
-                <ComposerPrimitive.Send asChild>
-                  <Button className="gap-2" disabled={isRunning}>
-                    {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
-                    {isRunning ? 'Sending...' : 'Send'}
-                  </Button>
-                </ComposerPrimitive.Send>
-              </ComposerPrimitive.Root>
-            </div>
-          </ThreadPrimitive.Root>
+                      // Block Enter-submit while local request state is still running.
+                      if (isRunning) {
+                        event.preventDefault();
+                      }
+                    }}
+                    className="min-h-[60px] w-full resize-none rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <ComposerPrimitive.Send asChild>
+                    <Button className="gap-2" disabled={isRunning}>
+                      {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
+                      {isRunning ? 'Sending...' : 'Send'}
+                    </Button>
+                  </ComposerPrimitive.Send>
+                </ComposerPrimitive.Root>
+              </div>
+            </ThreadPrimitive.Root>
+          </div>
         </AssistantRuntimeProvider>
       </Card>
     </div>
