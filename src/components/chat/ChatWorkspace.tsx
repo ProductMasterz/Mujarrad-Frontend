@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, SendHorizontal, Search } from 'lucide-react';
+import { Check, Copy, Loader2, Search, SendHorizontal } from 'lucide-react';
 import {
   AssistantRuntimeProvider,
   ComposerPrimitive,
@@ -386,6 +386,30 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
                     })()
                 )}
               </ThreadPrimitive.Messages>
+
+              {isRunning ? (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%]">
+                    <div className="rounded-2xl bg-muted px-4 py-3 text-sm text-foreground">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Mujarrad is thinking</span>
+                      </div>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-foreground/45 animate-bounce" />
+                        <span
+                          className="h-2 w-2 rounded-full bg-foreground/45 animate-bounce"
+                          style={{ animationDelay: '120ms' }}
+                        />
+                        <span
+                          className="h-2 w-2 rounded-full bg-foreground/45 animate-bounce"
+                          style={{ animationDelay: '240ms' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </ThreadPrimitive.Viewport>
 
             <div className="border-t p-4">
@@ -413,7 +437,7 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
                 />
                 <ComposerPrimitive.Send asChild>
                   <Button className="gap-2" disabled={isRunning}>
-                    <SendHorizontal className="h-4 w-4" />
+                    {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
                     {isRunning ? 'Sending...' : 'Send'}
                   </Button>
                 </ComposerPrimitive.Send>
