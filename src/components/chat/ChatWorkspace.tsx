@@ -280,7 +280,7 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
                           Rename
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="z-[130]">
                         <DialogHeader>
                           <DialogTitle>Rename Conversation</DialogTitle>
                           <DialogDescription>
@@ -322,7 +322,7 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
                           Delete
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent>
+                      <AlertDialogContent className="z-[130]">
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
                           <AlertDialogDescription>
@@ -343,6 +343,7 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
                   </div>
                 </div>
               ) : null}
+
             </aside>
 
             <ThreadPrimitive.Root className="flex h-full min-h-0 flex-col overflow-hidden rounded-[inherit]">
