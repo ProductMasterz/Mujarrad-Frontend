@@ -21,6 +21,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useNavigationStore } from '@/stores/navigationStore';
 import type { Node } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
+import { getEffectiveVisibility, NodeVisibility } from '@/types/node-system';
 
 // Convert Node to Scratchup Card format
 function nodeToCard(node: Node): Card {
@@ -132,14 +133,27 @@ export default function SpaceDetailPage() {
         details = node.nodeDetails as Record<string, unknown> | undefined;
       }
 
+      const visibility = getEffectiveVisibility(details as Record<string, unknown> | undefined);
+      const nodeTitle = (node.title || '').toLowerCase().trim();
+      const isLegacyChatMessageTitle = /^input:\s*msg-\d+$/.test(nodeTitle) || /^output:\s*msg-\d+$/.test(nodeTitle);
+      const isChatRuntimeNode = details?.source === 'chat-runtime' || !!details?.chatNodeType;
+
       // Only show nodes that should appear in the space list
-      // Block nodes have showInSpaceList: false or blockType set
-      if (details?.showInSpaceList === false) {
+      // Use visibility system first (with legacy fallbacks from getEffectiveVisibility)
+      if (visibility !== NodeVisibility.VISIBLE) {
         return false;
       }
+
+      // Explicitly hide chat-schema/helper nodes from main space cards
+      if (isChatRuntimeNode || isLegacyChatMessageTitle) {
+        return false;
+      }
+
+      // Extra safety for block-like nodes
       if (details?.blockType) {
         return false;
       }
+
       return true;
     });
     return filteredNodes.map(nodeToCard);

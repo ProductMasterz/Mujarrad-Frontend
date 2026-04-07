@@ -120,7 +120,7 @@ function renderAssistantMessage(markdownContent: string, isRunning: boolean) {
   return (
     <MarkdownRenderer
       content={markdownContent}
-      className="markdown-content prose-sm max-w-none"
+      className="chat-message-markdown"
     />
   );
 }
@@ -411,7 +411,7 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
                       return (
                         <MessagePrimitive.Root className="flex justify-start">
                           <div className="max-w-[88%] lg:max-w-[82%]">
-                            <div className="rounded-2xl bg-muted px-4 py-3 text-sm text-foreground">
+                            <div className="rounded-2xl border border-border/70 bg-card px-4 py-3 text-sm text-foreground shadow-sm">
                               <div className="whitespace-pre-wrap">
                                 {renderAssistantMessage(assistantMarkdown, isRunning)}
                               </div>
@@ -441,7 +441,7 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
                 {isRunning ? (
                   <div className="flex justify-start">
                     <div className="max-w-[88%] lg:max-w-[82%]">
-                      <div className="rounded-2xl bg-muted px-4 py-3 text-sm text-foreground">
+                      <div className="rounded-2xl border border-border/70 bg-card px-4 py-3 text-sm text-foreground shadow-sm">
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">Mujarrad is thinking</span>

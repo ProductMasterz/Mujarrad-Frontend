@@ -15,6 +15,31 @@
   @apply text-sm;
 }
 
+/* Chat assistant message markdown: high contrast, neutral palette for eye comfort */
+.chat-message-markdown {
+  @apply prose prose-sm max-w-none;
+  --tw-prose-body: hsl(var(--foreground));
+  --tw-prose-headings: hsl(var(--foreground));
+  --tw-prose-bold: hsl(var(--foreground));
+  --tw-prose-links: hsl(var(--primary));
+  --tw-prose-code: hsl(var(--foreground));
+  --tw-prose-counters: hsl(var(--muted-foreground));
+  --tw-prose-bullets: hsl(var(--muted-foreground));
+  --tw-prose-hr: hsl(var(--border));
+  --tw-prose-quotes: hsl(var(--foreground));
+  --tw-prose-quote-borders: hsl(var(--border));
+  --tw-prose-th-borders: hsl(var(--border));
+  --tw-prose-td-borders: hsl(var(--border));
+}
+
+.chat-message-markdown pre {
+  @apply rounded-lg border border-border/80 bg-muted;
+}
+
+.chat-message-markdown :not(pre) > code {
+  @apply rounded bg-muted px-1.5 py-0.5;
+}
+
 /* Documentation page styling - light theme with high contrast */
 .docs-content {
   @apply prose prose-lg max-w-none;
