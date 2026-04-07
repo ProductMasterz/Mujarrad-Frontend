@@ -114,12 +114,19 @@ function formatMessageTime(value: string) {
   });
 }
 
-function CopyMessageButton({ text }: { text: string }) {
+function CopyMessageButton({
+  text,
+  getText,
+}: {
+  text?: string;
+  getText?: () => string;
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      const value = getText ? getText() : text || '';
+      await navigator.clipboard.writeText(value);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -176,6 +183,65 @@ function UserMessageBubble({
     </div>
   );
 }
+function formatAssistantContent(text: string) {
+  if (!text) return text;
+
+  let formatted = text.trim();
+
+  const isPipelineReport = /MUSGHI PIPELINE REPORT/i.test(formatted);
+  if (!isPipelineReport) return formatted;
+
+  formatted = formatted.replace(/^={3,}\s*$/gm, '');
+  formatted = formatted.replace(/^-{3,}\s*$/gm, '');
+
+  formatted = formatted.replace(
+    /^MUSGHI PIPELINE REPORT\s*-\s*(.+)$/gim,
+    '## Musghi Pipeline Report\n\n**Message ID:** $1'
+  );
+
+  formatted = formatted.replace(
+    /^Space:\s*(.+?)\s+Input:\s*(.+)$/gim,
+    '**Space:** $1\n\n**Input:** $2'
+  );
+
+  formatted = formatted.replace(/^SPACE OVERVIEW$/gm, '### Space Overview');
+  formatted = formatted.replace(/^FOCUS AREAS$/gm, '### Focus Areas');
+  formatted = formatted.replace(/^MOST CONNECTED NODES$/gm, '### Most Connected Nodes');
+  formatted = formatted.replace(/^KEY FINDINGS$/gm, '### Key Findings');
+  formatted = formatted.replace(/^EXTRACTED ENTITIES$/gm, '### Extracted Entities');
+  formatted = formatted.replace(/^IDENTIFIED RELATIONSHIPS.*$/gm, '### Identified Relationships');
+  formatted = formatted.replace(/^TRACEABILITY LINKS.*$/gm, '### Traceability Links');
+  formatted = formatted.replace(/^MUJARRAD ATTRIBUTES$/gm, '### Mujarrad Attributes');
+  formatted = formatted.replace(/^INTERPRETATION$/gm, '### Interpretation');
+
+  formatted = formatted.replace(/^\s*•\s+/gm, '- ');
+  formatted = formatted.replace(/^\s*→\s+/gm, '- ');
+  formatted = formatted.replace(/^\s*\*\s+/gm, '- ');
+
+  formatted = formatted.replace(
+    /^\s*\[(.+?)\]\s+(.+?)\s+→\s+(.+?)$/gm,
+    '- **$1**: $2 → $3'
+  );
+
+  formatted = formatted.replace(
+    /^\s*(PERSON|PLACE|ACTION|TOPIC|EVENT)\s+\((\d+)\)$/gm,
+    '#### $1 ($2)'
+  );
+
+  formatted = formatted.replace(
+    /### Extracted Entities\s*(?=###|$)/gms,
+    '### Extracted Entities\n\n_No entities extracted._\n\n'
+  );
+
+  formatted = formatted.replace(
+    /### Traceability Links\s*(?=###|$)/gms,
+    '### Traceability Links\n\n_No traceability links._\n\n'
+  );
+
+  formatted = formatted.replace(/\n{3,}/g, '\n\n');
+
+  return formatted.trim();
+}
 
 function AssistantMessageBubble({
   text,
@@ -184,6 +250,9 @@ function AssistantMessageBubble({
   text: string;
   createdAt: string;
 }) {
+  const formattedText = formatAssistantContent(text);
+  const renderedContentRef = useRef<HTMLDivElement | null>(null);
+
   return (
     <div className="flex justify-start">
       <div className="flex max-w-[85%] items-end gap-3">
@@ -202,16 +271,20 @@ function AssistantMessageBubble({
           </div>
 
           <div className="group rounded-[18px] rounded-bl-[10px] border border-border bg-muted px-4 py-3 shadow-sm transition-all duration-200 hover:shadow-md">
-            <div className="text-[12px] leading-5 text-foreground [&_*]:text-[12px] [&_*]:leading-5 [&_*]:text-foreground [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded [&_code]:bg-background [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[12px] [&_code]:text-foreground [&_p]:my-2 [&_li]:mb-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_h1]:mb-2 [&_h1]:mt-3 [&_h1]:text-[12px] [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-3 [&_h2]:text-[12px] [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-slate-700 [&_pre]:bg-slate-950 [&_pre]:p-4 [&_pre]:text-[12px] [&_pre]:text-white">
-              <MarkdownRenderer content={text} />
+            <div
+              ref={renderedContentRef}
+              className="text-[12px] leading-5 text-foreground [&_*]:text-[12px] [&_*]:leading-5 [&_*]:text-foreground [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded [&_code]:bg-background [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[12px] [&_code]:text-foreground [&_p]:my-2 [&_li]:mb-1 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_h1]:mb-2 [&_h1]:mt-3 [&_h1]:text-[12px] [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-3 [&_h2]:text-[12px] [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-slate-700 [&_pre]:bg-slate-950 [&_pre]:p-4 [&_pre]:text-[12px] [&_pre]:text-white"
+            >
+              <MarkdownRenderer content={formattedText} />
             </div>
+
             <div className="mt-3 flex justify-end">
-              <CopyMessageButton text={text} />
+              <CopyMessageButton
+                getText={() => renderedContentRef.current?.innerText?.trim() || ''}
+              />
             </div>
           </div>
         </div>
-
-        
       </div>
     </div>
   );
@@ -945,6 +1018,7 @@ export function ChatPanel({
   
   const buildConversationPreview = async (conversationId: string): Promise<string> => {
     if (!spaceSlug) return 'No messages yet';
+
     try {
       const attributes = await attributeService.getNodeAttributes(conversationId);
 
@@ -965,14 +1039,30 @@ export function ChatPanel({
       if (messageLinks.length === 0) return 'No messages yet';
 
       const latestMessage = await nodeService.getNode(spaceSlug, messageLinks[0].targetNodeId);
-      const preview = (latestMessage.content || '').trim();
 
-      if (!preview) return 'No messages yet';
-      return preview.length > 90 ? `${preview.slice(0, 90)}…` : preview;
+      const rawPreview = (latestMessage.content || '').trim();
+      if (!rawPreview) return 'No messages yet';
+
+      const formattedPreview =
+        latestMessage.nodeDetails &&
+        typeof latestMessage.nodeDetails === 'object' &&
+        'role' in latestMessage.nodeDetails &&
+        latestMessage.nodeDetails.role === 'assistant'
+          ? formatAssistantContent(rawPreview)
+          : rawPreview;
+
+      const plainPreview = formattedPreview
+        .replace(/[#*_>`~-]/g, '')
+        .replace(/\n+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      return plainPreview.length > 90 ? `${plainPreview.slice(0, 90)}…` : plainPreview;
     } catch {
       return 'No messages yet';
     }
   };
+
   const createConversationSession = async (): Promise<string> => {
     if (!spaceSlug) throw new Error('spaceSlug is required');
     const createdConversation = await nodeService.createNode(spaceSlug, {
