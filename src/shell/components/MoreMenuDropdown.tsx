@@ -11,6 +11,9 @@ import {
   MoveRight,
   Settings,
   GitBranch,
+  User,
+  GraduationCap,
+  Command,
 } from "lucide-react";
 import {
   useNavigationStore,
@@ -60,8 +63,25 @@ export function MoreMenuDropdown({
 }: MoreMenuDropdownProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
-  const moreActions = useNavigationStore((state) => state.moreActions);
+  const moreActions = useNavigationStore((state) => state.moreActions).filter(
+  (action) =>
+    action !== 'graph' &&
+    action !== 'whiteboard' &&
+    action !== 'settings'
+);
+  
+  const handleProfileClick = () => {
+    router.push("/settings");
+    onClose();
+  };
 
+  const handleLearningClick = () => {
+    onClose();
+  };
+
+  const handleShortcutsClick = () => {
+    onClose();
+  };
   const actionHandlers: Record<MoreAction, (() => void) | undefined> = {
     share: onShare,
     open_new_tab: onOpenInNewTab,
@@ -140,8 +160,49 @@ export function MoreMenuDropdown({
         top: `${menuTop}px`,
       }}
     >
-      <div className="flex flex-col gap-[4px]">
-        {moreActions.map((action) => (
+            <div className="flex flex-col gap-[4px]">
+              <button
+                onClick={handleProfileClick}
+                className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] leading-[18px] text-foreground transition-colors hover:bg-accent"
+                style={{ fontVariationSettings: "'wdth' 100" }}
+              >
+                <span className="flex items-center gap-[10px]">
+                  <span className="text-muted-foreground">
+                    <User className="size-[14px]" />
+                  </span>
+                  Profile
+                </span>
+              </button>
+
+              <button
+                onClick={handleLearningClick}
+                className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] leading-[18px] text-foreground transition-colors hover:bg-accent"
+                style={{ fontVariationSettings: "'wdth' 100" }}
+              >
+                <span className="flex items-center gap-[10px]">
+                  <span className="text-muted-foreground">
+                    <GraduationCap className="size-[14px]" />
+                  </span>
+                  Learning
+                </span>
+              </button>
+
+              <button
+                onClick={handleShortcutsClick}
+                className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] leading-[18px] text-foreground transition-colors hover:bg-accent"
+                style={{ fontVariationSettings: "'wdth' 100" }}
+              >
+                <span className="flex items-center gap-[10px]">
+                  <span className="text-muted-foreground">
+                    <Command className="size-[14px]" />
+                  </span>
+                  Shortcuts
+                </span>
+              </button>
+
+              <div className="my-[4px] h-px bg-border" />
+
+              {moreActions.map((action) => (
           <button
             key={action}
             onClick={() => handleActionClick(action)}

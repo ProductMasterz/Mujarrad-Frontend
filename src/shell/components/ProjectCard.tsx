@@ -93,7 +93,7 @@ export function ProjectCard({
   <button
     onClick={onClick}
     onContextMenu={onContextMenu}
-    className="group relative h-[156px] w-[260px] overflow-hidden rounded-[28px] border border-[#e8ecf2] bg-[linear-gradient(180deg,#ffffff_0%,#fbfcfe_100%)] text-left shadow-[0px_6px_20px_rgba(15,23,42,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#d7deea] hover:shadow-[0px_14px_32px_rgba(15,23,42,0.10)] dark:border-[#374151] dark:bg-[linear-gradient(180deg,#111827_0%,#0f172a_100%)] dark:hover:border-[#4b5563] dark:hover:shadow-[0px_14px_32px_rgba(0,0,0,0.35)]"
+    className="group relative h-[156px] w-full overflow-hidden rounded-[28px] border border-[#e8ecf2] bg-[linear-gradient(180deg,#ffffff_0%,#fbfcfe_100%)] text-left shadow-[0px_6px_20px_rgba(15,23,42,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#d7deea] hover:shadow-[0px_14px_32px_rgba(15,23,42,0.10)] dark:border-[#374151] dark:bg-[linear-gradient(180deg,#111827_0%,#0f172a_100%)] dark:hover:border-[#4b5563] dark:hover:shadow-[0px_14px_32px_rgba(0,0,0,0.35)]"
     type="button"
   >
     <div

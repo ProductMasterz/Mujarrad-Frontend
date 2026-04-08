@@ -17,6 +17,7 @@ import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { useQueryClient } from '@tanstack/react-query';
 import { nodeKeys } from '@/hooks/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { useNotificationStore } from '@/stores/notificationStore';
 
 type AgentProcessNode = Record<string, unknown>;
 type AgentProcessRelationship = Record<string, unknown>;
@@ -50,7 +51,6 @@ interface ChatPanelProps {
   embedded?: boolean;
   onClose?: () => void;
   onChangeSpace?: (nextSpaceSlug: string) => void;
-  onCreateSpace?: () => Promise<void> | void;
   availableSpaces?: Array<{ id: string; name: string; slug: string }>;
 }
 
@@ -311,7 +311,6 @@ function ChatPanelShell({
   onSearchTermChange,
   availableSpaces,
   onChangeSpace,
-  onCreateSpace,
 }: {
   hasActiveSpace: boolean;
   isRunning: boolean;
@@ -333,11 +332,10 @@ function ChatPanelShell({
   onSearchTermChange: (value: string) => void;
   availableSpaces: Array<{ id: string; name: string; slug: string }>;
   onChangeSpace?: (nextSpaceSlug: string) => void;
-  onCreateSpace?: () => Promise<void> | void;
 }) {
   const [showSpaceMenu, setShowSpaceMenu] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarWidth, setSidebarWidth] = useState(260);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(240);
   const isResizingRef = useRef(false);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -687,21 +685,7 @@ function ChatPanelShell({
                       )}
                     </div>
 
-                    {onCreateSpace && (
-                      <div className="mt-2 border-t border-border pt-2">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            console.log('Create new space clicked from chat menu');
-                            setShowSpaceMenu(false);
-                            await onCreateSpace?.();
-                          }}
-                          className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-foreground transition hover:bg-muted"
-                        >
-                          + Create new space
-                        </button>
-                      </div>
-                    )}
+              
                   </div>
                 )}
               </div>
@@ -748,12 +732,6 @@ function ChatPanelShell({
                       </div>
                       <div className="rounded-xl border border-border bg-muted/40 px-3 py-3 text-sm text-foreground">
                         Create nodes from text
-                      </div>
-                      <div className="rounded-xl border border-border bg-muted/40 px-3 py-3 text-sm text-foreground">
-                        Find related entities
-                      </div>
-                      <div className="rounded-xl border border-border bg-muted/40 px-3 py-3 text-sm text-foreground">
-                        Explain graph structure
                       </div>
                     </div>
 
@@ -936,9 +914,9 @@ export function ChatPanel({
   embedded = false,
   onClose,
   onChangeSpace,
-  onCreateSpace,
   availableSpaces = [],
 }: ChatPanelProps) {
+  const addNotification = useNotificationStore((state) => state.addNotification);
   const token = useAuthStore((state) => state.token);
   const hasActiveSpace = !!spaceSlug?.trim();
   const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
@@ -1306,6 +1284,12 @@ export function ChatPanel({
     conversationNodeIdRef.current = null;
     setActiveSessionId(null);
     await createConversationSession();
+    addNotification({
+      type: 'info',
+      title: 'New conversation',
+      message: 'A new chat session was started.',
+    });
+    
     await refreshWorkspaceViews();
   };
   const renameSession = async (sessionId: string, newTitle: string) => {
@@ -1332,7 +1316,7 @@ export function ChatPanel({
       ...prev,
       [sessionId]: updatedPreview,
     }));
-
+    
     await refreshWorkspaceViews();
   };
 
@@ -1386,7 +1370,14 @@ export function ChatPanel({
     );
 
     await nodeService.deleteNode(spaceSlug, sessionId, true);
+    const deletedSessionTitle =
+      sessions.find((session) => session.id === sessionId)?.title || 'Conversation';
 
+    addNotification({
+      type: 'warning',
+      title: 'Conversation deleted',
+      message: `${deletedSessionTitle} was removed.`,
+    });
     const remainingSessions = sessions.filter((session) => session.id !== sessionId);
     setSessions(remainingSessions);
     setSessionSearchIndex((prev) => {
@@ -1560,14 +1551,31 @@ export function ChatPanel({
 
             if (!response.ok || data?.error) {
               assistantText = message || 'The agent service returned an error.';
+
             } else {
               assistantText =
                 report ||
                 `Processed successfully. Returned ${nodes.length} nodes and ${relationships.length} relationships.`;
             }
+            if (response.ok && !data?.error) {
+              addNotification({
+                type: 'success',
+                title: 'Chat analyzed',
+                message:
+                  nodes.length > 0 || relationships.length > 0
+                    ? `${nodes.length} candidate node${nodes.length === 1 ? '' : 's'} and ${relationships.length} candidate relationship${relationships.length === 1 ? '' : 's'} returned by the agent.`
+                    : 'The agent finished processing your message.',
+              });
+            }
           } catch (error) {
-            console.error('Could not reach agent service:', error);
+            console.error('Could not reach the agent service:', error);
             assistantText = 'Could not reach the agent service. Please try again.';
+
+            addNotification({
+              type: 'error',
+              title: 'Agent unavailable',
+              message: 'Could not reach the agent service.',
+            });
           }
         }
 
@@ -1635,7 +1643,6 @@ export function ChatPanel({
         isBootstrapping={isBootstrapping}
         availableSpaces={availableSpaces}
         onChangeSpace={onChangeSpace}
-        onCreateSpace={onCreateSpace}
       />
     </AssistantRuntimeProvider>
   );

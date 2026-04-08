@@ -26,7 +26,11 @@ export function Navbar({ className }: NavbarProps) {
   const params = useParams();
   const [searchOpen, setSearchOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const hideNavbarChatButton =  pathname.includes('/graph') || pathname.includes('/whiteboard');
+  const isGraphOrWhiteboard =
+    pathname.includes('/graph') || pathname.includes('/whiteboard');
+
+  const hideNavbarChatButton = isGraphOrWhiteboard;
+  const hideNavbarSearchAndAccount = isGraphOrWhiteboard;
 
   const currentSpaceSlug = params?.slug as string | undefined;
 
@@ -37,7 +41,7 @@ export function Navbar({ className }: NavbarProps) {
   };
 
   useEffect(() => {
-    if (isAuthPage) return;
+    if (isAuthPage || isGraphOrWhiteboard) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -48,7 +52,7 @@ export function Navbar({ className }: NavbarProps) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isAuthPage]);
+  }, [isAuthPage, isGraphOrWhiteboard]);
 
   if (isAuthPage) {
     return null;
@@ -56,11 +60,13 @@ export function Navbar({ className }: NavbarProps) {
 
   return (
     <>
-      <CommandPalette
-        open={searchOpen}
-        onOpenChange={setSearchOpen}
-        currentSpaceSlug={currentSpaceSlug}
-      />
+      {!isGraphOrWhiteboard && (
+        <CommandPalette
+          open={searchOpen}
+          onOpenChange={setSearchOpen}
+          currentSpaceSlug={currentSpaceSlug}
+        />
+      )}
 
       <nav className={`border-b bg-background ${className || ''}`}>
         <div className="flex h-16 items-center px-6 gap-6">
@@ -95,41 +101,45 @@ export function Navbar({ className }: NavbarProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => setSearchOpen(true)}
-            >
-              <Search className="h-4 w-4" />
-              <span className="hidden md:inline">Search</span>
-              <kbd className="hidden md:inline pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
-                ⌘K
-              </kbd>
-            </Button>
+            {!hideNavbarSearchAndAccount && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setSearchOpen(true)}
+              >
+                <Search className="h-4 w-4" />
+                <span className="hidden md:inline">Search</span>
+                <kbd className="hidden md:inline pointer-events-none h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
+                  ⌘K
+                </kbd>
+              </Button>
+            )}
 
             <ThemeToggle />
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <User className="h-4 w-4" />
-                  <span className="hidden md:inline">Account</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <span>Sign Out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!hideNavbarSearchAndAccount && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="hidden md:inline">Account</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <span>Sign Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </nav>

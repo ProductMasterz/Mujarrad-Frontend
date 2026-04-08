@@ -1,31 +1,23 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import clsx from "clsx";
 import { projectsData, Card, CardType } from "../data/projects";
-import { UserMenu } from "./UserMenu";
-import { ShortcutsModal } from "./ShortcutsModal";
 import VuesaxLinearContext from "../imports/VuesaxLinearContext";
 import VuesaxLinearNode from "../imports/VuesaxLinearNode";
 
 type SidebarProps = {
   isOpen: boolean;
-  onItemClick: (id: string) => void;
   selectedItem: string | null;
   onNavigate: (path: string[]) => void;
   onAddNode?: (parentPath: string[], position?: number) => void;
-  onLogout: () => void;
   items?: Card[];
-  /** When true (at spaces level), hover add button creates a new space instead of node */
   isSpacesLevel?: boolean;
-  /** Quick create a new space - called when at spaces level */
   onQuickCreateSpace?: () => void;
 };
 
-// Function to render the appropriate icon based on CardType
 function renderCardIcon(type: CardType) {
   switch (type) {
     case CardType.EMPTY_CONTEXT:
-      // Empty rounded square
       return (
         <svg className="size-4" fill="none" viewBox="0 0 16 16">
           <rect
@@ -42,7 +34,6 @@ function renderCardIcon(type: CardType) {
       );
 
     case CardType.FULFILLED_CONTEXT:
-      // Rounded square with 3 circles in a grid pattern
       return (
         <svg className="size-4" fill="none" viewBox="0 0 16 16">
           <rect
@@ -62,7 +53,6 @@ function renderCardIcon(type: CardType) {
       );
 
     case CardType.GRAPH_CONTEXT:
-      // Graph icon with connected nodes
       return (
         <div className="size-4">
           <VuesaxLinearContext />
@@ -70,7 +60,6 @@ function renderCardIcon(type: CardType) {
       );
 
     case CardType.NODE:
-      // Simple circle (leaf node)
       return (
         <div className="size-4">
           <VuesaxLinearNode />
@@ -121,21 +110,22 @@ function SidebarItem({
   const [isExpanded, setIsExpanded] = useState(level === 0);
   const [isHoveringItem, setIsHoveringItem] = useState(false);
   const [isHoveringBetween, setIsHoveringBetween] = useState(false);
+
   const hasChildren = item.children && item.children.length > 0;
   const currentPath = [...parentPath, item.id];
   const isSelected = currentPath.join("/") === selectedItem;
 
   const handleAddChild = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // At spaces level, clicking + creates a new space directly
+
     if (isSpacesLevel && onQuickCreateSpace) {
       onQuickCreateSpace();
       return;
     }
-    // Otherwise, add a child node
+
     if (onAddChild) {
       onAddChild(currentPath);
-      setIsExpanded(true); // Auto-expand to show new child
+      setIsExpanded(true);
     }
   };
 
@@ -148,20 +138,17 @@ function SidebarItem({
 
   return (
     <div className="relative">
-      {/* Hover area for adding between items */}
       <div
         className="absolute inset-x-0 -top-[6px] h-[12px] z-10"
         onMouseEnter={() => setIsHoveringBetween(true)}
         onMouseLeave={() => setIsHoveringBetween(false)}
       >
         {isHoveringBetween && (
-          <div className="relative h-full flex items-center">
-            {/* Horizontal line indicator */}
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[1px] bg-[#248bf2]" />
-            {/* Add button */}
+          <div className="relative flex h-full items-center">
+            <div className="absolute inset-x-0 top-1/2 h-[1px] -translate-y-1/2 bg-[#248bf2]" />
             <button
               onClick={handleAddSibling}
-              className="absolute right-0 top-1/2 -translate-y-1/2 text-[#248bf2] hover:text-[#1976d2] transition-colors bg-white rounded-full dark:bg-[#111827]"
+              className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full bg-white text-[#248bf2] transition-colors hover:text-[#1976d2] dark:bg-[#111827]"
             >
               <svg className="size-5" fill="none" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
@@ -172,9 +159,8 @@ function SidebarItem({
         )}
       </div>
 
-      {/* Item itself */}
       <div
-        className="relative"
+        className="group relative"
         onMouseEnter={() => setIsHoveringItem(true)}
         onMouseLeave={() => setIsHoveringItem(false)}
       >
@@ -186,12 +172,12 @@ function SidebarItem({
             onNavigate(currentPath);
           }}
           className={clsx(
-            "flex w-full items-center gap-[12px] rounded-xl px-[8px] py-[7px] text-left transition-all",
+            "flex w-full items-center gap-[10px] rounded-xl px-[10px] py-[8px] text-left transition-colors",
             level === 0
-              ? "font-['Roboto:Medium',sans-serif] font-medium text-[#4f4f4f] dark:text-[#f3f4f6]"
-              : "font-['Roboto:Regular',sans-serif] font-normal text-[#828282] dark:text-[#9ca3af]",
-            isSelected && "bg-[#eef2ff] text-[#2563eb] shadow-sm dark:bg-[#1e293b] dark:text-[#60a5fa]",
-            isHoveringItem && !isSelected && "bg-[#f7f8fa] dark:bg-[#1f2937]"
+              ? "font-medium text-slate-700 dark:text-slate-200"
+              : "font-normal text-slate-500 dark:text-slate-400",
+            isSelected && "bg-slate-100 text-slate-900 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-white dark:ring-slate-700",
+            isHoveringItem && !isSelected && "bg-slate-50 dark:bg-slate-800/60"
           )}
         >
           {hasChildren ? (
@@ -205,10 +191,11 @@ function SidebarItem({
           ) : (
             <div className="size-3" />
           )}
-          <div className="flex items-center gap-[4px] flex-1">
+
+          <div className="flex flex-1 items-center gap-[4px]">
             {renderCardIcon(item.type)}
             <span
-              className="text-[15px] tracking-[-0.24px] leading-[24px] truncate max-w-[140px]"
+              className="max-w-[170px] truncate text-[14px] leading-5"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
               {item.title}
@@ -216,11 +203,10 @@ function SidebarItem({
           </div>
         </button>
 
-        {/* Add child button - appears on item hover */}
         {isHoveringItem && (
           <button
             onClick={handleAddChild}
-            className="absolute right-[4px] top-1/2 -translate-y-1/2 text-[#828282] hover:text-[#248bf2] transition-colors dark:text-[#9ca3af] dark:hover:text-[#60a5fa]"
+            className="absolute right-[4px] top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
           >
             <svg className="size-5" fill="none" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
@@ -231,7 +217,7 @@ function SidebarItem({
       </div>
 
       {hasChildren && isExpanded && (
-        <div className="ml-[28px] flex flex-col gap-[8px] mt-[8px]">
+        <div className="ml-[28px] mt-[8px] flex flex-col gap-[8px]">
           {item.children!.map((child, idx) => (
             <SidebarItem
               key={child.id}
@@ -253,21 +239,17 @@ function SidebarItem({
   );
 }
 
-export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNode, onLogout, items, isSpacesLevel = false, onQuickCreateSpace }: SidebarProps) {
-  // Use provided items or fall back to static projectsData
+export function Sidebar({
+  isOpen,
+  selectedItem,
+  onNavigate,
+  onAddNode,
+  items,
+  isSpacesLevel = false,
+  onQuickCreateSpace,
+}: SidebarProps) {
   const sidebarItems = items || projectsData;
-  const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(null);
-  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
 
-  const handleUserClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setUserMenuAnchor(event.currentTarget);
-  };
-
-  const handleShortcutClick = () => {
-    setShowShortcutsModal(true);
-  };
-
-  // Unified handler for both child and sibling additions
   const handleAddNode = (parentPath: string[], position?: number) => {
     if (onAddNode) {
       onAddNode(parentPath, position);
@@ -277,13 +259,12 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
   return (
     <div
       className={clsx(
-          'fixed left-0 top-[76px] z-10 h-[calc(100vh-76px)] border-r border-[#eceff3] bg-[#fcfcfd] transition-all duration-300 ease-in-out dark:border-[#374151] dark:bg-[#0f172a]',
+        "fixed left-0 top-[76px] z-10 h-[calc(100vh-76px)] border-r border-border bg-background/95 backdrop-blur-sm transition-all duration-300 ease-in-out dark:bg-background/95",
         isOpen ? "w-[276px]" : "w-0"
       )}
       style={{ overflow: isOpen ? "visible" : "hidden" }}
     >
       <div className="flex h-full w-[276px] flex-col">
-        {/* Sidebar Items */}
         <div className="flex-1 overflow-y-auto px-[16px] pt-[20px]">
           <div className="flex flex-col gap-[12px]">
             {sidebarItems.map((item, idx) => (
@@ -301,62 +282,7 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
             ))}
           </div>
         </div>
-
-        {/* Bottom Icons */}
-        <div className="mx-[16px] mb-[20px] mt-[12px] flex items-center justify-between rounded-2xl border border-[#e5e7eb] bg-white px-[14px] py-[12px] shadow-sm dark:border-[#374151] dark:bg-[#111827]">
-          <div className="relative group">
-            <button
-              onClick={handleUserClick}
-              className="text-[#828282] hover:text-[#4f4f4f] dark:text-[#9ca3af] dark:hover:text-white"
-            >
-              <svg className="size-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20 22H18V20C18 19.2044 17.6839 18.4413 17.1213 17.8787C16.5587 17.3161 15.7956 17 15 17H9C8.20435 17 7.44129 17.3161 6.87868 17.8787C6.31607 18.4413 6 19.2044 6 20V22H4V20C4 18.6739 4.52678 17.4021 5.46447 16.4645C6.40215 15.5268 7.67392 15 9 15H15C16.3261 15 17.5979 15.5268 18.5355 16.4645C19.4732 17.4021 20 18.6739 20 20V22ZM12 13C11.2121 13 10.4319 12.8448 9.7039 12.5433C8.97595 12.2417 8.31451 11.7998 7.75736 11.2426C7.20021 10.6855 6.75825 10.0241 6.45672 9.2961C6.15519 8.56815 6 7.78793 6 7C6 6.21207 6.15519 5.43185 6.45672 4.7039C6.75825 3.97595 7.20021 3.31451 7.75736 2.75736C8.31451 2.20021 8.97595 1.75825 9.7039 1.45672C10.4319 1.15519 11.2121 1 12 1C13.5913 1 15.1174 1.63214 16.2426 2.75736C17.3679 3.88258 18 5.4087 18 7C18 8.5913 17.3679 10.1174 16.2426 11.2426C15.1174 12.3679 13.5913 13 12 13ZM12 11C13.0609 11 14.0783 10.5786 14.8284 9.82843C15.5786 9.07828 16 8.06087 16 7C16 5.93913 15.5786 4.92172 14.8284 4.17157C14.0783 3.42143 13.0609 3 12 3C10.9391 3 9.92172 3.42143 9.17157 4.17157C8.42143 4.92172 8 5.93913 8 7C8 8.06087 8.42143 9.07828 9.17157 9.82843C9.92172 10.5786 10.9391 11 12 11Z" />
-              </svg>
-            </button>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-[8px] py-[4px] bg-[#333] text-white text-[11px] rounded whitespace-nowrap font-['Roboto:Regular',sans-serif] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              Profile
-            </div>
-          </div>
-          <div className="relative group">
-            <button className="text-[#828282] hover:text-[#4f4f4f] dark:text-[#9ca3af] dark:hover:text-white">
-              <svg className="size-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M4 11.333L0 9L12 2L24 9V17.5H22V10.167L20 11.333V18.011L19.777 18.286C18.8404 19.4467 17.6557 20.3827 16.3099 21.0255C14.9641 21.6682 13.4914 22.0012 12 22C10.5086 22.0012 9.03588 21.6682 7.69007 21.0255C6.34426 20.3827 5.15955 19.4467 4.223 18.286L4 18.011V11.333ZM6 12.5V17.292C6.74991 18.1442 7.67304 18.8266 8.70772 19.2936C9.7424 19.7606 10.8648 20.0014 12 20C13.1352 20.0015 14.2576 19.7607 15.2923 19.2937C16.327 18.8267 17.2501 18.1443 18 17.292V12.5L12 16L6 12.5ZM3.97 9L12 13.685L20.03 9L12 4.315L3.97 9Z" />
-              </svg>
-            </button>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-[8px] py-[4px] bg-[#333] text-white text-[11px] rounded whitespace-nowrap font-['Roboto:Regular',sans-serif] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              Learning
-            </div>
-          </div>
-          <div className="relative group">
-            <button
-              onClick={handleShortcutClick}
-              className="text-[#828282] hover:text-[#4f4f4f] dark:text-[#9ca3af] dark:hover:text-white"
-            >
-              <svg className="size-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M13 3V10.267L19.294 6.634L20.294 8.366L14 11.999L20.294 15.634L19.294 17.366L12.999 13.732V21H10.999V13.732L4.705 17.366L3.705 15.634L9.998 12L3.705 8.366L4.705 6.634L11 10.267V3H13Z" />
-              </svg>
-            </button>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-[8px] py-[4px] bg-[#333] text-white text-[11px] rounded whitespace-nowrap font-['Roboto:Regular',sans-serif] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              Shortcut
-            </div>
-          </div>
-        </div>
       </div>
-
-      {/* User Menu */}
-      {userMenuAnchor && (
-        <UserMenu
-          onClose={() => setUserMenuAnchor(null)}
-          anchorEl={userMenuAnchor}
-          onLogout={onLogout}
-        />
-      )}
-
-      {/* Shortcuts Modal */}
-      <ShortcutsModal
-        isOpen={showShortcutsModal}
-        onClose={() => setShowShortcutsModal(false)}
-      />
     </div>
   );
 }

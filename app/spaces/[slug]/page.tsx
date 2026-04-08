@@ -74,10 +74,10 @@ export default function SpaceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { logout } = useAuthStore();
   const navigateToSpace = useNavigationStore((state) => state.navigateToSpace);
   const slug = params.slug as string;
   const { rename: renameNode } = useRenameNodeSimple(slug);
+  
 
   // Fetch space data
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(slug);
@@ -102,7 +102,6 @@ export default function SpaceDetailPage() {
   });
 
   // UI State
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showNewNodeModal, setShowNewNodeModal] = useState(false);
   const [modalDefaultType, setModalDefaultType] = useState<EntityType>('node');
   const [showShareModal, setShowShareModal] = useState(false);
@@ -116,6 +115,7 @@ export default function SpaceDetailPage() {
   const [selectedCardId, setSelectedCardId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterNodeType, setFilterNodeType] = useState<'ALL' | 'REGULAR' | 'CONTEXT' | 'ASSUMPTION' | 'TEMPLATE'>('ALL');
   const [filterEntityType, setFilterEntityType] = useState<'ALL' | '' | 'person' | 'place' | 'action' | 'topic' | 'event'>('ALL');
   const [contextMenu, setContextMenu] = useState<{
@@ -150,6 +150,28 @@ export default function SpaceDetailPage() {
       );
     }
   }, [space]);
+
+
+  const allDisplayableNodes = useMemo(() => {
+    return (nodes || []).filter((node) => {
+      let details: Record<string, unknown> | undefined;
+
+      if (typeof node.nodeDetails === 'string') {
+        try {
+          details = JSON.parse(node.nodeDetails);
+        } catch {
+          details = undefined;
+        }
+      } else {
+        details = node.nodeDetails as Record<string, unknown> | undefined;
+      }
+
+      if (details?.showInSpaceList === false) return false;
+      if (details?.blockType) return false;
+
+      return true;
+    });
+  }, [nodes]);
 
   // Convert nodes to card format - filter out block nodes (showInSpaceList: false)
   const visibleNodes = useMemo(() => {
@@ -211,6 +233,19 @@ export default function SpaceDetailPage() {
         );
       });
   }, [nodes, searchTerm, sortBy, filterNodeType, filterEntityType]);
+
+  const totalNodeCount = allDisplayableNodes.length;
+
+  const aiNodeCount = useMemo(
+    () => allDisplayableNodes.filter((node) => isAgentCreatedNode(node)).length,
+    [allDisplayableNodes]
+  );
+
+  const contextCount = useMemo(
+    () => allDisplayableNodes.filter((node) => node.nodeType === NodeType.CONTEXT).length,
+    [allDisplayableNodes]
+  );
+
   const sidebarData = useMemo(() => visibleNodes.map(nodeToCard), [visibleNodes]);
 
   const chatAvailableSpaces = useMemo(
@@ -237,7 +272,7 @@ export default function SpaceDetailPage() {
   const isLoading = spaceLoading || nodesLoading;
 
   // Handlers
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const toggleSidebar = () => {};
 
   const handleCardClick = (cardId: string) => {
     // Navigate to node detail page (markdown editor)
@@ -346,10 +381,7 @@ export default function SpaceDetailPage() {
     setShowFeedbackModal(true);
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
+ 
 
   // Tab management
   const handleTabClick = (tabId: string) => {
@@ -474,8 +506,6 @@ export default function SpaceDetailPage() {
           onBackClick={handleBackClick}
           showBackButton={true}
           breadcrumbPath={breadcrumbPath}
-          onNotificationClick={() => {}}
-          onSearchClick={() => {}}
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
           // Add menu actions - create node/context at space level
@@ -502,78 +532,174 @@ export default function SpaceDetailPage() {
         />
 
         <Sidebar
-          isOpen={sidebarOpen}
-          onItemClick={(id) => handleSidebarNavigate([id])}
+          isOpen={false}
           selectedItem={null}
           onNavigate={handleSidebarNavigate}
-          onLogout={handleLogout}
           items={sidebarData}
         />
 
         {/* Main content */}
 
         <div
-          className="pt-[76px] px-[14px] transition-all duration-300"
+          className="pt-[88px] px-5 pb-8 transition-all duration-300"
           style={{
-            marginLeft: sidebarOpen ? '276px' : '0',
+            marginLeft: '0',
           }}
         >
-          <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-1 flex-col gap-3 md:flex-row">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search nodes by title, content, or entity type..."
-                className="h-[42px] w-full max-w-[320px] rounded-xl border border-border bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-              />
+          <div className="mb-4 rounded-[22px] border border-border bg-background px-5 py-5 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h1 className="text-[28px] font-semibold leading-tight text-foreground">
+                  {space?.name || 'Space'}
+                </h1>
+                <p className="mt-1 max-w-[680px] text-sm leading-5 text-muted-foreground">
+                  Review, create, and organize structured nodes and contexts in this space.
+                </p>
+              </div>
 
-              <select
-                value={filterNodeType}
-                onChange={(e) =>
-                  setFilterNodeType(
-                    e.target.value as 'ALL' | 'REGULAR' | 'CONTEXT' | 'ASSUMPTION' | 'TEMPLATE'
-                  )
-                }
-                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="ALL">All node types</option>
-                <option value="REGULAR">Regular</option>
-                <option value="CONTEXT">Context</option>
-                <option value="ASSUMPTION">Assumption</option>
-                <option value="TEMPLATE">Template</option>
-              </select>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleAddNode}
+                  className="inline-flex h-9 items-center rounded-xl bg-foreground px-3.5 text-sm font-medium text-background transition hover:opacity-90"
+                  type="button"
+                >
+                  New Node
+                </button>
 
-              <select
-                value={filterEntityType}
-                onChange={(e) =>
-                  setFilterEntityType(
-                    e.target.value as 'ALL' | '' | 'person' | 'place' | 'action' | 'topic' | 'event'
-                  )
-                }
-                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="ALL">All entity types</option>
-                <option value="">No entity type</option>
-                <option value="person">Person</option>
-                <option value="place">Place</option>
-                <option value="action">Action</option>
-                <option value="topic">Topic</option>
-                <option value="event">Event</option>
-              </select>
+                <button
+                  onClick={handleAddContext}
+                  className="inline-flex h-9 items-center rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground transition hover:bg-muted"
+                  type="button"
+                >
+                  New Context
+                </button>
+
+                <button
+                  onClick={handleGraphClick}
+                  className="inline-flex h-9 items-center rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground transition hover:bg-muted"
+                  type="button"
+                >
+                  Graph
+                </button>
+
+                <button
+                  onClick={handleWhiteboardClick}
+                  className="inline-flex h-9 items-center rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground transition hover:bg-muted"
+                  type="button"
+                >
+                  Whiteboard
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
-                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="updatedAt">Date modified</option>
-                <option value="createdAt">Date created</option>
-                <option value="name">Name</option>
-              </select>
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              <div className="min-w-[120px] rounded-2xl border border-border/60 bg-muted/20 px-4 py-3">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Nodes</div>
+                <div className="mt-1 text-xl font-semibold leading-none text-foreground">{totalNodeCount}</div>
+              </div>
+
+              <div className="min-w-[120px] rounded-2xl border border-border/60 bg-muted/20 px-4 py-3">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">AI Created</div>
+                <div className="mt-1 text-xl font-semibold leading-none text-foreground">{aiNodeCount}</div>
+
+              </div>
+
+              <div className="min-w-[120px] rounded-2xl border border-border/60 bg-muted/20 px-4 py-3">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Contexts</div>
+                <div className="mt-1 text-xl font-semibold leading-none text-foreground">{contextCount}</div>
+              </div>
+            </div>
+          </div>
+          <div className="mb-5 rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(320px,1.4fr)_minmax(220px,0.8fr)_minmax(220px,0.8fr)]">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search nodes by title, content, or entity type..."
+                  className="h-[42px] w-full rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition placeholder:text-muted-foreground/80 focus:border-primary focus:ring-2 focus:ring-primary/15"
+                />
+
+                <select
+                  value={filterNodeType}
+                  onChange={(e) =>
+                    setFilterNodeType(
+                      e.target.value as 'ALL' | 'REGULAR' | 'CONTEXT' | 'ASSUMPTION' | 'TEMPLATE'
+                    )
+                  }
+                  className="h-[42px] w-full rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                >
+                  <option value="ALL">All node types</option>
+                  <option value="REGULAR">Regular</option>
+                  <option value="CONTEXT">Context</option>
+                  <option value="ASSUMPTION">Assumption</option>
+                  <option value="TEMPLATE">Template</option>
+                </select>
+
+                <select
+                  value={filterEntityType}
+                  onChange={(e) =>
+                    setFilterEntityType(
+                      e.target.value as 'ALL' | '' | 'person' | 'place' | 'action' | 'topic' | 'event'
+                    )
+                  }
+                  className="h-[42px] w-full rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                >
+                  <option value="ALL">All entity types</option>
+                  <option value="">No entity type</option>
+                  <option value="person">Person</option>
+                  <option value="place">Place</option>
+                  <option value="action">Action</option>
+                  <option value="topic">Topic</option>
+                  <option value="event">Event</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
+                    className="h-[40px] min-w-[180px] rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  >
+                    <option value="updatedAt">Date modified</option>
+                    <option value="createdAt">Date created</option>
+                    <option value="name">Name</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-medium text-muted-foreground">View</span>
+
+                  <div className="inline-flex rounded-xl border border-border/70 bg-background p-1">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('grid')}
+                      className={`rounded-lg px-3 py-1.5 text-sm transition ${
+                        viewMode === 'grid'
+                          ? 'bg-foreground text-background'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                    >
+                      Grid
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('list')}
+                      className={`rounded-lg px-3 py-1.5 text-sm transition ${
+                        viewMode === 'list'
+                          ? 'bg-foreground text-background'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                    >
+                      List
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -597,44 +723,159 @@ export default function SpaceDetailPage() {
               >
                 {searchTerm.trim() || filterNodeType !== 'ALL' || filterEntityType !== 'ALL'
                   ? 'Try changing your search or filters.'
-                  : 'Click the + button to create your first node'}
+                  : 'Use the New Node or New Context actions above to get started.'}
               </p>
             </div>
           ) : (
-            <div className="flex gap-[19px] flex-wrap pt-[15px]">
-              {visibleNodes.map((node) => {
-                let details: Record<string, unknown> | undefined;
+            <>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Nodes</h2>
+              </div>
 
-                if (typeof node.nodeDetails === 'string') {
-                  try {
-                    details = JSON.parse(node.nodeDetails);
-                  } catch {
-                    details = undefined;
-                  }
-                } else {
-                  details = node.nodeDetails as Record<string, unknown> | undefined;
-                }
+              {viewMode === 'grid' ? (
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 pt-1">
+                  {visibleNodes.map((node) => {
+                    let details: Record<string, unknown> | undefined;
 
-                const isAgentCreated = isAgentCreatedNode(node);
-
-                return (
-                  <div key={node.id}>
-                    <NodeCard
-                      title={node.title}
-                      type={node.nodeType === NodeType.CONTEXT ? CardType.FULFILLED_CONTEXT : CardType.NODE}
-                      entityType={
-                        typeof details?.entityType === 'string'
-                          ? details.entityType
-                          : undefined
+                    if (typeof node.nodeDetails === 'string') {
+                      try {
+                        details = JSON.parse(node.nodeDetails);
+                      } catch {
+                        details = undefined;
                       }
-                      badge={isAgentCreated ? 'AI' : 'Manual'}
-                      onClick={() => handleCardClick(node.id)}
-                      onContextMenu={(e) => handleCardContextMenu(e, node.id)}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+                    } else {
+                      details = node.nodeDetails as Record<string, unknown> | undefined;
+                    }
+
+                    const isAgentCreated = isAgentCreatedNode(node);
+                    const previewSource =
+                      (node.content || '').trim() ||
+                      (typeof details?.entityType === 'string'
+                        ? `Entity type: ${details.entityType}`
+                        : node.nodeType === NodeType.CONTEXT
+                        ? 'Context node'
+                        : 'No preview available');
+
+                    const preview = previewSource.replace(/\s+/g, ' ').slice(0, 110);
+
+                    const meta =
+                      node.updatedAt
+                        ? `Updated ${new Date(node.updatedAt).toLocaleDateString()}`
+                        : node.createdAt
+                        ? `Created ${new Date(node.createdAt).toLocaleDateString()}`
+                        : undefined;
+
+                    return (
+                      <NodeCard
+                        key={node.id}
+                        title={node.title}
+                        preview={preview}
+                        meta={meta}
+                        type={node.nodeType === NodeType.CONTEXT ? CardType.FULFILLED_CONTEXT : CardType.NODE}
+                        entityType={
+                          typeof details?.entityType === 'string'
+                            ? details.entityType
+                            : undefined
+                        }
+                        badge={isAgentCreated ? 'AI' : 'Manual'}
+                        onClick={() => handleCardClick(node.id)}
+                        onContextMenu={(e) => handleCardContextMenu(e, node.id)}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-2xl border border-border/70 bg-background">
+                  {visibleNodes.map((node) => {
+                    let details: Record<string, unknown> | undefined;
+
+                    if (typeof node.nodeDetails === 'string') {
+                      try {
+                        details = JSON.parse(node.nodeDetails);
+                      } catch {
+                        details = undefined;
+                      }
+                    } else {
+                      details = node.nodeDetails as Record<string, unknown> | undefined;
+                    }
+
+                    const isAgentCreated = isAgentCreatedNode(node);
+                    const entityType =
+                      typeof details?.entityType === 'string' ? details.entityType : '';
+
+                    const typeBadgeClasses =
+                      entityType.toLowerCase() === 'person'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200'
+                        : entityType.toLowerCase() === 'place'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'
+                        : entityType.toLowerCase() === 'action'
+                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200'
+                        : entityType.toLowerCase() === 'topic'
+                        ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200'
+                        : entityType.toLowerCase() === 'event'
+                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200'
+                        : node.nodeType === NodeType.CONTEXT
+                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
+                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+
+                    const preview =
+                      ((node.content || '').trim() || 'No preview available')
+                        .replace(/\s+/g, ' ')
+                        .slice(0, 120);
+
+                    const meta =
+                      node.updatedAt
+                        ? `Updated ${new Date(node.updatedAt).toLocaleDateString()}`
+                        : node.createdAt
+                        ? `Created ${new Date(node.createdAt).toLocaleDateString()}`
+                        : '—';
+
+                    return (
+                      <button
+                        key={node.id}
+                        type="button"
+                        onClick={() => handleCardClick(node.id)}
+                        onContextMenu={(e) => handleCardContextMenu(e, node.id)}
+                        className="grid w-full grid-cols-[minmax(0,2fr)_120px_110px_140px] items-center gap-4 border-b border-border/60 px-4 py-3 text-left transition hover:bg-muted/40 last:border-b-0"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-foreground">
+                            {node.title}
+                          </div>
+                          <div className="mt-1 truncate text-xs text-muted-foreground">
+                            {preview}
+                          </div>
+                        </div>
+
+                        <div>
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${typeBadgeClasses}`}
+                          >
+                            {entityType || (node.nodeType === NodeType.CONTEXT ? 'Context' : 'Node')}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                              isAgentCreated
+                                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                            }`}
+                          >
+                            {isAgentCreated ? 'AI' : 'Manual'}
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                          {meta}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
 
