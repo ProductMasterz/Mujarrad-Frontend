@@ -52,14 +52,14 @@ const SCOPE_CONFIGS: Record<NavigationScope, ScopeConfig> = {
     moreActions: ['share', 'settings'],
     addButtonTooltip: 'Create new space',
   },
-    space: {
+  space: {
     addActions: ['create_node', 'create_context'],
-    moreActions: ['share', 'open_new_tab', 'graph', 'whiteboard', 'clear_space'],
+    moreActions: ['share', 'open_new_tab', 'clear_space'],
     addButtonTooltip: 'Create new node',
   },
   node: {
     addActions: ['create_node', 'create_context'],
-    moreActions: ['share', 'open_new_tab', 'open_as_node', 'lock', 'graph', 'whiteboard', 'delete', 'move_to'],
+    moreActions: ['share', 'open_new_tab', 'open_as_node', 'lock', 'delete', 'move_to'],
     addButtonTooltip: 'Create new node',
   },
   whiteboard: {

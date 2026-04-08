@@ -46,7 +46,6 @@ type SpaceItem = {
 
 export default function SpacesPage() {
   const router = useRouter();
-  const { logout } = useAuthStore();
   const navigateToSpaces = useNavigationStore((state) => state.navigateToSpaces);
   const { rename: renameSpace } = useRenameSpace();
 
@@ -56,7 +55,6 @@ export default function SpacesPage() {
   }, [navigateToSpaces]);
 
   // UI State
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showNewNodeModal, setShowNewNodeModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -65,6 +63,7 @@ export default function SpacesPage() {
   const [selectedCardId, setSelectedCardId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -159,8 +158,7 @@ export default function SpacesPage() {
   }, []);
 
   // Handlers
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-
+  const toggleSidebar = () => {};
   const handleCardClick = (cardId: string) => {
     const space = apiSpaces.find((s) => s.id === cardId);
     if (space) {
@@ -249,11 +247,7 @@ export default function SpacesPage() {
     setShowFeedbackModal(true);
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
-
+  
   // Tab management
   const handleTabClick = (tabId: string) => {
     setActiveTabId(tabId);
@@ -337,8 +331,6 @@ export default function SpacesPage() {
           onBackClick={handleBackClick}
           showBackButton={false}
           breadcrumbPath={breadcrumbPath}
-          onNotificationClick={() => {}}
-          onSearchClick={() => {}}
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
           // Add menu actions - only create space at spaces level
@@ -358,14 +350,10 @@ export default function SpacesPage() {
         />
 
         <Sidebar
-          isOpen={sidebarOpen}
-          onItemClick={(id) => handleSidebarNavigate([id])}
+          isOpen={false}
           selectedItem={null}
           onNavigate={handleSidebarNavigate}
-          onLogout={handleLogout}
           items={sidebarData}
-          isSpacesLevel={true}
-          onQuickCreateSpace={handleQuickCreateSpace}
         />
        
         {/* Main content */}
@@ -373,30 +361,81 @@ export default function SpacesPage() {
         <div
           className="pt-[76px] px-[14px] transition-all duration-300"
           style={{
-            marginLeft: sidebarOpen ? '276px' : '0',
+            marginLeft: '0',
           }}
         >
-          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search spaces..."
-              className="h-[42px] w-full max-w-[320px] rounded-xl border border-border bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+          <div className="mb-6 rounded-[24px] border border-border bg-background px-6 py-6 shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h1 className="text-2xl font-semibold text-foreground">Spaces</h1>
+                <p className="mt-2 max-w-[680px] text-sm leading-6 text-muted-foreground">
+                  Create, organize, and explore structured knowledge workspaces in Mujarrad.
+                </p>
+              </div>
 
-            />
-
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
-                className="h-[42px] rounded-xl border border-border bg-background px-3 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              <button
+                onClick={handleAddClick}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-foreground px-4 text-sm font-medium text-background transition hover:opacity-90"
+                type="button"
               >
-                <option value="updatedAt">Date modified</option>
-                <option value="createdAt">Date created</option>
-                <option value="name">Name</option>
-              </select>
+                New Space
+              </button>
+            </div>
+          </div>
+          <div className="mb-5 rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search spaces..."
+                className="h-[42px] w-full sm:max-w-[320px] rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition placeholder:text-muted-foreground/80 focus:border-primary focus:ring-2 focus:ring-primary/15"
+              />
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
+                    className="h-[40px] min-w-[180px] rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  >
+                    <option value="updatedAt">Date modified</option>
+                    <option value="createdAt">Date created</option>
+                    <option value="name">Name</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-medium text-muted-foreground">View</span>
+
+                  <div className="inline-flex rounded-xl border border-border/70 bg-background p-1">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('grid')}
+                      className={`rounded-lg px-3 py-1.5 text-sm transition ${
+                        viewMode === 'grid'
+                          ? 'bg-foreground text-background'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                    >
+                      Grid
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('list')}
+                      className={`rounded-lg px-3 py-1.5 text-sm transition ${
+                        viewMode === 'list'
+                          ? 'bg-foreground text-background'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                    >
+                      List
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -436,8 +475,8 @@ export default function SpacesPage() {
                   : 'Click the + button to create your first space'}
               </p>
             </div>
-          ) : (
-            <div className="flex gap-[19px] flex-wrap pt-[15px]">
+          ) : viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 gap-3 pt-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {cards.map((card) => (
                 <ProjectCard
                   key={card.id}
@@ -448,6 +487,46 @@ export default function SpacesPage() {
                   onContextMenu={(e) => handleCardContextMenu(e, card.id)}
                 />
               ))}
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-border/70 bg-background">
+              {filteredAndSortedSpaces.map((space) => {
+                const meta =
+                  space.updatedAt
+                    ? `Updated ${new Date(space.updatedAt).toLocaleDateString()}`
+                    : space.createdAt
+                    ? `Created ${new Date(space.createdAt).toLocaleDateString()}`
+                    : '—';
+
+                return (
+                  <button
+                    key={space.id}
+                    type="button"
+                    onClick={() => handleCardClick(space.id)}
+                    onContextMenu={(e) => handleCardContextMenu(e, space.id)}
+                    className="grid w-full grid-cols-[minmax(0,2fr)_160px_140px] items-center gap-4 border-b border-border/60 px-4 py-3 text-left transition hover:bg-muted/40 last:border-b-0"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-foreground">
+                        {space.name}
+                      </div>
+                      <div className="mt-1 truncate text-xs text-muted-foreground">
+                        {space.slug}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="inline-flex rounded-full bg-purple-100 px-2.5 py-1 text-[11px] font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-200">
+                        Space
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground whitespace-nowrap">
+                      {meta}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

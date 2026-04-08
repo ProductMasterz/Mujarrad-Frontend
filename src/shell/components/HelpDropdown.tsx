@@ -63,7 +63,7 @@ export function HelpDropdown({ onClose, anchorEl, onFeedback }: HelpDropdownProp
   return (
     <div
       ref={menuRef}
-      className="fixed bg-white rounded-[12px] shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)] w-[205px] z-[100] py-[12px] px-[12px]"
+      className="fixed z-[100] w-[205px] rounded-[12px] border border-border bg-background px-[12px] py-[12px] text-foreground shadow-[0px_8px_24px_0px_rgba(0,0,0,0.08),0px_0px_48px_0px_rgba(0,0,0,0.04)]"
       style={{
         left: `${rect.right - 205}px`,
         top: `${rect.bottom + 8}px`,
@@ -72,7 +72,7 @@ export function HelpDropdown({ onClose, anchorEl, onFeedback }: HelpDropdownProp
       <div className="flex flex-col gap-[8px]">
         <button
           onClick={() => handleMenuItemClick("feedback")}
-          className="font-['Roboto:Regular',sans-serif] font-normal text-[13px] text-[#828282] tracking-[-0.08px] leading-[18px] text-left py-[4px] px-[8px] rounded-[6px] hover:bg-[#f5f5f5] transition-colors flex items-center gap-[8px]"
+          className="flex items-center gap-[8px] rounded-[6px] px-[8px] py-[4px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal leading-[18px] tracking-[-0.08px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           style={{ fontVariationSettings: "'wdth' 100" }}
         >
           <MessageCircle className="size-4" strokeWidth={1.5} />

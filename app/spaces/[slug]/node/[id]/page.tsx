@@ -247,8 +247,6 @@ export default function NodeDetailPage() {
           onBackClick={handleBackClick}
           showBackButton={true}
           breadcrumbPath={breadcrumbPath}
-          onNotificationClick={() => {}}
-          onSearchClick={() => {}}
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
           onCreateNode={() => {}}
