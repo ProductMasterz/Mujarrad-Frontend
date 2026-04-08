@@ -509,8 +509,6 @@ export default function SpaceDetailPage() {
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
           // Add menu actions - create node/context at space level
-          onCreateNode={handleAddNode}
-          onCreateContext={handleAddContext}
           // More menu actions
           onShare={handleShareClick}
           onOpenInNewTab={handleOpenInNewTab}
@@ -528,7 +526,6 @@ export default function SpaceDetailPage() {
           onChatChangeSpace={(nextSpaceSlug) => {
             router.push(`/spaces/${nextSpaceSlug}`);
           }}
-          showChatCreateSpace={false}
         />
 
         <Sidebar
@@ -748,6 +745,23 @@ export default function SpaceDetailPage() {
                     }
 
                     const isAgentCreated = isAgentCreatedNode(node);
+
+                    const entityType =
+                      typeof details?.entityType === 'string'
+                        ? details.entityType
+                        : undefined;
+
+                    const nodeKindLabel =
+                      node.nodeType === NodeType.CONTEXT
+                        ? 'Context'
+                        : node.nodeType === NodeType.ASSUMPTION
+                        ? 'Assumption'
+                        : node.nodeType === NodeType.TEMPLATE
+                        ? 'Template'
+                        : node.nodeType === NodeType.REGULAR
+                        ? 'Regular'
+                        : 'Node';
+
                     const previewSource =
                       (node.content || '').trim() ||
                       (typeof details?.entityType === 'string'
@@ -772,11 +786,8 @@ export default function SpaceDetailPage() {
                         preview={preview}
                         meta={meta}
                         type={node.nodeType === NodeType.CONTEXT ? CardType.FULFILLED_CONTEXT : CardType.NODE}
-                        entityType={
-                          typeof details?.entityType === 'string'
-                            ? details.entityType
-                            : undefined
-                        }
+                        entityType={entityType}
+                        nodeKindLabel={nodeKindLabel}
                         badge={isAgentCreated ? 'AI' : 'Manual'}
                         onClick={() => handleCardClick(node.id)}
                         onContextMenu={(e) => handleCardContextMenu(e, node.id)}
@@ -800,10 +811,22 @@ export default function SpaceDetailPage() {
                     }
 
                     const isAgentCreated = isAgentCreatedNode(node);
+
                     const entityType =
                       typeof details?.entityType === 'string' ? details.entityType : '';
 
-                    const typeBadgeClasses =
+                    const nodeKindLabel =
+                      node.nodeType === NodeType.CONTEXT
+                        ? 'Context'
+                        : node.nodeType === NodeType.ASSUMPTION
+                        ? 'Assumption'
+                        : node.nodeType === NodeType.TEMPLATE
+                        ? 'Template'
+                        : node.nodeType === NodeType.REGULAR
+                        ? 'Regular'
+                        : 'Node';
+
+                    const semanticTypeBadgeClasses =
                       entityType.toLowerCase() === 'person'
                         ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200'
                         : entityType.toLowerCase() === 'place'
@@ -814,8 +837,15 @@ export default function SpaceDetailPage() {
                         ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200'
                         : entityType.toLowerCase() === 'event'
                         ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200'
-                        : node.nodeType === NodeType.CONTEXT
+                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+
+                    const nodeKindBadgeClasses =
+                      nodeKindLabel.toLowerCase() === 'context'
                         ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
+                        : nodeKindLabel.toLowerCase() === 'assumption'
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200'
+                        : nodeKindLabel.toLowerCase() === 'template'
+                        ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200'
                         : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
 
                     const preview =
@@ -836,7 +866,7 @@ export default function SpaceDetailPage() {
                         type="button"
                         onClick={() => handleCardClick(node.id)}
                         onContextMenu={(e) => handleCardContextMenu(e, node.id)}
-                        className="grid w-full grid-cols-[minmax(0,2fr)_120px_110px_140px] items-center gap-4 border-b border-border/60 px-4 py-3 text-left transition hover:bg-muted/40 last:border-b-0"
+                        className="grid w-full grid-cols-[minmax(0,2fr)_120px_120px_110px_140px] items-center gap-4 border-b border-border/60 px-4 py-3 text-left transition hover:bg-muted/40 last:border-b-0"
                       >
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium text-foreground">
@@ -849,9 +879,17 @@ export default function SpaceDetailPage() {
 
                         <div>
                           <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${typeBadgeClasses}`}
+                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${nodeKindBadgeClasses}`}
                           >
-                            {entityType || (node.nodeType === NodeType.CONTEXT ? 'Context' : 'Node')}
+                            {nodeKindLabel}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${semanticTypeBadgeClasses}`}
+                          >
+                            {entityType || '—'}
                           </span>
                         </div>
 
