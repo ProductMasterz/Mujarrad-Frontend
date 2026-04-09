@@ -308,3 +308,44 @@ button.aui-thread-scroll-to-bottom {
 
   scroll-behavior: smooth;
 }
+
+.message-wrapper {
+  position: relative;
+  padding: 10px;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.message-wrapper:hover .copy-btn {
+  opacity: 1;
+}
+
+.copy-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.copy-icon:hover {
+  background: #e5e7eb;
+}
+
+.copy-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.copy-btn:hover {
+  background: #e5e7eb;
+}
