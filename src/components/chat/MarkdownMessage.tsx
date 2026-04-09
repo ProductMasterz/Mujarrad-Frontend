@@ -3,21 +3,17 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
+import { getMessageText } from "@/lib/utils/text";
 
 type Props = {
   content: any;
 };
 
-function extractText(content: any): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content.map((p) => p?.text || "").join("");
-  }
-  return "";
-}
+
+
 
 export function MarkdownMessage({ content }: Props) {
-  const text = extractText(content);
+  const text = getMessageText(content);
 
   return (
     <ReactMarkdown
@@ -33,3 +29,5 @@ export function MarkdownMessage({ content }: Props) {
     </ReactMarkdown>
   );
 }
+
+
