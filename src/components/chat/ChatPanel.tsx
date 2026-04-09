@@ -1286,8 +1286,9 @@ export function ChatPanel({
     await createConversationSession();
     addNotification({
       type: 'info',
+      source: 'chat',
       title: 'New conversation',
-      message: 'A new chat session was started.',
+      description: 'A new chat session was started.',
     });
     
     await refreshWorkspaceViews();
@@ -1375,9 +1376,11 @@ export function ChatPanel({
 
     addNotification({
       type: 'warning',
+      source: 'chat',
       title: 'Conversation deleted',
-      message: `${deletedSessionTitle} was removed.`,
+      description: `${deletedSessionTitle} was removed.`,
     });
+
     const remainingSessions = sessions.filter((session) => session.id !== sessionId);
     setSessions(remainingSessions);
     setSessionSearchIndex((prev) => {
@@ -1509,7 +1512,11 @@ export function ChatPanel({
             throw new Error('Could not create or resolve conversation node.');
           }
 
-          await persistMessageNode(conversationNodeId, 'user', userText);
+          const inputMessageNodeId = await persistMessageNode(
+            conversationNodeId,
+            'user',
+            userText
+          );
 
         let assistantText = '';
 
@@ -1560,8 +1567,9 @@ export function ChatPanel({
             if (response.ok && !data?.error) {
               addNotification({
                 type: 'success',
+                source: 'chat',
                 title: 'Chat analyzed',
-                message:
+                description:
                   nodes.length > 0 || relationships.length > 0
                     ? `${nodes.length} candidate node${nodes.length === 1 ? '' : 's'} and ${relationships.length} candidate relationship${relationships.length === 1 ? '' : 's'} returned by the agent.`
                     : 'The agent finished processing your message.',
@@ -1573,8 +1581,9 @@ export function ChatPanel({
 
             addNotification({
               type: 'error',
+              source: 'chat',
               title: 'Agent unavailable',
-              message: 'Could not reach the agent service.',
+              description: 'Could not reach the agent service.',
             });
           }
         }
@@ -1587,7 +1596,25 @@ export function ChatPanel({
         };
 
         setMessages((current) => [...current, assistantMessage]);
-        await persistMessageNode(conversationNodeId, 'assistant', assistantText);
+
+        const assistantMessageNodeId = await persistMessageNode(
+          conversationNodeId,
+          'assistant',
+          assistantText
+        );
+
+        await attributeService.createAttribute(inputMessageNodeId, {
+          sourceNodeId: inputMessageNodeId,
+          targetNodeId: assistantMessageNodeId,
+          attributeType: 'CUSTOM',
+          attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+          attributeName: 'assistant_reply',
+          attributeValue: {
+            relation: 'reply_to_input',
+          },
+        });
+        
+        
         const conversationNode = sessions.find((session) => session.id === conversationNodeId);
 
         const conversationTitle =

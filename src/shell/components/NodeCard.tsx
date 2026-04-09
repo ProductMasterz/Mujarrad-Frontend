@@ -162,7 +162,7 @@ export function NodeCard({
 }: NodeCardProps) {
   const colors = getNodeColor(entityType);
 
-  const semanticLabel = entityType || "—";
+  const semanticLabel = entityType || "Unclassified";
   const structuralLabel =
     nodeKindLabel ||
     (type === CardType.FULFILLED_CONTEXT || type === CardType.GRAPH_CONTEXT

@@ -6,7 +6,7 @@
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeftIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { TrashIcon } from '@heroicons/react/24/outline';
 import { WhiteboardCanvas, WhiteboardCanvasRef } from '@/components/whiteboard/WhiteboardCanvas';
 import { useWhiteboardState } from '@/hooks/api/useWhiteboard';
 import { useWhiteboardStore } from '@/stores/whiteboardStore';
@@ -16,9 +16,10 @@ import { nodeKeys } from '@/hooks/api/useNodes';
 import { nodeService } from '@/services/api/node.service';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { MessageSquare } from 'lucide-react';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { spaceService } from '@/services/api';
+import { Header } from '@/shell/components/Header';
+import { Tab } from '@/shell/components/TabsBar';
 
 export default function WhiteboardPage() {
   const params = useParams();
@@ -30,13 +31,31 @@ export default function WhiteboardPage() {
   const [chatOpen, setChatOpen] = useState(false);
   const canvasRef = useRef<WhiteboardCanvasRef>(null);
 
+  const [tabs, setTabs] = useState<Tab[]>([
+    {
+      id: 'tab-1',
+      title: 'Whiteboard',
+      navigationPath: [],
+      spaceId: spaceSlug,
+    },
+  ]);
+  const [activeTabId, setActiveTabId] = useState('tab-1');
+
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(spaceSlug);
 
-  const { data: allSpaces = [] } = useQuery({queryKey: ['spaces'], queryFn: () => spaceService.getSpaces(),});
+  const { data: allSpaces = [] } = useQuery({
+    queryKey: ['spaces'],
+    queryFn: () => spaceService.getSpaces(),
+  });
 
   useEffect(() => {
     if (space) {
       navigateToWhiteboard(spaceSlug, space.id);
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === 'tab-1' ? { ...tab, title: `${space.name} Whiteboard` } : tab
+        )
+      );
     }
   }, [space, spaceSlug, navigateToWhiteboard]);
 
@@ -110,6 +129,63 @@ export default function WhiteboardPage() {
     };
   }, [reset]);
 
+  const toggleSidebar = () => {};
+
+  const handleHomeClick = () => {
+    router.push('/');
+  };
+
+  const handleBackClick = () => {
+    router.push(`/spaces/${spaceSlug}`);
+  };
+
+  const breadcrumbPath = [
+    { id: 'home', title: 'Home' },
+    { id: 'spaces', title: 'Spaces' },
+    { id: space?.id || spaceSlug, title: space?.name || 'Space' },
+    { id: 'whiteboard', title: 'Whiteboard' },
+  ];
+
+  const handleBreadcrumbClick = (index: number) => {
+    if (index === 0) {
+      router.push('/');
+      return;
+    }
+
+    if (index === 1) {
+      router.push('/spaces');
+      return;
+    }
+
+    if (index === 2) {
+      router.push(`/spaces/${spaceSlug}`);
+    }
+  };
+
+  const handleTabClick = (tabId: string) => {
+    setActiveTabId(tabId);
+  };
+
+  const handleTabClose = (tabId: string) => {
+    if (tabs.length === 1) return;
+    const newTabs = tabs.filter((t) => t.id !== tabId);
+    setTabs(newTabs);
+    if (activeTabId === tabId) {
+      setActiveTabId(newTabs[0].id);
+    }
+  };
+
+  const handleNewTab = () => {
+    const newTab: Tab = {
+      id: `tab-${Date.now()}`,
+      title: space?.name ? `${space.name} Whiteboard` : 'Whiteboard',
+      navigationPath: [],
+      spaceId: spaceSlug,
+    };
+    setTabs([...tabs, newTab]);
+    setActiveTabId(newTab.id);
+  };
+
   if (spaceLoading || whiteboardLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background text-foreground">
@@ -156,26 +232,27 @@ export default function WhiteboardPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-background px-4 py-3">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push(`/spaces/${spaceSlug}`)}
-            className="rounded-md p-2 transition-colors hover:bg-muted"
-            title="Back to space"
-          >
-            <ArrowLeftIcon className="h-5 w-5 text-muted-foreground" />
-          </button>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">{space.name} - Whiteboard</h1>
-            <p className="text-sm text-muted-foreground">
-              {elements.length} element{elements.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-background text-foreground">
+      <Header
+        onMenuClick={toggleSidebar}
+        onBackClick={handleBackClick}
+        showBackButton={true}
+        breadcrumbPath={breadcrumbPath}
+        onHomeClick={handleHomeClick}
+        onBreadcrumbClick={handleBreadcrumbClick}
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onTabClick={handleTabClick}
+        onTabClose={handleTabClose}
+        onNewTab={handleNewTab}
+        chatAvailableSpaces={chatAvailableSpaces}
+        onChatChangeSpace={(nextSpaceSlug) => {
+          router.push(`/spaces/${nextSpaceSlug}/whiteboard`);
+        }}
+      />
 
-        <div className="flex items-center gap-4">
+      <div className="pt-[126px]">
+        <div className="mt-1 flex items-center justify-end gap-4 border-b border-border bg-background px-4 py-3">
           {isSaving && (
             <span className="flex items-center gap-2 text-sm text-muted-foreground">
               <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-primary" />
@@ -194,15 +271,6 @@ export default function WhiteboardPage() {
               {saveError}
             </span>
           )}
-
-          <button
-            onClick={() => setChatOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground transition hover:bg-muted"
-            type="button"
-          >
-            <MessageSquare className="h-4 w-4" />
-            Chat
-          </button>
 
           <Button
             variant="outline"
@@ -227,39 +295,38 @@ export default function WhiteboardPage() {
             )}
           </button>
         </div>
-      </div>
 
-      {/* Canvas */}
-      <div
-        className="flex-1 overflow-hidden transition-all duration-300"
-        style={{ marginRight: chatOpen ? '620px' : '0' }}
-      >
-        <WhiteboardCanvas
-          ref={canvasRef}
-          spaceSlug={spaceSlug}
-          initialElements={elements}
-          initialAppState={appState}
-          initialFiles={files}
-          initialContextNodeId={contextNodeId}
-          onError={(err) => console.error('Whiteboard error:', err)}
-        />
-      </div>
-
-      {chatOpen && (
-        <div className="fixed right-0 top-16 z-[80] h-[calc(100vh-64px)] w-[620px] overflow-hidden rounded-l-[24px] border-l border-border bg-background shadow-2xl">
-          <ChatPanel
+        <div
+          className="h-[calc(100vh-183px)] overflow-hidden transition-all duration-300"
+          style={{ marginRight: chatOpen ? '620px' : '0' }}
+        >
+          <WhiteboardCanvas
+            ref={canvasRef}
             spaceSlug={spaceSlug}
-            title="Chat"
-            embedded={true}
-            onClose={() => setChatOpen(false)}
-            availableSpaces={chatAvailableSpaces}
-            onChangeSpace={(nextSpaceSlug) => {
-              setChatOpen(false);
-              router.push(`/spaces/${nextSpaceSlug}/whiteboard`);
-            }}
+            initialElements={elements}
+            initialAppState={appState}
+            initialFiles={files}
+            initialContextNodeId={contextNodeId}
+            onError={(err) => console.error('Whiteboard error:', err)}
           />
         </div>
-      )}
+
+        {chatOpen && (
+          <div className="fixed right-0 top-[126px] z-[80] h-[calc(100vh-126px)] w-[620px] overflow-hidden rounded-l-[24px] border-l border-border bg-background shadow-2xl">
+            <ChatPanel
+              spaceSlug={spaceSlug}
+              title="Chat"
+              embedded={true}
+              onClose={() => setChatOpen(false)}
+              availableSpaces={chatAvailableSpaces}
+              onChangeSpace={(nextSpaceSlug) => {
+                setChatOpen(false);
+                router.push(`/spaces/${nextSpaceSlug}/whiteboard`);
+              }}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
