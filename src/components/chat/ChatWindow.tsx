@@ -4,108 +4,104 @@ import { AssistantRuntimeProvider } from '@assistant-ui/react';
 import { Thread } from '@assistant-ui/react-ui';
 import { useChatRuntime } from '@/hooks/api/useChatRuntime';
 import './chat.css';
-import { useEffect, useRef, useState } from 'react';
-import { CheckIcon, CopyIcon } from 'lucide-react';
-import { getMessageText } from '@/lib/utils/text';
 
-/* -----------------------------
-   Copy Button
------------------------------- */
-function CopyButton({ text, id }: { text: string; id: string }) {
+import { useState } from 'react';
+import { CheckIcon, CopyIcon } from 'lucide-react';
+import { MessagePrimitive } from '@assistant-ui/react';
+
+/* COPY BUTTON `*/
+function CopyButton({ message }: any) {
   const [copied, setCopied] = useState(false);
 
+  const getText = () => {
+    if (!message) return "";
+
+    // case 1: parts (new API)
+    if (Array.isArray(message.parts)) {
+      return message.parts
+        .map((p: any) => p.text ?? "")
+        .join("")
+        .trim();
+    }
+
+    // case 2: content fallback
+    if (typeof message.content === "string") {
+      return message.content;
+    }
+
+    // case 3: nested content object
+    if (message.content?.text) {
+      return message.content.text;
+    }
+
+    return "";
+  };
+
   const handleCopy = async () => {
-    console.log('COPY CLICKED');
-    if (!text?.trim()) return;
+    const text = getText();
+    if (!text) return;
 
     try {
       await navigator.clipboard.writeText(text);
+
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Copy failed:', err);
+      setTimeout(() => setCopied(false), 1200);
+    } catch (e) {
+      console.error("Copy failed:", e);
     }
   };
 
   return (
     <button
       onClick={handleCopy}
-      className="copy-icon pointer-events-auto relative z-50"
-      title={copied ? 'Copied!' : 'Copy'}
+      className={`copy-btn ${copied ? "copied" : ""}`}
+      title="Copy message"
     >
-      {copied ? <CheckIcon size={16} className="text-green-500" /> : <CopyIcon size={16} />}
+      {copied ? <CheckIcon size={16} /> : <CopyIcon size={16} />}
     </button>
   );
 }
 
-/* -----------------------------
-   Chat Window
------------------------------- */
+function AssistantMessage({ message }: any) {
+  return (
+    <MessagePrimitive.Root className="message-wrapper group relative flex justify-start">
+
+      <div className="max-w-3xl text-sm">
+        <MessagePrimitive.Content />
+      </div>
+
+      <div className="copy-container">
+        <CopyButton message={message} />
+      </div>
+
+    </MessagePrimitive.Root>
+  );
+}
+
+
+function UserMessage({ message }: any) {
+  return (
+    <MessagePrimitive.Root className="message-wrapper flex justify-end">
+      <div className="max-w-3xl rounded-2xl bg-[#2f2f2f] px-4 py-2 text-white text-sm">
+        <MessagePrimitive.Content />
+      </div>
+    </MessagePrimitive.Root>
+  );
+}
+
 export function ChatWindow() {
   const { runtime } = useChatRuntime();
-
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
-
-  /* Track scroll position */
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const handleScroll = () => {
-      const threshold = 50;
-      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
-
-      setIsAtBottom(atBottom);
-    };
-
-    el.addEventListener('scroll', handleScroll);
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  /* Auto-scroll on new messages */
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const observer = new MutationObserver(() => {
-      if (!isAtBottom) return;
-
-      requestAnimationFrame(() => {
-        el.scrollTop = el.scrollHeight;
-      });
-    });
-
-    observer.observe(el, {
-      childList: true,
-      subtree: true,
-    });
-
-    return () => observer.disconnect();
-  }, [isAtBottom]);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <div className="chat-container">
         <div className="chat-header">Chat Assistant</div>
 
-        <div className="chat-scroll" ref={scrollRef}>
+        <div className="chat-scroll">
           <Thread
             components={{
-              AssistantMessage: (props: any) => {
-                const id = props.message?.id ?? props.item?.id;
-                const content = props.message?.content ?? props.item?.content;
-
-                const text = getMessageText(content);
-
-                return (
-                  <div className="message-wrapper group relative">
-                    <div className="aui-text">{text}</div>
-
-                    <CopyButton text={text} id={id} />
-                  </div>
-                );
-              },
+              AssistantMessage,
+              UserMessage,
             }}
           />
         </div>

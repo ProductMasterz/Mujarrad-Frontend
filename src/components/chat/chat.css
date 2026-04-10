@@ -301,7 +301,7 @@ button.aui-thread-scroll-to-bottom {
   overflow-y: auto;
 
   padding: 20px 16px;
-
+  color: #1a1a1a;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -309,19 +309,85 @@ button.aui-thread-scroll-to-bottom {
   scroll-behavior: smooth;
 }
 
-.message-wrapper {
-  position: relative;
-  padding: 10px;
+
+/* =========================
+   BASE LAYOUT (ChatGPT feel)
+========================= */
+
+.chat-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  
+  color: #ececf1;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto;
 }
-.message-wrapper * {
-  pointer-events: auto;
+.chat-header{
+  color: black;
 }
-.copy-btn {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  opacity: 1;
-  transform: scale(1);
-  transition: none;
+.aui-thread-root{
+  color: #1a1a1a;
 }
 
+/* scroll area */
+.chat-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 0;
+}
+
+/* custom scrollbar (ChatGPT-like) */
+.chat-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+  
+  border-radius: 8px;
+}
+
+
+/* =========================
+   TEXT STYLE 
+========================= */
+
+.aui-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: black;
+  white-space: pre-wrap;
+}
+
+
+.message-wrapper {
+  position: relative;
+}
+
+/* ALWAYS visible */
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  color: #9ca3af;
+  padding: 4px;
+  border-radius: 6px;
+
+  opacity: 1; /* ✅ ALWAYS visible */
+  transition: all 0.2s ease;
+}
+
+/* hover effect only */
+.copy-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111;
+}
+
+/* clicked state */
+.copy-btn.copied {
+  color: #10a37f; /* green */
+}
