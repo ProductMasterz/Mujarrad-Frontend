@@ -38,6 +38,8 @@ export enum NodeType {
   CONTEXT = 'CONTEXT',
   ASSUMPTION = 'ASSUMPTION',
   TEMPLATE = 'TEMPLATE',
+  // Must be handled in Backend
+  CONVERSATION = 'CONVERSATION',
 }
 
 /**

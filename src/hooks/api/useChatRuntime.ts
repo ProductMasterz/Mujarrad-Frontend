@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { AppendMessage, useExternalStoreRuntime } from "@assistant-ui/react";
 
 import { ChatMessage, sendChatMessage } from "@/services/api/chatService";
 import { nodeService } from "@/services/api/node.service";
 import { NodeType } from "@/types";
+import { conversationService } from "@/services/api/conversation.service";
+
+
+
 
 //Converts structured message content into plain text.
 function extractText(content: any): string {
@@ -54,6 +58,9 @@ function createAssistantMessage(text: string): AppendMessage {
 export function useChatRuntime() {
   const [messages, setMessages] = useState<AppendMessage[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+
+  const [conversationId, setConversationId] = useState<string | null>(null);
+
 //Processes a new user message by updating state, calling the agent API, handling the response, and persisting both messages.
 const handleNewMessage = useCallback(
   async (message: AppendMessage) => {
@@ -67,12 +74,29 @@ const handleNewMessage = useCallback(
     setMessages(newMessages);
 
     try {
+    
+      let currentConversationId = conversationId;
+      const creatingRef = useRef(false);
+
+        if (!currentConversationId && !creatingRef.current) {
+            creatingRef.current = true;
+
+          const convo = await conversationService.createConversation(spaceSlug);
+          currentConversationId = convo.id;
+          setConversationId(convo.id);
+          creatingRef.current = false;
+}
       // Save user message
       await nodeService.createNode(spaceSlug, {
         title: text.slice(0, 50),
         content: text,
         nodeType: NodeType.REGULAR,
+        nodeDetails: {
+    conversationId: currentConversationId,
+  },
+      
       });
+      
       //1-Send user text to agent service
       const response = await sendChatMessage(
         mapToBackendMessages(newMessages)
@@ -89,6 +113,9 @@ const handleNewMessage = useCallback(
         title: assistantText.slice(0, 50),
         content: assistantText,
         nodeType: NodeType.REGULAR,
+        nodeDetails: {
+    conversationId: currentConversationId,
+  },
       });
 
     } catch (error) {
