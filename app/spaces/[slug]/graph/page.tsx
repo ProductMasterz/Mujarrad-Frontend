@@ -313,24 +313,23 @@ export default function SpaceGraphPage() {
   };
 
   const breadcrumbPath = [
-    { id: 'home', title: 'Home' },
     { id: 'spaces', title: 'Spaces' },
     { id: space?.id || slug, title: space?.name || 'Space' },
     { id: 'graph', title: 'Graph' },
   ];
 
   const handleBreadcrumbClick = (index: number) => {
-    if (index === 0) {
+    if (index === -1) {
       router.push('/');
       return;
     }
 
-    if (index === 1) {
+    if (index === 0) {
       router.push('/spaces');
       return;
     }
 
-    if (index === 2) {
+    if (index === 1) {
       router.push(`/spaces/${slug}`);
     }
   };

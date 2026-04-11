@@ -2,9 +2,7 @@ import { describe, it, expect, beforeAll, afterEach, afterAll } from '@jest/glob
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { spaceService } from '@/services/api/space.service';
-import type { Space } from '@/types/backend-dtos';
 
-// Mock server for contract testing
 const server = setupServer();
 
 beforeAll(() => server.listen());
@@ -39,11 +37,8 @@ describe('Space API Contract Tests', () => {
 
       const spaces = await spaceService.getSpaces();
 
-      // Verify array response
       expect(Array.isArray(spaces)).toBe(true);
       expect(spaces).toHaveLength(2);
-
-      // Verify first space matches schema
       expect(spaces[0]).toMatchObject({
         id: expect.any(String),
         name: expect.any(String),
@@ -52,7 +47,6 @@ describe('Space API Contract Tests', () => {
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
       });
-
       expect(spaces[0].id).toBe('space-uuid-123');
       expect(spaces[0].name).toBe('Test Space');
       expect(spaces[0].slug).toBe('test-space');
@@ -94,7 +88,7 @@ describe('Space API Contract Tests', () => {
     it('should create a space with name only and auto-generate slug', async () => {
       server.use(
         http.post('http://localhost:3000/api/spaces', async ({ request }) => {
-          const body = await request.json() as any;
+          const body = (await request.json()) as any;
           return HttpResponse.json(
             {
               id: 'new-space-uuid-999',
@@ -119,7 +113,7 @@ describe('Space API Contract Tests', () => {
     it('should create a space with explicit slug', async () => {
       server.use(
         http.post('http://localhost:3000/api/spaces', async ({ request }) => {
-          const body = await request.json() as any;
+          const body = (await request.json()) as any;
           return HttpResponse.json(
             {
               id: 'new-space-uuid-888',
@@ -185,7 +179,7 @@ describe('Space API Contract Tests', () => {
     });
   });
 
-  describe('T004: GET /api/spaces/{id} and GET /api/spaces/slug/{slug}', () => {
+  describe('T004: GET /api/spaces/{id} and getSpaceBySlug()', () => {
     it('should get space by ID and return valid Space object', async () => {
       server.use(
         http.get('http://localhost:3000/api/spaces/:id', ({ params }) => {
@@ -216,18 +210,19 @@ describe('Space API Contract Tests', () => {
       expect(space.name).toBe('Test Space');
     });
 
-    it('should get space by slug and return valid Space object', async () => {
+    it('should get space by slug by reading spaces list and filtering locally', async () => {
       server.use(
-        http.get('http://localhost:3000/api/spaces/slug/:slug', ({ params }) => {
-          const { slug } = params;
-          return HttpResponse.json({
-            id: 'space-uuid-found',
-            name: 'Test Space',
-            slug,
-            ownerId: 'user-uuid-456',
-            createdAt: '2025-10-07T10:00:00Z',
-            updatedAt: '2025-10-07T15:30:00Z',
-          });
+        http.get('http://localhost:3000/api/spaces', () => {
+          return HttpResponse.json([
+            {
+              id: 'space-uuid-found',
+              name: 'Test Space',
+              slug: 'test-space',
+              ownerId: 'user-uuid-456',
+              createdAt: '2025-10-07T10:00:00Z',
+              updatedAt: '2025-10-07T15:30:00Z',
+            },
+          ]);
         })
       );
 
@@ -252,8 +247,8 @@ describe('Space API Contract Tests', () => {
         http.get('http://localhost:3000/api/spaces/:id', () => {
           return HttpResponse.json(mockSpace);
         }),
-        http.get('http://localhost:3000/api/spaces/slug/:slug', () => {
-          return HttpResponse.json(mockSpace);
+        http.get('http://localhost:3000/api/spaces', () => {
+          return HttpResponse.json([mockSpace]);
         })
       );
 
@@ -281,22 +276,25 @@ describe('Space API Contract Tests', () => {
       await expect(spaceService.getSpace('nonexistent')).rejects.toThrow();
     });
 
-    it('should handle 404 Not Found for non-existent slug', async () => {
+    it('should throw when slug is missing from fetched spaces list', async () => {
       server.use(
-        http.get('http://localhost:3000/api/spaces/slug/:slug', () => {
-          return HttpResponse.json(
+        http.get('http://localhost:3000/api/spaces', () => {
+          return HttpResponse.json([
             {
-              type: 'https://api.mujarrad.com/errors/not-found',
-              title: 'Space Not Found',
-              status: 404,
-              detail: 'Space with slug nonexistent-slug does not exist',
+              id: 'space-uuid-111',
+              name: 'Another Space',
+              slug: 'another-space',
+              ownerId: 'user-uuid-456',
+              createdAt: '2025-10-07T10:00:00Z',
+              updatedAt: '2025-10-07T15:30:00Z',
             },
-            { status: 404 }
-          );
+          ]);
         })
       );
 
-      await expect(spaceService.getSpaceBySlug('nonexistent-slug')).rejects.toThrow();
+      await expect(spaceService.getSpaceBySlug('nonexistent-slug')).rejects.toThrow(
+        'Space with slug "nonexistent-slug" not found'
+      );
     });
   });
 
@@ -305,7 +303,7 @@ describe('Space API Contract Tests', () => {
       server.use(
         http.put('http://localhost:3000/api/spaces/:id', async ({ params, request }) => {
           const { id } = params;
-          const body = await request.json() as any;
+          const body = (await request.json()) as any;
           return HttpResponse.json({
             id,
             name: body.name,
@@ -329,7 +327,7 @@ describe('Space API Contract Tests', () => {
       server.use(
         http.put('http://localhost:3000/api/spaces/:id', async ({ params, request }) => {
           const { id } = params;
-          const body = await request.json() as any;
+          const body = (await request.json()) as any;
           return HttpResponse.json({
             id,
             name: 'Test Space',

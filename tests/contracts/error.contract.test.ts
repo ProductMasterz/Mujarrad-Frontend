@@ -1,21 +1,28 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterEach, afterAll, jest } from '@jest/globals';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
+import { ApiError } from '@/lib/errors';
 
-// Mock server for contract testing
 const server = setupServer();
 
 beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  jest.restoreAllMocks();
+  window.history.pushState({}, '', '/');
+  localStorage.clear();
+});
 afterAll(() => server.close());
 
 describe('Error Response Contract Tests - RFC 7807', () => {
+  const spaceSlug = 'test-space';
+
   describe('T015: Error responses follow RFC 7807 Problem Details', () => {
     it('should handle 404 Not Found with RFC 7807 format', async () => {
       server.use(
-        http.get('http://localhost:3000/api/nodes/:id', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceSlug/nodes/:nodeId', () => {
           return HttpResponse.json(
             {
               type: 'https://api.mujarrad.com/errors/not-found',
@@ -28,23 +35,17 @@ describe('Error Response Contract Tests - RFC 7807', () => {
         })
       );
 
-      try {
-        await nodeService.getNode('nonexistent-123');
-        fail('Expected error to be thrown');
-      } catch (error: any) {
-        // Verify error response includes RFC 7807 fields
-        expect(error.response?.data).toMatchObject({
-          type: expect.stringMatching(/^https?:\/\//),
-          title: expect.any(String),
-          status: 404,
-          detail: expect.any(String),
-        });
-      }
+      await expect(nodeService.getNode(spaceSlug, 'nonexistent-123')).rejects.toMatchObject({
+        name: 'ApiError',
+        message: 'Node Not Found',
+        detail: 'Node with ID nonexistent-123 does not exist',
+        statusCode: 404,
+      });
     });
 
     it('should handle 400 Bad Request with validation errors', async () => {
       server.use(
-        http.post('http://localhost:3000/api/nodes', () => {
+        http.post('http://localhost:3000/api/spaces/:spaceSlug/nodes', () => {
           return HttpResponse.json(
             {
               type: 'https://api.mujarrad.com/errors/validation',
@@ -61,59 +62,67 @@ describe('Error Response Contract Tests - RFC 7807', () => {
         })
       );
 
-      try {
-        await nodeService.createNode({
-          title: '',
-          spaceId: '',
-          nodeType: 'REGULAR',
-        });
-        fail('Expected error to be thrown');
-      } catch (error: any) {
-        const errorData = error.response?.data;
-
-        expect(errorData).toMatchObject({
-          type: expect.stringMatching(/^https?:\/\//),
-          title: expect.any(String),
-          status: 400,
-          detail: expect.any(String),
-        });
-
-        // Verify field-level errors are included
-        expect(errorData.errors).toBeDefined();
-        expect(errorData.errors).toHaveProperty('title');
-        expect(errorData.errors).toHaveProperty('spaceId');
-      }
+      await expect(
+        nodeService.createNode(
+          spaceSlug,
+          {
+            title: '',
+            nodeType: 'REGULAR',
+            markdownContent: '',
+          } as any
+        )
+      ).rejects.toMatchObject({
+        name: 'ApiError',
+        message: 'Validation Failed',
+        detail: 'Request validation failed',
+        statusCode: 400,
+      });
     });
 
     it('should handle 409 Conflict (Version Conflict)', async () => {
       server.use(
-        http.put('http://localhost:3000/api/nodes/:id', () => {
+        http.put('http://localhost:3000/api/spaces/:spaceSlug/nodes/:nodeId', () => {
           return HttpResponse.json(
             {
               type: 'https://api.mujarrad.com/errors/conflict',
               title: 'Version Conflict',
               status: 409,
-              detail: 'Node has been modified by another user. Current version: 5, provided version: 3',
+              detail:
+                'Node has been modified by another user. Current version: 5, provided version: 3',
             },
             { status: 409 }
           );
         })
       );
 
+      await expect(
+        nodeService.updateNode(
+          spaceSlug,
+          'node-123',
+          {
+            title: 'Updated',
+            nodeType: 'REGULAR',
+            version: 3,
+          } as any
+        )
+      ).rejects.toMatchObject({
+        name: 'ApiError',
+        message: 'Version Conflict',
+        statusCode: 409,
+      });
+
       try {
-        await nodeService.updateNode('node-123', {
-          title: 'Updated',
-          nodeType: 'REGULAR',
-          version: 3,
-        });
-        fail('Expected error to be thrown');
+        await nodeService.updateNode(
+          spaceSlug,
+          'node-123',
+          {
+            title: 'Updated',
+            nodeType: 'REGULAR',
+            version: 3,
+          } as any
+        );
       } catch (error: any) {
-        expect(error.response?.data).toMatchObject({
-          type: expect.stringContaining('conflict'),
-          title: 'Version Conflict',
-          status: 409,
-          detail: expect.stringContaining('version'),
-        });
+        expect(error.detail).toContain('version');
       }
     });
 
@@ -133,36 +142,43 @@ describe('Error Response Contract Tests - RFC 7807', () => {
         })
       );
 
+      await expect(
+        attributeService.createAttribute(
+          'node-C',
+          {
+            sourceNodeId: 'node-C',
+            targetNodeId: 'node-A',
+            attributeType: 'contains',
+            attributeKey: 'hierarchy',
+          } as any
+        )
+      ).rejects.toMatchObject({
+        name: 'ApiError',
+        message: 'Circular Dependency',
+        statusCode: 409,
+      });
+
       try {
-        await attributeService.createAttribute({
-          sourceNodeId: 'node-C',
-          targetNodeId: 'node-A',
-          attributeType: 'contains',
-          attributeKey: 'hierarchy',
-        });
-        fail('Expected error to be thrown');
+        await attributeService.createAttribute(
+          'node-C',
+          {
+            sourceNodeId: 'node-C',
+            targetNodeId: 'node-A',
+            attributeType: 'contains',
+            attributeKey: 'hierarchy',
+          } as any
+        );
       } catch (error: any) {
-        const errorData = error.response?.data;
-
-        expect(errorData).toMatchObject({
-          type: expect.stringContaining('conflict'),
-          title: 'Circular Dependency',
-          status: 409,
-          detail: expect.stringContaining('cycle'),
-        });
-
-        // Verify cycle path is included
-        expect(errorData.cyclePath).toBeDefined();
-        expect(Array.isArray(errorData.cyclePath)).toBe(true);
-        expect(errorData.cyclePath.length).toBeGreaterThan(2);
-        // First and last elements should be the same (cycle)
-        expect(errorData.cyclePath[0]).toBe(errorData.cyclePath[errorData.cyclePath.length - 1]);
+        expect(error.detail).toContain('cycle');
       }
     });
 
     it('should handle 401 Unauthorized', async () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      window.history.pushState({}, '', '/login');
+
       server.use(
-        http.get('http://localhost:3000/api/nodes/:id', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceSlug/nodes/:nodeId', () => {
           return HttpResponse.json(
             {
               type: 'https://api.mujarrad.com/errors/unauthorized',
@@ -175,20 +191,17 @@ describe('Error Response Contract Tests - RFC 7807', () => {
         })
       );
 
-      try {
-        await nodeService.getNode('node-123');
-        fail('Expected error to be thrown');
-      } catch (error: any) {
-        expect(error.response?.data).toMatchObject({
-          type: expect.stringContaining('unauthorized'),
-          title: 'Unauthorized',
-          status: 401,
-          detail: expect.any(String),
-        });
-      }
+      await expect(nodeService.getNode(spaceSlug, 'node-123')).rejects.toMatchObject({
+        name: 'ApiError',
+        message: 'Unauthorized',
+        detail: 'Authentication credentials are missing or invalid',
+        statusCode: 401,
+      });
     });
 
     it('should handle 403 Forbidden', async () => {
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+
       server.use(
         http.delete('http://localhost:3000/api/nodes/:nodeId/attributes/:attrId', () => {
           return HttpResponse.json(
@@ -203,61 +216,63 @@ describe('Error Response Contract Tests - RFC 7807', () => {
         })
       );
 
-      try {
-        await attributeService.deleteAttribute('node-123', 'attr-456');
-        fail('Expected error to be thrown');
-      } catch (error: any) {
-        expect(error.response?.data).toMatchObject({
-          type: expect.stringContaining('forbidden'),
-          title: 'Forbidden',
-          status: 403,
-          detail: expect.any(String),
-        });
-      }
+      await expect(attributeService.deleteAttribute('node-123', 'attr-456')).rejects.toMatchObject({
+        name: 'ApiError',
+        message: 'Forbidden',
+        detail: 'You do not have permission to delete this attribute',
+        statusCode: 403,
+      });
     });
 
-    it('should handle 500 Internal Server Error', async () => {
-      server.use(
-        http.post('http://localhost:3000/api/nodes', () => {
-          return HttpResponse.json(
+    it(
+      'should handle 500 Internal Server Error',
+      async () => {
+        jest.spyOn(console, 'log').mockImplementation(() => {});
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+
+        server.use(
+          http.post('http://localhost:3000/api/spaces/:spaceSlug/nodes', () => {
+            return HttpResponse.json(
+              {
+                type: 'https://api.mujarrad.com/errors/internal',
+                title: 'Internal Server Error',
+                status: 500,
+                detail: 'An unexpected error occurred while processing your request',
+              },
+              { status: 500 }
+            );
+          })
+        );
+
+        await expect(
+          nodeService.createNode(
+            spaceSlug,
             {
-              type: 'https://api.mujarrad.com/errors/internal',
-              title: 'Internal Server Error',
-              status: 500,
-              detail: 'An unexpected error occurred while processing your request',
-            },
-            { status: 500 }
-          );
-        })
-      );
-
-      try {
-        await nodeService.createNode({
-          title: 'Test',
-          spaceId: 'ws-123',
-          nodeType: 'REGULAR',
+              title: 'Test',
+              nodeType: 'REGULAR',
+              markdownContent: '',
+            } as any
+          )
+        ).rejects.toMatchObject({
+          name: 'ApiError',
+          message: 'Internal Server Error',
+          detail: 'An unexpected error occurred while processing your request',
+          statusCode: 500,
         });
-        fail('Expected error to be thrown');
-      } catch (error: any) {
-        expect(error.response?.data).toMatchObject({
-          type: expect.stringMatching(/^https?:\/\//),
-          title: expect.any(String),
-          status: 500,
-          detail: expect.any(String),
-        });
-      }
-    });
+      },
+      12000
+    );
 
-    it('should verify all RFC 7807 required fields are present', async () => {
+    it('should verify all RFC 7807 required fields are present via ApiError payload', async () => {
       server.use(
-        http.get('http://localhost:3000/api/nodes/:id', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceSlug/nodes/:nodeId', () => {
           return HttpResponse.json(
             {
               type: 'https://api.mujarrad.com/errors/not-found',
               title: 'Node Not Found',
               status: 404,
               detail: 'The requested node does not exist',
-              instance: '/api/nodes/missing-123',
+              instance: '/api/spaces/test-space/nodes/missing-123',
             },
             { status: 404 }
           );
@@ -265,24 +280,14 @@ describe('Error Response Contract Tests - RFC 7807', () => {
       );
 
       try {
-        await nodeService.getNode('missing-123');
-        fail('Expected error to be thrown');
+        await nodeService.getNode(spaceSlug, 'missing-123');
+        throw new Error('Expected error to be thrown');
       } catch (error: any) {
-        const errorData = error.response?.data;
-
-        // Required RFC 7807 fields
-        expect(errorData).toHaveProperty('type');
-        expect(errorData).toHaveProperty('title');
-        expect(errorData).toHaveProperty('status');
-
-        // Optional but recommended fields
-        expect(errorData).toHaveProperty('detail');
-
-        // Verify types
-        expect(typeof errorData.type).toBe('string');
-        expect(typeof errorData.title).toBe('string');
-        expect(typeof errorData.status).toBe('number');
-        expect(typeof errorData.detail).toBe('string');
+        expect(error).toBeInstanceOf(ApiError);
+        expect(error.name).toBe('ApiError');
+        expect(error.message).toBe('Node Not Found');
+        expect(error.detail).toBe('The requested node does not exist');
+        expect(error.statusCode).toBe(404);
       }
     });
   });

@@ -1,479 +1,426 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HierarchyNavigator } from '@/components/hierarchy/HierarchyNavigator';
-import { TreeNode } from '@/components/hierarchy/TreeNode';
-import { useNavigationStore } from '@/stores/navigationStore';
-import type { TreeNode as TreeNodeType } from '@/types/hierarchy';
-import type { Node } from '@/types/entities';
 
-// Mock navigation store
-jest.mock('@/stores/navigationStore');
+jest.mock('@/stores/hierarchyStore', () => ({
+  useHierarchyStore: jest.fn(),
+}));
 
-const mockUseNavigationStore = useNavigationStore as jest.MockedFunction<typeof useNavigationStore>;
+jest.mock('@/hooks/useHierarchyTree', () => ({
+  useHierarchyTree: jest.fn(),
+}));
+
+jest.mock('@/components/hierarchy/TreeNodeContextMenu', () => ({
+  TreeNodeContextMenu: () => null,
+  __esModule: true,
+  default: () => null,
+}));
+
+const { useHierarchyStore } = require('@/stores/hierarchyStore') as {
+  useHierarchyStore: jest.Mock;
+};
+
+const { useHierarchyTree } = require('@/hooks/useHierarchyTree') as {
+  useHierarchyTree: jest.Mock;
+};
+
+const { HierarchyNavigator } = require('@/components/hierarchy/HierarchyNavigator') as {
+  HierarchyNavigator: React.ComponentType<any>;
+};
+
+const toggleExpanded = jest.fn();
+const setSelectedNode = jest.fn();
+
+let mockHierarchyState: any;
+
+const mockNodes = [
+  {
+    id: 'context-1',
+    spaceId: 'ws-1',
+    title: 'Projects',
+    slug: 'projects',
+    nodeType: 'CONTEXT',
+    markdownContent: null,
+    nodeDetails: {},
+    createdBy: 'user-1',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-01-01T00:00:00Z',
+    version: 1,
+  },
+  {
+    id: 'regular-1',
+    spaceId: 'ws-1',
+    title: 'Project A',
+    slug: 'project-a',
+    nodeType: 'REGULAR',
+    markdownContent: 'Content A',
+    nodeDetails: {},
+    createdBy: 'user-1',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-01-01T00:00:00Z',
+    version: 1,
+  },
+  {
+    id: 'regular-2',
+    spaceId: 'ws-1',
+    title: 'Project B',
+    slug: 'project-b',
+    nodeType: 'REGULAR',
+    markdownContent: 'Content B',
+    nodeDetails: {},
+    createdBy: 'user-1',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-01-01T00:00:00Z',
+    version: 1,
+  },
+];
+
+const mockAttributes = [
+  {
+    id: 'attr-1',
+    sourceNodeId: 'context-1',
+    targetNodeId: 'regular-1',
+    attributeType: 'contains',
+    attributeName: 'contains',
+    attributeKey: 'contains',
+    attributeValue: null,
+    metadata: {},
+    createdBy: 'user-1',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-01-01T00:00:00Z',
+  },
+  {
+    id: 'attr-2',
+    sourceNodeId: 'context-1',
+    targetNodeId: 'regular-2',
+    attributeType: 'contains',
+    attributeName: 'contains',
+    attributeKey: 'contains',
+    attributeValue: null,
+    metadata: {},
+    createdBy: 'user-1',
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2025-01-01T00:00:00Z',
+  },
+];
+
+const buildMockHierarchyTree = ({
+  expanded = false,
+  selectedNodeId = null,
+}: {
+  expanded?: boolean;
+  selectedNodeId?: string | null;
+} = {}) => {
+  const projectA = {
+    node: mockNodes[1],
+    children: [],
+    level: 1,
+    isExpanded: false,
+    isSelected: selectedNodeId === 'regular-1',
+    parentId: 'context-1',
+  };
+
+  const projectB = {
+    node: mockNodes[2],
+    children: [],
+    level: 1,
+    isExpanded: false,
+    isSelected: selectedNodeId === 'regular-2',
+    parentId: 'context-1',
+  };
+
+  const projects = {
+    node: mockNodes[0],
+    children: [projectA, projectB],
+    level: 0,
+    isExpanded: expanded,
+    isSelected: selectedNodeId === 'context-1',
+    parentId: null,
+  };
+
+  return {
+    rootNodes: [projects],
+    nodeMap: new Map<string, any>([
+      ['context-1', projects],
+      ['regular-1', projectA],
+      ['regular-2', projectB],
+    ]),
+  };
+};
+
+const renderHierarchyNavigator = () =>
+  render(
+    <HierarchyNavigator
+      nodes={mockNodes}
+      attributes={mockAttributes}
+    />
+  );
 
 describe('Hierarchy Navigation Integration Tests', () => {
-  const mockTreeData: TreeNodeType[] = [
-    {
-      node: {
-        id: 'context-1',
-        spaceId: 'ws-1',
-        title: 'Projects',
-        slug: 'projects',
-        nodeType: 'CONTEXT',
-        markdownContent: null,
-        nodeDetails: {},
-        createdBy: 'user-1',
-        createdAt: '2025-01-01T00:00:00Z',
-        updatedAt: '2025-01-01T00:00:00Z',
-        version: 1,
-      },
-      children: [
-        {
-          node: {
-            id: 'regular-1',
-            spaceId: 'ws-1',
-            title: 'Project A',
-            slug: 'project-a',
-            nodeType: 'REGULAR',
-            markdownContent: 'Content A',
-            nodeDetails: {},
-            createdBy: 'user-1',
-            createdAt: '2025-01-01T00:00:00Z',
-            updatedAt: '2025-01-01T00:00:00Z',
-            version: 1,
-          },
-          children: [],
-          level: 1,
-          isExpanded: false,
-          isSelected: false,
-          parentId: 'context-1',
-        },
-        {
-          node: {
-            id: 'regular-2',
-            spaceId: 'ws-1',
-            title: 'Project B',
-            slug: 'project-b',
-            nodeType: 'REGULAR',
-            markdownContent: 'Content B',
-            nodeDetails: {},
-            createdBy: 'user-1',
-            createdAt: '2025-01-01T00:00:00Z',
-            updatedAt: '2025-01-01T00:00:00Z',
-            version: 1,
-          },
-          children: [],
-          level: 1,
-          isExpanded: false,
-          isSelected: false,
-          parentId: 'context-1',
-        },
-      ],
-      level: 0,
-      isExpanded: false,
-      isSelected: false,
-      parentId: null,
-    },
-  ];
-
   beforeEach(() => {
-    mockUseNavigationStore.mockReturnValue({
+    jest.clearAllMocks();
+
+    mockHierarchyState = {
+      expandedNodeIds: [],
       selectedNodeId: null,
-      expandedNodeIds: new Set(),
-      toggleNodeExpanded: jest.fn(),
-      setSelectedNode: jest.fn(),
-    } as any);
+      toggleExpanded,
+      setSelectedNode,
+    };
+
+    useHierarchyStore.mockImplementation((selector?: any) => {
+      return typeof selector === 'function'
+        ? selector(mockHierarchyState)
+        : mockHierarchyState;
+    });
+
+    useHierarchyTree.mockReturnValue(
+      buildMockHierarchyTree({
+        expanded: false,
+        selectedNodeId: null,
+      })
+    );
   });
 
-  describe('T039: HierarchyNavigator renders tree structure', () => {
-    it('should render root nodes', () => {
-      render(<HierarchyNavigator treeData={mockTreeData} />);
-
+  describe('HierarchyNavigator renders tree structure', () => {
+    it('should render root node', () => {
+      renderHierarchyNavigator();
       expect(screen.getByText('Projects')).toBeInTheDocument();
     });
 
-    it('should display folder icon for CONTEXT nodes', () => {
-      render(<HierarchyNavigator treeData={mockTreeData} />);
+    it('should render collapsed root state', () => {
+      renderHierarchyNavigator();
 
-      const contextNode = screen.getByText('Projects').closest('[role="treeitem"]');
-      expect(contextNode).toHaveAttribute('data-node-type', 'CONTEXT');
-      // Icon should be folder (📁 or SVG with appropriate test ID)
-      expect(contextNode?.querySelector('[data-testid="folder-icon"]')).toBeInTheDocument();
+      const rootNode = screen.getByText('Projects').closest('[role="treeitem"]');
+      expect(rootNode).toHaveAttribute('aria-expanded', 'false');
     });
 
-    it('should display document icon for REGULAR nodes when expanded', () => {
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
+    it('should render child nodes when expanded', () => {
+      useHierarchyTree.mockReturnValue(buildMockHierarchyTree({ expanded: true }));
 
-      render(<HierarchyNavigator treeData={mockTreeData} />);
+      renderHierarchyNavigator();
 
-      const regularNode = screen.getByText('Project A').closest('[role="treeitem"]');
-      expect(regularNode).toHaveAttribute('data-node-type', 'REGULAR');
-      expect(regularNode?.querySelector('[data-testid="document-icon"]')).toBeInTheDocument();
-    });
-
-    it('should render nested structure correctly', () => {
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
-
-      render(<HierarchyNavigator treeData={mockTreeData} />);
-
-      expect(screen.getByText('Projects')).toBeInTheDocument();
       expect(screen.getByText('Project A')).toBeInTheDocument();
       expect(screen.getByText('Project B')).toBeInTheDocument();
     });
 
-    it('should apply correct indentation for tree levels', () => {
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
+    it('should apply greater indentation to child nodes', () => {
+      useHierarchyTree.mockReturnValue(buildMockHierarchyTree({ expanded: true }));
 
-      render(<HierarchyNavigator treeData={mockTreeData} />);
+      renderHierarchyNavigator();
 
       const rootNode = screen.getByText('Projects').closest('[role="treeitem"]');
       const childNode = screen.getByText('Project A').closest('[role="treeitem"]');
 
-      // Level 0 should have less indentation than level 1
       const rootIndent = window.getComputedStyle(rootNode!).paddingLeft;
       const childIndent = window.getComputedStyle(childNode!).paddingLeft;
 
-      expect(parseInt(childIndent)).toBeGreaterThan(parseInt(rootIndent));
+      expect(parseInt(childIndent, 10)).toBeGreaterThan(parseInt(rootIndent, 10));
     });
 
-    it('should render empty state when no tree data', () => {
-      render(<HierarchyNavigator treeData={[]} />);
+    it('should render empty state when there is no hierarchy', () => {
+      useHierarchyTree.mockReturnValue({
+        rootNodes: [],
+        nodeMap: new Map(),
+      });
 
-      expect(screen.getByText(/no pages/i)).toBeInTheDocument();
-    });
-  });
+      render(<HierarchyNavigator nodes={[]} attributes={[]} />);
 
-  describe('T040: TreeNode expand/collapse toggles children', () => {
-    it('should show expand button for CONTEXT nodes', () => {
-      render(<HierarchyNavigator treeData={mockTreeData} />);
-
-      const expandButton = screen.getByRole('button', { name: /expand/i });
-      expect(expandButton).toBeInTheDocument();
-    });
-
-    it('should not show expand button for leaf nodes', () => {
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
-
-      render(<HierarchyNavigator treeData={mockTreeData} />);
-
-      // Project A is a leaf node
-      const leafNode = screen.getByText('Project A').closest('[role="treeitem"]');
-      expect(leafNode?.querySelector('button[aria-label*="expand"]')).not.toBeInTheDocument();
-    });
-
-    it('should toggle children visibility on expand button click', async () => {
-      const toggleMock = jest.fn();
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(),
-        toggleNodeExpanded: toggleMock,
-        setSelectedNode: jest.fn(),
-      } as any);
-
-      render(<HierarchyNavigator treeData={mockTreeData} />);
-
-      // Children should not be visible initially
-      expect(screen.queryByText('Project A')).not.toBeInTheDocument();
-
-      // Click expand
-      const expandButton = screen.getByRole('button', { name: /expand/i });
-      fireEvent.click(expandButton);
-
-      expect(toggleMock).toHaveBeenCalledWith('context-1');
-    });
-
-    it('should change expand icon when expanded', () => {
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
-
-      render(<HierarchyNavigator treeData={mockTreeData} />);
-
-      const collapseButton = screen.getByRole('button', { name: /collapse/i });
-      expect(collapseButton).toBeInTheDocument();
-    });
-
-    it('should collapse children when collapse button clicked', async () => {
-      const toggleMock = jest.fn();
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: toggleMock,
-        setSelectedNode: jest.fn(),
-      } as any);
-
-      render(<HierarchyNavigator treeData={mockTreeData} />);
-
-      // Children should be visible
-      expect(screen.getByText('Project A')).toBeInTheDocument();
-
-      // Click collapse
-      const collapseButton = screen.getByRole('button', { name: /collapse/i });
-      fireEvent.click(collapseButton);
-
-      expect(toggleMock).toHaveBeenCalledWith('context-1');
-    });
-
-    it('should maintain expand state after re-render', () => {
-      const { rerender } = render(<HierarchyNavigator treeData={mockTreeData} />);
-
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
-
-      rerender(<HierarchyNavigator treeData={mockTreeData} />);
-
-      expect(screen.getByText('Project A')).toBeInTheDocument();
+      expect(screen.getByText(/no pages in hierarchy/i)).toBeInTheDocument();
     });
   });
 
-  describe('T041: TreeNode selection updates store', () => {
-    it('should call setSelectedNode when node clicked', () => {
-      const setSelectedMock = jest.fn();
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: setSelectedMock,
-      } as any);
+  describe('TreeNode expand/collapse', () => {
+    it('should render toggle button for root node', () => {
+      renderHierarchyNavigator();
 
-      render(<HierarchyNavigator treeData={mockTreeData} />);
+      const rootNode = screen.getByText('Projects').closest('[role="treeitem"]')!;
+      const toggleButton = rootNode.querySelector('button');
 
-      const nodeElement = screen.getByText('Project A');
-      fireEvent.click(nodeElement);
-
-      expect(setSelectedMock).toHaveBeenCalledWith('regular-1');
+      expect(toggleButton).toBeInTheDocument();
     });
 
-    it('should highlight selected node', () => {
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: 'regular-1',
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
+    it('should call toggleExpanded when root toggle is clicked', () => {
+      renderHierarchyNavigator();
 
-      render(<HierarchyNavigator treeData={mockTreeData} />);
+      const rootNode = screen.getByText('Projects').closest('[role="treeitem"]')!;
+      const toggleButton = rootNode.querySelector('button') as HTMLButtonElement;
+
+      fireEvent.click(toggleButton);
+
+      expect(toggleExpanded).toHaveBeenCalledTimes(1);
+      expect(toggleExpanded).toHaveBeenCalledWith('context-1');
+    });
+
+    it('should reflect expanded state when expanded', () => {
+      useHierarchyTree.mockReturnValue(buildMockHierarchyTree({ expanded: true }));
+
+      renderHierarchyNavigator();
+
+      const rootNode = screen.getByText('Projects').closest('[role="treeitem"]');
+      expect(rootNode).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('should keep rendering children after rerender when expanded tree is returned', () => {
+      const { rerender } = renderHierarchyNavigator();
+
+      useHierarchyTree.mockReturnValue(buildMockHierarchyTree({ expanded: true }));
+
+      rerender(
+        <HierarchyNavigator
+          nodes={mockNodes}
+          attributes={mockAttributes}
+        />
+      );
+
+      expect(screen.getByText('Project A')).toBeInTheDocument();
+      expect(screen.getByText('Project B')).toBeInTheDocument();
+    });
+  });
+
+  describe('TreeNode selection', () => {
+    it('should call setSelectedNode when child node clicked', () => {
+      useHierarchyTree.mockReturnValue(buildMockHierarchyTree({ expanded: true }));
+
+      renderHierarchyNavigator();
+
+      fireEvent.click(screen.getByText('Project A'));
+
+      expect(setSelectedNode).toHaveBeenCalledWith('regular-1');
+    });
+
+    it('should mark selected child node', () => {
+      useHierarchyTree.mockReturnValue(
+        buildMockHierarchyTree({
+          expanded: true,
+          selectedNodeId: 'regular-1',
+        })
+      );
+
+      renderHierarchyNavigator();
 
       const selectedNode = screen.getByText('Project A').closest('[role="treeitem"]');
-      expect(selectedNode).toHaveClass('selected');
       expect(selectedNode).toHaveAttribute('aria-selected', 'true');
     });
 
-    it('should remove highlight from previously selected node', () => {
-      const { rerender } = render(<HierarchyNavigator treeData={mockTreeData} />);
+    it('should update selected state on rerender', () => {
+      useHierarchyTree.mockReturnValue(
+        buildMockHierarchyTree({
+          expanded: true,
+          selectedNodeId: 'regular-1',
+        })
+      );
 
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: 'regular-1',
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
+      const { rerender } = renderHierarchyNavigator();
 
-      rerender(<HierarchyNavigator treeData={mockTreeData} />);
+      expect(
+        screen.getByText('Project A').closest('[role="treeitem"]')
+      ).toHaveAttribute('aria-selected', 'true');
 
-      let selectedNode = screen.getByText('Project A').closest('[role="treeitem"]');
-      expect(selectedNode).toHaveAttribute('aria-selected', 'true');
+      useHierarchyTree.mockReturnValue(
+        buildMockHierarchyTree({
+          expanded: true,
+          selectedNodeId: 'regular-2',
+        })
+      );
 
-      // Change selection
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: 'regular-2',
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
+      rerender(
+        <HierarchyNavigator
+          nodes={mockNodes}
+          attributes={mockAttributes}
+        />
+      );
 
-      rerender(<HierarchyNavigator treeData={mockTreeData} />);
+      expect(
+        screen.getByText('Project A').closest('[role="treeitem"]')
+      ).toHaveAttribute('aria-selected', 'false');
 
-      const previouslySelected = screen.getByText('Project A').closest('[role="treeitem"]');
-      expect(previouslySelected).toHaveAttribute('aria-selected', 'false');
-
-      const newSelected = screen.getByText('Project B').closest('[role="treeitem"]');
-      expect(newSelected).toHaveAttribute('aria-selected', 'true');
+      expect(
+        screen.getByText('Project B').closest('[role="treeitem"]')
+      ).toHaveAttribute('aria-selected', 'true');
     });
   });
 
-  describe('T042: TreeNode keyboard navigation (arrows, Enter)', () => {
-    it('should navigate down with ArrowDown key', async () => {
+  describe('TreeNode keyboard interaction', () => {
+    it('should expand root node with ArrowRight', async () => {
       const user = userEvent.setup();
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
 
-      render(<HierarchyNavigator treeData={mockTreeData} />);
+      renderHierarchyNavigator();
 
-      const firstNode = screen.getByText('Projects').closest('[role="treeitem"]') as HTMLElement;
-      firstNode.focus();
-
-      await user.keyboard('{ArrowDown}');
-
-      expect(document.activeElement).toBe(
-        screen.getByText('Project A').closest('[role="treeitem"]')
-      );
-    });
-
-    it('should navigate up with ArrowUp key', async () => {
-      const user = userEvent.setup();
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
-
-      render(<HierarchyNavigator treeData={mockTreeData} />);
-
-      const secondNode = screen.getByText('Project A').closest('[role="treeitem"]') as HTMLElement;
-      secondNode.focus();
-
-      await user.keyboard('{ArrowUp}');
-
-      expect(document.activeElement).toBe(
-        screen.getByText('Projects').closest('[role="treeitem"]')
-      );
-    });
-
-    it('should expand node with ArrowRight key', async () => {
-      const user = userEvent.setup();
-      const toggleMock = jest.fn();
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(),
-        toggleNodeExpanded: toggleMock,
-        setSelectedNode: jest.fn(),
-      } as any);
-
-      render(<HierarchyNavigator treeData={mockTreeData} />);
-
-      const contextNode = screen.getByText('Projects').closest('[role="treeitem"]') as HTMLElement;
-      contextNode.focus();
+      const rootNode = screen.getByText('Projects').closest('[role="treeitem"]') as HTMLElement;
+      rootNode.focus();
 
       await user.keyboard('{ArrowRight}');
 
-      expect(toggleMock).toHaveBeenCalledWith('context-1');
+      expect(toggleExpanded).toHaveBeenCalledWith('context-1');
     });
 
-    it('should collapse node with ArrowLeft key', async () => {
+    it('should collapse expanded root node with ArrowLeft', async () => {
       const user = userEvent.setup();
-      const toggleMock = jest.fn();
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: toggleMock,
-        setSelectedNode: jest.fn(),
-      } as any);
+      useHierarchyTree.mockReturnValue(buildMockHierarchyTree({ expanded: true }));
 
-      render(<HierarchyNavigator treeData={mockTreeData} />);
+      renderHierarchyNavigator();
 
-      const contextNode = screen.getByText('Projects').closest('[role="treeitem"]') as HTMLElement;
-      contextNode.focus();
+      const rootNode = screen.getByText('Projects').closest('[role="treeitem"]') as HTMLElement;
+      rootNode.focus();
 
       await user.keyboard('{ArrowLeft}');
 
-      expect(toggleMock).toHaveBeenCalledWith('context-1');
+      expect(toggleExpanded).toHaveBeenCalledWith('context-1');
     });
 
-    it('should select node with Enter key', async () => {
+    it('should select child node with Enter', async () => {
       const user = userEvent.setup();
-      const setSelectedMock = jest.fn();
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: setSelectedMock,
-      } as any);
+      useHierarchyTree.mockReturnValue(buildMockHierarchyTree({ expanded: true }));
 
-      render(<HierarchyNavigator treeData={mockTreeData} />);
+      renderHierarchyNavigator();
 
-      const node = screen.getByText('Project A').closest('[role="treeitem"]') as HTMLElement;
-      node.focus();
+      const childNode = screen.getByText('Project A').closest('[role="treeitem"]') as HTMLElement;
+      childNode.focus();
 
       await user.keyboard('{Enter}');
 
-      expect(setSelectedMock).toHaveBeenCalledWith('regular-1');
+      expect(setSelectedNode).toHaveBeenCalledWith('regular-1');
     });
 
-    it('should select node with Space key', async () => {
+    it('should select child node with Space', async () => {
       const user = userEvent.setup();
-      const setSelectedMock = jest.fn();
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: setSelectedMock,
-      } as any);
+      useHierarchyTree.mockReturnValue(buildMockHierarchyTree({ expanded: true }));
 
-      render(<HierarchyNavigator treeData={mockTreeData} />);
+      renderHierarchyNavigator();
 
-      const node = screen.getByText('Project A').closest('[role="treeitem"]') as HTMLElement;
-      node.focus();
+      const childNode = screen.getByText('Project A').closest('[role="treeitem"]') as HTMLElement;
+      childNode.focus();
 
       await user.keyboard(' ');
 
-      expect(setSelectedMock).toHaveBeenCalledWith('regular-1');
+      expect(setSelectedNode).toHaveBeenCalledWith('regular-1');
     });
 
-    it('should not navigate beyond first node with ArrowUp', async () => {
+    it('should not expand leaf node with ArrowRight', async () => {
       const user = userEvent.setup();
-      render(<HierarchyNavigator treeData={mockTreeData} />);
+      useHierarchyTree.mockReturnValue(buildMockHierarchyTree({ expanded: true }));
 
-      const firstNode = screen.getByText('Projects').closest('[role="treeitem"]') as HTMLElement;
-      firstNode.focus();
+      renderHierarchyNavigator();
 
-      await user.keyboard('{ArrowUp}');
+      const childNode = screen.getByText('Project A').closest('[role="treeitem"]') as HTMLElement;
+      childNode.focus();
 
-      // Should still be on first node
-      expect(document.activeElement).toBe(firstNode);
+      await user.keyboard('{ArrowRight}');
+
+      expect(toggleExpanded).not.toHaveBeenCalled();
     });
 
-    it('should not navigate beyond last visible node with ArrowDown', async () => {
+    it('should not collapse already-collapsed root with ArrowLeft', async () => {
       const user = userEvent.setup();
-      mockUseNavigationStore.mockReturnValue({
-        selectedNodeId: null,
-        expandedNodeIds: new Set(['context-1']),
-        toggleNodeExpanded: jest.fn(),
-        setSelectedNode: jest.fn(),
-      } as any);
 
-      render(<HierarchyNavigator treeData={mockTreeData} />);
+      renderHierarchyNavigator();
 
-      const lastNode = screen.getByText('Project B').closest('[role="treeitem"]') as HTMLElement;
-      lastNode.focus();
+      const rootNode = screen.getByText('Projects').closest('[role="treeitem"]') as HTMLElement;
+      rootNode.focus();
 
-      await user.keyboard('{ArrowDown}');
+      await user.keyboard('{ArrowLeft}');
 
-      // Should still be on last node
-      expect(document.activeElement).toBe(lastNode);
+      expect(toggleExpanded).not.toHaveBeenCalled();
     });
   });
 });

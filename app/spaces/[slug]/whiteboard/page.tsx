@@ -140,24 +140,23 @@ export default function WhiteboardPage() {
   };
 
   const breadcrumbPath = [
-    { id: 'home', title: 'Home' },
     { id: 'spaces', title: 'Spaces' },
     { id: space?.id || spaceSlug, title: space?.name || 'Space' },
     { id: 'whiteboard', title: 'Whiteboard' },
   ];
 
   const handleBreadcrumbClick = (index: number) => {
-    if (index === 0) {
+    if (index === -1) {
       router.push('/');
       return;
     }
 
-    if (index === 1) {
+    if (index === 0) {
       router.push('/spaces');
       return;
     }
 
-    if (index === 2) {
+    if (index === 1) {
       router.push(`/spaces/${spaceSlug}`);
     }
   };

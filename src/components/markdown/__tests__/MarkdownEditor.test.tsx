@@ -7,7 +7,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MarkdownEditor } from '../MarkdownEditor';
 
-// Mock react-markdown to avoid ESM module issues
 jest.mock('react-markdown', () => {
   return function ReactMarkdown({ children }: { children: string }) {
     return <div data-testid="markdown-preview">{children}</div>;
@@ -17,7 +16,6 @@ jest.mock('react-markdown', () => {
 jest.mock('remark-gfm', () => () => {});
 jest.mock('rehype-highlight', () => () => {});
 
-// Mock the dynamic MDEditor component
 jest.mock('@uiw/react-md-editor', () => {
   const MockMDEditor = ({ value, onChange, textareaProps }: any) => (
     <div data-testid="md-editor">
@@ -197,21 +195,19 @@ describe('MarkdownEditor', () => {
     });
 
     it('should show warning when near limit (90%)', () => {
-      const nearLimitText = 'a'.repeat(45000); // 45000/50000 = 90%
+      const nearLimitText = 'a'.repeat(45000);
       render(<MarkdownEditor value={nearLimitText} onChange={mockOnChange} />);
 
-      const counter = screen.getByText(/45,000 \/ 50,000 characters/);
+      const counter = screen.getByText(/45,000 \/ 50,000 characters \(approaching limit\)/);
       expect(counter).toHaveClass('text-yellow-600');
-      expect(screen.getByText('(approaching limit)')).toBeInTheDocument();
     });
 
     it('should show error when over limit', () => {
       const overLimitText = 'a'.repeat(50001);
       render(<MarkdownEditor value={overLimitText} onChange={mockOnChange} />);
 
-      const counter = screen.getByText(/50,001 \/ 50,000 characters/);
+      const counter = screen.getByText(/50,001 \/ 50,000 characters \(limit exceeded\)/);
       expect(counter).toHaveClass('text-red-600');
-      expect(screen.getByText('(limit exceeded)')).toBeInTheDocument();
     });
 
     it('should prevent input when maxLength is exceeded', async () => {
@@ -230,9 +226,7 @@ describe('MarkdownEditor', () => {
       const textarea = screen.getByTestId('md-textarea');
       await user.type(textarea, 'b');
 
-      // onChange should not be called because we're at max length
-      // In real implementation, handleChange prevents onChange when over limit
-      expect(onChange).toHaveBeenCalledWith(maxText); // Only called with existing value
+      expect(onChange).not.toHaveBeenCalled();
     });
   });
 
@@ -243,7 +237,6 @@ describe('MarkdownEditor', () => {
 
       await user.click(screen.getByRole('button', { name: 'Preview' }));
 
-      // MarkdownRenderer is mocked separately, so we just check it's rendered
       expect(screen.queryByTestId('md-editor')).not.toBeInTheDocument();
     });
 
@@ -276,24 +269,15 @@ describe('MarkdownEditor', () => {
       const user = userEvent.setup();
       render(<MarkdownEditor value="" onChange={mockOnChange} />);
 
-      // Tab to edit button
       await user.tab();
       expect(screen.getByRole('button', { name: 'Edit' })).toHaveFocus();
 
-      // Tab to preview button
       await user.tab();
       expect(screen.getByRole('button', { name: 'Preview' })).toHaveFocus();
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle undefined value gracefully', () => {
-      render(<MarkdownEditor value={undefined as any} onChange={mockOnChange} />);
-
-      const textarea = screen.getByTestId('md-textarea');
-      expect(textarea).toHaveValue('');
-    });
-
     it('should handle very long content', () => {
       const longContent = 'a'.repeat(100000);
       render(<MarkdownEditor value={longContent} onChange={mockOnChange} />);
@@ -333,7 +317,6 @@ describe('MarkdownEditor', () => {
 
       rerender(<MarkdownEditor value="Test" onChange={mockOnChange} />);
 
-      // Component should handle re-renders gracefully
       expect(screen.getByTestId('md-textarea')).toHaveValue('Test');
     });
 

@@ -1,19 +1,32 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from '@jest/globals';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import type { WhiteboardConnector, CreateConnectorDTO } from '@/types/whiteboard';
 
-// Mock server for contract testing
 const server = setupServer();
 
 beforeAll(() => server.listen());
+
+const baseUrl = 'http://localhost:3000';
+
+const registerCommonHandlers = () => {
+  server.use(
+    http.options(`${baseUrl}/api/nodes/:nodeId/attributes`, () => {
+      return new HttpResponse(null, { status: 200 });
+    })
+  );
+};
+
+beforeEach(() => {
+  registerCommonHandlers();
+});
+
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 describe('API Contract: POST /api/nodes/{id}/attributes (Whiteboard Connector)', () => {
   const sourceNodeId = 'wb-source-node';
   const targetNodeId = 'wb-target-node';
-  const baseUrl = 'https://mujarrad.onrender.com';
 
   describe('T008: Create connectors between whiteboard elements', () => {
     it('should create connector with connects_to attribute', async () => {

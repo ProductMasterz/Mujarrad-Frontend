@@ -22,8 +22,11 @@ export function Navbar({ className }: NavbarProps) {
 
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<HTMLElement | null>(null);
+
   const notificationButtonRef = useRef<HTMLButtonElement>(null);
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const notificationsPanelRef = useRef<HTMLDivElement>(null);
+  const settingsMenuRef = useRef<HTMLDivElement>(null);
 
   const notifications = useNotificationStore((state) => state.notifications);
   const notificationSettings = useNotificationStore((state) => state.settings);
@@ -52,13 +55,28 @@ export function Navbar({ className }: NavbarProps) {
       ) {
         setNotificationsOpen(false);
       }
+
+      if (
+        moreMenuAnchor &&
+        settingsMenuRef.current &&
+        !settingsMenuRef.current.contains(target) &&
+        settingsButtonRef.current &&
+        !settingsButtonRef.current.contains(target)
+      ) {
+        setMoreMenuAnchor(null);
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [notificationsOpen]);
+  }, [notificationsOpen, moreMenuAnchor]);
+
+  useEffect(() => {
+    setNotificationsOpen(false);
+    setMoreMenuAnchor(null);
+  }, [pathname]);
 
   if (isAuthPage) {
     return null;
@@ -66,13 +84,13 @@ export function Navbar({ className }: NavbarProps) {
 
   return (
     <nav className={`fixed inset-x-0 top-0 z-50 border-b bg-background ${className || ''}`}>
-      <div className="flex h-16 items-center px-6 gap-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-lg">
+      <div className="flex h-16 items-center gap-6 px-6">
+        <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
           <Network className="h-6 w-6" />
           <span>Mujarrad</span>
         </Link>
 
-        <div className="flex items-center gap-1 flex-1">
+        <div className="flex flex-1 items-center gap-1">
           <Link href="/">
             <Button
               variant={isActive('/') ? 'secondary' : 'ghost'}
@@ -119,6 +137,7 @@ export function Navbar({ className }: NavbarProps) {
 
           <div className="relative">
             <button
+              ref={settingsButtonRef}
               onClick={(event) => {
                 setNotificationsOpen(false);
                 setMoreMenuAnchor((prev) => (prev ? null : event.currentTarget));
@@ -136,10 +155,12 @@ export function Navbar({ className }: NavbarProps) {
       </div>
 
       {moreMenuAnchor && (
-        <MoreMenuDropdown
-          onClose={() => setMoreMenuAnchor(null)}
-          anchorEl={moreMenuAnchor}
-        />
+        <div ref={settingsMenuRef}>
+          <MoreMenuDropdown
+            onClose={() => setMoreMenuAnchor(null)}
+            anchorEl={moreMenuAnchor}
+          />
+        </div>
       )}
 
       {notificationsOpen && notificationButtonRef.current && (

@@ -1,12 +1,12 @@
-import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Share2,
   Settings,
   User,
   Command,
   CircleHelp,
-} from "lucide-react";
+} from 'lucide-react';
 
 type MoreMenuDropdownProps = {
   onClose: () => void;
@@ -25,17 +25,17 @@ export function MoreMenuDropdown({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleProfileClick = () => {
-    router.push("/profile");
+    router.push('/profile');
     onClose();
   };
 
   const handleSettingsClick = () => {
-    router.push("/settings");
+    router.push('/settings');
     onClose();
   };
 
   const handleHelpClick = () => {
-    router.push("/help");
+    router.push('/help');
     onClose();
   };
 
@@ -62,17 +62,17 @@ export function MoreMenuDropdown({
     }
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         onClose();
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, [onClose, anchorEl]);
 
@@ -80,6 +80,7 @@ export function MoreMenuDropdown({
 
   const rect = anchorEl.getBoundingClientRect();
   const menuWidth = 205;
+  const gap = 6;
   const padding = 8;
 
   const menuLeft = Math.min(
@@ -87,10 +88,7 @@ export function MoreMenuDropdown({
     window.innerWidth - menuWidth - padding
   );
 
-  const menuTop = Math.min(
-    rect.bottom + 8,
-    window.innerHeight - 320
-  );
+  const menuTop = rect.bottom + gap;
 
   return (
     <div

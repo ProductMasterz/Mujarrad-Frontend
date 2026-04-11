@@ -9,7 +9,11 @@ type ApiKeySecretDisplayProps = {
   onConfirm: () => void;
 };
 
-export function ApiKeySecretDisplay({ secretKey, publicKey, onConfirm }: ApiKeySecretDisplayProps) {
+export function ApiKeySecretDisplay({
+  secretKey,
+  publicKey,
+  onConfirm,
+}: ApiKeySecretDisplayProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -20,47 +24,58 @@ export function ApiKeySecretDisplay({ secretKey, publicKey, onConfirm }: ApiKeyS
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-        <AlertTriangle className="size-4 text-amber-600 mt-0.5 shrink-0" />
-        <p className="text-[13px] text-amber-800">
+      <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-950/30">
+        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <p className="text-[13px] text-amber-800 dark:text-amber-200">
           This secret will only be shown once. Copy it now and store it securely.
           You will not be able to see it again.
         </p>
       </div>
 
       <div className="space-y-2">
-        <label className="text-[12px] text-[#828282] font-medium">Public Key</label>
-        <div className="px-3 py-2 bg-[#f9f9f9] rounded-lg text-[13px] text-[#4f4f4f] font-mono break-all">
+        <label className="text-[12px] font-medium text-muted-foreground">
+          Public Key
+        </label>
+        <div className="break-all rounded-lg border border-border bg-muted/30 px-3 py-2 font-mono text-[13px] text-foreground">
           {publicKey}
         </div>
       </div>
 
       <div className="space-y-2">
-        <label className="text-[12px] text-[#828282] font-medium">Secret Key</label>
+        <label className="text-[12px] font-medium text-muted-foreground">
+          Secret Key
+        </label>
+
         <div className="flex items-center gap-2">
-          <div className="flex-1 px-3 py-2 bg-[#f9f9f9] rounded-lg text-[13px] text-[#4f4f4f] font-mono break-all border border-[#e0e0e0]">
+          <div className="flex-1 break-all rounded-lg border border-border bg-muted/30 px-3 py-2 font-mono text-[13px] text-foreground">
             {secretKey}
           </div>
+
           <button
             onClick={handleCopy}
-            className="shrink-0 p-2 rounded-lg hover:bg-[#f5f5f5] transition-colors border border-[#e0e0e0]"
+            className="shrink-0 rounded-lg border border-border p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
             title="Copy secret key"
+            type="button"
           >
             {copied ? (
-              <Check className="size-4 text-green-600" />
+              <Check className="size-4 text-green-600 dark:text-green-400" />
             ) : (
-              <Copy className="size-4 text-[#828282]" />
+              <Copy className="size-4" />
             )}
           </button>
         </div>
+
         {copied && (
-          <p className="text-[12px] text-green-600">Copied to clipboard</p>
+          <p className="text-[12px] text-green-600 dark:text-green-400">
+            Copied to clipboard
+          </p>
         )}
       </div>
 
       <button
         onClick={onConfirm}
-        className="w-full py-2 px-4 bg-[#248bf2] text-white text-[13px] font-medium rounded-lg hover:bg-[#1a6fcc] transition-colors"
+        className="w-full rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition hover:opacity-90"
+        type="button"
       >
         I&apos;ve saved my key
       </button>

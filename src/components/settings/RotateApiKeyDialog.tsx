@@ -13,7 +13,12 @@ type RotateApiKeyDialogProps = {
   keyName: string;
 };
 
-export function RotateApiKeyDialog({ isOpen, onClose, keyId, keyName }: RotateApiKeyDialogProps) {
+export function RotateApiKeyDialog({
+  isOpen,
+  onClose,
+  keyId,
+  keyName,
+}: RotateApiKeyDialogProps) {
   const [currentSecret, setCurrentSecret] = useState('');
   const [secretError, setSecretError] = useState('');
   const [rotatedKey, setRotatedKey] = useState<ApiKeyResponse | null>(null);
@@ -36,7 +41,9 @@ export function RotateApiKeyDialog({ isOpen, onClose, keyId, keyName }: RotateAp
           setRotatedKey(data);
         },
         onError: (error) => {
-          setSecretError((error as Error).message || 'Failed to rotate key. Check your current secret.');
+          setSecretError(
+            (error as Error).message || 'Failed to rotate key. Check your current secret.'
+          );
         },
       }
     );
@@ -52,16 +59,25 @@ export function RotateApiKeyDialog({ isOpen, onClose, keyId, keyName }: RotateAp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={rotatedKey ? undefined : handleClose} />
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-[440px] mx-4">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#f2f2f2]">
-          <h2 className="text-[15px] font-medium text-[#333]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+        onClick={rotatedKey ? undefined : handleClose}
+      />
+
+      <div className="relative mx-4 w-full max-w-[440px] rounded-2xl border border-border bg-background text-foreground shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-[15px] font-semibold text-foreground">
             {rotatedKey ? 'Key Rotated' : `Rotate Key: ${keyName}`}
           </h2>
+
           {!rotatedKey && (
-            <button onClick={handleClose} className="p-1 hover:bg-[#f5f5f5] rounded-lg transition-colors">
-              <X className="size-4 text-[#828282]" />
+            <button
+              onClick={handleClose}
+              className="rounded-lg p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              type="button"
+            >
+              <X className="size-4" />
             </button>
           )}
         </div>
@@ -75,23 +91,28 @@ export function RotateApiKeyDialog({ isOpen, onClose, keyId, keyName }: RotateAp
             />
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <p className="text-[13px] text-[#4f4f4f]">
+              <p className="text-[13px] text-muted-foreground">
                 Enter your current secret key to verify ownership. A new secret will be generated
                 while keeping the same public key.
               </p>
 
               <div className="space-y-1.5">
-                <label className="text-[12px] text-[#828282] font-medium">
+                <label className="text-[12px] font-medium text-muted-foreground">
                   Current Secret Key <span className="text-red-500">*</span>
                 </label>
+
                 <input
                   type="password"
                   value={currentSecret}
-                  onChange={(e) => { setCurrentSecret(e.target.value); setSecretError(''); }}
+                  onChange={(e) => {
+                    setCurrentSecret(e.target.value);
+                    setSecretError('');
+                  }}
                   placeholder="Enter your current secret key"
-                  className="w-full px-3 py-2 text-[13px] border border-[#e0e0e0] rounded-lg focus:outline-none focus:border-[#248bf2] transition-colors font-mono"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
                   autoFocus
                 />
+
                 {secretError && <p className="text-[12px] text-red-500">{secretError}</p>}
               </div>
 
@@ -99,14 +120,15 @@ export function RotateApiKeyDialog({ isOpen, onClose, keyId, keyName }: RotateAp
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="px-4 py-2 text-[13px] text-[#828282] hover:bg-[#f5f5f5] rounded-lg transition-colors"
+                  className="rounded-lg px-4 py-2 text-[13px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 >
                   Cancel
                 </button>
+
                 <button
                   type="submit"
                   disabled={rotateMutation.isPending}
-                  className="px-4 py-2 bg-[#248bf2] text-white text-[13px] font-medium rounded-lg hover:bg-[#1a6fcc] transition-colors disabled:opacity-50"
+                  className="rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {rotateMutation.isPending ? 'Rotating...' : 'Rotate Secret'}
                 </button>

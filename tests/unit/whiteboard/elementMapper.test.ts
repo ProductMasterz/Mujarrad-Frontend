@@ -49,8 +49,8 @@ const createMockElement = (
 const createMockNode = (element: ExcalidrawElement): WhiteboardNode => ({
   id: `node-${element.id}`,
   title: generateTitle(element, 0),
-  node_type: 'REGULAR',
-  node_details: {
+  nodeType: 'REGULAR' as any,
+  nodeDetails: {
     element_subtype: getElementSubtype(element.type as any),
     excalidraw_element: element,
     whiteboard_meta: {
@@ -60,10 +60,10 @@ const createMockNode = (element: ExcalidrawElement): WhiteboardNode => ({
       z_index: 0,
     },
   },
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
   version: 1,
-});
+} as WhiteboardNode);
 
 describe('Element Mapper Utility', () => {
   describe('mapExcalidrawToNode', () => {
@@ -72,9 +72,9 @@ describe('Element Mapper Utility', () => {
       const result = mapExcalidrawToNode(element, 'test-space', 0);
 
       expect(result.title).toBe('Rectangle 1');
-      expect(result.node_type).toBe('REGULAR');
-      expect(result.node_details.element_subtype).toBe('shape_rectangle');
-      expect(result.node_details.excalidraw_element).toEqual(element);
+      expect(result.nodeType).toBe('REGULAR');
+      expect(result.nodeDetails.element_subtype).toBe('shape_rectangle');
+      expect(result.nodeDetails.excalidraw_element).toEqual(element);
     });
 
     it('converts ellipse element to node', () => {
@@ -82,7 +82,8 @@ describe('Element Mapper Utility', () => {
       const result = mapExcalidrawToNode(element, 'test-space', 1);
 
       expect(result.title).toBe('Ellipse 2');
-      expect(result.node_details.element_subtype).toBe('shape_ellipse');
+      expect(result.nodeDetails.element_subtype).toBe('shape_ellipse');
+
     });
 
     it('converts text element using text content as title', () => {
@@ -90,7 +91,7 @@ describe('Element Mapper Utility', () => {
       const result = mapExcalidrawToNode(element, 'test-space', 0);
 
       expect(result.title).toBe('Hello World');
-      expect(result.node_details.element_subtype).toBe('text');
+      expect(result.nodeDetails.element_subtype).toBe('text');
     });
 
     it('truncates long text titles', () => {

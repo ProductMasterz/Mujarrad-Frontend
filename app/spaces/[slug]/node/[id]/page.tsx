@@ -87,10 +87,7 @@ export default function NodeDetailPage() {
 
 
   const breadcrumbPath = useMemo(() => {
-    const path = [
-      { id: 'home', title: 'Home' },
-      { id: 'spaces', title: 'Spaces' },
-    ];
+    const path = [{ id: 'spaces', title: 'Spaces' }];
 
     if (space) {
       path.push({ id: space.id, title: space.name });
@@ -125,17 +122,17 @@ export default function NodeDetailPage() {
   };
 
   const handleBreadcrumbClick = (index: number) => {
-    if (index === -1 || index === 0) {
+    if (index === -1) {
       router.push('/');
       return;
     }
 
-    if (index === 1) {
+    if (index === 0) {
       router.push('/spaces');
       return;
     }
 
-    if (index === 2 && space) {
+    if (index === 1 && space) {
       router.push(`/spaces/${slug}`);
     }
   };

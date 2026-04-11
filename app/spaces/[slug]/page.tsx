@@ -251,10 +251,7 @@ export default function SpaceDetailPage() {
 
   // Build breadcrumb
   const breadcrumbPath = useMemo(() => {
-    const path = [
-      { id: 'home', title: 'Home' },
-      { id: 'spaces', title: 'Spaces' },
-    ];
+    const path = [{ id: 'spaces', title: 'Spaces' }];
 
     if (space) {
       path.push({ id: space.id, title: space.name });

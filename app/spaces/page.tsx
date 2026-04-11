@@ -143,10 +143,7 @@ export default function SpacesPage() {
 
   // Build breadcrumb
   const breadcrumbPath = useMemo(() => {
-    return [
-      { id: 'home', title: 'Home' },
-      { id: 'spaces', title: 'Spaces' },
-    ];
+    return [{ id: 'spaces', title: 'Spaces' }];
   }, []);
 
   // Handlers
