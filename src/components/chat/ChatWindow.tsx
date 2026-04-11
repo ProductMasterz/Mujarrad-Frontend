@@ -5,49 +5,24 @@ import { Thread } from '@assistant-ui/react-ui';
 import { useChatRuntime } from '@/hooks/api/useChatRuntime';
 import './chat.css';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import { MessagePrimitive } from '@assistant-ui/react';
+import { getMessageText } from '@/lib/utils/text';
 
 /* COPY BUTTON `*/
-function CopyButton({ message }: any) {
+function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
 
-  const getText = () => {
-    if (!message) return "";
-
-    // case 1: parts (new API)
-    if (Array.isArray(message.parts)) {
-      return message.parts
-        .map((p: any) => p.text ?? "")
-        .join("")
-        .trim();
-    }
-
-    // case 2: content fallback
-    if (typeof message.content === "string") {
-      return message.content;
-    }
-
-    // case 3: nested content object
-    if (message.content?.text) {
-      return message.content.text;
-    }
-
-    return "";
-  };
-
   const handleCopy = async () => {
-    const text = getText();
-    if (!text) return;
+    if (!value) return;
 
     try {
-      await navigator.clipboard.writeText(text);
-
+      await navigator.clipboard.writeText(value);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
-    } catch (e) {
-      console.error("Copy failed:", e);
+    } catch (err) {
+      console.error("Copy failed:", err);
     }
   };
 
@@ -55,7 +30,7 @@ function CopyButton({ message }: any) {
     <button
       onClick={handleCopy}
       className={`copy-btn ${copied ? "copied" : ""}`}
-      title="Copy message"
+      title={copied ? "Copied" : "Copy"}
     >
       {copied ? <CheckIcon size={16} /> : <CopyIcon size={16} />}
     </button>
@@ -63,28 +38,49 @@ function CopyButton({ message }: any) {
 }
 
 function AssistantMessage({ message }: any) {
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const textToCopy =
+    contentRef.current?.innerText?.trim() ||
+    getMessageText(message);
+
   return (
-    <MessagePrimitive.Root className="message-wrapper group relative flex justify-start">
+    <MessagePrimitive.Root className="message flex justify-start">
+      
+      <div className="bubble-wrapper">
+        <div ref={contentRef} className="message-bubble assistant">
+          <MessagePrimitive.Content />
+        </div>
 
-      <div className="max-w-3xl text-sm">
-        <MessagePrimitive.Content />
-      </div>
-
-      <div className="copy-container">
-        <CopyButton message={message} />
+        <div className="copy-inside">
+          <CopyButton value={textToCopy} />
+        </div>
       </div>
 
     </MessagePrimitive.Root>
   );
 }
 
-
 function UserMessage({ message }: any) {
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const textToCopy =
+    contentRef.current?.innerText?.trim() ||
+    getMessageText(message);
+
   return (
-    <MessagePrimitive.Root className="message-wrapper flex justify-end">
-      <div className="max-w-3xl rounded-2xl bg-[#2f2f2f] px-4 py-2 text-white text-sm">
-        <MessagePrimitive.Content />
+    <MessagePrimitive.Root className="message flex justify-end">
+      
+      <div className="bubble-wrapper">
+        <div ref={contentRef} className="message-bubble user">
+          <MessagePrimitive.Content />
+        </div>
+
+        <div className="copy-inside">
+          <CopyButton value={textToCopy} />
+        </div>
       </div>
+
     </MessagePrimitive.Root>
   );
 }

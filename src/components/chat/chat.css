@@ -358,36 +358,100 @@ button.aui-thread-scroll-to-bottom {
   white-space: pre-wrap;
 }
 
-
-.message-wrapper {
-  position: relative;
+/* ===== Message wrapper ===== */
+/* message wrapper */
+.message {
+  display: flex;
+  margin-bottom: 14px;
 }
 
-/* ALWAYS visible */
-.copy-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-
-  background: transparent;
-  border: none;
-  cursor: pointer;
-
-  color: #9ca3af;
-  padding: 4px;
-  border-radius: 6px;
-
-  opacity: 1; /* ✅ ALWAYS visible */
-  transition: all 0.2s ease;
+.message.assistant {
+  justify-content: flex-start;
 }
 
-/* hover effect only */
-.copy-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
+.message.user {
+  justify-content: flex-end;
+}
+
+/* 🔥 row layout */
+.message-row {
+  display: flex;
+  align-items: flex-start; /* aligns icon to top */
+  gap: 6px;
+  max-width: 80%;
+}
+
+/* bubble */
+.message-bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.message-bubble.assistant {
+  background: #f5f5f5;
   color: #111;
 }
 
-/* clicked state */
-.copy-btn.copied {
-  color: #10a37f; /* green */
+.message-bubble.user {
+  background: #2f2f2f;
+  color: #fff;
+}
+
+/* copy button */
+.copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 26px;
+  width: 26px;
+
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+
+  cursor: pointer;
+  color: #888;
+
+  transition: all 0.2s ease;
+}
+
+/* hover */
+.copy-btn:hover {
+  color: #111;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* user side */
+.message.user .copy-btn {
+  color: #aaa;
+}
+
+.message.user .copy-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* tooltip fix */
+.copy-tooltip {
+  position: absolute;
+  top: -26px;
+  right: 0;
+
+  background: #111;
+  color: #fff;
+  font-size: 11px;
+
+  padding: 4px 8px;
+  border-radius: 6px;
+
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.copy-tooltip.show {
+  opacity: 1;
 }

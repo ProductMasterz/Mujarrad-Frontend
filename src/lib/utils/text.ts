@@ -1,17 +1,16 @@
 export function getMessageText(message: any): string {
-  const content = message?.content;
+  if (!message) return "";
 
-  if (!content) return "";
+  if (Array.isArray(message.parts)) {
+    return message.parts.map((p: any) => p.text ?? "").join("").trim();
+  }
 
-  if (typeof content === "string") return content;
+  if (typeof message.content === "string") {
+    return message.content;
+  }
 
-  if (Array.isArray(content)) {
-    return content
-      .map((item) => {
-        if (typeof item === "string") return item;
-        return item?.text ?? "";
-      })
-      .join("");
+  if (message.content?.text) {
+    return message.content.text;
   }
 
   return "";
