@@ -10,6 +10,8 @@ type SidebarProps = {
   selectedItem: string | null;
   onNavigate: (path: string[]) => void;
   onAddNode?: (parentPath: string[], position?: number) => void;
+  onItemClick?: (itemId: string) => void;
+  onLogout?: () => void;
   items?: Card[];
   isSpacesLevel?: boolean;
   onQuickCreateSpace?: () => void;
