@@ -9,7 +9,6 @@ import ReactFlow, {
   useEdgesState,
   addEdge,
   Connection,
-  ColorMode,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useTheme } from 'next-themes';
@@ -57,7 +56,6 @@ export function GraphCanvas({ spaceSlug }: GraphCanvasProps) {
   return (
     <div className="h-full w-full rounded-[20px] bg-background">
       <ReactFlow
-        colorMode={(isDark ? 'dark' : 'light') as ColorMode}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}

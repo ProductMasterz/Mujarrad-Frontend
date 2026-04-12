@@ -25,6 +25,7 @@ export function useGraphData(spaceSlug: string) {
           node,
           label: node.title,
           isSelected: false,
+          nodeType: node.nodeType,
         },
       }));
 

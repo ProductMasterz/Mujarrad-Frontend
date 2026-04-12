@@ -16,8 +16,13 @@ type HeaderProps = {
   breadcrumbPath: Array<{ id: string; title: string }>;
   onHomeClick: () => void;
   onBreadcrumbClick: (index: number) => void;
+  onNotificationClick?: () => void;
+  onSearchClick?: () => void;
   // Add menu actions
- 
+  onCreateSpace?: () => void;
+  onCreateNode?: () => void;
+  onCreateContext?: () => void;
+  showChatCreateSpace?: boolean;
   // More menu actions
   onShare?: () => void;
   onOpenInNewTab?: () => void;
