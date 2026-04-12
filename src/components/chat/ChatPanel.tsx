@@ -419,7 +419,7 @@ function ChatPanelShell({
     const handleClickOutside = (event: MouseEvent) => {
       if (
         spaceMenuRef.current &&
-        !spaceMenuRef.current.contains(event.target as Node)
+        !spaceMenuRef.current.contains(event.target as globalThis.Node)
       ) {
         setShowSpaceMenu(false);
       }
@@ -1287,7 +1287,7 @@ export function ChatPanel({
     addNotification({
       type: 'info',
       title: 'New conversation',
-      message: 'A new chat session was started.',
+      description: 'A new chat session was started.',
     });
     
     await refreshWorkspaceViews();
@@ -1376,7 +1376,7 @@ export function ChatPanel({
     addNotification({
       type: 'warning',
       title: 'Conversation deleted',
-      message: `${deletedSessionTitle} was removed.`,
+      description: `${deletedSessionTitle} was removed.`,
     });
     const remainingSessions = sessions.filter((session) => session.id !== sessionId);
     setSessions(remainingSessions);
@@ -1460,12 +1460,12 @@ export function ChatPanel({
 
   const runtime = useExternalStoreRuntime<ChatMessage>({
     messages,
-    setMessages,
+    setMessages: (msgs) => setMessages([...msgs]),
     isRunning,
     convertMessage: (message) => ({
       id: message.id,
       role: message.role,
-      createdAt: message.createdAt,
+      createdAt: new Date(message.createdAt),
       content: [
         {
           type: 'text',
@@ -1561,7 +1561,7 @@ export function ChatPanel({
               addNotification({
                 type: 'success',
                 title: 'Chat analyzed',
-                message:
+                description:
                   nodes.length > 0 || relationships.length > 0
                     ? `${nodes.length} candidate node${nodes.length === 1 ? '' : 's'} and ${relationships.length} candidate relationship${relationships.length === 1 ? '' : 's'} returned by the agent.`
                     : 'The agent finished processing your message.',
@@ -1574,7 +1574,7 @@ export function ChatPanel({
             addNotification({
               type: 'error',
               title: 'Agent unavailable',
-              message: 'Could not reach the agent service.',
+              description: 'Could not reach the agent service.',
             });
           }
         }
