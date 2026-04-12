@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Mail, Shield, CalendarDays, BadgeCheck, LogOut, KeyRound } from 'lucide-react';
+import { User, Mail, Shield, CalendarDays, BadgeCheck, KeyRound } from 'lucide-react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuthStore } from '@/stores/auth.store';
 import { useRouter } from 'next/navigation';
@@ -12,9 +12,15 @@ export default function ProfilePage() {
   const logout = useAuthStore((state) => state.logout);
   const addNotification = useNotificationStore((state) => state.addNotification);
 
+  const displayName =
+    user?.username?.trim() ||
+    user?.email?.split('@')[0] ||
+    'Mujarrad User';
+
   const initials =
-    user?.name
-      ?.split(' ')
+    displayName
+      .split(/[\s._-]+/)
+      .filter(Boolean)
       .map((part) => part[0])
       .join('')
       .slice(0, 2)
@@ -53,7 +59,7 @@ export default function ProfilePage() {
                 </div>
 
                 <h2 className="mt-4 text-xl font-semibold text-foreground">
-                  {user?.name || 'Mujarrad User'}
+                  {displayName}
                 </h2>
 
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -106,7 +112,7 @@ export default function ProfilePage() {
                       <User className="h-4 w-4 text-muted-foreground" />
                       Full name
                     </div>
-                    <p className="text-sm text-muted-foreground">{user?.name || 'No name available'}</p>
+                    <p className="text-sm text-muted-foreground">{displayName}</p>
                   </div>
 
                   <div className="rounded-xl border border-border bg-muted/20 p-4">
@@ -122,7 +128,7 @@ export default function ProfilePage() {
                       <Shield className="h-4 w-4 text-muted-foreground" />
                       Role
                     </div>
-                    <p className="text-sm text-muted-foreground">{user?.role || 'Standard user'}</p>
+                    <p className="text-sm text-muted-foreground">Authenticated user</p>
                   </div>
 
                   <div className="rounded-xl border border-border bg-muted/20 p-4">

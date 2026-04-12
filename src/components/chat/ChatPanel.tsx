@@ -12,7 +12,7 @@ import { Copy, Check, SendHorizontal, X, Pencil, Trash2, PanelLeftClose, PanelLe
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
 import { Button } from '@/components/ui/button';
-import { AttributeTypeMode, NodeType, type Node } from '@/types/backend-dtos';
+import { AttributeTypeMode, NodeType, type Node as BackendNode } from '@/types/backend-dtos';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { useQueryClient } from '@tanstack/react-query';
 import { nodeKeys } from '@/hooks/api';
@@ -54,7 +54,7 @@ interface ChatPanelProps {
   availableSpaces?: Array<{ id: string; name: string; slug: string }>;
 }
 
-function parseNodeDetails(node: Node): Record<string, unknown> | undefined {
+function parseNodeDetails(node: BackendNode): Record<string, unknown> | undefined {
   if (!node.nodeDetails) return undefined;
 
   if (typeof node.nodeDetails === 'string') {
@@ -68,7 +68,7 @@ function parseNodeDetails(node: Node): Record<string, unknown> | undefined {
   return node.nodeDetails as Record<string, unknown>;
 }
 
-function isConversationNode(node: Node): boolean {
+function isConversationNode(node: BackendNode): boolean {
   const details = parseNodeDetails(node);
 
   return (
@@ -77,7 +77,7 @@ function isConversationNode(node: Node): boolean {
   );
 }
 
-function isMessageNode(node: Node): boolean {
+function isMessageNode(node: BackendNode): boolean {
   const details = parseNodeDetails(node);
 
   return (
@@ -419,7 +419,7 @@ function ChatPanelShell({
     const handleClickOutside = (event: MouseEvent) => {
       if (
         spaceMenuRef.current &&
-        !spaceMenuRef.current.contains(event.target as Node)
+        !spaceMenuRef.current.contains(event.target as globalThis.Node)
       ) {
         setShowSpaceMenu(false);
       }
@@ -1460,15 +1460,18 @@ export function ChatPanel({
     ]);
   };
 
+  const handleRuntimeMessagesChange = (nextMessages: readonly ChatMessage[]) => {
+    setMessages([...nextMessages]);
+  };
 
   const runtime = useExternalStoreRuntime<ChatMessage>({
     messages,
-    setMessages,
+    setMessages: handleRuntimeMessagesChange,
     isRunning,
     convertMessage: (message) => ({
       id: message.id,
       role: message.role,
-      createdAt: message.createdAt,
+      createdAt: new Date(message.createdAt),
       content: [
         {
           type: 'text',
