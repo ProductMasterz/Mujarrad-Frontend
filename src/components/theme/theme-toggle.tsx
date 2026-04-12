@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { Moon, Sun, Monitor } from 'lucide-react';
 
@@ -9,9 +9,37 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
 
+  const rootRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        open &&
+        rootRef.current &&
+        !rootRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
 
   if (!mounted) {
     return (
@@ -34,7 +62,7 @@ export function ThemeToggle() {
     );
 
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
@@ -46,7 +74,7 @@ export function ThemeToggle() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[160px] rounded-xl border border-[#e5e7eb] bg-white p-2 shadow-lg dark:border-[#374151] dark:bg-[#111827]">
+        <div className="absolute right-0 top-[calc(100%+6px)] z-[110] w-[160px] rounded-xl border border-[#e5e7eb] bg-white p-2 shadow-lg dark:border-[#374151] dark:bg-[#111827]">
           <button
             type="button"
             onClick={() => {

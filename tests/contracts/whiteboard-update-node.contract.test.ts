@@ -1,19 +1,35 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from '@jest/globals';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import type { WhiteboardNode, UpdateWhiteboardNodeDTO } from '@/types/whiteboard';
 
-// Mock server for contract testing
 const server = setupServer();
 
-beforeAll(() => server.listen());
+const baseUrl = 'http://localhost:3000';
+
+const registerCommonHandlers = () => {
+  server.use(
+    http.options(`${baseUrl}/api/spaces/:slug/nodes/:nodeId`, () => {
+      return new HttpResponse(null, { status: 200 });
+    }),
+    http.options(`${baseUrl}/api/spaces/:slug/nodes/:nodeId*`, () => {
+      return new HttpResponse(null, { status: 200 });
+    })
+  );
+};
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+
+beforeEach(() => {
+  registerCommonHandlers();
+});
+
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 describe('API Contract: PUT /api/spaces/{slug}/nodes/{id} (Whiteboard)', () => {
   const testSpaceSlug = 'test-whiteboard-space';
   const testNodeId = 'wb-node-123';
-  const baseUrl = 'https://mujarrad.onrender.com';
 
   describe('T006: Update whiteboard node position and properties', () => {
     it('should update node position and return updated WhiteboardNode', async () => {
@@ -24,8 +40,8 @@ describe('API Contract: PUT /api/spaces/{slug}/nodes/{id} (Whiteboard)', () => {
           excalidraw_element: {
             id: 'exc-1',
             type: 'rectangle',
-            x: 500, // Updated position
-            y: 400, // Updated position
+            x: 500,
+            y: 400,
             width: 200,
             height: 100,
             angle: 0,
@@ -59,15 +75,15 @@ describe('API Contract: PUT /api/spaces/{slug}/nodes/{id} (Whiteboard)', () => {
         node_details: updateDTO.node_details,
         created_at: '2025-10-07T10:00:00Z',
         updated_at: '2025-10-07T12:00:00Z',
-        version: 2, // Incremented version
+        version: 2,
       };
 
       server.use(
-        http.put(`${baseUrl}/api/spaces/:slug/nodes/:nodeId`, async ({ params, request }) => {
+        http.put(`${baseUrl}/api/spaces/:slug/nodes/:nodeId`, async ({ request }) => {
           const body = await request.json() as UpdateWhiteboardNodeDTO;
+          const url = new URL(request.url);
 
-          expect(params.slug).toBe(testSpaceSlug);
-          expect(params.nodeId).toBe(testNodeId);
+          expect(url.pathname).toBe(`/api/spaces/${testSpaceSlug}/nodes/${testNodeId}`);
           expect(body.node_details.excalidraw_element.x).toBe(500);
           expect(body.node_details.excalidraw_element.y).toBe(400);
 
@@ -96,11 +112,11 @@ describe('API Contract: PUT /api/spaces/{slug}/nodes/{id} (Whiteboard)', () => {
             width: 200,
             height: 100,
             angle: 0,
-            strokeColor: '#ff0000', // Updated color
-            backgroundColor: '#ffeeee', // Updated background
-            fillStyle: 'hachure', // Updated fill style
-            strokeWidth: 2, // Updated stroke width
-            strokeStyle: 'dashed', // Updated stroke style
+            strokeColor: '#ff0000',
+            backgroundColor: '#ffeeee',
+            fillStyle: 'hachure',
+            strokeWidth: 2,
+            strokeStyle: 'dashed',
             roughness: 2,
             opacity: 90,
             groupIds: [],
@@ -161,8 +177,8 @@ describe('API Contract: PUT /api/spaces/{slug}/nodes/{id} (Whiteboard)', () => {
             type: 'rectangle',
             x: 100,
             y: 100,
-            width: 250, // Updated dimension
-            height: 150, // Updated dimension
+            width: 250,
+            height: 150,
             angle: 0,
             strokeColor: '#000000',
             backgroundColor: '#ffffff',
@@ -173,7 +189,7 @@ describe('API Contract: PUT /api/spaces/{slug}/nodes/{id} (Whiteboard)', () => {
             opacity: 100,
             groupIds: [],
             frameId: null,
-            version: 3, // Element version incremented
+            version: 3,
             versionNonce: 45678,
             isDeleted: false,
             boundElements: null,
@@ -196,7 +212,7 @@ describe('API Contract: PUT /api/spaces/{slug}/nodes/{id} (Whiteboard)', () => {
             node_details: updateDTO.node_details,
             created_at: '2025-10-07T10:00:00Z',
             updated_at: '2025-10-07T14:00:00Z',
-            version: 3, // Node version incremented
+            version: 3,
           });
         })
       );

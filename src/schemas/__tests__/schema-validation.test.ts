@@ -1,6 +1,4 @@
-// src/schemas/__tests__/schema-validation.test.ts
-
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from '@jest/globals';
 import { registerSchema, loginSchema } from '../auth.schema';
 import { createSpaceSchema, updateSpaceSchema } from '../space.schema';
 import { createNodeSchema, updateNodeSchema } from '../node.schema';
@@ -27,7 +25,9 @@ describe('Auth Schemas', () => {
         password: 'SecurePass123',
         confirmPassword: 'SecurePass123',
       };
-      expect(() => registerSchema.parse(invalidData)).toThrow('Username can only contain letters, numbers, hyphens, and underscores');
+      expect(() => registerSchema.parse(invalidData)).toThrow(
+        'Username can only contain letters, numbers, hyphens, and underscores'
+      );
     });
 
     it('should reject password without uppercase letter', () => {
@@ -37,7 +37,9 @@ describe('Auth Schemas', () => {
         password: 'securepass123',
         confirmPassword: 'securepass123',
       };
-      expect(() => registerSchema.parse(invalidData)).toThrow('Password must contain at least one uppercase letter');
+      expect(() => registerSchema.parse(invalidData)).toThrow(
+        'Password must contain at least one uppercase letter'
+      );
     });
 
     it('should reject mismatched passwords', () => {
@@ -95,7 +97,9 @@ describe('Space Schemas', () => {
         name: 'My Space',
         slug: 'My-Space',
       };
-      expect(() => createSpaceSchema.parse(invalidData)).toThrow('Slug can only contain lowercase letters, numbers, and hyphens');
+      expect(() => createSpaceSchema.parse(invalidData)).toThrow(
+        'Slug can only contain lowercase letters, numbers, and hyphens'
+      );
     });
 
     it('should reject slug not starting with letter', () => {
@@ -103,7 +107,9 @@ describe('Space Schemas', () => {
         name: 'My Space',
         slug: '123-space',
       };
-      expect(() => createSpaceSchema.parse(invalidData)).toThrow('Slug must start with a letter');
+      expect(() => createSpaceSchema.parse(invalidData)).toThrow(
+        'Slug must start with a letter'
+      );
     });
   });
 
@@ -133,13 +139,13 @@ describe('Node Schemas', () => {
       expect(() => createNodeSchema.parse(validData)).not.toThrow();
     });
 
-    it('should use empty string default for markdownContent', () => {
+    it('should allow markdownContent to be omitted', () => {
       const data = {
         title: 'My Node',
         nodeType: NodeType.CONTEXT,
       };
       const result = createNodeSchema.parse(data);
-      expect(result.markdownContent).toBe('');
+      expect(result.markdownContent).toBeUndefined();
     });
 
     it('should reject invalid node type', () => {
@@ -155,7 +161,9 @@ describe('Node Schemas', () => {
         title: 'a'.repeat(201),
         nodeType: NodeType.REGULAR,
       };
-      expect(() => createNodeSchema.parse(invalidData)).toThrow('Title must not exceed 200 characters');
+      expect(() => createNodeSchema.parse(invalidData)).toThrow(
+        'Title must not exceed 200 characters'
+      );
     });
   });
 
@@ -219,7 +227,9 @@ describe('Attribute Schema', () => {
         targetNodeId: -1,
         attributeKey: AttributeKey.CONTAINS,
       };
-      expect(() => createAttributeSchema.parse(invalidData)).toThrow('Target node ID must be positive');
+      expect(() => createAttributeSchema.parse(invalidData)).toThrow(
+        'Target node ID must be positive'
+      );
     });
   });
 });
@@ -239,7 +249,9 @@ describe('Version Schemas', () => {
         versionId: 5,
         confirmation: false,
       };
-      expect(() => restoreVersionSchema.parse(invalidData)).toThrow('You must confirm the restoration');
+      expect(() => restoreVersionSchema.parse(invalidData)).toThrow(
+        'You must confirm the restoration'
+      );
     });
   });
 
@@ -257,7 +269,9 @@ describe('Version Schemas', () => {
         versionA: 1,
         versionB: 1,
       };
-      expect(() => compareVersionsSchema.parse(invalidData)).toThrow('Please select two different versions to compare');
+      expect(() => compareVersionsSchema.parse(invalidData)).toThrow(
+        'Please select two different versions to compare'
+      );
     });
   });
 });

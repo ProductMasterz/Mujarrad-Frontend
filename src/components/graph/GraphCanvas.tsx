@@ -56,6 +56,7 @@ export function GraphCanvas({ spaceSlug }: GraphCanvasProps) {
   return (
     <div className="h-full w-full rounded-[20px] bg-background">
       <ReactFlow
+        
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}

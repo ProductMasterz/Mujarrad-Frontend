@@ -34,7 +34,7 @@ export function ApiKeyList() {
     return (
       <div className="space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-14 bg-[#f9f9f9] rounded-lg animate-pulse" />
+          <div key={i} className="h-14 animate-pulse rounded-lg bg-muted" />
         ))}
       </div>
     );
@@ -42,9 +42,9 @@ export function ApiKeyList() {
 
   if (error) {
     return (
-      <div className="text-center py-8">
+      <div className="py-8 text-center">
         <p className="text-[13px] text-red-500">Failed to load API keys</p>
-        <p className="text-[12px] text-[#828282] mt-1">{(error as Error).message}</p>
+        <p className="mt-1 text-[12px] text-muted-foreground">{(error as Error).message}</p>
       </div>
     );
   }
@@ -53,7 +53,10 @@ export function ApiKeyList() {
     return (
       <>
         <ApiKeyEmptyState onCreateClick={() => setShowCreateDialog(true)} />
-        <CreateApiKeyDialog isOpen={showCreateDialog} onClose={() => setShowCreateDialog(false)} />
+        <CreateApiKeyDialog
+          isOpen={showCreateDialog}
+          onClose={() => setShowCreateDialog(false)}
+        />
       </>
     );
   }
@@ -66,46 +69,78 @@ export function ApiKeyList() {
             type="checkbox"
             checked={activeOnly}
             onChange={(e) => setActiveOnly(e.target.checked)}
-            className="rounded border-[#e0e0e0] text-[#248bf2] focus:ring-[#248bf2]"
+            className="rounded border-border text-primary focus:ring-primary"
           />
-          <span className="text-[12px] text-[#828282]">Show active only</span>
+          <span className="text-[12px] text-muted-foreground">Show active only</span>
         </label>
+
         <button
           onClick={() => setShowCreateDialog(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#248bf2] text-white text-[12px] font-medium rounded-lg hover:bg-[#1a6fcc] transition-colors"
+          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground transition hover:opacity-90"
+          type="button"
         >
           <Plus className="size-3.5" />
           Create Key
         </button>
       </div>
 
-      <div className="border border-[#f2f2f2] rounded-lg overflow-hidden">
+      <div className="overflow-hidden rounded-lg border border-border">
         <table className="w-full">
           <thead>
-            <tr className="bg-[#fafafa] border-b border-[#f2f2f2]">
-              <th className="text-left px-4 py-2.5 text-[11px] font-medium text-[#828282] uppercase tracking-wider">Name</th>
-              <th className="text-left px-4 py-2.5 text-[11px] font-medium text-[#828282] uppercase tracking-wider">Public Key</th>
-              <th className="text-left px-4 py-2.5 text-[11px] font-medium text-[#828282] uppercase tracking-wider">Created</th>
-              <th className="text-left px-4 py-2.5 text-[11px] font-medium text-[#828282] uppercase tracking-wider">Last Used</th>
-              <th className="text-left px-4 py-2.5 text-[11px] font-medium text-[#828282] uppercase tracking-wider">Expires</th>
-              <th className="text-left px-4 py-2.5 text-[11px] font-medium text-[#828282] uppercase tracking-wider">Status</th>
-              <th className="text-right px-4 py-2.5 text-[11px] font-medium text-[#828282] uppercase tracking-wider">Actions</th>
+            <tr className="border-b border-border bg-muted/30">
+              <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Name
+              </th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Public Key
+              </th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Created
+              </th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Last Used
+              </th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Expires
+              </th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Status
+              </th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                Actions
+              </th>
             </tr>
           </thead>
+
           <tbody>
             {keys.map((key) => (
-              <tr key={key.id} className="border-b border-[#f2f2f2] last:border-b-0 hover:bg-[#fafafa]">
-                <td className="px-4 py-3 text-[13px] text-[#333] font-medium">{key.name}</td>
-                <td className="px-4 py-3 text-[12px] text-[#4f4f4f] font-mono">{maskPublicKey(key.publicKey)}</td>
-                <td className="px-4 py-3 text-[12px] text-[#828282]">{formatDate(key.createdAt)}</td>
-                <td className="px-4 py-3 text-[12px] text-[#828282]">{formatDate(key.lastUsedAt)}</td>
-                <td className="px-4 py-3 text-[12px] text-[#828282]">{formatDate(key.expiresAt)}</td>
+              <tr
+                key={key.id}
+                className="border-b border-border last:border-b-0 hover:bg-muted/20"
+              >
+                <td className="px-4 py-3 text-[13px] font-medium text-foreground">
+                  {key.name}
+                </td>
+                <td className="px-4 py-3 font-mono text-[12px] text-foreground">
+                  {maskPublicKey(key.publicKey)}
+                </td>
+                <td className="px-4 py-3 text-[12px] text-muted-foreground">
+                  {formatDate(key.createdAt)}
+                </td>
+                <td className="px-4 py-3 text-[12px] text-muted-foreground">
+                  {formatDate(key.lastUsedAt)}
+                </td>
+                <td className="px-4 py-3 text-[12px] text-muted-foreground">
+                  {formatDate(key.expiresAt)}
+                </td>
                 <td className="px-4 py-3">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                    key.isActive
-                      ? 'bg-green-50 text-green-700'
-                      : 'bg-gray-100 text-gray-500'
-                  }`}>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      key.isActive
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
                     {key.isActive ? 'Active' : 'Revoked'}
                   </span>
                 </td>
@@ -114,17 +149,20 @@ export function ApiKeyList() {
                     <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => setRotateTarget({ id: key.id, name: key.name })}
-                        className="p-1.5 hover:bg-[#f0f0f0] rounded-md transition-colors"
+                        className="rounded-md p-1.5 transition-colors hover:bg-muted"
                         title="Rotate secret"
+                        type="button"
                       >
-                        <RotateCw className="size-3.5 text-[#828282]" />
+                        <RotateCw className="size-3.5 text-muted-foreground" />
                       </button>
+
                       <button
                         onClick={() => setRevokeTarget({ id: key.id, name: key.name })}
-                        className="p-1.5 hover:bg-red-50 rounded-md transition-colors"
+                        className="rounded-md p-1.5 transition-colors hover:bg-red-50 dark:hover:bg-red-950/40"
                         title="Revoke key"
+                        type="button"
                       >
-                        <Trash2 className="size-3.5 text-red-400" />
+                        <Trash2 className="size-3.5 text-red-500" />
                       </button>
                     </div>
                   )}
@@ -135,7 +173,10 @@ export function ApiKeyList() {
         </table>
       </div>
 
-      <CreateApiKeyDialog isOpen={showCreateDialog} onClose={() => setShowCreateDialog(false)} />
+      <CreateApiKeyDialog
+        isOpen={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+      />
 
       {rotateTarget && (
         <RotateApiKeyDialog

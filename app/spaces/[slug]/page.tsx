@@ -8,7 +8,6 @@ import { Sidebar } from '@/shell/components/Sidebar';
 import { ContextMenu } from '@/shell/components/ContextMenu';
 import { NewNodeModal, EntityType } from '@/shell/components/NewNodeModal';
 import { ShareModal } from '@/shell/components/ShareModal';
-import { FeedbackModal } from '@/shell/components/FeedbackModal';
 import { Tab } from '@/shell/components/TabsBar';
 import { CardType, Card } from '@/shell/data/projects';
 import { DeleteNodeDialog } from '@/components/nodes/DeleteNodeDialog';
@@ -16,12 +15,12 @@ import { RenameModal } from '@/shell/components/RenameModal';
 import { useSpace, nodeKeys, useRenameNodeSimple } from '@/hooks/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
-import { useAuthStore } from '@/stores/auth.store';
 import { useNavigationStore } from '@/stores/navigationStore';
 import type { Node } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
 import { NodeCard } from '@/shell/components/NodeCard';
 import { spaceService } from '@/services/api';
+import { useNotificationStore } from '@/stores/notificationStore';
 
 function isAgentCreatedNode(node: Node): boolean {
   let details: Record<string, unknown> | undefined;
@@ -65,11 +64,6 @@ function nodeToCard(node: Node): Card {
   };
 }
 
-type SpaceItem = {
-  id: string;
-  name: string;
-};
-
 export default function SpaceDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -105,7 +99,6 @@ export default function SpaceDetailPage() {
   const [showNewNodeModal, setShowNewNodeModal] = useState(false);
   const [modalDefaultType, setModalDefaultType] = useState<EntityType>('node');
   const [showShareModal, setShowShareModal] = useState(false);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [showClearSpaceDialog, setShowClearSpaceDialog] = useState(false);
@@ -125,10 +118,7 @@ export default function SpaceDetailPage() {
   } | null>(null);
 
   // Navigation state
-  const [navigationPath, setNavigationPath] = useState<string[]>([]);
-  const [currentSpace, setCurrentSpace] = useState('void');
-  const [spaces, setSpaces] = useState<SpaceItem[]>([{ id: 'void', name: 'Void' }]);
-
+  const addNotification = useNotificationStore((state) => state.addNotification);
   // Tabs state
   const [tabs, setTabs] = useState<Tab[]>([
     {
@@ -262,9 +252,11 @@ export default function SpaceDetailPage() {
   // Build breadcrumb
   const breadcrumbPath = useMemo(() => {
     const path = [{ id: 'spaces', title: 'Spaces' }];
+
     if (space) {
       path.push({ id: space.id, title: space.name });
     }
+
     return path;
   }, [space]);
 
@@ -288,7 +280,7 @@ export default function SpaceDetailPage() {
   };
 
   const handleHomeClick = () => {
-    router.push('/spaces');
+    router.push('/');
   };
 
   const handleBackClick = () => {
@@ -297,6 +289,11 @@ export default function SpaceDetailPage() {
 
   const handleBreadcrumbClick = (index: number) => {
     if (index === -1 || index === 0) {
+      router.push('/');
+      return;
+    }
+
+    if (index === 1) {
       router.push('/spaces');
     }
   };
@@ -372,15 +369,6 @@ export default function SpaceDetailPage() {
     router.push(`/spaces/${slug}/graph`);
   };
 
-  const handleDeleteClick = () => {
-    // Show clear all confirmation
-    console.log('Delete current context');
-  };
-
-  const handleFeedback = () => {
-    setShowFeedbackModal(true);
-  };
-
  
 
   // Tab management
@@ -408,24 +396,16 @@ export default function SpaceDetailPage() {
     setActiveTabId(newTab.id);
   };
 
-  const handleOpenInNewTab = () => {
-    handleNewTab();
-  };
-
-  const handleSpaceChange = (spaceId: string) => {
-    setCurrentSpace(spaceId);
-  };
-
-  const handleAddSpace = (spaceName: string) => {
-    const newSpace: SpaceItem = {
-      id: spaceName.toLowerCase().replace(/\s+/g, '-'),
-      name: spaceName,
-    };
-    setSpaces([...spaces, newSpace]);
-    setCurrentSpace(newSpace.id);
-  };
-
   const handleDeleteSuccess = () => {
+    const deletedTitle = nodeToDelete?.title || 'Node';
+
+    addNotification({
+      type: 'warning',
+      source: 'node',
+      title: 'Node deleted',
+      description: `${deletedTitle} was removed from this space.`,
+    });
+
     setShowDeleteDialog(false);
     setNodeToDelete(null);
     queryClient.invalidateQueries({ queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }) });
@@ -436,10 +416,26 @@ export default function SpaceDetailPage() {
     if (!nodeToRename) return;
 
     const result = await renameNode(nodeToRename.id, newName);
+
     if (result.success) {
-      // Refresh the nodes list
-      queryClient.invalidateQueries({ queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }) });
+      addNotification({
+        type: 'info',
+        source: 'node',
+        title: 'Node renamed',
+        description: `Node renamed to "${newName}".`,
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }),
+      });
     } else {
+      addNotification({
+        type: 'error',
+        source: 'node',
+        title: 'Rename failed',
+        description: result.error || 'Failed to rename node.',
+      });
+
       throw new Error(result.error || 'Failed to rename node');
     }
   };
@@ -455,12 +451,29 @@ export default function SpaceDetailPage() {
     }
 
     setIsClearingSpace(true);
+
     try {
-      // Delete all nodes in the space
       await Promise.all(nodes.map((node) => nodeService.deleteNode(slug, node.id)));
-      queryClient.invalidateQueries({ queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }) });
+
+      addNotification({
+        type: 'warning',
+        source: 'node',
+        title: 'Space cleared',
+        description: `All nodes were removed from ${space?.name || 'this space'}.`,
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }),
+      });
     } catch (error) {
       console.error('Failed to clear space:', error);
+
+      addNotification({
+        type: 'error',
+        source: 'node',
+        title: 'Clear space failed',
+        description: `Could not clear ${space?.name || 'this space'}.`,
+      });
     } finally {
       setIsClearingSpace(false);
       setShowClearSpaceDialog(false);
@@ -508,20 +521,12 @@ export default function SpaceDetailPage() {
           breadcrumbPath={breadcrumbPath}
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
-          // Add menu actions - create node/context at space level
-          // More menu actions
           onShare={handleShareClick}
-          onOpenInNewTab={handleOpenInNewTab}
-          onGraph={handleGraphClick}
-          onWhiteboard={handleWhiteboardClick}
-          onDelete={handleDeleteClick}
-          onClearSpace={handleClearSpace}
           tabs={tabs}
           activeTabId={activeTabId}
           onTabClick={handleTabClick}
           onTabClose={handleTabClose}
           onNewTab={handleNewTab}
-          onFeedback={handleFeedback}
           chatAvailableSpaces={chatAvailableSpaces}
           onChatChangeSpace={(nextSpaceSlug) => {
             router.push(`/spaces/${nextSpaceSlug}`);
@@ -538,7 +543,7 @@ export default function SpaceDetailPage() {
         {/* Main content */}
 
         <div
-          className="pt-[88px] px-5 pb-8 transition-all duration-300"
+          className="px-5 pt-[126px] pb-8 transition-all duration-300"
           style={{
             marginLeft: '0',
           }}
@@ -839,6 +844,19 @@ export default function SpaceDetailPage() {
                         ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200'
                         : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
 
+                    const rowAccentClasses =
+                      entityType.toLowerCase() === 'person'
+                        ? 'border-l-4 border-l-blue-500'
+                        : entityType.toLowerCase() === 'place'
+                        ? 'border-l-4 border-l-emerald-500'
+                        : entityType.toLowerCase() === 'action'
+                        ? 'border-l-4 border-l-rose-500'
+                        : entityType.toLowerCase() === 'topic'
+                        ? 'border-l-4 border-l-violet-500'
+                        : entityType.toLowerCase() === 'event'
+                        ? 'border-l-4 border-l-orange-500'
+                        : 'border-l-4 border-l-slate-400 dark:border-l-slate-600';
+
                     const nodeKindBadgeClasses =
                       nodeKindLabel.toLowerCase() === 'context'
                         ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
@@ -866,7 +884,7 @@ export default function SpaceDetailPage() {
                         type="button"
                         onClick={() => handleCardClick(node.id)}
                         onContextMenu={(e) => handleCardContextMenu(e, node.id)}
-                        className="grid w-full grid-cols-[minmax(0,2fr)_120px_120px_110px_140px] items-center gap-4 border-b border-border/60 px-4 py-3 text-left transition hover:bg-muted/40 last:border-b-0"
+                        className={`grid w-full grid-cols-[minmax(0,2fr)_130px_140px_110px_140px] items-center gap-4 border-b border-border/60 px-4 py-3 text-left transition hover:bg-muted/40 last:border-b-0 ${rowAccentClasses}`}
                       >
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium text-foreground">
@@ -889,7 +907,7 @@ export default function SpaceDetailPage() {
                           <span
                             className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${semanticTypeBadgeClasses}`}
                           >
-                            {entityType || '—'}
+                            {entityType || 'Unclassified'}
                           </span>
                         </div>
 
@@ -923,12 +941,6 @@ export default function SpaceDetailPage() {
             isOpen={showNewNodeModal}
             onClose={() => setShowNewNodeModal(false)}
             spaceSlug={slug}
-            spaceId={space.id}
-            currentPath={navigationPath}
-            currentSpace={currentSpace}
-            spaces={spaces}
-            onAddSpace={handleAddSpace}
-            onSpaceChange={handleSpaceChange}
             defaultType={modalDefaultType}
             availableTypes={['node', 'context']}
           />
@@ -972,13 +984,7 @@ export default function SpaceDetailPage() {
           />
         )}
 
-        {/* Feedback Modal */}
-        {showFeedbackModal && (
-          <FeedbackModal
-            isOpen={showFeedbackModal}
-            onClose={() => setShowFeedbackModal(false)}
-          />
-        )}
+  
 
         {/* Rename Modal */}
         {nodeToRename && (

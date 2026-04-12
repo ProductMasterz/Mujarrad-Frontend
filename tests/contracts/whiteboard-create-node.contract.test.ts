@@ -1,18 +1,34 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from '@jest/globals';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import type { WhiteboardNode, CreateWhiteboardNodeDTO } from '@/types/whiteboard';
 
-// Mock server for contract testing
 const server = setupServer();
 
-beforeAll(() => server.listen());
+const baseUrl = 'http://localhost:3000';
+
+const registerCommonHandlers = () => {
+  server.use(
+    http.options(`${baseUrl}/api/spaces/:slug/nodes`, () => {
+      return new HttpResponse(null, { status: 200 });
+    }),
+    http.options(`${baseUrl}/api/spaces/:slug/nodes*`, () => {
+      return new HttpResponse(null, { status: 200 });
+    })
+  );
+};
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+
+beforeEach(() => {
+  registerCommonHandlers();
+});
+
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 describe('API Contract: POST /api/spaces/{slug}/nodes (Whiteboard)', () => {
   const testSpaceSlug = 'test-whiteboard-space';
-  const baseUrl = 'https://mujarrad.onrender.com';
 
   describe('T005: Create whiteboard elements as nodes', () => {
     it('should create a rectangle element and return WhiteboardNode', async () => {
@@ -63,10 +79,11 @@ describe('API Contract: POST /api/spaces/{slug}/nodes (Whiteboard)', () => {
       };
 
       server.use(
-        http.post(`${baseUrl}/api/spaces/:slug/nodes`, async ({ params, request }) => {
+        http.post(`${baseUrl}/api/spaces/:slug/nodes`, async ({ request }) => {
           const body = await request.json() as CreateWhiteboardNodeDTO;
+          const url = new URL(request.url);
 
-          expect(params.slug).toBe(testSpaceSlug);
+          expect(url.pathname).toBe(`/api/spaces/${testSpaceSlug}/nodes`);
           expect(body.title).toBe('Rectangle 1');
           expect(body.node_type).toBe('REGULAR');
           expect(body.node_details.element_subtype).toBe('shape_rectangle');
@@ -227,7 +244,6 @@ describe('API Contract: POST /api/spaces/{slug}/nodes (Whiteboard)', () => {
       const { whiteboardService } = await import('@/services/api/whiteboard.service');
       const result = await whiteboardService.createWhiteboardNode(testSpaceSlug, createDTO);
 
-      // Verify complete node_details structure
       expect(result.node_details).toMatchObject({
         element_subtype: 'shape_ellipse',
         excalidraw_element: {
@@ -304,7 +320,7 @@ describe('API Contract: POST /api/spaces/{slug}/nodes (Whiteboard)', () => {
               status: 400,
               detail: 'Missing required fields',
               errors: {
-                'title': 'must not be blank',
+                title: 'must not be blank',
                 'node_details.excalidraw_element.x': 'must not be null',
                 'node_details.excalidraw_element.y': 'must not be null',
               },

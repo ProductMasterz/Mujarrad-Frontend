@@ -31,7 +31,7 @@ export function LoginForm() {
       onSuccess: () => {
         const redirectPath = getRedirectAfterLogin();
         clearRedirectAfterLogin();
-        router.push(redirectPath || '/spaces');
+        router.push(redirectPath || '/');
       },
       onError: (error) => {
         if (isApiError(error)) {
@@ -45,7 +45,6 @@ export function LoginForm() {
 
   return (
     <div>
-      {/* Social Login */}
       <SocialLoginButtons
         onGoogleError={(error) => setSocialError(error)}
         onGoogleSuccess={() => setSocialError(null)}
@@ -56,7 +55,6 @@ export function LoginForm() {
         </p>
       )}
 
-      {/* Email/Password Form */}
       <form onSubmit={handleSubmit(onSubmit)}>
         <AuthInput
           label="Email"
@@ -76,7 +74,6 @@ export function LoginForm() {
           {...register('password')}
         />
 
-        {/* Forgot Password Link */}
         <div className="flex justify-end mb-[24px]">
           <Link
             href="/forgot-password"

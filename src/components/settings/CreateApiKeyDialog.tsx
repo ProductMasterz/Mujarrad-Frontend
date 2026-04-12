@@ -59,16 +59,25 @@ export function CreateApiKeyDialog({ isOpen, onClose }: CreateApiKeyDialogProps)
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={createdKey ? undefined : handleClose} />
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-[440px] mx-4">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#f2f2f2]">
-          <h2 className="text-[15px] font-medium text-[#333]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+        onClick={createdKey ? undefined : handleClose}
+      />
+
+      <div className="relative w-full max-w-[440px] rounded-2xl border border-border bg-background text-foreground shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-[15px] font-semibold text-foreground">
             {createdKey ? 'API Key Created' : 'Create API Key'}
           </h2>
+
           {!createdKey && (
-            <button onClick={handleClose} className="p-1 hover:bg-[#f5f5f5] rounded-lg transition-colors">
-              <X className="size-4 text-[#828282]" />
+            <button
+              onClick={handleClose}
+              className="rounded-lg p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              type="button"
+            >
+              <X className="size-4" />
             </button>
           )}
         </div>
@@ -83,15 +92,18 @@ export function CreateApiKeyDialog({ isOpen, onClose }: CreateApiKeyDialogProps)
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[12px] text-[#828282] font-medium">
+                <label className="text-[12px] font-medium text-muted-foreground">
                   Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
-                  onChange={(e) => { setName(e.target.value); setNameError(''); }}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setNameError('');
+                  }}
                   placeholder="e.g. My App Production Key"
-                  className="w-full px-3 py-2 text-[13px] border border-[#e0e0e0] rounded-lg focus:outline-none focus:border-[#248bf2] transition-colors"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
                   maxLength={255}
                   autoFocus
                 />
@@ -99,27 +111,33 @@ export function CreateApiKeyDialog({ isOpen, onClose }: CreateApiKeyDialogProps)
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[12px] text-[#828282] font-medium">Description</label>
+                <label className="text-[12px] font-medium text-muted-foreground">
+                  Description
+                </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What is this key for?"
-                  className="w-full px-3 py-2 text-[13px] border border-[#e0e0e0] rounded-lg focus:outline-none focus:border-[#248bf2] transition-colors resize-none"
+                  className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
                   rows={2}
                   maxLength={5000}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[12px] text-[#828282] font-medium">Expiration Date</label>
+                <label className="text-[12px] font-medium text-muted-foreground">
+                  Expiration Date
+                </label>
                 <input
                   type="datetime-local"
                   value={expiresAt}
                   onChange={(e) => setExpiresAt(e.target.value)}
-                  className="w-full px-3 py-2 text-[13px] border border-[#e0e0e0] rounded-lg focus:outline-none focus:border-[#248bf2] transition-colors"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors focus:border-primary"
                   min={new Date().toISOString().slice(0, 16)}
                 />
-                <p className="text-[11px] text-[#bdbdbd]">Leave empty for no expiration</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Leave empty for no expiration
+                </p>
               </div>
 
               {createMutation.error && (
@@ -132,14 +150,15 @@ export function CreateApiKeyDialog({ isOpen, onClose }: CreateApiKeyDialogProps)
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="px-4 py-2 text-[13px] text-[#828282] hover:bg-[#f5f5f5] rounded-lg transition-colors"
+                  className="rounded-lg px-4 py-2 text-[13px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 >
                   Cancel
                 </button>
+
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="px-4 py-2 bg-[#248bf2] text-white text-[13px] font-medium rounded-lg hover:bg-[#1a6fcc] transition-colors disabled:opacity-50"
+                  className="rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
                 >
                   {createMutation.isPending ? 'Creating...' : 'Create Key'}
                 </button>

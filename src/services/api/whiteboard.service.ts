@@ -6,12 +6,71 @@ import { apiClient } from '@/services/api/client';
 import {
   ExcalidrawElement,
   WhiteboardNode,
-  WhiteboardAppState,
   WhiteboardContextContent,
 } from '@/types/whiteboard';
+import type { Attribute } from '@/types/backend-dtos';
 import { generateTitle, getBoundText } from '@/lib/whiteboard/elementMapper';
 
 export const whiteboardService = {
+  /**
+   * Get whiteboard nodes for a space
+   * Uses the shared apiClient base URL so local Jest/MSW can hit localhost,
+   * while deployed runtime can still use the Render backend URL.
+   */
+  async getWhiteboardNodes(
+    spaceSlug: string,
+    params?: Record<string, unknown>
+  ): Promise<any> {
+    const response = await apiClient.get(`/spaces/${spaceSlug}/nodes`, { params });
+    return response.data;
+  },
+
+  /**
+   * Create a whiteboard node in a space
+   * Uses shared apiClient base URL resolution for local vs Render environments.
+   */
+  async createWhiteboardNode(
+    spaceSlug: string,
+    createDTO: Record<string, unknown>
+  ): Promise<WhiteboardNode> {
+    const response = await apiClient.post<WhiteboardNode>(
+      `/spaces/${spaceSlug}/nodes`,
+      createDTO
+    );
+    return response.data;
+  },
+
+  /**
+   * Update a whiteboard node in a space
+   * Uses shared apiClient base URL resolution for local vs Render environments.
+   */
+  async updateWhiteboardNode(
+    spaceSlug: string,
+    id: string,
+    updateDTO: Record<string, unknown>
+  ): Promise<WhiteboardNode> {
+    const response = await apiClient.put<WhiteboardNode>(
+      `/spaces/${spaceSlug}/nodes/${id}`,
+      updateDTO
+    );
+    return response.data;
+  },
+
+  /**
+   * Create a connector attribute from a source node to a target node
+   * Uses shared apiClient base URL resolution for local vs Render environments.
+   */
+  async createConnector(
+    sourceNodeId: string,
+    createDTO: Record<string, unknown>
+  ): Promise<Attribute> {
+    const response = await apiClient.post<Attribute>(
+      `/nodes/${sourceNodeId}/attributes`,
+      createDTO
+    );
+    return response.data;
+  },
+
   /**
    * Get the whiteboard context node for a space (if exists)
    */
@@ -29,7 +88,6 @@ export const whiteboardService = {
       return null;
     }
 
-    // Fetch full node to get content field
     const fullNode = await apiClient.get<WhiteboardNode>(
       `/spaces/${spaceSlug}/nodes/${contextNode.id}`
     );
@@ -45,6 +103,7 @@ export const whiteboardService = {
     content: WhiteboardContextContent
   ): Promise<WhiteboardNode> {
     const now = new Date().toISOString();
+
     const response = await apiClient.post<WhiteboardNode>(
       `/spaces/${spaceSlug}/nodes`,
       {
@@ -61,6 +120,7 @@ export const whiteboardService = {
         },
       }
     );
+
     return response.data;
   },
 
@@ -73,6 +133,7 @@ export const whiteboardService = {
     content: WhiteboardContextContent
   ): Promise<WhiteboardNode> {
     const now = new Date().toISOString();
+
     const response = await apiClient.put<WhiteboardNode>(
       `/spaces/${spaceSlug}/nodes/${contextNodeId}`,
       {
@@ -86,6 +147,7 @@ export const whiteboardService = {
         },
       }
     );
+
     return response.data;
   },
 
@@ -96,12 +158,11 @@ export const whiteboardService = {
     if (!contextNode.content) {
       return { elements: [] };
     }
+
     try {
       const parsed = JSON.parse(contextNode.content);
 
-      // Detect old format: elements are { node_id, excalidraw_element } entries
       if (parsed.elements?.length > 0 && parsed.elements[0]?.excalidraw_element) {
-        // Migrate old format to flat elements with customData.nodeId
         const elements = parsed.elements.map((entry: any) => ({
           ...entry.excalidraw_element,
           customData: {
@@ -109,6 +170,7 @@ export const whiteboardService = {
             nodeId: entry.node_id || undefined,
           },
         }));
+
         return {
           elements,
           app_state: parsed.app_state,
@@ -116,7 +178,6 @@ export const whiteboardService = {
         };
       }
 
-      // New format: elements are already flat ExcalidrawElement[]
       return parsed as WhiteboardContextContent;
     } catch {
       return { elements: [] };
@@ -142,6 +203,7 @@ export const whiteboardService = {
         },
       }
     );
+
     return response.data;
   },
 
@@ -162,6 +224,7 @@ export const whiteboardService = {
       try {
         const boundText = getBoundText(element, allElements);
         const title = boundText || generateTitle(element, 0);
+
         const response = await apiClient.post<WhiteboardNode>(
           `/spaces/${spaceSlug}/nodes`,
           {
@@ -173,6 +236,7 @@ export const whiteboardService = {
             },
           }
         );
+
         results.set(element.id, response.data.id);
       } catch {
         // Skip failed creates — will be retried on next save

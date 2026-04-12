@@ -19,7 +19,15 @@ function ChatPageContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense>
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-6 py-6">
+          <div className="h-[calc(100vh-120px)] overflow-hidden rounded-lg border bg-card flex items-center justify-center">
+            Loading chat...
+          </div>
+        </div>
+      }
+    >
       <ChatPageContent />
     </Suspense>
   );

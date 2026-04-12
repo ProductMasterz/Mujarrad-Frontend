@@ -1,6 +1,6 @@
-// src/schemas/__tests__/react-hook-form-integration.example.tsx
-// Example demonstrating React Hook Form integration with Zod schemas
-
+import React from 'react';
+import { describe, it, expect } from '@jest/globals';
+import { render, screen } from '@testing-library/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -17,9 +17,6 @@ import {
 } from '../index';
 import { NodeType, AttributeKey } from '@/types/backend-dtos';
 
-/**
- * Example 1: Registration Form
- */
 export function RegisterFormExample() {
   const {
     register,
@@ -31,7 +28,6 @@ export function RegisterFormExample() {
 
   const onSubmit = (data: RegisterFormData) => {
     console.log('Registration data:', data);
-    // API call here
   };
 
   return (
@@ -57,9 +53,6 @@ export function RegisterFormExample() {
   );
 }
 
-/**
- * Example 2: Login Form
- */
 export function LoginFormExample() {
   const {
     register,
@@ -71,7 +64,6 @@ export function LoginFormExample() {
 
   const onSubmit = (data: LoginFormData) => {
     console.log('Login data:', data);
-    // API call here
   };
 
   return (
@@ -89,9 +81,6 @@ export function LoginFormExample() {
   );
 }
 
-/**
- * Example 3: Create Space Form
- */
 export function CreateSpaceFormExample() {
   const {
     register,
@@ -103,7 +92,6 @@ export function CreateSpaceFormExample() {
 
   const onSubmit = (data: CreateSpaceFormData) => {
     console.log('Space data:', data);
-    // API call here
   };
 
   return (
@@ -125,14 +113,10 @@ export function CreateSpaceFormExample() {
   );
 }
 
-/**
- * Example 4: Create Node Form
- */
 export function CreateNodeFormExample() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<CreateNodeFormData>({
     resolver: zodResolver(createNodeSchema),
@@ -144,7 +128,6 @@ export function CreateNodeFormExample() {
 
   const onSubmit = (data: CreateNodeFormData) => {
     console.log('Node data:', data);
-    // API call here
   };
 
   return (
@@ -170,9 +153,6 @@ export function CreateNodeFormExample() {
   );
 }
 
-/**
- * Example 5: Create Attribute Form
- */
 export function CreateAttributeFormExample() {
   const {
     register,
@@ -184,7 +164,6 @@ export function CreateAttributeFormExample() {
 
   const onSubmit = (data: CreateAttributeFormData) => {
     console.log('Attribute data:', data);
-    // API call here
   };
 
   return (
@@ -217,20 +196,22 @@ export function CreateAttributeFormExample() {
   );
 }
 
-/**
- * Usage Notes:
- *
- * 1. The zodResolver automatically validates form data against the schema
- * 2. Type safety is provided through TypeScript inference from Zod schemas
- * 3. Error messages from Zod are automatically mapped to form fields
- * 4. Use valueAsNumber for numeric inputs with register()
- * 5. Default values can be set in useForm() options
- * 6. All validation runs client-side before submission
- *
- * Best Practices:
- * - Always use the inferred types (e.g., RegisterFormData) for type safety
- * - Display error messages for all fields
- * - Consider using controlled components for complex inputs
- * - Add loading states during form submission
- * - Handle API errors separately from validation errors
- */
+describe('react-hook-form integration examples', () => {
+  it('renders example forms without crashing', () => {
+    render(
+      <div>
+        <RegisterFormExample />
+        <LoginFormExample />
+        <CreateSpaceFormExample />
+        <CreateNodeFormExample />
+        <CreateAttributeFormExample />
+      </div>
+    );
+
+    expect(screen.getByPlaceholderText('Username')).toBeInTheDocument();
+    expect(screen.getAllByPlaceholderText('Email').length).toBeGreaterThan(0);
+    expect(screen.getByPlaceholderText('Space Name')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Node Title')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Target Node ID')).toBeInTheDocument();
+  });
+});

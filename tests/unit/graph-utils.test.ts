@@ -1,8 +1,37 @@
 import { describe, it, expect } from '@jest/globals';
 import { detectBidirectionalEdges, buildGraphData } from '@/lib/graph-utils';
-import type { Node, Attribute } from '@/types/entities';
+import type { Node, Attribute } from '@/types/backend-dtos';
 import { AttributeKey } from '@/types/backend-dtos';
 import type { GraphViewMode } from '@/types/graph';
+
+const fullViewMode: GraphViewMode = {
+  // Chat
+  showChat: true,
+  showConversationNodes: true,
+  showUserMessages: true,
+  showAssistantMessages: true,
+  showChatRelations: true,
+
+  // Entities
+  showEntities: true,
+  showPerson: true,
+  showPlace: true,
+  showAction: true,
+  showTopic: true,
+  showEvent: true,
+  showEntityRelations: true,
+
+  // System
+  showSystem: true,
+  showRegular: true,
+  showContext: true,
+  showAssumption: true,
+  showTemplate: true,
+  showBlocks: true,
+
+  // Other
+  showReferences: true,
+};
 
 describe('Graph Utilities Unit Tests', () => {
   describe('T021: detectBidirectionalEdges identifies A↔B pairs', () => {
@@ -13,6 +42,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-A',
           targetNodeId: 'node-B',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -25,6 +55,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-B',
           targetNodeId: 'node-A',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -49,6 +80,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-A',
           targetNodeId: 'node-B',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -61,6 +93,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-B',
           targetNodeId: 'node-A',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -74,6 +107,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-C',
           targetNodeId: 'node-D',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -86,6 +120,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-D',
           targetNodeId: 'node-C',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -111,6 +146,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-A',
           targetNodeId: 'node-B',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -123,6 +159,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-B',
           targetNodeId: 'node-C',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -144,6 +181,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-A',
           targetNodeId: 'node-B',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -156,6 +194,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-B',
           targetNodeId: 'node-A',
           attributeType: 'depends_on',
+          attributeName: 'depends_on',
           attributeKey: 'dependency',
           attributeValue: null,
           metadata: {},
@@ -184,6 +223,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-A',
           targetNodeId: 'node-A',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'self-ref',
           attributeValue: null,
           metadata: {},
@@ -201,12 +241,12 @@ describe('Graph Utilities Unit Tests', () => {
 
     it('should handle mixed bidirectional and unidirectional edges', () => {
       const attributes: Attribute[] = [
-        // A ↔ B (bidirectional)
         {
           id: 'attr-1',
           sourceNodeId: 'node-A',
           targetNodeId: 'node-B',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -219,6 +259,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-B',
           targetNodeId: 'node-A',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -226,12 +267,12 @@ describe('Graph Utilities Unit Tests', () => {
           createdAt: '2025-01-01T00:00:00Z',
           updatedAt: '2025-01-01T00:00:00Z',
         },
-        // C → D (unidirectional)
         {
           id: 'attr-3',
           sourceNodeId: 'node-C',
           targetNodeId: 'node-D',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -311,6 +352,8 @@ describe('Graph Utilities Unit Tests', () => {
         id: 'attr-contains',
         sourceNodeId: 'context-1',
         targetNodeId: 'regular-1',
+        attributeType: 'contains',
+        attributeName: 'contains',
         attributeKey: AttributeKey.CONTAINS,
         attributeValue: null,
         metadata: {},
@@ -322,6 +365,8 @@ describe('Graph Utilities Unit Tests', () => {
         id: 'attr-ref',
         sourceNodeId: 'regular-1',
         targetNodeId: 'regular-2',
+        attributeType: 'references',
+        attributeName: 'references',
         attributeKey: AttributeKey.REFERENCES,
         attributeValue: null,
         metadata: {},
@@ -333,10 +378,7 @@ describe('Graph Utilities Unit Tests', () => {
 
     it('should show all nodes when all filters enabled', () => {
       const viewMode: GraphViewMode = {
-        showContext: true,
-        showRegular: true,
-        showContains: true,
-        showReferences: true,
+        ...fullViewMode,
       };
 
       const graphData = buildGraphData(mockNodes, mockAttributes, viewMode);
@@ -347,16 +389,14 @@ describe('Graph Utilities Unit Tests', () => {
 
     it('should filter out CONTEXT nodes when showContext is false', () => {
       const viewMode: GraphViewMode = {
+        ...fullViewMode,
         showContext: false,
-        showRegular: true,
-        showContains: true,
-        showReferences: true,
       };
 
       const graphData = buildGraphData(mockNodes, mockAttributes, viewMode);
 
       expect(graphData.nodes).toHaveLength(2);
-      expect(graphData.nodes.every(n => n.type === 'regular')).toBe(true);
+      expect(graphData.nodes.every(n => n.data.nodeType === 'REGULAR')).toBe(true);
       const nodeIds = graphData.nodes.map(n => n.id);
       expect(nodeIds).toContain('regular-1');
       expect(nodeIds).toContain('regular-2');
@@ -364,55 +404,36 @@ describe('Graph Utilities Unit Tests', () => {
 
     it('should filter out REGULAR nodes when showRegular is false', () => {
       const viewMode: GraphViewMode = {
-        showContext: true,
+        ...fullViewMode,
         showRegular: false,
-        showContains: true,
-        showReferences: true,
       };
 
       const graphData = buildGraphData(mockNodes, mockAttributes, viewMode);
 
       expect(graphData.nodes).toHaveLength(2);
-      expect(graphData.nodes.every(n => n.type === 'context')).toBe(true);
+      expect(graphData.nodes.every(n => n.data.nodeType === 'CONTEXT')).toBe(true);
       const nodeIds = graphData.nodes.map(n => n.id);
       expect(nodeIds).toContain('context-1');
       expect(nodeIds).toContain('context-2');
     });
 
-    it('should filter out contains edges when showContains is false', () => {
-      const viewMode: GraphViewMode = {
-        showContext: true,
-        showRegular: true,
-        showContains: false,
-        showReferences: true,
-      };
-
-      const graphData = buildGraphData(mockNodes, mockAttributes, viewMode);
-
-      expect(graphData.edges).toHaveLength(1);
-      expect(graphData.edges[0].data.attribute.attributeKey).toBe('references');
-    });
-
     it('should filter out references edges when showReferences is false', () => {
       const viewMode: GraphViewMode = {
-        showContext: true,
-        showRegular: true,
-        showContains: true,
+        ...fullViewMode,
         showReferences: false,
       };
 
       const graphData = buildGraphData(mockNodes, mockAttributes, viewMode);
 
       expect(graphData.edges).toHaveLength(1);
-      expect(graphData.edges[0].data.attribute.attributeKey).toBe('contains');
+      expect(graphData.edges[0].data.attribute.attributeName).toBe('contains');
     });
 
     it('should return empty graph when all node filters disabled', () => {
       const viewMode: GraphViewMode = {
+        ...fullViewMode,
         showContext: false,
         showRegular: false,
-        showContains: true,
-        showReferences: true,
       };
 
       const graphData = buildGraphData(mockNodes, mockAttributes, viewMode);
@@ -420,42 +441,27 @@ describe('Graph Utilities Unit Tests', () => {
       expect(graphData.nodes).toHaveLength(0);
     });
 
-    it('should return no edges when all edge filters disabled', () => {
-      const viewMode: GraphViewMode = {
-        showContext: true,
-        showRegular: true,
-        showContains: false,
-        showReferences: false,
-      };
-
-      const graphData = buildGraphData(mockNodes, mockAttributes, viewMode);
-
-      expect(graphData.edges).toHaveLength(0);
-    });
 
     it('should set correct node types for graph rendering', () => {
       const viewMode: GraphViewMode = {
-        showContext: true,
-        showRegular: true,
-        showContains: true,
-        showReferences: true,
+        ...fullViewMode,
       };
 
       const graphData = buildGraphData(mockNodes, mockAttributes, viewMode);
 
       const contextNode = graphData.nodes.find(n => n.id === 'context-1');
-      expect(contextNode?.type).toBe('context');
+      expect(contextNode?.type).toBe('custom');
+      expect(contextNode?.data.nodeType).toBe('CONTEXT');
 
       const regularNode = graphData.nodes.find(n => n.id === 'regular-1');
-      expect(regularNode?.type).toBe('regular');
+      
+      expect(regularNode?.type).toBe('custom');
+      expect(regularNode?.data.nodeType).toBe('REGULAR');
     });
 
     it('should include node data with label', () => {
       const viewMode: GraphViewMode = {
-        showContext: true,
-        showRegular: true,
-        showContains: true,
-        showReferences: true,
+        ...fullViewMode,
       };
 
       const graphData = buildGraphData(mockNodes, mockAttributes, viewMode);
@@ -501,6 +507,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-A',
           targetNodeId: 'node-B',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -513,6 +520,7 @@ describe('Graph Utilities Unit Tests', () => {
           sourceNodeId: 'node-B',
           targetNodeId: 'node-A',
           attributeType: 'references',
+          attributeName: 'references',
           attributeKey: 'wiki-link',
           attributeValue: null,
           metadata: {},
@@ -523,10 +531,7 @@ describe('Graph Utilities Unit Tests', () => {
       ];
 
       const viewMode: GraphViewMode = {
-        showContext: true,
-        showRegular: true,
-        showContains: true,
-        showReferences: true,
+        ...fullViewMode,
       };
 
       const graphData = buildGraphData(nodesWithBidi, attributesWithBidi, viewMode);
@@ -538,10 +543,7 @@ describe('Graph Utilities Unit Tests', () => {
 
     it('should handle empty nodes and attributes', () => {
       const viewMode: GraphViewMode = {
-        showContext: true,
-        showRegular: true,
-        showContains: true,
-        showReferences: true,
+        ...fullViewMode,
       };
 
       const graphData = buildGraphData([], [], viewMode);

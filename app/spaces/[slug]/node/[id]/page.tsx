@@ -6,15 +6,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Header } from '@/shell/components/Header';
-import { BlockOutlineSidebar } from '@/shell/components/BlockOutlineSidebar';
 import { Tab } from '@/shell/components/TabsBar';
-import { FeedbackModal } from '@/shell/components/FeedbackModal';
 import { ShareModal } from '@/shell/components/ShareModal';
 import { CardType } from '@/shell/data/projects';
 import { useSpace, nodeKeys } from '@/hooks/api';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
-import { useAuthStore } from '@/stores/auth.store';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { BlockEditor, BlockEditorRef } from '@/components/blocks/BlockEditor';
 import { Button } from '@/components/ui/button';
@@ -26,7 +23,6 @@ export default function NodeDetailPage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { logout } = useAuthStore();
   const navigateToNode = useNavigationStore((state) => state.navigateToNode);
   const slug = params.slug as string;
   const nodeId = params.id as string;
@@ -57,9 +53,7 @@ export default function NodeDetailPage() {
     },
   });
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [title, setTitle] = useState('');
 
   const [tabs, setTabs] = useState<Tab[]>([
@@ -91,20 +85,18 @@ export default function NodeDetailPage() {
     setFocusedBlockId(blockId);
   }, []);
 
-  const handleBlockClick = useCallback((blockId: string) => {
-    if (blockEditorRef.current) {
-      blockEditorRef.current.scrollToBlock(blockId);
-    }
-  }, []);
 
   const breadcrumbPath = useMemo(() => {
     const path = [{ id: 'spaces', title: 'Spaces' }];
+
     if (space) {
       path.push({ id: space.id, title: space.name });
     }
+
     if (node) {
       path.push({ id: node.id, title: node.title });
     }
+
     return path;
   }, [space, node]);
 
@@ -120,10 +112,9 @@ export default function NodeDetailPage() {
     }
   }, [title, node?.title, updateNodeMutation]);
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
   const handleHomeClick = () => {
-    router.push('/spaces');
+    router.push('/');
   };
 
   const handleBackClick = () => {
@@ -131,9 +122,17 @@ export default function NodeDetailPage() {
   };
 
   const handleBreadcrumbClick = (index: number) => {
+    if (index === -1) {
+      router.push('/');
+      return;
+    }
+
     if (index === 0) {
       router.push('/spaces');
-    } else if (index === 1 && space) {
+      return;
+    }
+
+    if (index === 1 && space) {
       router.push(`/spaces/${slug}`);
     }
   };
@@ -141,19 +140,7 @@ export default function NodeDetailPage() {
   const handleShareClick = () => {
     setShowShareModal(true);
   };
-
-  const handleWhiteboardClick = () => {
-    router.push(`/spaces/${slug}/whiteboard`);
-  };
-
-  const handleFeedback = () => {
-    setShowFeedbackModal(true);
-  };
-
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
+  
 
   const handleTabClick = (tabId: string) => {
     setActiveTabId(tabId);
@@ -243,43 +230,23 @@ export default function NodeDetailPage() {
     <ProtectedRoute>
       <div className="relative min-h-screen bg-background text-foreground">
         <Header
-          onMenuClick={toggleSidebar}
+          onMenuClick={() => {}}
           onBackClick={handleBackClick}
           showBackButton={true}
           breadcrumbPath={breadcrumbPath}
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
-          onCreateNode={() => {}}
-          onCreateContext={() => {}}
           onShare={handleShareClick}
-          onOpenInNewTab={handleNewTab}
-          onOpenAsNode={() => {}}
-          onLock={() => {}}
-          onWhiteboard={handleWhiteboardClick}
-          onDelete={() => {}}
-          onMoveTo={() => {}}
           tabs={tabs}
           activeTabId={activeTabId}
           onTabClick={handleTabClick}
           onTabClose={handleTabClose}
           onNewTab={handleNewTab}
-          onFeedback={handleFeedback}
         />
 
-        <BlockOutlineSidebar
-          isOpen={sidebarOpen}
-          blocks={blocks}
-          selectedBlockId={focusedBlockId}
-          onBlockClick={handleBlockClick}
-          onLogout={handleLogout}
-        />
+     
 
-        <div
-          className="pt-[76px] transition-all duration-300"
-          style={{
-            marginLeft: sidebarOpen ? '276px' : '0',
-          }}
-        >
+        <div className="px-5 pt-[126px] pb-8 transition-all duration-300">
           {isLoading ? (
             <div className="flex h-[400px] items-center justify-center">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#248bf2] border-t-transparent" />
@@ -370,12 +337,6 @@ export default function NodeDetailPage() {
           />
         )}
 
-        {showFeedbackModal && (
-          <FeedbackModal
-            isOpen={showFeedbackModal}
-            onClose={() => setShowFeedbackModal(false)}
-          />
-        )}
       </div>
     </ProtectedRoute>
   );

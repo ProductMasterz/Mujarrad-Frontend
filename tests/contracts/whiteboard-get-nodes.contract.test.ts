@@ -1,19 +1,34 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from '@jest/globals';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
-import type { WhiteboardNode, WhiteboardNodesResponse } from '@/types/whiteboard';
-
-// Mock server for contract testing
+import type { WhiteboardNodesResponse } from '@/types/whiteboard';
 const server = setupServer();
 
-beforeAll(() => server.listen());
+const baseUrl = 'http://localhost:3000';
+
+const registerCommonHandlers = () => {
+  server.use(
+    http.options(`${baseUrl}/api/spaces/:slug/nodes`, () => {
+      return new HttpResponse(null, { status: 200 });
+    }),
+    http.options(`${baseUrl}/api/spaces/:slug/nodes*`, () => {
+      return new HttpResponse(null, { status: 200 });
+    })
+  );
+};
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+
+beforeEach(() => {
+  registerCommonHandlers();
+});
+
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 describe('API Contract: GET /api/spaces/{slug}/nodes (Whiteboard)', () => {
   const testSpaceSlug = 'test-whiteboard-space';
-  const baseUrl = 'https://mujarrad.onrender.com';
-
+  //const baseUrl = 'https://mujarrad.onrender.com';
   describe('T004: Filter whiteboard nodes by element_subtype', () => {
     it('should return whiteboard nodes filtered by element_subtype', async () => {
       const mockResponse: WhiteboardNodesResponse = {
@@ -65,7 +80,7 @@ describe('API Contract: GET /api/spaces/{slug}/nodes (Whiteboard)', () => {
       };
 
       server.use(
-        http.get(`${baseUrl}/api/spaces/:slug/nodes`, ({ request, params }) => {
+        http.get(`${baseUrl}/api/spaces/:slug/nodes*`, async ({ request, params }) => {
           const url = new URL(request.url);
           const elementSubtype = url.searchParams.get('element_subtype');
 
@@ -116,7 +131,7 @@ describe('API Contract: GET /api/spaces/{slug}/nodes (Whiteboard)', () => {
       };
 
       server.use(
-        http.get(`${baseUrl}/api/spaces/:slug/nodes`, () => {
+        http.get(`${baseUrl}/api/spaces/:slug/nodes*`, () => {
           return HttpResponse.json(mockResponse);
         })
       );
@@ -196,7 +211,7 @@ describe('API Contract: GET /api/spaces/{slug}/nodes (Whiteboard)', () => {
       };
 
       server.use(
-        http.get(`${baseUrl}/api/spaces/:slug/nodes`, () => {
+        http.get(`${baseUrl}/api/spaces/:slug/nodes*`,() => {
           return HttpResponse.json(mockResponse);
         })
       );
@@ -211,7 +226,7 @@ describe('API Contract: GET /api/spaces/{slug}/nodes (Whiteboard)', () => {
 
     it('should handle 404 for non-existent space', async () => {
       server.use(
-        http.get(`${baseUrl}/api/spaces/:slug/nodes`, () => {
+        http.get(`${baseUrl}/api/spaces/:slug/nodes*`, () => {
           return HttpResponse.json(
             {
               type: 'https://api.mujarrad.com/errors/not-found',

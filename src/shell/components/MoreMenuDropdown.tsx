@@ -1,104 +1,53 @@
-import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  ChevronRight,
-  PenTool,
-  Trash2,
   Share2,
-  ExternalLink,
-  Maximize2,
-  Lock,
-  MoveRight,
   Settings,
-  GitBranch,
   User,
-  GraduationCap,
   Command,
-} from "lucide-react";
-import {
-  useNavigationStore,
-  MoreAction,
-  MORE_ACTION_LABELS,
-} from "@/stores/navigationStore";
+  CircleHelp,
+} from 'lucide-react';
 
 type MoreMenuDropdownProps = {
   onClose: () => void;
   anchorEl: HTMLElement | null;
   onShare?: () => void;
-  onOpenInNewTab?: () => void;
-  onOpenAsNode?: () => void;
-  onLock?: () => void;
-  onWhiteboard?: () => void;
-  onGraph?: () => void;
-  onDelete?: () => void;
-  onClearSpace?: () => void;
-  onMoveTo?: () => void;
-};
-
-const ACTION_ICONS: Partial<Record<MoreAction, React.ReactNode>> = {
-  share: <Share2 className="size-[14px]" />,
-  open_new_tab: <ExternalLink className="size-[14px]" />,
-  open_as_node: <Maximize2 className="size-[14px]" />,
-  lock: <Lock className="size-[14px]" />,
-  graph: <GitBranch className="size-[14px]" />,
-  whiteboard: <PenTool className="size-[14px]" />,
-  delete: <Trash2 className="size-[14px]" />,
-  clear_space: <Trash2 className="size-[14px]" />,
-  move_to: <MoveRight className="size-[14px]" />,
-  settings: <Settings className="size-[14px]" />,
+  onShortcuts?: () => void;
 };
 
 export function MoreMenuDropdown({
   onClose,
   anchorEl,
   onShare,
-  onOpenInNewTab,
-  onOpenAsNode,
-  onLock,
-  onWhiteboard,
-  onGraph,
-  onDelete,
-  onClearSpace,
-  onMoveTo,
+  onShortcuts,
 }: MoreMenuDropdownProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
-  const moreActions = useNavigationStore((state) => state.moreActions).filter(
-  (action) =>
-    action !== 'graph' &&
-    action !== 'whiteboard' &&
-    action !== 'settings'
-);
-  
+
   const handleProfileClick = () => {
-    router.push("/settings");
+    router.push('/profile');
     onClose();
   };
 
-  const handleLearningClick = () => {
+  const handleSettingsClick = () => {
+    router.push('/settings');
+    onClose();
+  };
+
+  const handleHelpClick = () => {
+    router.push('/help');
     onClose();
   };
 
   const handleShortcutsClick = () => {
+    onShortcuts?.();
     onClose();
   };
-  const actionHandlers: Record<MoreAction, (() => void) | undefined> = {
-    share: onShare,
-    open_new_tab: onOpenInNewTab,
-    open_as_node: onOpenAsNode,
-    lock: onLock,
-    graph: onGraph,
-    whiteboard: onWhiteboard,
-    delete: onDelete,
-    clear_space: onClearSpace,
-    move_to: onMoveTo,
-    settings: () => router.push("/settings"),
+
+  const handleShareClick = () => {
+    onShare?.();
+    onClose();
   };
-
-  const isDangerousAction = (action: MoreAction) =>
-    action === "delete" || action === "clear_space";
-
-  const hasSubmenu = (action: MoreAction) => action === "move_to";
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -113,17 +62,17 @@ export function MoreMenuDropdown({
     }
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         onClose();
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, [onClose, anchorEl]);
 
@@ -131,6 +80,7 @@ export function MoreMenuDropdown({
 
   const rect = anchorEl.getBoundingClientRect();
   const menuWidth = 205;
+  const gap = 6;
   const padding = 8;
 
   const menuLeft = Math.min(
@@ -138,18 +88,7 @@ export function MoreMenuDropdown({
     window.innerWidth - menuWidth - padding
   );
 
-  const menuTop = Math.min(
-    rect.bottom + 8,
-    window.innerHeight - 320
-  );
-
-  const handleActionClick = (action: MoreAction) => {
-    const handler = actionHandlers[action];
-    if (handler) {
-      handler();
-    }
-    onClose();
-  };
+  const menuTop = rect.bottom + gap;
 
   return (
     <div
@@ -160,84 +99,58 @@ export function MoreMenuDropdown({
         top: `${menuTop}px`,
       }}
     >
-            <div className="flex flex-col gap-[4px]">
-              <button
-                onClick={handleProfileClick}
-                className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] leading-[18px] text-foreground transition-colors hover:bg-accent"
-                style={{ fontVariationSettings: "'wdth' 100" }}
-              >
-                <span className="flex items-center gap-[10px]">
-                  <span className="text-muted-foreground">
-                    <User className="size-[14px]" />
-                  </span>
-                  Profile
-                </span>
-              </button>
+      <div className="flex flex-col gap-[4px]">
+        <button
+          onClick={handleProfileClick}
+          className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left text-[13px] leading-[18px] text-foreground transition-colors hover:bg-accent"
+        >
+          <span className="text-muted-foreground">
+            <User className="size-[14px]" />
+          </span>
+          Profile
+        </button>
 
-              <button
-                onClick={handleLearningClick}
-                className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] leading-[18px] text-foreground transition-colors hover:bg-accent"
-                style={{ fontVariationSettings: "'wdth' 100" }}
-              >
-                <span className="flex items-center gap-[10px]">
-                  <span className="text-muted-foreground">
-                    <GraduationCap className="size-[14px]" />
-                  </span>
-                  Learning
-                </span>
-              </button>
+        <button
+          onClick={handleSettingsClick}
+          className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left text-[13px] leading-[18px] text-foreground transition-colors hover:bg-accent"
+        >
+          <span className="text-muted-foreground">
+            <Settings className="size-[14px]" />
+          </span>
+          Settings
+        </button>
 
-              <button
-                onClick={handleShortcutsClick}
-                className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] leading-[18px] text-foreground transition-colors hover:bg-accent"
-                style={{ fontVariationSettings: "'wdth' 100" }}
-              >
-                <span className="flex items-center gap-[10px]">
-                  <span className="text-muted-foreground">
-                    <Command className="size-[14px]" />
-                  </span>
-                  Shortcuts
-                </span>
-              </button>
+        <button
+          onClick={handleHelpClick}
+          className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left text-[13px] leading-[18px] text-foreground transition-colors hover:bg-accent"
+        >
+          <span className="text-muted-foreground">
+            <CircleHelp className="size-[14px]" />
+          </span>
+          Help
+        </button>
 
-              <div className="my-[4px] h-px bg-border" />
+        <div className="my-[4px] h-px bg-border" />
 
-              {moreActions.map((action) => (
-          <button
-            key={action}
-            onClick={() => handleActionClick(action)}
-            className={`
-              flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left
-              font-['Roboto:Regular',sans-serif] text-[13px] font-normal tracking-[-0.08px] leading-[18px]
-              transition-colors
-              ${isDangerousAction(action)
-                ? "text-[#d4183d] hover:bg-[#fef2f2] dark:hover:bg-[#3a161c]"
-                : "text-foreground hover:bg-accent"
-              }
-              ${hasSubmenu(action) ? "justify-between" : ""}
-            `}
-            style={{ fontVariationSettings: "'wdth' 100" }}
-          >
-            <span className="flex items-center gap-[10px]">
-              {ACTION_ICONS[action] && (
-                <span
-                  className={
-                    isDangerousAction(action)
-                      ? "text-[#d4183d]"
-                      : "text-muted-foreground"
-                  }
-                >
-                  {ACTION_ICONS[action]}
-                </span>
-              )}
-              {MORE_ACTION_LABELS[action]}
-            </span>
+        <button
+          onClick={handleShareClick}
+          className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left text-[13px] leading-[18px] text-foreground transition-colors hover:bg-accent"
+        >
+          <span className="text-muted-foreground">
+            <Share2 className="size-[14px]" />
+          </span>
+          Share
+        </button>
 
-            {hasSubmenu(action) && (
-              <ChevronRight className="size-[12px] text-muted-foreground" />
-            )}
-          </button>
-        ))}
+        <button
+          onClick={handleShortcutsClick}
+          className="flex items-center gap-[10px] rounded-[8px] px-[12px] py-[8px] text-left text-[13px] leading-[18px] text-foreground transition-colors hover:bg-accent"
+        >
+          <span className="text-muted-foreground">
+            <Command className="size-[14px]" />
+          </span>
+          Shortcuts
+        </button>
       </div>
     </div>
   );

@@ -9,16 +9,20 @@ type ApiKeyEmptyStateProps = {
 export function ApiKeyEmptyState({ onCreateClick }: ApiKeyEmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="size-12 rounded-full bg-[#f0f7ff] flex items-center justify-center mb-4">
-        <Key className="size-6 text-[#248bf2]" />
+      <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10">
+        <Key className="size-6 text-primary" />
       </div>
-      <p className="text-[15px] text-[#333] font-medium mb-1">No API keys yet</p>
-      <p className="text-[13px] text-[#828282] mb-6 max-w-[300px]">
+
+      <p className="mb-1 text-[15px] font-medium text-foreground">No API keys yet</p>
+
+      <p className="mb-6 max-w-[300px] text-[13px] text-muted-foreground">
         Create an API key to integrate your applications with Mujarrad.
       </p>
+
       <button
         onClick={onCreateClick}
-        className="px-4 py-2 bg-[#248bf2] text-white text-[13px] font-medium rounded-lg hover:bg-[#1a6fcc] transition-colors"
+        className="rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition hover:opacity-90"
+        type="button"
       >
         Create your first API key
       </button>

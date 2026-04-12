@@ -7,35 +7,40 @@
  * 3. Error handling across services
  */
 
-import { describe, it, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterEach, afterAll, jest } from '@jest/globals';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
 import { wikiLinkService } from '@/services/api/wikilink.service';
-import type { Node, Attribute } from '@/types/backend-dtos';
+import { ApiError } from '@/lib/errors';
 
 // Mock server for integration testing
 const server = setupServer();
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }));
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  jest.restoreAllMocks();
+});
 afterAll(() => server.close());
 
 describe('Service Integration Tests', () => {
   describe('WikiLink Processing Workflow', () => {
     it('should parse, resolve, create placeholders, and create relationships', async () => {
-      const spaceId = 'ws-integration-123';
+      const spaceSlug = 'ws-integration-123';
       const sourceNodeId = 'node-source-1';
       const markdown = '# Welcome\n\nCheck out [[Existing Page]] and [[New Page]].';
 
-      // Setup: Mock space nodes (only "Existing Page" exists)
       server.use(
-        http.get('http://localhost:3000/api/spaces/:spaceId/nodes', () => {
+        // Existing nodes lookup
+        http.get('http://localhost:3000/api/spaces/:spaceSlug/nodes', ({ params }) => {
+          expect(params.spaceSlug).toBe(spaceSlug);
+
           return HttpResponse.json([
             {
               id: 'node-existing-1',
-              spaceId,
+              spaceId: spaceSlug,
               title: 'Existing Page',
               slug: 'existing-page',
               nodeType: 'REGULAR',
@@ -47,21 +52,22 @@ describe('Service Integration Tests', () => {
               version: 1,
             },
           ]);
-        })
-      );
+        }),
 
-      // Mock: Create placeholder for "New Page"
-      server.use(
-        http.post('http://localhost:3000/api/nodes', async ({ request }) => {
-          const body = await request.json() as any;
+        // Placeholder creation
+        http.post('http://localhost:3000/api/spaces/:spaceSlug/nodes', async ({ params, request }) => {
+          expect(params.spaceSlug).toBe(spaceSlug);
+
+          const body = (await request.json()) as any;
+
           return HttpResponse.json(
             {
               id: 'node-placeholder-1',
-              spaceId: body.spaceId,
+              spaceId: spaceSlug,
               title: body.title,
               slug: body.title.toLowerCase().replace(/\s+/g, '-'),
               nodeType: body.nodeType,
-              markdownContent: body.markdownContent,
+              markdownContent: body.content ?? body.markdownContent ?? '',
               nodeDetails: body.nodeDetails,
               createdBy: 'user-1',
               createdAt: '2025-10-08T12:00:00Z',
@@ -73,12 +79,14 @@ describe('Service Integration Tests', () => {
         })
       );
 
-      // Mock: Create attributes for both links
       let attributeCallCount = 0;
       server.use(
-        http.post('http://localhost:3000/api/nodes/:nodeId/attributes', async ({ request }) => {
-          const body = await request.json() as any;
+        http.post('http://localhost:3000/api/nodes/:nodeId/attributes', async ({ params, request }) => {
+          expect(params.nodeId).toBe(sourceNodeId);
+
+          const body = (await request.json()) as any;
           attributeCallCount++;
+
           return HttpResponse.json(
             {
               id: `attr-${attributeCallCount}`,
@@ -86,8 +94,8 @@ describe('Service Integration Tests', () => {
               targetNodeId: body.targetNodeId,
               attributeType: body.attributeType,
               attributeKey: body.attributeKey,
-              attributeValue: body.attributeValue,
-              metadata: body.metadata,
+              attributeValue: body.attributeValue ?? null,
+              metadata: body.metadata ?? {},
               createdBy: 'user-1',
               createdAt: '2025-10-08T12:00:00Z',
               updatedAt: '2025-10-08T12:00:00Z',
@@ -97,43 +105,42 @@ describe('Service Integration Tests', () => {
         })
       );
 
-      // Execute: Complete wiki-link processing workflow
       const result = await wikiLinkService.processWikiLinks(
         markdown,
         sourceNodeId,
-        spaceId
+        spaceSlug
       );
 
-      // Verify: Parse and resolve results
       expect(result.resolutions).toHaveLength(2);
+
       expect(result.resolutions[0].targetTitle).toBe('Existing Page');
       expect(result.resolutions[0].targetNode).toBeTruthy();
       expect(result.resolutions[0].needsPlaceholder).toBe(false);
+
       expect(result.resolutions[1].targetTitle).toBe('New Page');
       expect(result.resolutions[1].needsPlaceholder).toBe(true);
 
-      // Verify: Placeholder created for "New Page"
       expect(result.createdPlaceholders).toHaveLength(1);
       expect(result.createdPlaceholders[0].title).toBe('New Page');
       expect(result.createdPlaceholders[0].nodeDetails?.isPlaceholder).toBe(true);
 
-      // Verify: Attributes created for both links
       expect(result.createdAttributes).toHaveLength(2);
       expect(result.errors).toHaveLength(0);
     });
 
     it('should handle wiki-links when all targets exist', async () => {
-      const spaceId = 'ws-integration-456';
+      const spaceSlug = 'ws-integration-456';
       const sourceNodeId = 'node-source-2';
       const markdown = '[[Page A]] references [[Page B]].';
 
-      // Mock: Both pages exist
       server.use(
-        http.get('http://localhost:3000/api/spaces/:spaceId/nodes', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceSlug/nodes', ({ params }) => {
+          expect(params.spaceSlug).toBe(spaceSlug);
+
           return HttpResponse.json([
             {
               id: 'node-a',
-              spaceId,
+              spaceId: spaceSlug,
               title: 'Page A',
               slug: 'page-a',
               nodeType: 'REGULAR',
@@ -146,7 +153,7 @@ describe('Service Integration Tests', () => {
             },
             {
               id: 'node-b',
-              spaceId,
+              spaceId: spaceSlug,
               title: 'Page B',
               slug: 'page-b',
               nodeType: 'REGULAR',
@@ -158,13 +165,12 @@ describe('Service Integration Tests', () => {
               version: 1,
             },
           ]);
-        })
-      );
+        }),
 
-      // Mock: Create attributes
-      server.use(
-        http.post('http://localhost:3000/api/nodes/:nodeId/attributes', async ({ request }) => {
-          const body = await request.json() as any;
+        http.post('http://localhost:3000/api/nodes/:nodeId/attributes', async ({ params, request }) => {
+          expect(params.nodeId).toBe(sourceNodeId);
+
+          const body = (await request.json()) as any;
           return HttpResponse.json(
             {
               id: 'attr-resolved',
@@ -173,7 +179,7 @@ describe('Service Integration Tests', () => {
               attributeType: body.attributeType,
               attributeKey: body.attributeKey,
               attributeValue: null,
-              metadata: body.metadata,
+              metadata: body.metadata ?? {},
               createdBy: 'user-1',
               createdAt: '2025-10-08T12:00:00Z',
               updatedAt: '2025-10-08T12:00:00Z',
@@ -186,44 +192,46 @@ describe('Service Integration Tests', () => {
       const result = await wikiLinkService.processWikiLinks(
         markdown,
         sourceNodeId,
-        spaceId
+        spaceSlug
       );
 
-      // Verify: No placeholders needed
       expect(result.createdPlaceholders).toHaveLength(0);
       expect(result.createdAttributes).toHaveLength(2);
-      expect(result.resolutions.every(r => !r.needsPlaceholder)).toBe(true);
+      expect(result.resolutions.every((r) => !r.needsPlaceholder)).toBe(true);
     });
 
     it('should handle errors during placeholder creation', async () => {
-      const spaceId = 'ws-error-test';
+      jest.spyOn(console, 'log').mockImplementation(() => {});
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const spaceSlug = 'ws-error-test';
       const sourceNodeId = 'node-source-err';
       const markdown = '[[Valid Page]] and [[Invalid Page]].';
 
-      // Mock: No existing pages
       server.use(
-        http.get('http://localhost:3000/api/spaces/:spaceId/nodes', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceSlug/nodes', ({ params }) => {
+          expect(params.spaceSlug).toBe(spaceSlug);
           return HttpResponse.json([]);
         })
       );
 
-      // Mock: First placeholder succeeds, second fails
       let createCallCount = 0;
       server.use(
-        http.post('http://localhost:3000/api/nodes', async ({ request }) => {
+        http.post('http://localhost:3000/api/spaces/:spaceSlug/nodes', async ({ params, request }) => {
+          expect(params.spaceSlug).toBe(spaceSlug);
           createCallCount++;
-          const body = await request.json() as any;
+
+          const body = (await request.json()) as any;
 
           if (createCallCount === 1) {
-            // First call succeeds
             return HttpResponse.json(
               {
                 id: 'node-valid',
-                spaceId: body.spaceId,
+                spaceId: spaceSlug,
                 title: body.title,
                 slug: body.title.toLowerCase().replace(/\s+/g, '-'),
                 nodeType: body.nodeType,
-                markdownContent: body.markdownContent,
+                markdownContent: body.content ?? '',
                 nodeDetails: body.nodeDetails,
                 createdBy: 'user-1',
                 createdAt: '2025-10-08T12:00:00Z',
@@ -232,50 +240,70 @@ describe('Service Integration Tests', () => {
               },
               { status: 201 }
             );
-          } else {
-            // Second call fails with validation error
-            return HttpResponse.json(
-              {
-                type: 'https://api.mujarrad.com/errors/validation',
-                title: 'Validation Failed',
-                status: 400,
-                detail: 'Invalid node title',
-              },
-              { status: 400 }
-            );
           }
+
+          return HttpResponse.json(
+            {
+              type: 'https://api.mujarrad.com/errors/validation',
+              title: 'Validation Failed',
+              status: 400,
+              detail: 'Invalid node title',
+            },
+            { status: 400 }
+          );
+        }),
+
+        // Allow relationship creation for the successfully created placeholder
+        http.post('http://localhost:3000/api/nodes/:nodeId/attributes', async ({ request }) => {
+          const body = (await request.json()) as any;
+          return HttpResponse.json(
+            {
+              id: 'attr-valid',
+              sourceNodeId: body.sourceNodeId,
+              targetNodeId: body.targetNodeId,
+              attributeType: body.attributeType,
+              attributeKey: body.attributeKey,
+              attributeValue: body.attributeValue ?? null,
+              metadata: body.metadata ?? {},
+              createdBy: 'user-1',
+              createdAt: '2025-10-08T12:10:00Z',
+              updatedAt: '2025-10-08T12:10:00Z',
+            },
+            { status: 201 }
+          );
         })
       );
 
       const result = await wikiLinkService.processWikiLinks(
         markdown,
         sourceNodeId,
-        spaceId
+        spaceSlug
       );
 
-      // Verify: One placeholder created, one error
       expect(result.createdPlaceholders).toHaveLength(1);
+      expect(result.createdPlaceholders[0].title).toBe('Valid Page');
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors.some(e => e.includes('Invalid Page'))).toBe(true);
+      expect(result.errors.some((e) => e.includes('Invalid Page'))).toBe(true);
     });
   });
 
   describe('Node CRUD with Relationships', () => {
     it('should create node, add attributes, and retrieve them', async () => {
-      const spaceId = 'ws-crud-test';
+      const spaceSlug = 'ws-crud-test';
 
-      // Mock: Create node
       server.use(
-        http.post('http://localhost:3000/api/nodes', async ({ request }) => {
-          const body = await request.json() as any;
+        http.post('http://localhost:3000/api/spaces/:spaceSlug/nodes', async ({ params, request }) => {
+          expect(params.spaceSlug).toBe(spaceSlug);
+
+          const body = (await request.json()) as any;
           return HttpResponse.json(
             {
               id: 'node-new-123',
-              spaceId: body.spaceId,
+              spaceId: spaceSlug,
               title: body.title,
               slug: body.title.toLowerCase().replace(/\s+/g, '-'),
               nodeType: body.nodeType,
-              markdownContent: body.markdownContent,
+              markdownContent: body.content ?? body.markdownContent ?? '',
               nodeDetails: {},
               createdBy: 'user-1',
               createdAt: '2025-10-08T12:00:00Z',
@@ -287,21 +315,23 @@ describe('Service Integration Tests', () => {
         })
       );
 
-      // Step 1: Create node
-      const newNode = await nodeService.createNode({
-        spaceId,
-        title: 'New Node',
-        nodeType: 'REGULAR',
-        markdownContent: '# Content',
-      });
+      const newNode = await nodeService.createNode(
+        spaceSlug,
+        {
+          title: 'New Node',
+          nodeType: 'REGULAR',
+          markdownContent: '# Content',
+        } as any
+      );
 
       expect(newNode.id).toBe('node-new-123');
       expect(newNode.title).toBe('New Node');
 
-      // Mock: Create attribute
       server.use(
-        http.post('http://localhost:3000/api/nodes/:nodeId/attributes', async ({ request }) => {
-          const body = await request.json() as any;
+        http.post('http://localhost:3000/api/nodes/:nodeId/attributes', async ({ params, request }) => {
+          expect(params.nodeId).toBe('node-new-123');
+
+          const body = (await request.json()) as any;
           return HttpResponse.json(
             {
               id: 'attr-new-1',
@@ -320,24 +350,21 @@ describe('Service Integration Tests', () => {
         })
       );
 
-      // Step 2: Add attribute
-      const newAttr = await attributeService.createAttribute(
-        newNode.id.toString(),
-        {
-          sourceNodeId: newNode.id.toString(),
-          targetNodeId: 'other-node-456',
-          attributeType: 'references',
-          attributeKey: 'related-to',
-          attributeValue: null,
-        }
-      );
+      const newAttr = await attributeService.createAttribute('node-new-123', {
+        sourceNodeId: 'node-new-123',
+        targetNodeId: 'other-node-456',
+        attributeType: 'references',
+        attributeKey: 'related-to',
+        attributeValue: null,
+      });
 
       expect(newAttr.id).toBe('attr-new-1');
       expect(newAttr.attributeType).toBe('references');
 
-      // Mock: Get attributes
       server.use(
-        http.get('http://localhost:3000/api/nodes/:nodeId/attributes', () => {
+        http.get('http://localhost:3000/api/nodes/:nodeId/attributes', ({ params }) => {
+          expect(params.nodeId).toBe('node-new-123');
+
           return HttpResponse.json([
             {
               id: 'attr-new-1',
@@ -355,22 +382,24 @@ describe('Service Integration Tests', () => {
         })
       );
 
-      // Step 3: Retrieve attributes
-      const attributes = await attributeService.getNodeAttributes(newNode.id.toString());
+      const attributes = await attributeService.getNodeAttributes('node-new-123');
 
       expect(attributes).toHaveLength(1);
       expect(attributes[0].id).toBe('attr-new-1');
     });
 
     it('should update node and maintain version consistency', async () => {
+      const spaceSlug = 'ws-version-test';
       const nodeId = 'node-version-test';
 
-      // Mock: Get node (version 1)
       server.use(
-        http.get('http://localhost:3000/api/nodes/:id', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceSlug/nodes/:nodeId', ({ params }) => {
+          expect(params.spaceSlug).toBe(spaceSlug);
+          expect(params.nodeId).toBe(nodeId);
+
           return HttpResponse.json({
             id: nodeId,
-            spaceId: 'ws-1',
+            spaceId: spaceSlug,
             title: 'Original Title',
             slug: 'original-title',
             nodeType: 'REGULAR',
@@ -381,23 +410,20 @@ describe('Service Integration Tests', () => {
             updatedAt: '2025-10-08T10:00:00Z',
             version: 1,
           });
-        })
-      );
+        }),
 
-      const originalNode = await nodeService.getNode(nodeId);
-      expect(originalNode.version).toBe(1);
+        http.put('http://localhost:3000/api/spaces/:spaceSlug/nodes/:nodeId', async ({ params, request }) => {
+          expect(params.spaceSlug).toBe(spaceSlug);
+          expect(params.nodeId).toBe(nodeId);
 
-      // Mock: Update node (version 2)
-      server.use(
-        http.put('http://localhost:3000/api/nodes/:id', async ({ request }) => {
-          const body = await request.json() as any;
+          const body = (await request.json()) as any;
           return HttpResponse.json({
             id: nodeId,
-            spaceId: 'ws-1',
+            spaceId: spaceSlug,
             title: body.title,
             slug: body.title.toLowerCase().replace(/\s+/g, '-'),
             nodeType: body.nodeType,
-            markdownContent: body.markdownContent,
+            markdownContent: body.markdownContent ?? body.content ?? '',
             nodeDetails: {},
             createdBy: 'user-1',
             createdAt: '2025-10-08T10:00:00Z',
@@ -407,12 +433,19 @@ describe('Service Integration Tests', () => {
         })
       );
 
-      const updatedNode = await nodeService.updateNode(nodeId, {
-        title: 'Updated Title',
-        nodeType: 'REGULAR',
-        markdownContent: '# Updated',
-        version: 1,
-      });
+      const originalNode = await nodeService.getNode(spaceSlug, nodeId);
+      expect(originalNode.version).toBe(1);
+
+      const updatedNode = await nodeService.updateNode(
+        spaceSlug,
+        nodeId,
+        {
+          title: 'Updated Title',
+          nodeType: 'REGULAR',
+          markdownContent: '# Updated',
+          version: 1,
+        } as any
+      );
 
       expect(updatedNode.version).toBe(2);
       expect(updatedNode.title).toBe('Updated Title');
@@ -421,8 +454,12 @@ describe('Service Integration Tests', () => {
 
   describe('Error Handling Across Services', () => {
     it('should propagate 404 errors from NodeService', async () => {
+      const spaceSlug = 'nonexistent-space';
+
       server.use(
-        http.get('http://localhost:3000/api/nodes/:id', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceSlug/nodes/:nodeId', ({ params }) => {
+          expect(params.spaceSlug).toBe(spaceSlug);
+
           return HttpResponse.json(
             {
               type: 'https://api.mujarrad.com/errors/not-found',
@@ -435,7 +472,7 @@ describe('Service Integration Tests', () => {
         })
       );
 
-      await expect(nodeService.getNode('nonexistent')).rejects.toThrow();
+      await expect(nodeService.getNode(spaceSlug, 'nonexistent')).rejects.toBeInstanceOf(ApiError);
     });
 
     it('should handle circular dependency errors from AttributeService', async () => {
@@ -468,11 +505,7 @@ describe('Service Integration Tests', () => {
 
   describe('Performance and Edge Cases', () => {
     it('should handle empty markdown gracefully', async () => {
-      const result = await wikiLinkService.processWikiLinks(
-        '',
-        'node-1',
-        'ws-1'
-      );
+      const result = await wikiLinkService.processWikiLinks('', 'node-1', 'ws-1');
 
       expect(result.resolutions).toHaveLength(0);
       expect(result.createdPlaceholders).toHaveLength(0);
@@ -481,16 +514,17 @@ describe('Service Integration Tests', () => {
     });
 
     it('should handle duplicate wiki-links correctly', async () => {
-      const spaceId = 'ws-dup-test';
+      const spaceSlug = 'ws-dup-test';
       const markdown = '[[Page A]] and [[Page A]] again.';
 
-      // Mock: Page A exists
       server.use(
-        http.get('http://localhost:3000/api/spaces/:spaceId/nodes', () => {
+        http.get('http://localhost:3000/api/spaces/:spaceSlug/nodes', ({ params }) => {
+          expect(params.spaceSlug).toBe(spaceSlug);
+
           return HttpResponse.json([
             {
               id: 'node-page-a',
-              spaceId,
+              spaceId: spaceSlug,
               title: 'Page A',
               slug: 'page-a',
               nodeType: 'REGULAR',
@@ -505,12 +539,12 @@ describe('Service Integration Tests', () => {
         })
       );
 
-      // Mock: Create attributes (should be called twice)
       let attrCreateCount = 0;
       server.use(
         http.post('http://localhost:3000/api/nodes/:nodeId/attributes', async ({ request }) => {
           attrCreateCount++;
-          const body = await request.json() as any;
+          const body = (await request.json()) as any;
+
           return HttpResponse.json(
             {
               id: `attr-dup-${attrCreateCount}`,
@@ -519,7 +553,7 @@ describe('Service Integration Tests', () => {
               attributeType: body.attributeType,
               attributeKey: body.attributeKey,
               attributeValue: null,
-              metadata: body.metadata,
+              metadata: body.metadata ?? {},
               createdBy: 'user-1',
               createdAt: '2025-10-08T12:00:00Z',
               updatedAt: '2025-10-08T12:00:00Z',
@@ -532,10 +566,9 @@ describe('Service Integration Tests', () => {
       const result = await wikiLinkService.processWikiLinks(
         markdown,
         'node-source',
-        spaceId
+        spaceSlug
       );
 
-      // Should create 2 separate attributes for duplicate links
       expect(result.resolutions).toHaveLength(2);
       expect(result.createdAttributes).toHaveLength(2);
       expect(attrCreateCount).toBe(2);

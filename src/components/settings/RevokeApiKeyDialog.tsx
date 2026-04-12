@@ -10,7 +10,12 @@ type RevokeApiKeyDialogProps = {
   keyName: string;
 };
 
-export function RevokeApiKeyDialog({ isOpen, onClose, keyId, keyName }: RevokeApiKeyDialogProps) {
+export function RevokeApiKeyDialog({
+  isOpen,
+  onClose,
+  keyId,
+  keyName,
+}: RevokeApiKeyDialogProps) {
   const revokeMutation = useRevokeApiKey();
 
   const handleRevoke = () => {
@@ -24,26 +29,33 @@ export function RevokeApiKeyDialog({ isOpen, onClose, keyId, keyName }: RevokeAp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-[400px] mx-4">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#f2f2f2]">
-          <h2 className="text-[15px] font-medium text-[#333]">Revoke API Key</h2>
-          <button onClick={onClose} className="p-1 hover:bg-[#f5f5f5] rounded-lg transition-colors">
-            <X className="size-4 text-[#828282]" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
+
+      <div className="relative mx-4 w-full max-w-[400px] rounded-2xl border border-border bg-background text-foreground shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="text-[15px] font-semibold text-foreground">Revoke API Key</h2>
+
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            type="button"
+          >
+            <X className="size-4" />
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-4">
-          <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <AlertTriangle className="size-4 text-red-600 mt-0.5 shrink-0" />
-            <p className="text-[13px] text-red-800">
-              This action is permanent. Any applications using this key will immediately lose access.
+        <div className="space-y-4 px-5 py-4">
+          <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900/50 dark:bg-red-950/30">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-600 dark:text-red-400" />
+            <p className="text-[13px] text-red-800 dark:text-red-200">
+              This action is permanent. Any applications using this key will immediately lose
+              access.
             </p>
           </div>
 
-          <p className="text-[13px] text-[#4f4f4f]">
-            Are you sure you want to revoke <span className="font-medium">{keyName}</span>?
+          <p className="text-[13px] text-muted-foreground">
+            Are you sure you want to revoke <span className="font-medium text-foreground">{keyName}</span>?
           </p>
 
           {revokeMutation.error && (
@@ -55,14 +67,17 @@ export function RevokeApiKeyDialog({ isOpen, onClose, keyId, keyName }: RevokeAp
           <div className="flex justify-end gap-2 pt-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-[13px] text-[#828282] hover:bg-[#f5f5f5] rounded-lg transition-colors"
+              className="rounded-lg px-4 py-2 text-[13px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              type="button"
             >
               Cancel
             </button>
+
             <button
               onClick={handleRevoke}
               disabled={revokeMutation.isPending}
-              className="px-4 py-2 bg-red-600 text-white text-[13px] font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              className="rounded-lg bg-red-600 px-4 py-2 text-[13px] font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+              type="button"
             >
               {revokeMutation.isPending ? 'Revoking...' : 'Revoke Key'}
             </button>

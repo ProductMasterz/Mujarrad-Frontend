@@ -108,13 +108,6 @@ export default function App() {
     setShowNewNodeModal(true);
   };
 
-  const handleNotificationClick = () => {
-    alert("Notification button clicked");
-  };
-
-  const handleSearchClick = () => {
-    // Search modal is now handled in Header component
-  };
 
   const handleMoreClick = () => {
     alert("More button clicked");
@@ -297,12 +290,6 @@ export default function App() {
     updateActiveTabNavigation(newPath);
   };
 
-  const handleSidebarItemClickWithTab = (itemId: string) => {
-    const newPath = [itemId];
-    setNavigationPath(newPath);
-    updateActiveTabNavigation(newPath);
-  };
-
   const handleSidebarNavigateWithTab = (path: string[]) => {
     setNavigationPath(path);
     updateActiveTabNavigation(path);
@@ -343,32 +330,23 @@ export default function App() {
         onBackClick={handleBackClickWithTab}
         showBackButton={navigationPath.length > 0}
         breadcrumbPath={breadcrumbPath}
-        onNotificationClick={handleNotificationClick}
-        onSearchClick={handleSearchClick}
         onHomeClick={handleHomeClickWithTab}
         onBreadcrumbClick={handleBreadcrumbClickWithTab}
-        // Add menu actions
-        onCreateSpace={handleAddClick}
-        onCreateNode={handleAddClick}
-        onCreateContext={handleAddClick}
+  
         // More menu actions
         onShare={handleShareClick}
-        onOpenInNewTab={handleOpenInNewTab}
         tabs={tabs}
         activeTabId={activeTabId}
         onTabClick={handleTabClick}
         onTabClose={handleTabClose}
         onNewTab={handleNewTab}
-        onFeedback={handleFeedback}
       />
 
       <Sidebar
         isOpen={sidebarOpen}
-        onItemClick={handleSidebarItemClickWithTab}
         selectedItem={currentSelectedItem}
         onNavigate={handleSidebarNavigateWithTab}
         onAddNode={handleAddNodeFromSidebar}
-        onLogout={handleLogout}
       />
 
       {/* Main content */}
@@ -417,14 +395,6 @@ export default function App() {
         isOpen={showNewNodeModal}
         onClose={handleCloseNewNodeModal}
         spaceSlug={currentSpace}
-        spaceId={currentSpace}
-        currentPath={navigationPath}
-        currentSpace={currentSpace}
-        spaces={spaces}
-        onAddSpace={handleAddSpace}
-        onSpaceChange={handleSpaceChange}
-        parentPath={newNodeParentPath}
-        insertPosition={newNodePosition}
       />
 
       {/* Context Menu */}

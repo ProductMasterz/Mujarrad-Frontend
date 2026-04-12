@@ -13,14 +13,11 @@ import { useDuplicateCheck, type DuplicateAction } from "@/hooks/api/useDuplicat
 import { NodeType as BackendNodeType, type Node as NodeDTO } from "@/types/backend-dtos";
 import { DuplicateNodeModal } from "@/components/nodes/DuplicateNodeModal";
 import { useNavigationStore } from "@/stores/navigationStore";
+import { useNotificationStore } from "@/stores/notificationStore";
 
 // Entity types that can be created
 export type EntityType = "space" | "node" | "context";
 
-type SpaceItem = {
-  id: string;
-  name: string;
-};
 type ManualSystemNodeType = "REGULAR" | "CONTEXT" | "ASSUMPTION" | "TEMPLATE";
 type ManualEntityType = "" | "person" | "place" | "action" | "topic" | "event";
 // Icons for each entity type
@@ -62,17 +59,7 @@ type NewNodeModalProps = {
   isOpen: boolean;
   onClose: () => void;
   spaceSlug?: string;
-  spaceId?: string;
-  currentPath?: string[];
-  currentSpace?: string;
-  spaces?: SpaceItem[];
-  onAddSpace?: (spaceName: string) => void;
-  onSpaceChange?: (spaceId: string) => void;
-  parentPath?: string[];
-  insertPosition?: number;
-  /** Default entity type to pre-select when modal opens */
   defaultType?: EntityType;
-  /** Available entity types based on current navigation scope */
   availableTypes?: EntityType[];
 };
 
@@ -80,21 +67,13 @@ export function NewNodeModal({
   isOpen,
   onClose,
   spaceSlug,
-  spaceId,
-  currentPath = [],
-  currentSpace = "",
-  spaces = [],
-  onAddSpace,
-  onSpaceChange,
-  parentPath,
-  insertPosition,
   defaultType = "node",
   availableTypes,
 }: NewNodeModalProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const titleInputRef = useRef<HTMLInputElement>(null);
-
+  const addNotification = useNotificationStore((state) => state.addNotification);
   // Get current scope from navigation store to determine available types
   const scope = useNavigationStore((state) => state.scope);
 
@@ -159,6 +138,25 @@ export function NewNodeModal({
       onSuccess: (node) => {
         setCreatedEntityId(node.id);
         queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
+
+        const createdKind =
+          node.nodeType === BackendNodeType.CONTEXT ? "Context" : "Node";
+
+        addNotification({
+          type: "success",
+          source: "node",
+          title: `${createdKind} created`,
+          description: `"${node.title}" was created successfully.`,
+        });
+      },
+      onError: (error) => {
+        addNotification({
+          type: "error",
+          source: "node",
+          title: "Creation failed",
+          description:
+            error instanceof Error ? error.message : "Could not create the node.",
+        });
       },
     });
 
@@ -173,6 +171,22 @@ export function NewNodeModal({
       setCreatedEntityId(space.id);
       queryClient.invalidateQueries({ queryKey: spaceKeys.lists() });
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
+
+      addNotification({
+        type: "success",
+        source: "space",
+        title: "Space created",
+        description: `"${space.name}" was created successfully.`,
+      });
+    },
+    onError: (error) => {
+      addNotification({
+        type: "error",
+        source: "space",
+        title: "Space creation failed",
+        description:
+          error instanceof Error ? error.message : "Could not create the space.",
+      });
     },
   });
 
@@ -218,7 +232,7 @@ export function NewNodeModal({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Create entity when user starts typing (if not already created)
+  // Create entity only when user explicitly confirms creation
   const ensureEntityCreated = useCallback(
     async (options?: { openAfterCreate?: boolean; overrideTitle?: string }) => {
       if (createdEntityId || isCreating) return createdEntityId;
@@ -318,10 +332,7 @@ export function NewNodeModal({
     setTitle(e.target.value);
   };
 
-  // Check for duplicates when title loses focus (for longer titles typed quickly)
-  const handleTitleBlur = () => {
-    // No auto-create on blur anymore
-  };
+
 
   // Handle expand to full page (or create and navigate for spaces)
   const handleExpand = async () => {
@@ -491,7 +502,6 @@ export function NewNodeModal({
             type="text"
             value={title}
             onChange={handleTitleChange}
-            onBlur={handleTitleBlur}
             onKeyDown={(e) => {
               // For spaces, create on Enter
               if (e.key === "Enter" && isSpaceMode) {
@@ -681,7 +691,7 @@ export function NewNodeModal({
       </div>
 
       {/* Duplicate Node Modal */}
-      {duplicateNode && (
+      {duplicateNode && showDuplicateModal && (
         <DuplicateNodeModal
           open={showDuplicateModal}
           onOpenChange={setShowDuplicateModal}

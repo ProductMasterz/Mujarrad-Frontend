@@ -20,6 +20,7 @@ export function NotificationsDropdown({
     markAllAsRead,
     removeNotification,
     clearNotifications,
+    settings,
   } = useNotificationStore();
 
   useEffect(() => {
@@ -49,6 +50,8 @@ export function NotificationsDropdown({
 
   if (!anchorEl) return null;
 
+  const unreadCount = notifications.filter((item) => !item.read).length;
+
   const rect = anchorEl.getBoundingClientRect();
   const menuWidth = 360;
   const padding = 8;
@@ -74,13 +77,15 @@ export function NotificationsDropdown({
           <div className="text-sm font-semibold text-foreground">Notifications</div>
           <div className="text-xs text-muted-foreground">
             {notifications.length} item{notifications.length === 1 ? '' : 's'}
+            {settings.showUnreadBadge && unreadCount > 0 ? ` • ${unreadCount} unread` : ''}
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={markAllAsRead}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            disabled={!settings.enabled || notifications.length === 0}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
             type="button"
             title="Mark all as read"
           >
@@ -89,7 +94,8 @@ export function NotificationsDropdown({
 
           <button
             onClick={clearNotifications}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            disabled={!settings.enabled || notifications.length === 0}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
             type="button"
             title="Clear all"
           >
@@ -101,7 +107,7 @@ export function NotificationsDropdown({
       <div className="max-h-[420px] overflow-y-auto p-2">
         {notifications.length === 0 ? (
           <div className="rounded-xl px-3 py-8 text-center text-sm text-muted-foreground">
-            No notifications yet
+            {!settings.enabled ? 'Notifications are disabled' : 'No notifications yet'}
           </div>
         ) : (
           notifications.map((item) => (
@@ -119,11 +125,21 @@ export function NotificationsDropdown({
                   <div className="text-sm font-medium text-foreground">
                     {item.title}
                   </div>
+
                   {item.description && (
                     <div className="mt-1 text-xs leading-5 text-muted-foreground">
                       {item.description}
                     </div>
                   )}
+
+                  {item.source && (
+                    <div className="mt-2">
+                      <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {item.source}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="mt-2 text-[11px] text-muted-foreground">
                     {new Date(item.createdAt).toLocaleString()}
                   </div>

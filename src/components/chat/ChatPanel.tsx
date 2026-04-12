@@ -12,7 +12,7 @@ import { Copy, Check, SendHorizontal, X, Pencil, Trash2, PanelLeftClose, PanelLe
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
 import { Button } from '@/components/ui/button';
-import { AttributeTypeMode, NodeType, type Node } from '@/types/backend-dtos';
+import { AttributeTypeMode, NodeType, type Node as BackendNode } from '@/types/backend-dtos';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { useQueryClient } from '@tanstack/react-query';
 import { nodeKeys } from '@/hooks/api';
@@ -54,7 +54,7 @@ interface ChatPanelProps {
   availableSpaces?: Array<{ id: string; name: string; slug: string }>;
 }
 
-function parseNodeDetails(node: Node): Record<string, unknown> | undefined {
+function parseNodeDetails(node: BackendNode): Record<string, unknown> | undefined {
   if (!node.nodeDetails) return undefined;
 
   if (typeof node.nodeDetails === 'string') {
@@ -68,7 +68,7 @@ function parseNodeDetails(node: Node): Record<string, unknown> | undefined {
   return node.nodeDetails as Record<string, unknown>;
 }
 
-function isConversationNode(node: Node): boolean {
+function isConversationNode(node: BackendNode): boolean {
   const details = parseNodeDetails(node);
 
   return (
@@ -77,7 +77,7 @@ function isConversationNode(node: Node): boolean {
   );
 }
 
-function isMessageNode(node: Node): boolean {
+function isMessageNode(node: BackendNode): boolean {
   const details = parseNodeDetails(node);
 
   return (
@@ -1286,6 +1286,7 @@ export function ChatPanel({
     await createConversationSession();
     addNotification({
       type: 'info',
+      source: 'chat',
       title: 'New conversation',
       description: 'A new chat session was started.',
     });
@@ -1375,9 +1376,11 @@ export function ChatPanel({
 
     addNotification({
       type: 'warning',
+      source: 'chat',
       title: 'Conversation deleted',
       description: `${deletedSessionTitle} was removed.`,
     });
+
     const remainingSessions = sessions.filter((session) => session.id !== sessionId);
     setSessions(remainingSessions);
     setSessionSearchIndex((prev) => {
@@ -1457,10 +1460,13 @@ export function ChatPanel({
     ]);
   };
 
+  const handleRuntimeMessagesChange = (nextMessages: readonly ChatMessage[]) => {
+    setMessages([...nextMessages]);
+  };
 
   const runtime = useExternalStoreRuntime<ChatMessage>({
     messages,
-    setMessages: (msgs) => setMessages([...msgs]),
+    setMessages: handleRuntimeMessagesChange,
     isRunning,
     convertMessage: (message) => ({
       id: message.id,
@@ -1509,7 +1515,11 @@ export function ChatPanel({
             throw new Error('Could not create or resolve conversation node.');
           }
 
-          await persistMessageNode(conversationNodeId, 'user', userText);
+          const inputMessageNodeId = await persistMessageNode(
+            conversationNodeId,
+            'user',
+            userText
+          );
 
         let assistantText = '';
 
@@ -1560,6 +1570,7 @@ export function ChatPanel({
             if (response.ok && !data?.error) {
               addNotification({
                 type: 'success',
+                source: 'chat',
                 title: 'Chat analyzed',
                 description:
                   nodes.length > 0 || relationships.length > 0
@@ -1573,6 +1584,7 @@ export function ChatPanel({
 
             addNotification({
               type: 'error',
+              source: 'chat',
               title: 'Agent unavailable',
               description: 'Could not reach the agent service.',
             });
@@ -1587,7 +1599,25 @@ export function ChatPanel({
         };
 
         setMessages((current) => [...current, assistantMessage]);
-        await persistMessageNode(conversationNodeId, 'assistant', assistantText);
+
+        const assistantMessageNodeId = await persistMessageNode(
+          conversationNodeId,
+          'assistant',
+          assistantText
+        );
+
+        await attributeService.createAttribute(inputMessageNodeId, {
+          sourceNodeId: inputMessageNodeId,
+          targetNodeId: assistantMessageNodeId,
+          attributeType: 'CUSTOM',
+          attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+          attributeName: 'assistant_reply',
+          attributeValue: {
+            relation: 'reply_to_input',
+          },
+        });
+        
+        
         const conversationNode = sessions.find((session) => session.id === conversationNodeId);
 
         const conversationTitle =

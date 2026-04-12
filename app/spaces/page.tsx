@@ -10,14 +10,13 @@ import { ContextMenu } from '@/shell/components/ContextMenu';
 import { NewNodeModal } from '@/shell/components/NewNodeModal';
 import { RenameModal } from '@/shell/components/RenameModal';
 import { ShareModal } from '@/shell/components/ShareModal';
-import { FeedbackModal } from '@/shell/components/FeedbackModal';
 import { Tab } from '@/shell/components/TabsBar';
 import { CardType, Card } from '@/shell/data/projects';
 import { spaceService } from '@/services/api';
 import { useRenameSpace } from '@/hooks/api';
 import type { Space } from '@/types/backend-dtos';
-import { useAuthStore } from '@/stores/auth.store';
 import { useNavigationStore } from '@/stores/navigationStore';
+import { useNotificationStore } from '@/stores/notificationStore';
 
 // Convert Space to Scratchup Card format
 function spaceToCard(space: Space): Card {
@@ -39,16 +38,11 @@ function spacesToSidebarData(spaces: Space[]): Card[] {
   }));
 }
 
-type SpaceItem = {
-  id: string;
-  name: string;
-};
-
 export default function SpacesPage() {
   const router = useRouter();
   const navigateToSpaces = useNavigationStore((state) => state.navigateToSpaces);
   const { rename: renameSpace } = useRenameSpace();
-
+  const addNotification = useNotificationStore((state) => state.addNotification);
   // Set navigation scope on mount
   useEffect(() => {
     navigateToSpaces();
@@ -57,7 +51,6 @@ export default function SpacesPage() {
   // UI State
   const [showNewNodeModal, setShowNewNodeModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [spaceToRename, setSpaceToRename] = useState<Space | null>(null);
   const [selectedCardId, setSelectedCardId] = useState('');
@@ -70,11 +63,7 @@ export default function SpacesPage() {
     cardId: string;
   } | null>(null);
 
-  // Navigation state
-  const [navigationPath, setNavigationPath] = useState<string[]>([]);
-  const [currentSpace, setCurrentSpace] = useState('void');
-  const [spaces, setSpaces] = useState<SpaceItem[]>([{ id: 'void', name: 'Void' }]);
-
+ 
   // Tabs state
   const [tabs, setTabs] = useState<Tab[]>([
     {
@@ -154,7 +143,7 @@ export default function SpacesPage() {
 
   // Build breadcrumb
   const breadcrumbPath = useMemo(() => {
-    return [{ id: 'home', title: 'Spaces' }];
+    return [{ id: 'spaces', title: 'Spaces' }];
   }, []);
 
   // Handlers
@@ -177,7 +166,7 @@ export default function SpacesPage() {
   };
 
   const handleHomeClick = () => {
-    router.push('/spaces');
+    router.push('/');
   };
 
   const handleBackClick = () => {
@@ -186,7 +175,7 @@ export default function SpacesPage() {
 
   const handleBreadcrumbClick = (index: number) => {
     if (index === -1 || index === 0) {
-      router.push('/spaces');
+      router.push('/');
     }
   };
 
@@ -243,10 +232,6 @@ export default function SpacesPage() {
     setShowShareModal(true);
   };
 
-  const handleFeedback = () => {
-    setShowFeedbackModal(true);
-  };
-
   
   // Tab management
   const handleTabClick = (tabId: string) => {
@@ -273,47 +258,31 @@ export default function SpacesPage() {
     setActiveTabId(newTab.id);
   };
 
-  const handleOpenInNewTab = () => {
-    handleNewTab();
-  };
-
-  const handleSpaceChange = (spaceId: string) => {
-    setCurrentSpace(spaceId);
-  };
-
-  const handleAddSpace = (spaceName: string) => {
-    const newSpace: SpaceItem = {
-      id: spaceName.toLowerCase().replace(/\s+/g, '-'),
-      name: spaceName,
-    };
-    setSpaces([...spaces, newSpace]);
-    setCurrentSpace(newSpace.id);
-  };
-
-  // Quick create space from sidebar - creates "Untitled" space immediately
-  const handleQuickCreateSpace = async () => {
-    try {
-      const space = await spaceService.createSpace({ name: 'Untitled' });
-      // Refresh the spaces list
-      const updatedSpaces = await spaceService.getSpaces();
-      setApiSpaces(Array.isArray(updatedSpaces) ? updatedSpaces : []);
-      // Navigate to the new space
-      router.push(`/spaces/${space.slug}`);
-    } catch (error) {
-      console.error('Failed to quick create space:', error);
-    }
-  };
-
   // Handle space rename using shared hook
   const handleRename = async (newName: string) => {
     if (!spaceToRename) return;
 
+    const oldName = spaceToRename.name;
     const result = await renameSpace(spaceToRename.id, newName);
+
     if (result.success) {
-      // Refresh the spaces list
       const updatedSpaces = await spaceService.getSpaces();
       setApiSpaces(Array.isArray(updatedSpaces) ? updatedSpaces : []);
+
+      addNotification({
+        type: 'info',
+        source: 'space',
+        title: 'Space renamed',
+        description: `"${oldName}" was renamed to "${newName}".`,
+      });
     } else {
+      addNotification({
+        type: 'error',
+        source: 'space',
+        title: 'Rename failed',
+        description: result.error || 'Failed to rename space.',
+      });
+
       throw new Error(result.error || 'Failed to rename space');
     }
   };
@@ -333,20 +302,16 @@ export default function SpacesPage() {
           breadcrumbPath={breadcrumbPath}
           onHomeClick={handleHomeClick}
           onBreadcrumbClick={handleBreadcrumbClick}
-          // Add menu actions - only create space at spaces level
-          onCreateSpace={handleAddClick}
-          // More menu actions
           onShare={handleShareClick}
-          onOpenInNewTab={handleOpenInNewTab}
           tabs={tabs}
           activeTabId={activeTabId}
           onTabClick={handleTabClick}
           onTabClose={handleTabClose}
           onNewTab={handleNewTab}
-          onFeedback={handleFeedback}
           chatAvailableSpaces={chatAvailableSpaces}
-          onChatChangeSpace={(nextSpaceSlug) => {router.push(`/spaces/${nextSpaceSlug}`); }}
-          showChatCreateSpace={false}
+          onChatChangeSpace={(nextSpaceSlug) => {
+            router.push(`/spaces/${nextSpaceSlug}`);
+          }}
         />
 
         <Sidebar
@@ -359,7 +324,7 @@ export default function SpacesPage() {
         {/* Main content */}
 
         <div
-          className="pt-[76px] px-[14px] transition-all duration-300"
+          className="px-[14px] pt-[126px] pb-6 transition-all duration-300"
           style={{
             marginLeft: '0',
           }}
@@ -472,7 +437,7 @@ export default function SpacesPage() {
               >
                 {searchTerm.trim()
                   ? 'Try a different search term.'
-                  : 'Click the + button to create your first space'}
+                  : 'Use the New Space button to create your first space.'}
               </p>
             </div>
           ) : viewMode === 'grid' ? (
@@ -536,11 +501,6 @@ export default function SpacesPage() {
         <NewNodeModal
           isOpen={showNewNodeModal}
           onClose={() => setShowNewNodeModal(false)}
-          currentPath={navigationPath}
-          currentSpace={currentSpace}
-          spaces={spaces}
-          onAddSpace={handleAddSpace}
-          onSpaceChange={handleSpaceChange}
           defaultType="space"
           availableTypes={['space']}
         />
@@ -567,14 +527,6 @@ export default function SpacesPage() {
             onClose={() => setShowShareModal(false)}
             cardId={selectedCardId}
             cardType={CardType.FULFILLED_CONTEXT}
-          />
-        )}
-
-        {/* Feedback Modal */}
-        {showFeedbackModal && (
-          <FeedbackModal
-            isOpen={showFeedbackModal}
-            onClose={() => setShowFeedbackModal(false)}
           />
         )}
 
