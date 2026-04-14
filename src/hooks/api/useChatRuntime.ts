@@ -57,14 +57,19 @@ export function useChatRuntime() {
 //Processes a new user message by updating state, calling the agent API, handling the response, and persisting both messages.
 const handleNewMessage = useCallback(
   async (message: AppendMessage) => {
+    if (isRunning) return;
+
     const spaceSlug = "default-space";
     const text = extractText(message.content);
 
     setIsRunning(true);
 
+    //const newMessages = [...messages, message];
+    //setMessages(newMessages);
+    setMessages((prev) => [...prev, message]);
     const newMessages = [...messages, message];
+
     
-    setMessages(newMessages);
 
     try {
       // Save user message
@@ -74,6 +79,8 @@ const handleNewMessage = useCallback(
         nodeType: NodeType.REGULAR,
       });
       //1-Send user text to agent service
+      //adding small delay
+      await new Promise((res) => setTimeout(res, 300));
       const response = await sendChatMessage(
         mapToBackendMessages(newMessages)
       );
