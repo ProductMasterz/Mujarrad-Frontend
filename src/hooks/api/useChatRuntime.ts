@@ -73,7 +73,7 @@ export function useChatRuntime() {
 
       try {
         let currentConversationId = conversationId;
-
+        //1- Conversation created on first message
         if (!currentConversationId) {
           if (creatingRef.current) return; // prevent duplicate calls
 
@@ -86,16 +86,7 @@ export function useChatRuntime() {
 
           creatingRef.current = false;
         }
-        // Save user message
-        await nodeService.createNode(spaceSlug, {
-          title: text.slice(0, 50),
-          content: text,
-          nodeType: NodeType.REGULAR,
-          nodeDetails: {
-            conversationId: currentConversationId,
-          },
-        });
-
+    
         //1-Send user text to agent service
         const response = await sendChatMessage(mapToBackendMessages(newMessages));
 
@@ -105,15 +96,7 @@ export function useChatRuntime() {
 
         setMessages((prev) => [...prev, assistantMessage]);
 
-        // Save assistant message (Persist messages as Mujarrad nodes)
-        await nodeService.createNode(spaceSlug, {
-          title: assistantText.slice(0, 50),
-          content: assistantText,
-          nodeType: NodeType.REGULAR,
-          nodeDetails: {
-            conversationId: currentConversationId,
-          },
-        });
+       
       } catch (error) {
         console.error(error);
       } finally {
