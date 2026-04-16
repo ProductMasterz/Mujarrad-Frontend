@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { AppendMessage, useExternalStoreRuntime } from '@assistant-ui/react';
 
 import { ChatMessage, sendChatMessage } from '@/services/api/chatService';
@@ -8,7 +8,7 @@ import { nodeService } from '@/services/api/node.service';
 import { NodeType } from '@/types';
 import { conversationService } from '@/services/api/conversation.service';
 import { attributeService } from '@/services/api';
-import { AttributeTypeMode } from '@/types/backend-dtos';
+import { AttributeKey, AttributeTypeMode } from '@/types/backend-dtos';
 
 //Converts structured message content into plain text.
 function extractText(content: any): string {
@@ -61,6 +61,72 @@ export function useChatRuntime() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const creatingRef = useRef(false);
 
+const loadConversationHistory = useCallback(
+  async (conversationId: string) => {
+    const spaceSlug = 'default-space';
+
+    try {
+      const attributes = await attributeService.getNodeAttributes(
+        conversationId,
+        { attributeType: AttributeKey.CONTAINS }
+      );
+
+      if (!attributes.length) {
+        setMessages([]);
+        return;
+      }
+
+      const messageNodeIds = attributes.map(
+        (attr) => attr.targetNodeId
+      );
+
+    
+      const nodes = await Promise.all(
+        messageNodeIds.map((id) =>
+          nodeService.getNode(spaceSlug, id)
+        )
+      );
+
+      nodes.sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() -
+          new Date(b.createdAt).getTime()
+      );
+
+      const historyMessages: AppendMessage[] = nodes.map((node) => ({
+        role: node.title === 'agent-message' ? 'assistant' : 'user',
+        content: [{ type: 'text', text: node.content || '' }],
+        createdAt: new Date(node.createdAt),
+        status: { type: 'complete', reason: 'stop' },
+        metadata: {
+          unstable_state: null,
+          unstable_annotations: [],
+          unstable_data: [],
+          steps: [],
+          custom: {},
+        },
+        parentId: null,
+        sourceId: null,
+        runConfig: undefined,
+      }));
+
+      setMessages(historyMessages);
+    } catch (error) {
+      console.error('Failed to load history', error);
+    }
+  },
+  []
+);
+
+  useEffect(() => {
+    if (!conversationId) return;
+
+    // Prevent overwriting current session messages
+    if (messages.length > 0) return;
+
+    loadConversationHistory(conversationId);
+  }, [conversationId, loadConversationHistory, messages.length]);
+
   //Processes a new user message by updating state, calling the agent API, handling the response, and persisting both messages.
   const handleNewMessage = useCallback(
     async (message: AppendMessage) => {
@@ -76,7 +142,7 @@ export function useChatRuntime() {
         let currentConversationId = conversationId;
 
         // Create conversation once
-       
+
         if (!currentConversationId) {
           if (creatingRef.current) return;
 
@@ -91,7 +157,7 @@ export function useChatRuntime() {
         }
 
         //Create USER message node
-       
+
         const userNode = await nodeService.createNode(spaceSlug, {
           title: 'user-message',
           content: text,
@@ -113,12 +179,12 @@ export function useChatRuntime() {
         });
 
         //  Call backend AI
-     
+
         const response = await sendChatMessage(mapToBackendMessages(newMessages));
         const assistantText = response.reply;
 
         //  Create ASSISTANT message node
-      
+
         const assistantNode = await nodeService.createNode(spaceSlug, {
           title: 'agent-message',
           content: assistantText,
@@ -130,7 +196,7 @@ export function useChatRuntime() {
         });
 
         //  Link ASSISTANT → CONVERSATION
-  
+
         await attributeService.createAttribute(assistantNode.id, {
           sourceNodeId: currentConversationId!,
           targetNodeId: assistantNode.id,
@@ -140,7 +206,7 @@ export function useChatRuntime() {
           attributeValue: {},
         });
 
-       //UI
+        //UI
         const assistantMessage = createAssistantMessage(assistantText);
         setMessages((prev) => [...prev, assistantMessage]);
       } catch (error) {
