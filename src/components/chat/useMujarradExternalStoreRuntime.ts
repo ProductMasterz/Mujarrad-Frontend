@@ -127,7 +127,7 @@ async function createMessageNode(
 
 async function getAgentResponse(
   agentServiceUrl: string | undefined,
-  text: string,
+  userText: string,
   spaceSlug: string,
   signal?: AbortSignal,
 ): Promise<AgentProcessResponse> {
@@ -159,7 +159,7 @@ async function getAgentResponse(
       report: [
         '# Demo Summary',
         '',
-        `**Input:** ${text}`,
+        `**Input:** ${userText}`,
         '',
         '## Extracted',
         '- 1 node idea',
@@ -174,14 +174,17 @@ async function getAgentResponse(
     };
   }
 
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
   const response = await fetch(`${agentServiceUrl}/api/agents/process`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     signal,
     body: JSON.stringify({
-      text,
+      text: userText,
       space_slug: spaceSlug,
     }),
   });
