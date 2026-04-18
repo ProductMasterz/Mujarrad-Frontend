@@ -7,6 +7,7 @@ import { ShortcutsModal } from "./ShortcutsModal";
 import VuesaxLinearContext from "../imports/VuesaxLinearContext";
 import VuesaxLinearNode from "../imports/VuesaxLinearNode";
 import { ChatWindow } from "@/components/chat/ChatWindow";
+import { ConversationList } from "@/components/chat/ConversationList";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -377,29 +378,38 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
         onClose={() => setShowShortcutsModal(false)}
       />
 
-        {showChatModal && (
-      <div className="fixed bottom-6 right-6 w-[380px] h-[420px] bg-white shadow-xl rounded-lg border z-50 flex flex-col">
+  {showChatModal && (
+  <div className="fixed bottom-6 right-6 w-[380px] h-[420px] bg-white shadow-xl rounded-lg border z-50 flex flex-col">
 
-        {/* Chat header */}
-        <div className="flex items-center justify-between px-3 py-2 border-b">
-          <span className="text-sm font-semibold">Chat Assistant</span>
+    {/* Chat header */}
+    <div className="flex items-center justify-between px-3 py-2 border-b">
+      <span className="text-sm font-semibold">Chat Assistant</span>
 
-          <button
-            onClick={() => setShowChatModal(false)}
-            className="text-gray-500 hover:text-black"
-          >
-            ✕
-          </button>
-        </div>
+      <button
+        onClick={() => setShowChatModal(false)}
+        className="text-gray-500 hover:text-black"
+      >
+        ✕
+      </button>
+    </div>
 
-        {/* Chat body */}
-        <div className="flex-1">
-          <ChatWindow />
-        </div>
+    {/* Body */}
+    <div className="flex flex-1 overflow-hidden">
+
+      {/* Conversation list */}
+      <div className="w-[160px] border-r overflow-y-auto">
+        <ConversationList
+          onSelect={(id) => console.log("selected:", id)}
+        />
+      </div>
+
+      {/* Chat window */}
+      <div className="flex-1">
+        <ChatWindow />
+      </div>
+
+    </div>
 
   </div>
 )}
-    </div>
-    
-  );
-}
+
