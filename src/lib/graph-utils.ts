@@ -4,11 +4,11 @@
  */
 
 import type { Node, Attribute } from '@/types/backend-dtos';
+import { getNodeEntityType } from '@/lib/entity-types';
 import {
   GraphNode,
   GraphEdge,
   GraphData,
-  BuildGraphDataParams,
   GraphViewMode,
 } from '@/types/graph';
 
@@ -99,17 +99,8 @@ const isAssistantMessage =
 
 const isAnyMessage = isUserMessage || isAssistantMessage;
 
-const entityType =
-  typeof details?.entityType === 'string'
-    ? details.entityType.toLowerCase()
-    : undefined;
-
-const isEntity =
-  entityType === 'person' ||
-  entityType === 'place' ||
-  entityType === 'action' ||
-  entityType === 'topic' ||
-  entityType === 'event';
+const entityType = getNodeEntityType(node);
+const isEntity = entityType !== 'unknown';
 
 const isBlock =
   !!details?.blockType ||
@@ -127,12 +118,17 @@ if (isConversation && (!viewMode.showChat || !viewMode.showConversationNodes)) r
 if (isUserMessage && (!viewMode.showChat || !viewMode.showUserMessages)) return false;
 if (isAssistantMessage && (!viewMode.showChat || !viewMode.showAssistantMessages)) return false;
 
-// Entity group
-if (entityType === 'person' && (!viewMode.showEntities || !viewMode.showPerson)) return false;
-if (entityType === 'place' && (!viewMode.showEntities || !viewMode.showPlace)) return false;
-if (entityType === 'action' && (!viewMode.showEntities || !viewMode.showAction)) return false;
-if (entityType === 'topic' && (!viewMode.showEntities || !viewMode.showTopic)) return false;
-if (entityType === 'event' && (!viewMode.showEntities || !viewMode.showEvent)) return false;
+// Entity / semantic group
+if (isEntity && !viewMode.showEntities) return false;
+
+if (
+  isEntity &&
+  Array.isArray(viewMode.hiddenSemanticTypes) &&
+  viewMode.hiddenSemanticTypes.includes(entityType)
+) {
+  return false;
+}
+
 
 // System group
 if (isRegular && !isEntity && !isConversation && !isAnyMessage && (!viewMode.showSystem || !viewMode.showRegular)) return false;
@@ -201,18 +197,11 @@ return true;
     ((targetCreatedFrom === 'chat' || targetCreatedFrom === 'assistant-ui') &&
       (targetRole === 'user' || targetRole === 'assistant'));
 
-  const sourceEntityType =
-    typeof sourceDetails?.entityType === 'string'
-      ? sourceDetails.entityType.toLowerCase()
-      : undefined;
+  const sourceEntityType = sourceNode ? getNodeEntityType(sourceNode) : 'unknown';
+  const targetEntityType = targetNode ? getNodeEntityType(targetNode) : 'unknown';
 
-  const targetEntityType =
-    typeof targetDetails?.entityType === 'string'
-      ? targetDetails.entityType.toLowerCase()
-      : undefined;
-
-  const sourceIsEntity = !!sourceEntityType;
-  const targetIsEntity = !!targetEntityType;
+  const sourceIsEntity = sourceEntityType !== 'unknown';
+  const targetIsEntity = targetEntityType !== 'unknown';
 
   const isChatRelation =
     attrTypeStr === 'contains' &&
@@ -238,22 +227,8 @@ return true;
 
   // Transform nodes to GraphNodes
   const graphNodes: GraphNode[] = filteredNodes.map((node, index) => {
-    let details: Record<string, unknown> | undefined;
+  const entityType = getNodeEntityType(node);
 
-    if (typeof node.nodeDetails === 'string') {
-      try {
-        details = JSON.parse(node.nodeDetails);
-      } catch {
-        details = undefined;
-      }
-    } else {
-      details = node.nodeDetails as Record<string, unknown> | undefined;
-    }
-
-    const entityType =
-      typeof details?.entityType === 'string'
-        ? details.entityType
-        : undefined;
 
     return {
       id: node.id.toString(),
@@ -360,12 +335,8 @@ export const DEFAULT_GRAPH_VIEW_MODE: GraphViewMode = {
 
   // Entities
   showEntities: true,
-  showPerson: true,
-  showPlace: true,
-  showAction: true,
-  showTopic: true,
-  showEvent: true,
   showEntityRelations: true,
+  hiddenSemanticTypes: [],
 
   // System
   showSystem: true,

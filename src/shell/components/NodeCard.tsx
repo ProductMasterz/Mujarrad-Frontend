@@ -8,6 +8,7 @@ import {
   BookOpen,
   CalendarDays,
 } from "lucide-react";
+import { useEntityTypeStore } from "@/stores/entityType.store";
 
 type NodeCardProps = {
   title: string;
@@ -16,78 +17,10 @@ type NodeCardProps = {
   onClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
   type?: CardType;
-  badge?: string; // AI / Manual
-  entityType?: string; // person / place / topic / ...
-  nodeKindLabel?: string; // Node / Context / Regular / Assumption / Template
+  badge?: string;
+  entityType?: string;
+  nodeKindLabel?: string;
 };
-
-function getNodeColor(entityType?: string) {
-  const normalized = entityType?.toLowerCase()?.trim();
-
-  if (normalized === "person") {
-    return {
-      border: "border-blue-200 dark:border-blue-800",
-      surface: "bg-white dark:bg-slate-900",
-      accent: "bg-blue-500",
-      chipBg: "bg-blue-100 dark:bg-blue-900/60",
-      chipText: "text-blue-700 dark:text-blue-200",
-      icon: "text-blue-500 dark:text-blue-300",
-    };
-  }
-
-  if (normalized === "place") {
-    return {
-      border: "border-emerald-200 dark:border-emerald-800",
-      surface: "bg-white dark:bg-slate-900",
-      accent: "bg-emerald-500",
-      chipBg: "bg-emerald-100 dark:bg-emerald-900/60",
-      chipText: "text-emerald-700 dark:text-emerald-200",
-      icon: "text-emerald-500 dark:text-emerald-300",
-    };
-  }
-
-  if (normalized === "action") {
-    return {
-      border: "border-rose-200 dark:border-rose-800",
-      surface: "bg-white dark:bg-slate-900",
-      accent: "bg-rose-500",
-      chipBg: "bg-rose-100 dark:bg-rose-900/60",
-      chipText: "text-rose-700 dark:text-rose-200",
-      icon: "text-rose-500 dark:text-rose-300",
-    };
-  }
-
-  if (normalized === "topic") {
-    return {
-      border: "border-violet-200 dark:border-violet-800",
-      surface: "bg-white dark:bg-slate-900",
-      accent: "bg-violet-500",
-      chipBg: "bg-violet-100 dark:bg-violet-900/60",
-      chipText: "text-violet-700 dark:text-violet-200",
-      icon: "text-violet-500 dark:text-violet-300",
-    };
-  }
-
-  if (normalized === "event") {
-    return {
-      border: "border-orange-200 dark:border-orange-800",
-      surface: "bg-white dark:bg-slate-900",
-      accent: "bg-orange-500",
-      chipBg: "bg-orange-100 dark:bg-orange-900/60",
-      chipText: "text-orange-700 dark:text-orange-200",
-      icon: "text-orange-500 dark:text-orange-300",
-    };
-  }
-
-  return {
-    border: "border-slate-200 dark:border-slate-700",
-    surface: "bg-white dark:bg-slate-900",
-    accent: "bg-slate-400 dark:bg-slate-500",
-    chipBg: "bg-slate-100 dark:bg-slate-800",
-    chipText: "text-slate-700 dark:text-slate-200",
-    icon: "text-slate-500 dark:text-slate-300",
-  };
-}
 
 function renderIcon(type?: CardType, entityType?: string) {
   const normalized = entityType?.toLowerCase()?.trim();
@@ -142,10 +75,6 @@ function getNodeKindChipClasses(nodeKindLabel?: string) {
     return "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200";
   }
 
-  if (normalized === "regular" || normalized === "node") {
-    return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200";
-  }
-
   return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200";
 }
 
@@ -160,9 +89,15 @@ export function NodeCard({
   entityType,
   nodeKindLabel,
 }: NodeCardProps) {
-  const colors = getNodeColor(entityType);
+  const getEntityType = useEntityTypeStore((state) => state.getType);
 
-  const semanticLabel = entityType || "Unclassified";
+  const normalizedEntityType = entityType?.toLowerCase().trim() || "unknown";
+  const semanticConfig = getEntityType(normalizedEntityType);
+  const hasSemanticType = normalizedEntityType !== "unknown";
+
+  const semanticLabel = hasSemanticType ? semanticConfig.label : "Unclassified";
+  const semanticColor = hasSemanticType ? semanticConfig.color : "#94a3b8";
+
   const structuralLabel =
     nodeKindLabel ||
     (type === CardType.FULFILLED_CONTEXT || type === CardType.GRAPH_CONTEXT
@@ -173,10 +108,13 @@ export function NodeCard({
     <button
       onClick={onClick}
       onContextMenu={onContextMenu}
-      className={`group relative min-h-[176px] w-full overflow-hidden rounded-[18px] border ${colors.border} ${colors.surface} cursor-pointer text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-[0px_14px_28px_rgba(0,0,0,0.10)] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 dark:focus:ring-offset-slate-950 dark:hover:shadow-[0px_14px_28px_rgba(0,0,0,0.35)]`}
+      className="group relative min-h-[176px] w-full cursor-pointer overflow-hidden rounded-[18px] border border-border bg-white text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-[0px_14px_28px_rgba(0,0,0,0.10)] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 dark:bg-slate-900 dark:focus:ring-offset-slate-950 dark:hover:shadow-[0px_14px_28px_rgba(0,0,0,0.35)]"
       type="button"
     >
-      <div className={`h-[5px] w-full ${colors.accent}`} />
+      <div
+        className="h-[5px] w-full"
+        style={{ backgroundColor: semanticColor }}
+      />
 
       <div className="flex h-[calc(100%-5px)] flex-col justify-between px-4 py-3">
         <div className="flex items-start justify-between gap-3">
@@ -193,9 +131,10 @@ export function NodeCard({
           </div>
 
           <div
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-border bg-background/80 ${colors.icon} opacity-80 transition group-hover:opacity-100`}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-border bg-background/80 opacity-80 transition group-hover:opacity-100"
+            style={{ color: semanticColor }}
           >
-            {renderIcon(type, entityType)}
+            {renderIcon(type, normalizedEntityType)}
           </div>
         </div>
 
@@ -208,7 +147,11 @@ export function NodeCard({
             </span>
 
             <span
-              className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${colors.chipBg} ${colors.chipText}`}
+              className="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold"
+              style={{
+                backgroundColor: `${semanticColor}22`,
+                color: semanticColor,
+              }}
             >
               {semanticLabel}
             </span>

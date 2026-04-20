@@ -31,6 +31,7 @@ type AgentProcessResponse = {
   code?: string;
 };
 
+
 type ChatMessage = {
   id: string;
   role: 'user' | 'assistant';

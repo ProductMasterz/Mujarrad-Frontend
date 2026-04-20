@@ -18,12 +18,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Block } from '@/components/blocks/types';
 import type { UpdateNodeRequest, Attribute } from '@/types/backend-dtos';
+import { getNodeEntityType, withUpdatedEntityType } from '@/lib/entity-types';
+import { useEntityTypeStore } from '@/stores/entityType.store';
 
 export default function NodeDetailPage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
   const navigateToNode = useNavigationStore((state) => state.navigateToNode);
+  const entityTypeMap = useEntityTypeStore((state) => state.types);
+  const ensureEntityType = useEntityTypeStore((state) => state.ensureType);
+  const getEntityType = useEntityTypeStore((state) => state.getType);
+  const upsertEntityType = useEntityTypeStore((state) => state.upsertType);
   const slug = params.slug as string;
   const nodeId = params.id as string;
 
@@ -55,7 +61,10 @@ export default function NodeDetailPage() {
 
   const [showShareModal, setShowShareModal] = useState(false);
   const [title, setTitle] = useState('');
+  const [entityTypeValue, setEntityTypeValue] = useState('');
+  const [entityColorValue, setEntityColorValue] = useState('#94a3b8');
 
+  const entityTypes = useMemo(() => Object.values(entityTypeMap), [entityTypeMap]);
   const [tabs, setTabs] = useState<Tab[]>([
     {
       id: 'tab-1',
@@ -69,13 +78,20 @@ export default function NodeDetailPage() {
   useEffect(() => {
     if (node) {
       setTitle(node.title || '');
+
+      const entityType = getNodeEntityType(node);
+      const entityConfig = ensureEntityType(entityType);
+
+      setEntityTypeValue(entityConfig.key);
+      setEntityColorValue(entityConfig.color);
+
       setTabs((prevTabs) =>
         prevTabs.map((tab) =>
           tab.id === 'tab-1' ? { ...tab, title: node.title } : tab
         )
       );
     }
-  }, [node]);
+  }, [node, ensureEntityType, slug]);
 
   const handleBlocksChange = useCallback((newBlocks: Block[]) => {
     setBlocks(newBlocks);
@@ -111,6 +127,22 @@ export default function NodeDetailPage() {
       updateNodeMutation.mutate({ title });
     }
   }, [title, node?.title, updateNodeMutation]);
+
+  const handleSaveEntityType = useCallback(() => {
+    if (!node || !entityTypeValue.trim()) return;
+
+    const normalizedType = entityTypeValue.trim().toLowerCase().replace(/\s+/g, '_');
+
+    upsertEntityType({
+      key: normalizedType,
+      label: normalizedType.replace(/_/g, ' '),
+      color: entityColorValue,
+    });
+
+    updateNodeMutation.mutate({
+      nodeDetails: withUpdatedEntityType(node.nodeDetails, normalizedType),
+    });
+  }, [node, entityTypeValue, entityColorValue, upsertEntityType, updateNodeMutation]);
 
 
   const handleHomeClick = () => {
@@ -269,6 +301,89 @@ export default function NodeDetailPage() {
               >
                 Last edited {node.updatedAt ? new Date(node.updatedAt).toLocaleDateString() : 'recently'}
               </p>
+              
+              <div className="mb-8 rounded-[16px] border border-border bg-muted/20 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-[15px] font-semibold text-foreground">
+                      Semantic type
+                    </h2>
+                    <p className="mt-1 text-[12px] text-muted-foreground">
+                      This is the dynamic AI/user type, not the structural node type.
+                    </p>
+                  </div>
+
+                  <span
+                    className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide"
+                    style={{
+                      backgroundColor: `${entityColorValue}22`,
+                      color: entityColorValue,
+                    }}
+                  >
+                    {entityTypeValue || 'unknown'}
+                  </span>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto]">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Choose existing type
+                    </label>
+                    <select
+                      value={entityTypeValue}
+                      onChange={(e) => {
+                        const selected = getEntityType(e.target.value);
+                        setEntityTypeValue(selected.key);
+                        setEntityColorValue(selected.color);
+                      }}
+                      className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
+                    >
+                      {entityTypes.map((type) => (
+                        <option key={type.key} value={type.key}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Or write new type
+                    </label>
+                    <input
+                      value={entityTypeValue}
+                      onChange={(e) => setEntityTypeValue(e.target.value)}
+                      onBlur={handleSaveEntityType}
+                      placeholder="person, action, supplier..."
+                      className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Color
+                    </label>
+                    <input
+                      type="color"
+                      value={entityColorValue}
+                      onChange={(e) => setEntityColorValue(e.target.value)}
+                      onBlur={handleSaveEntityType}
+                      className="h-10 w-14 rounded-xl border border-border bg-background p-1"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleSaveEntityType}
+                      disabled={updateNodeMutation.isPending}
+                    >
+                      {updateNodeMutation.isPending ? 'Saving...' : 'Save type'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
 
               <div className="mb-8 rounded-[16px] border border-border bg-muted/30 p-5">
                 <div className="mb-3 flex items-center gap-2">

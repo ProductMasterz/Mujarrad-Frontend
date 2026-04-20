@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { X, Maximize2, ChevronDown, FolderPlus, FilePlus, Box, Tag, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
@@ -14,12 +14,13 @@ import { NodeType as BackendNodeType, type Node as NodeDTO } from "@/types/backe
 import { DuplicateNodeModal } from "@/components/nodes/DuplicateNodeModal";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { useNotificationStore } from "@/stores/notificationStore";
+import { useEntityTypeStore } from "@/stores/entityType.store";
 
 // Entity types that can be created
 export type EntityType = "space" | "node" | "context";
 
 type ManualSystemNodeType = "REGULAR" | "CONTEXT" | "ASSUMPTION" | "TEMPLATE";
-type ManualEntityType = "" | "person" | "place" | "action" | "topic" | "event";
+type ManualEntityType = string;
 // Icons for each entity type
 const ENTITY_ICONS: Record<EntityType, React.ReactNode> = {
   space: <FolderPlus className="size-4" />,
@@ -33,17 +34,7 @@ const ENTITY_LABELS: Record<EntityType, string> = {
   context: "Context",
 };
 
-const MANUAL_ENTITY_TYPE_OPTIONS: Array<{
-  value: ManualEntityType;
-  label: string;
-}> = [
-  { value: "", label: "None" },
-  { value: "person", label: "Person" },
-  { value: "place", label: "Place" },
-  { value: "action", label: "Action" },
-  { value: "topic", label: "Topic" },
-  { value: "event", label: "Event" },
-];
+
 
 const MANUAL_SYSTEM_NODE_TYPE_OPTIONS: Array<{
   value: ManualSystemNodeType;
@@ -75,6 +66,10 @@ export function NewNodeModal({
   const titleInputRef = useRef<HTMLInputElement>(null);
   const addNotification = useNotificationStore((state) => state.addNotification);
   // Get current scope from navigation store to determine available types
+  const entityTypeMap = useEntityTypeStore((state) => state.types);
+  const getEntityType = useEntityTypeStore((state) => state.getType);
+  const upsertEntityType = useEntityTypeStore((state) => state.upsertType);
+
   const scope = useNavigationStore((state) => state.scope);
 
   // Determine available types based on scope if not explicitly provided
@@ -84,11 +79,19 @@ export function NewNodeModal({
       : ['node', 'context'] as EntityType[]
   );
 
-   const [entityType, setEntityType] = useState<EntityType>(defaultType);
+  
+  const entityTypeOptions = useMemo(() => {
+    return Object.values(entityTypeMap).sort((a, b) =>
+      a.label.localeCompare(b.label)
+    );
+  }, [entityTypeMap]);
+
+  const [entityType, setEntityType] = useState<EntityType>(defaultType);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [title, setTitle] = useState("");
   const [initialContent, setInitialContent] = useState("");
   const [manualEntityType, setManualEntityType] = useState<ManualEntityType>("");
+  const [manualEntityColor, setManualEntityColor] = useState("#94a3b8");
   const [manualSystemNodeType, setManualSystemNodeType] =
   useState<ManualSystemNodeType>(
     defaultType === "context" ? "CONTEXT" : "REGULAR"
@@ -120,7 +123,7 @@ export function NewNodeModal({
         title: string;
         nodeType: BackendNodeType;
         content: string;
-        entityType?: ManualEntityType;
+        entityType?: string;
         createdFrom: "manual";
       }) => {
         if (!spaceSlug) throw new Error("spaceSlug is required for node creation");
@@ -209,6 +212,7 @@ export function NewNodeModal({
       setTitle("");
       setInitialContent("");
       setManualEntityType("");
+      setManualEntityColor("#94a3b8");
       setCreatedEntityId(null);
       setEntityType(defaultType);
       setIsCreating(false);
@@ -254,12 +258,23 @@ export function NewNodeModal({
           return space.id;
         }
 
+        const normalizedEntityType = manualEntityType.trim().toLowerCase().replace(/\s+/g, "_");
+
+        if (normalizedEntityType) {
+          upsertEntityType({
+            key: normalizedEntityType,
+            label: normalizedEntityType.replace(/_/g, " "),
+            color: manualEntityColor,
+          });
+        }
+
         const backendType = manualSystemNodeType as BackendNodeType;
+
         const node = await createNodeMutation.mutateAsync({
           title: titleToUse,
           nodeType: backendType,
           content: initialContent.trim(),
-          entityType: manualEntityType || undefined,
+          entityType: normalizedEntityType || undefined,
           createdFrom,
         });
 
@@ -283,8 +298,10 @@ export function NewNodeModal({
       title,
       initialContent,
       manualEntityType,
+      manualEntityColor,
       manualSystemNodeType,
       createdFrom,
+      upsertEntityType,
       spaceSlug,
       createNodeMutation,
       createSpaceMutation,
@@ -619,17 +636,56 @@ export function NewNodeModal({
                           <Tag className="h-4 w-4 text-[#94a3b8] dark:text-[#9ca3af]" />
                           Entity type
                         </label>
-                        <select
-                          value={manualEntityType}
-                          onChange={(e) => setManualEntityType(e.target.value as ManualEntityType)}
-                          className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe] dark:border-[#374151] dark:bg-[#111827] dark:text-white dark:focus:border-[#60a5fa] dark:focus:ring-[#1d4ed8]/30"
-                        >
-                          {MANUAL_ENTITY_TYPE_OPTIONS.map((option) => (
-                            <option key={option.value || "none"} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="space-y-2">
+                          <select
+                            value={manualEntityType}
+                            onChange={(e) => {
+                              const selectedValue = e.target.value;
+                              setManualEntityType(selectedValue);
+
+                              if (selectedValue) {
+                                const selected = getEntityType(selectedValue);
+                                setManualEntityColor(selected.color);
+                              } else {
+                                setManualEntityColor("#94a3b8");
+                              }
+                            }}
+                            className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe] dark:border-[#374151] dark:bg-[#111827] dark:text-white dark:focus:border-[#60a5fa] dark:focus:ring-[#1d4ed8]/30"
+                          >
+                            <option value="">None</option>
+                            {entityTypeOptions.map((option) => (
+                              <option key={option.key} value={option.key}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+
+                          <input
+                            value={manualEntityType}
+                            onChange={(e) => setManualEntityType(e.target.value)}
+                            placeholder="Or write new type: supplier, device, risk..."
+                            className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe] dark:border-[#374151] dark:bg-[#111827] dark:text-white dark:focus:border-[#60a5fa] dark:focus:ring-[#1d4ed8]/30"
+                          />
+
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="color"
+                              value={manualEntityColor}
+                              onChange={(e) => setManualEntityColor(e.target.value)}
+                              className="h-[36px] w-[52px] rounded-[10px] border border-[#e5e7eb] bg-white p-1 dark:border-[#374151] dark:bg-[#111827]"
+                            />
+
+                            <span
+                              className="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide"
+                              style={{
+                                backgroundColor: `${manualEntityColor}22`,
+                                color: manualEntityColor,
+                              }}
+                            >
+                              {manualEntityType.trim() || "No semantic type"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       <div>

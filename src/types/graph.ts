@@ -1,6 +1,6 @@
 // src/types/graph.ts
 
-import { Node as ReactFlowNode, Edge as ReactFlowEdge } from 'reactflow';
+import { Node as ReactFlowNode } from 'reactflow';
 import type { Node, Attribute } from './backend-dtos';
 
 /**
@@ -60,14 +60,10 @@ export interface GraphViewMode {
   showAssistantMessages: boolean;
   showChatRelations: boolean;
 
-  // Entities
+  // Entities / semantic types
   showEntities: boolean;
-  showPerson: boolean;
-  showPlace: boolean;
-  showAction: boolean;
-  showTopic: boolean;
-  showEvent: boolean;
   showEntityRelations: boolean;
+  hiddenSemanticTypes: string[];
 
   // System
   showSystem: boolean;

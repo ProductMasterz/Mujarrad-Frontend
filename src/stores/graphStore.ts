@@ -31,11 +31,7 @@ const DEFAULT_VIEW_MODE: GraphViewMode = {
 
   // Entities
   showEntities: true,
-  showPerson: true,
-  showPlace: true,
-  showAction: true,
-  showTopic: true,
-  showEvent: true,
+  hiddenSemanticTypes: [],
   showEntityRelations: true,
 
   // System
@@ -72,6 +68,20 @@ export const useGraphStore = create<GraphState>()(
       {
         name: 'graph-store',
         partialize: (state) => ({ viewMode: state.viewMode }),
+        merge: (persistedState, currentState) => {
+          const persisted = persistedState as Partial<GraphState> | undefined;
+
+          return {
+            ...currentState,
+            ...persisted,
+            viewMode: {
+              ...DEFAULT_VIEW_MODE,
+              ...(persisted?.viewMode || {}),
+              hiddenSemanticTypes:
+                persisted?.viewMode?.hiddenSemanticTypes || DEFAULT_VIEW_MODE.hiddenSemanticTypes,
+            },
+          };
+        },
       }
     ),
     {

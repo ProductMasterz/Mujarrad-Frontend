@@ -7,12 +7,14 @@ import { GraphVisualization } from '@/components/graph/GraphVisualization';
 import { useSpace } from '@/hooks/api';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { spaceService } from '@/services/api';
 import { Header } from '@/shell/components/Header';
 import { Tab } from '@/shell/components/TabsBar';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { getNodeEntityType } from '@/lib/entity-types';
+import { useEntityTypeStore } from '@/stores/entityType.store';
 
 function parseNodeDetails(node: { nodeDetails?: unknown }): Record<string, unknown> | undefined {
   if (!node.nodeDetails) return undefined;
@@ -76,7 +78,7 @@ export default function SpaceGraphPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
-
+  const getEntityType = useEntityTypeStore((state) => state.getType);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -250,22 +252,20 @@ export default function SpaceGraphPage() {
 
   
 
-  const selectedEntityType =
-    typeof selectedNodeDetails?.entityType === 'string'
-      ? selectedNodeDetails.entityType
-      : undefined;
-  const entityTypeBadgeClasses =
-    selectedEntityType?.toLowerCase() === 'person'
-      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200'
-      : selectedEntityType?.toLowerCase() === 'place'
-      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'
-      : selectedEntityType?.toLowerCase() === 'action'
-      ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200'
-      : selectedEntityType?.toLowerCase() === 'topic'
-      ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200'
-      : selectedEntityType?.toLowerCase() === 'event'
-      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200'
-      : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+  const selectedEntityType = selectedNode ? getNodeEntityType(selectedNode) : 'unknown';
+
+  const selectedEntityConfig = getEntityType(selectedEntityType);
+
+  const hasSelectedSemanticType =
+    selectedEntityType && selectedEntityType !== 'unknown';
+
+  const selectedEntityLabel = hasSelectedSemanticType
+    ? selectedEntityConfig.label
+    : 'Unclassified';
+
+  const selectedEntityColor = hasSelectedSemanticType
+    ? selectedEntityConfig.color
+    : '#94a3b8';
 
 
   const summaryEntries = [
@@ -274,8 +274,8 @@ export default function SpaceGraphPage() {
       value: selectedNode?.nodeType || '—',
     },
     {
-      label: 'Entity Type',
-      value: selectedEntityType || '—',
+      label: 'Semantic Type',
+      value: hasSelectedSemanticType ? selectedEntityLabel : '—',
     },
     {
       label: 'Created From',
@@ -414,11 +414,15 @@ export default function SpaceGraphPage() {
                         {selectedNode.nodeType}
                       </span>
 
-                      {selectedEntityType && (
+                      {hasSelectedSemanticType && (
                         <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${entityTypeBadgeClasses}`}
+                          className="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide"
+                          style={{
+                            backgroundColor: `${selectedEntityColor}22`,
+                            color: selectedEntityColor,
+                          }}
                         >
-                          {selectedEntityType}
+                          {selectedEntityLabel}
                         </span>
                       )}
                     </div>

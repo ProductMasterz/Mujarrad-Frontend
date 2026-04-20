@@ -2,8 +2,10 @@
 
 import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { NodeType } from '@/types/backend-dtos';
+import { NodeType, type Node as BackendNode } from '@/types/backend-dtos';
 import { cn } from '@/lib/utils';
+import { useEntityTypeStore } from '@/stores/entityType.store';
+import { getNodeEntityType } from '@/lib/entity-types';
 
 const nodeTypeStyles: Record<
   NodeType,
@@ -50,87 +52,38 @@ const nodeTypeStyles: Record<
   },
 };
 
-const entityTypeStyles: Record<
-  string,
-  {
-    border: string;
-    accent: string;
-    badgeBg: string;
-    badgeText: string;
-    surface: string;
-    label: string;
-  }
-> = {
-  person: {
-    border: 'border-blue-200 dark:border-blue-800',
-    accent: 'bg-blue-500',
-    badgeBg: 'bg-blue-100 dark:bg-blue-900/60',
-    badgeText: 'text-blue-700 dark:text-blue-200',
-    surface: 'bg-blue-50 dark:bg-blue-950/30',
-    label: 'Person',
-  },
-  place: {
-    border: 'border-emerald-200 dark:border-emerald-800',
-    accent: 'bg-emerald-500',
-    badgeBg: 'bg-emerald-100 dark:bg-emerald-900/60',
-    badgeText: 'text-emerald-700 dark:text-emerald-200',
-    surface: 'bg-emerald-50 dark:bg-emerald-950/30',
-    label: 'Place',
-  },
-  event: {
-    border: 'border-orange-200 dark:border-orange-800',
-    accent: 'bg-orange-500',
-    badgeBg: 'bg-orange-100 dark:bg-orange-900/60',
-    badgeText: 'text-orange-700 dark:text-orange-200',
-    surface: 'bg-orange-50 dark:bg-orange-950/30',
-    label: 'Event',
-  },
-  topic: {
-    border: 'border-violet-200 dark:border-violet-800',
-    accent: 'bg-violet-500',
-    badgeBg: 'bg-violet-100 dark:bg-violet-900/60',
-    badgeText: 'text-violet-700 dark:text-violet-200',
-    surface: 'bg-violet-50 dark:bg-violet-950/30',
-    label: 'Topic',
-  },
-  action: {
-    border: 'border-rose-200 dark:border-rose-800',
-    accent: 'bg-rose-500',
-    badgeBg: 'bg-rose-100 dark:bg-rose-900/60',
-    badgeText: 'text-rose-700 dark:text-rose-200',
-    surface: 'bg-rose-50 dark:bg-rose-950/30',
-    label: 'Action',
-  },
-};
 
 export const CustomNode = memo(({ data, selected }: NodeProps) => {
-  const {
-    label,
-    nodeType,
-    entityType,
-  } = data as {
+  const { label, nodeType, entityType, node } = data as {
     label: string;
     nodeType: NodeType;
     entityType?: string;
+    node?: BackendNode;
   };
 
-  const normalizedEntityType = entityType?.toLowerCase().trim();
-  const styleConfig =
-    (normalizedEntityType && entityTypeStyles[normalizedEntityType]) ||
-    nodeTypeStyles[nodeType] ||
-    nodeTypeStyles[NodeType.REGULAR];
+  const getType = useEntityTypeStore((state) => state.getType);
 
-  const nodeTypeLabel =
-    normalizedEntityType
-      ? styleConfig.label
-      : nodeTypeStyles[nodeType]?.label || 'Node';
+  const normalizedEntityType =
+    entityType?.toLowerCase().trim() || getNodeEntityType(node);
+
+  const hasSemanticType =
+    Boolean(normalizedEntityType) && normalizedEntityType !== 'unknown';
+
+  const semanticConfig = getType(normalizedEntityType || 'unknown');
+  const structuralConfig =
+    nodeTypeStyles[nodeType] || nodeTypeStyles[NodeType.REGULAR];
+
+  const nodeTypeLabel = hasSemanticType
+    ? semanticConfig.label
+    : structuralConfig.label;
+
 
   return (
     <div
       className={cn(
         'group relative min-w-[180px] max-w-[220px] overflow-hidden rounded-[16px] border shadow-sm transition-all duration-200',
-        styleConfig.border,
-        styleConfig.surface,
+        hasSemanticType ? 'border-border' : structuralConfig.border,
+        hasSemanticType ? 'bg-background' : structuralConfig.surface,
         selected
           ? 'ring-2 ring-primary/30 shadow-[0px_10px_24px_rgba(59,130,246,0.18)]'
           : 'hover:shadow-[0px_10px_24px_rgba(0,0,0,0.10)] dark:hover:shadow-[0px_10px_24px_rgba(0,0,0,0.35)]'
@@ -141,7 +94,10 @@ export const CustomNode = memo(({ data, selected }: NodeProps) => {
     >
       <Handle type="target" position={Position.Top} className="h-2 w-2" aria-hidden="true" />
 
-      <div className={cn('h-1.5 w-full', styleConfig.accent)} />
+      <div
+        className={cn('h-1.5 w-full', !hasSemanticType && structuralConfig.accent)}
+        style={hasSemanticType ? { backgroundColor: semanticConfig.color } : undefined}
+      />
 
       <div className="px-3 py-3">
         <div className="mb-2 flex items-start justify-between gap-2">
@@ -152,16 +108,24 @@ export const CustomNode = memo(({ data, selected }: NodeProps) => {
           <span
             className={cn(
               'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-              styleConfig.badgeBg,
-              styleConfig.badgeText
+              !hasSemanticType && structuralConfig.badgeBg,
+              !hasSemanticType && structuralConfig.badgeText
             )}
+            style={
+              hasSemanticType
+                ? {
+                    backgroundColor: `${semanticConfig.color}22`,
+                    color: semanticConfig.color,
+                  }
+                : undefined
+            }
           >
             {nodeTypeLabel}
           </span>
         </div>
 
         <div className="text-[11px] text-muted-foreground">
-          {normalizedEntityType ? 'Entity node' : `${nodeTypeLabel} node`}
+          {hasSemanticType ? 'Semantic node' : `${nodeTypeLabel} node`}
         </div>
       </div>
 

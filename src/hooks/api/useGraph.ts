@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { nodeService, attributeService } from '@/services/api';
 import type { GraphData, GraphNode, GraphEdge } from '@/types/graph';
 import type { CreateAttributeRequest } from '@/types/backend-dtos';
-
+import { getNodeEntityType } from '@/lib/entity-types';
 /**
  * Fetch and combine nodes + attributes into graph data
  */
@@ -26,6 +26,7 @@ export function useGraphData(spaceSlug: string) {
           label: node.title,
           isSelected: false,
           nodeType: node.nodeType,
+          entityType: getNodeEntityType(node),
         },
       }));
 

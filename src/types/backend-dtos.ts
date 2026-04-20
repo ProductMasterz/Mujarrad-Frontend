@@ -58,6 +58,26 @@ export interface NodeDetails {
    */
   blockType?: string;
 
+
+    /**
+   * User/agent configurable semantic/entity type.
+   * Examples: Person, Place, Topic, Event, Risk, Requirement, Device.
+   * This is NOT the same as nodeType.
+   */
+  semanticType?: string;
+ 
+  /**
+   * Source of the semantic type.
+   */
+  semanticTypeSource?: 'agent' | 'manual' | 'system';
+
+  /**
+   * Legacy/agent aliases.
+   */
+  entityType?: string;
+  entity_type?: string;
+
+
   /**
    * If true, this node is a page (can contain blocks)
    */
