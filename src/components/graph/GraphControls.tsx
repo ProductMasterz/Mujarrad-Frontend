@@ -11,6 +11,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface GraphControlsProps {
   viewMode: GraphViewMode;
+  semanticTypes?: Array<{ key: string; label: string; color: string }>;
   onViewModeChange: (mode: Partial<GraphViewMode>) => void;
 }
 
@@ -18,10 +19,12 @@ function Toggle({
   label,
   checked,
   onChange,
+  color,
 }: {
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  color?: string;
 }) {
   return (
     <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
@@ -31,6 +34,12 @@ function Toggle({
         onChange={(e) => onChange(e.target.checked)}
         className="rounded border-border bg-background text-primary focus:ring-primary/20"
       />
+      {color && (
+        <span
+          className="h-2.5 w-2.5 rounded-full"
+          style={{ backgroundColor: color }}
+        />
+      )}
       <span>{label}</span>
     </label>
   );
@@ -63,7 +72,7 @@ function DropdownSection({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-[250px] rounded-xl border border-border bg-background p-4 shadow-[0px_10px_30px_0px_rgba(0,0,0,0.10),0px_2px_10px_0px_rgba(0,0,0,0.05)] dark:shadow-[0px_10px_30px_0px_rgba(0,0,0,0.35),0px_2px_10px_0px_rgba(0,0,0,0.20)]">
+        <div className="absolute left-0 top-[calc(100%+8px)] z-20 min-w-[270px] rounded-xl border border-border bg-background p-4 shadow-[0px_10px_30px_0px_rgba(0,0,0,0.10),0px_2px_10px_0px_rgba(0,0,0,0.05)] dark:shadow-[0px_10px_30px_0px_rgba(0,0,0,0.35),0px_2px_10px_0px_rgba(0,0,0,0.20)]">
           <div className="space-y-3">{children}</div>
         </div>
       )}
@@ -71,16 +80,16 @@ function DropdownSection({
   );
 }
 
-/**
- * GraphControls component
- * Grouped dropdown controls for chat, entities, and system nodes
- */
-export function GraphControls({ viewMode, onViewModeChange }: GraphControlsProps) {
+export function GraphControls({
+  viewMode,
+  semanticTypes = [],
+  onViewModeChange,
+}: GraphControlsProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [openSection, setOpenSection] = useState<'chat' | 'entities' | 'system' | null>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handlePointerDown(event: PointerEvent) {
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
@@ -89,9 +98,10 @@ export function GraphControls({ viewMode, onViewModeChange }: GraphControlsProps
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handlePointerDown, true);
+
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('pointerdown', handlePointerDown, true);
     };
   }, []);
 
@@ -112,11 +122,6 @@ export function GraphControls({ viewMode, onViewModeChange }: GraphControlsProps
   const handleEntitiesGroupChange = (checked: boolean) => {
     onViewModeChange({
       showEntities: checked,
-      showPerson: checked,
-      showPlace: checked,
-      showAction: checked,
-      showTopic: checked,
-      showEvent: checked,
       showEntityRelations: checked,
     });
   };
@@ -130,6 +135,18 @@ export function GraphControls({ viewMode, onViewModeChange }: GraphControlsProps
       showTemplate: checked,
       showBlocks: checked,
       showReferences: checked,
+    });
+  };
+
+  const toggleSemanticType = (typeKey: string, checked: boolean) => {
+    const currentHidden = Array.isArray(viewMode.hiddenSemanticTypes)
+      ? viewMode.hiddenSemanticTypes
+      : [];
+
+    onViewModeChange({
+      hiddenSemanticTypes: checked
+        ? currentHidden.filter((key) => key !== typeKey)
+        : Array.from(new Set([...currentHidden, typeKey])),
     });
   };
 
@@ -182,39 +199,30 @@ export function GraphControls({ viewMode, onViewModeChange }: GraphControlsProps
           onToggle={() => toggleSection('entities')}
         >
           <Toggle
-            label="Enable entity group"
+            label="Enable semantic group"
             checked={viewMode.showEntities}
             onChange={handleEntitiesGroupChange}
           />
 
           <div className="ml-5 space-y-2">
+            {semanticTypes.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No semantic types found.
+              </p>
+            ) : (
+              semanticTypes.map((type) => (
+                <Toggle
+                  key={type.key}
+                  label={type.label}
+                  color={type.color}
+                  checked={!viewMode.hiddenSemanticTypes?.includes(type.key)}
+                  onChange={(checked) => toggleSemanticType(type.key, checked)}
+                />
+              ))
+            )}
+
             <Toggle
-              label="People"
-              checked={viewMode.showPerson}
-              onChange={(checked) => onViewModeChange({ showPerson: checked })}
-            />
-            <Toggle
-              label="Places"
-              checked={viewMode.showPlace}
-              onChange={(checked) => onViewModeChange({ showPlace: checked })}
-            />
-            <Toggle
-              label="Actions"
-              checked={viewMode.showAction}
-              onChange={(checked) => onViewModeChange({ showAction: checked })}
-            />
-            <Toggle
-              label="Topics"
-              checked={viewMode.showTopic}
-              onChange={(checked) => onViewModeChange({ showTopic: checked })}
-            />
-            <Toggle
-              label="Events"
-              checked={viewMode.showEvent}
-              onChange={(checked) => onViewModeChange({ showEvent: checked })}
-            />
-            <Toggle
-              label="Entity relations"
+              label="Semantic relations"
               checked={viewMode.showEntityRelations}
               onChange={(checked) => onViewModeChange({ showEntityRelations: checked })}
             />

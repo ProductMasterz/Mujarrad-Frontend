@@ -30,12 +30,17 @@ export function Navbar({ className }: NavbarProps) {
 
   const notifications = useNotificationStore((state) => state.notifications);
   const notificationSettings = useNotificationStore((state) => state.settings);
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const unreadCount = notifications.filter((item) => !item.read).length;
   const showUnreadBadge =
-    notificationSettings.showUnreadBadge &&
-    notificationSettings.enabled &&
-    unreadCount > 0;
+  mounted &&
+  notificationSettings.showUnreadBadge &&
+  notificationSettings.enabled &&
+  unreadCount > 0;
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
@@ -154,7 +159,7 @@ export function Navbar({ className }: NavbarProps) {
         </div>
       </div>
 
-      {moreMenuAnchor && (
+      {mounted && moreMenuAnchor && (
         <div ref={settingsMenuRef}>
           <MoreMenuDropdown
             onClose={() => setMoreMenuAnchor(null)}
@@ -163,13 +168,14 @@ export function Navbar({ className }: NavbarProps) {
         </div>
       )}
 
-      {notificationsOpen && notificationButtonRef.current && (
+      {mounted && notificationsOpen && notificationButtonRef.current && (
         <div ref={notificationsPanelRef}>
           <NotificationsDropdown
             anchorEl={notificationButtonRef.current}
             onClose={() => setNotificationsOpen(false)}
           />
         </div>
+        
       )}
     </nav>
   );

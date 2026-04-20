@@ -15,6 +15,9 @@ import { useTheme } from 'next-themes';
 import { useGraphData } from '@/hooks/api';
 import { CustomNode } from './CustomNode';
 import { Spinner } from '@/components/ui/spinner';
+import { getNodeEntityType } from '@/lib/entity-types';
+import { useEntityTypeStore } from '@/stores/entityType.store';
+import type { Node as BackendNode } from '@/types/backend-dtos';
 
 interface GraphCanvasProps {
   spaceSlug: string;
@@ -27,7 +30,7 @@ const nodeTypes = {
 export function GraphCanvas({ spaceSlug }: GraphCanvasProps) {
   const { data: graphData, isLoading } = useGraphData(spaceSlug);
   const { resolvedTheme } = useTheme();
-
+  const getType = useEntityTypeStore((state) => state.getType);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -52,11 +55,20 @@ export function GraphCanvas({ spaceSlug }: GraphCanvasProps) {
   }
 
   const isDark = resolvedTheme === 'dark';
+  const getMiniMapEntityColor = (data: unknown) => {
+    const graphData = data as {
+      entityType?: string;
+      node?: BackendNode;
+    };
 
+    const entityType =
+      graphData.entityType || getNodeEntityType(graphData.node);
+
+    return getType(entityType).color;
+  };
   return (
     <div className="h-full w-full rounded-[20px] bg-background">
       <ReactFlow
-        
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
@@ -75,23 +87,10 @@ export function GraphCanvas({ spaceSlug }: GraphCanvasProps) {
           pannable
           zoomable
           className="!rounded-xl !border !border-border !bg-background"
-          nodeStrokeColor={(n) => {
-            const entityType = (n.data as { entityType?: string })?.entityType?.toLowerCase?.();
-            if (entityType === 'person') return '#3b82f6';
-            if (entityType === 'place') return '#10b981';
-            if (entityType === 'action') return '#f43f5e';
-            if (entityType === 'topic') return '#8b5cf6';
-            if (entityType === 'event') return '#f97316';
-            return isDark ? '#64748b' : '#94a3b8';
-          }}
+          nodeStrokeColor={(n) => getMiniMapEntityColor(n.data)}
           nodeColor={(n) => {
-            const entityType = (n.data as { entityType?: string })?.entityType?.toLowerCase?.();
-            if (entityType === 'person') return isDark ? '#172554' : '#dbeafe';
-            if (entityType === 'place') return isDark ? '#052e2b' : '#d1fae5';
-            if (entityType === 'action') return isDark ? '#4c0519' : '#ffe4e6';
-            if (entityType === 'topic') return isDark ? '#2e1065' : '#ede9fe';
-            if (entityType === 'event') return isDark ? '#431407' : '#ffedd5';
-            return isDark ? '#1f2937' : '#f8fafc';
+            const color = getMiniMapEntityColor(n.data);
+            return isDark ? `${color}55` : `${color}22`;
           }}
           maskColor={isDark ? 'rgba(15,23,42,0.7)' : 'rgba(255,255,255,0.7)'}
         />

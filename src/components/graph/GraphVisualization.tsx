@@ -10,7 +10,8 @@ import ReactFlow, {
   Node as ReactFlowNode,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-
+import { getNodeEntityType } from '@/lib/entity-types';
+import { useEntityTypeStore } from '@/stores/entityType.store';
 import type { Node, Attribute } from '@/types/backend-dtos';
 import { buildGraphData } from '@/lib/graph-utils';
 import { useGraphStore } from '@/stores/graphStore';
@@ -37,6 +38,30 @@ export function GraphVisualization({
   const setSelectedNode = useGraphStore((state) => state.setSelectedNode);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  const getEntityType = useEntityTypeStore((state) => state.getType);
+
+  const semanticTypes = useMemo(() => {
+    const typeKeys = nodes
+      .map((node) => getNodeEntityType(node))
+      .filter((type) => type && type !== 'unknown');
+
+    return Array.from(new Set(typeKeys))
+      .map((typeKey) => getEntityType(typeKey))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [nodes, getEntityType]);
+
+  const getMiniMapEntityColor = (data: unknown) => {
+    const graphNodeData = data as {
+      entityType?: string;
+      node?: Node;
+    };
+
+    const entityType =
+      graphNodeData.entityType || getNodeEntityType(graphNodeData.node);
+
+    return getEntityType(entityType).color;
+  };
+
   const graphData = useMemo(() => {
     return buildGraphData(nodes, attributes, viewMode, selectedNodeId);
   }, [nodes, attributes, viewMode, selectedNodeId]);
@@ -133,7 +158,11 @@ export function GraphVisualization({
 
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
-      <GraphControls viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+      <GraphControls
+        viewMode={viewMode}
+        semanticTypes={semanticTypes}
+        onViewModeChange={handleViewModeChange}
+      />
 
       <div className="flex-1 overflow-hidden rounded-[20px] border border-border bg-background">
         <ReactFlow
@@ -147,14 +176,20 @@ export function GraphVisualization({
         >
           <Background color="hsl(var(--border))" gap={20} />
           <Controls />
-          <MiniMap
-            pannable
-            zoomable
-            style={{
-              backgroundColor: 'hsl(var(--background))',
-              border: '1px solid hsl(var(--border))',
-            }}
-          />
+         <MiniMap
+          pannable
+          zoomable
+          nodeStrokeColor={(n) => getMiniMapEntityColor(n.data)}
+          nodeColor={(n) => {
+            const color = getMiniMapEntityColor(n.data);
+            return isDark ? `${color}55` : `${color}22`;
+          }}
+          maskColor={isDark ? 'rgba(15,23,42,0.7)' : 'rgba(255,255,255,0.7)'}
+          style={{
+            backgroundColor: 'hsl(var(--background))',
+            border: '1px solid hsl(var(--border))',
+          }}
+        />
         </ReactFlow>
       </div>
     </div>

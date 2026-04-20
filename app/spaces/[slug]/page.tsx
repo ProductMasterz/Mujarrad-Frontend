@@ -21,6 +21,8 @@ import { NodeType } from '@/types/backend-dtos';
 import { NodeCard } from '@/shell/components/NodeCard';
 import { spaceService } from '@/services/api';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { getNodeEntityType } from '@/lib/entity-types';
+import { useEntityTypeStore } from '@/stores/entityType.store';
 
 function isAgentCreatedNode(node: Node): boolean {
   let details: Record<string, unknown> | undefined;
@@ -64,6 +66,28 @@ function nodeToCard(node: Node): Card {
   };
 }
 
+function getNodeDetails(node: Node): Record<string, unknown> | undefined {
+  if (typeof node.nodeDetails === 'string') {
+    try {
+      return JSON.parse(node.nodeDetails);
+    } catch {
+      return undefined;
+    }
+  }
+
+  return node.nodeDetails as Record<string, unknown> | undefined;
+}
+
+function isDisplayableNode(node: Node): boolean {
+  const details = getNodeDetails(node);
+
+  if (details?.showInSpaceList === false) return false;
+  if (details?.blockType) return false;
+
+  return true;
+}
+
+
 export default function SpaceDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -71,7 +95,8 @@ export default function SpaceDetailPage() {
   const navigateToSpace = useNavigationStore((state) => state.navigateToSpace);
   const slug = params.slug as string;
   const { rename: renameNode } = useRenameNodeSimple(slug);
-  
+  const entityTypeMap = useEntityTypeStore((state) => state.types);
+  const getEntityType = useEntityTypeStore((state) => state.getType);
 
   // Fetch space data
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(slug);
@@ -110,7 +135,7 @@ export default function SpaceDetailPage() {
   const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterNodeType, setFilterNodeType] = useState<'ALL' | 'REGULAR' | 'CONTEXT' | 'ASSUMPTION' | 'TEMPLATE'>('ALL');
-  const [filterEntityType, setFilterEntityType] = useState<'ALL' | '' | 'person' | 'place' | 'action' | 'topic' | 'event'>('ALL');
+  const [filterEntityType, setFilterEntityType] = useState<string>('ALL');
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -143,51 +168,29 @@ export default function SpaceDetailPage() {
 
 
   const allDisplayableNodes = useMemo(() => {
-    return (nodes || []).filter((node) => {
-      let details: Record<string, unknown> | undefined;
-
-      if (typeof node.nodeDetails === 'string') {
-        try {
-          details = JSON.parse(node.nodeDetails);
-        } catch {
-          details = undefined;
-        }
-      } else {
-        details = node.nodeDetails as Record<string, unknown> | undefined;
-      }
-
-      if (details?.showInSpaceList === false) return false;
-      if (details?.blockType) return false;
-
-      return true;
-    });
+    return (nodes || []).filter(isDisplayableNode);
   }, [nodes]);
+
+
+  const entityTypeOptions = useMemo(() => {
+    const fromNodes = allDisplayableNodes
+      .map((node) => getNodeEntityType(node))
+      .filter((type) => type && type !== 'unknown');
+
+    const fromStore = Object.keys(entityTypeMap);
+
+    return Array.from(new Set([...fromStore, ...fromNodes])).sort();
+  }, [allDisplayableNodes, entityTypeMap]);
+
 
   // Convert nodes to card format - filter out block nodes (showInSpaceList: false)
   const visibleNodes = useMemo(() => {
     return (nodes || [])
       .filter((node) => {
-        let details: Record<string, unknown> | undefined;
-
-        if (typeof node.nodeDetails === 'string') {
-          try {
-            details = JSON.parse(node.nodeDetails);
-          } catch {
-            details = undefined;
-          }
-        } else {
-          details = node.nodeDetails as Record<string, unknown> | undefined;
-        }
-
-        if (details?.showInSpaceList === false) return false;
-        if (details?.blockType) return false;
-
+        if (!isDisplayableNode(node)) return false;
 
         const term = searchTerm.trim().toLowerCase();
-        const entityType =
-          typeof details?.entityType === 'string'
-            ? details.entityType.toLowerCase()
-            : '';
+        const entityType = getNodeEntityType(node);
 
         const matchesSearch =
           !term ||
@@ -440,9 +443,6 @@ export default function SpaceDetailPage() {
     }
   };
 
-  const handleClearSpace = () => {
-    setShowClearSpaceDialog(true);
-  };
 
   const handleConfirmClearSpace = async () => {
     if (!nodes || nodes.length === 0) {
@@ -641,20 +641,20 @@ export default function SpaceDetailPage() {
 
                 <select
                   value={filterEntityType}
-                  onChange={(e) =>
-                    setFilterEntityType(
-                      e.target.value as 'ALL' | '' | 'person' | 'place' | 'action' | 'topic' | 'event'
-                    )
-                  }
+                  onChange={(e) => setFilterEntityType(e.target.value)}
                   className="h-[42px] w-full rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                 >
-                  <option value="ALL">All entity types</option>
-                  <option value="">No entity type</option>
-                  <option value="person">Person</option>
-                  <option value="place">Place</option>
-                  <option value="action">Action</option>
-                  <option value="topic">Topic</option>
-                  <option value="event">Event</option>
+                  <option value="ALL">All semantic types</option>
+                  <option value="unknown">No semantic type</option>
+                  {entityTypeOptions.map((typeKey) => {
+                    const config = getEntityType(typeKey);
+
+                    return (
+                      <option key={typeKey} value={typeKey}>
+                        {config.label}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -737,24 +737,11 @@ export default function SpaceDetailPage() {
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 pt-1">
                   {visibleNodes.map((node) => {
-                    let details: Record<string, unknown> | undefined;
-
-                    if (typeof node.nodeDetails === 'string') {
-                      try {
-                        details = JSON.parse(node.nodeDetails);
-                      } catch {
-                        details = undefined;
-                      }
-                    } else {
-                      details = node.nodeDetails as Record<string, unknown> | undefined;
-                    }
+                   
 
                     const isAgentCreated = isAgentCreatedNode(node);
 
-                    const entityType =
-                      typeof details?.entityType === 'string'
-                        ? details.entityType
-                        : undefined;
+                    const entityType = getNodeEntityType(node);
 
                     const nodeKindLabel =
                       node.nodeType === NodeType.CONTEXT
@@ -769,8 +756,8 @@ export default function SpaceDetailPage() {
 
                     const previewSource =
                       (node.content || '').trim() ||
-                      (typeof details?.entityType === 'string'
-                        ? `Entity type: ${details.entityType}`
+                      (entityType && entityType !== 'unknown'
+                        ? `Entity type: ${getEntityType(entityType).label}`
                         : node.nodeType === NodeType.CONTEXT
                         ? 'Context node'
                         : 'No preview available');
@@ -803,23 +790,16 @@ export default function SpaceDetailPage() {
               ) : (
                 <div className="overflow-hidden rounded-2xl border border-border/70 bg-background">
                   {visibleNodes.map((node) => {
-                    let details: Record<string, unknown> | undefined;
-
-                    if (typeof node.nodeDetails === 'string') {
-                      try {
-                        details = JSON.parse(node.nodeDetails);
-                      } catch {
-                        details = undefined;
-                      }
-                    } else {
-                      details = node.nodeDetails as Record<string, unknown> | undefined;
-                    }
+                
 
                     const isAgentCreated = isAgentCreatedNode(node);
 
-                    const entityType =
-                      typeof details?.entityType === 'string' ? details.entityType : '';
-
+                    const entityType = getNodeEntityType(node);
+                    const semanticConfig = getEntityType(entityType);
+                    const hasSemanticType = entityType && entityType !== 'unknown';
+                    const semanticLabel = hasSemanticType ? semanticConfig.label : 'Unclassified';
+                    const semanticColor = hasSemanticType ? semanticConfig.color : '#94a3b8';
+                    
                     const nodeKindLabel =
                       node.nodeType === NodeType.CONTEXT
                         ? 'Context'
@@ -831,32 +811,7 @@ export default function SpaceDetailPage() {
                         ? 'Regular'
                         : 'Node';
 
-                    const semanticTypeBadgeClasses =
-                      entityType.toLowerCase() === 'person'
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200'
-                        : entityType.toLowerCase() === 'place'
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'
-                        : entityType.toLowerCase() === 'action'
-                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200'
-                        : entityType.toLowerCase() === 'topic'
-                        ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-200'
-                        : entityType.toLowerCase() === 'event'
-                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200'
-                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
-
-                    const rowAccentClasses =
-                      entityType.toLowerCase() === 'person'
-                        ? 'border-l-4 border-l-blue-500'
-                        : entityType.toLowerCase() === 'place'
-                        ? 'border-l-4 border-l-emerald-500'
-                        : entityType.toLowerCase() === 'action'
-                        ? 'border-l-4 border-l-rose-500'
-                        : entityType.toLowerCase() === 'topic'
-                        ? 'border-l-4 border-l-violet-500'
-                        : entityType.toLowerCase() === 'event'
-                        ? 'border-l-4 border-l-orange-500'
-                        : 'border-l-4 border-l-slate-400 dark:border-l-slate-600';
-
+  
                     const nodeKindBadgeClasses =
                       nodeKindLabel.toLowerCase() === 'context'
                         ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
@@ -884,7 +839,8 @@ export default function SpaceDetailPage() {
                         type="button"
                         onClick={() => handleCardClick(node.id)}
                         onContextMenu={(e) => handleCardContextMenu(e, node.id)}
-                        className={`grid w-full grid-cols-[minmax(0,2fr)_130px_140px_110px_140px] items-center gap-4 border-b border-border/60 px-4 py-3 text-left transition hover:bg-muted/40 last:border-b-0 ${rowAccentClasses}`}
+                        className="grid w-full grid-cols-[minmax(0,2fr)_130px_140px_110px_140px] items-center gap-4 border-b border-l-4 border-border/60 px-4 py-3 text-left transition hover:bg-muted/40 last:border-b-0"
+                        style={{ borderLeftColor: semanticColor }}
                       >
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium text-foreground">
@@ -904,11 +860,15 @@ export default function SpaceDetailPage() {
                         </div>
 
                         <div>
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${semanticTypeBadgeClasses}`}
-                          >
-                            {entityType || 'Unclassified'}
-                          </span>
+                         <span
+                          className="inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium"
+                          style={{
+                            backgroundColor: `${semanticColor}22`,
+                            color: semanticColor,
+                          }}
+                        >
+                          {semanticLabel}
+                        </span>
                         </div>
 
                         <div>
