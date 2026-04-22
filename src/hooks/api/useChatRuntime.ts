@@ -233,5 +233,19 @@ const loadConversationHistory = useCallback(
     },
   });
 
-  return { runtime };
+  const startNewConversation = useCallback(async () => {
+  const spaceSlug = 'default-space';
+
+  setMessages([]);
+  creatingRef.current = true;
+
+  try {
+    const convo = await conversationService.createConversation(spaceSlug);
+    setConversationId(convo.id);
+  } finally {
+    creatingRef.current = false;
+  }
+}, []);
+
+  return { runtime,startNewConversation };
 }

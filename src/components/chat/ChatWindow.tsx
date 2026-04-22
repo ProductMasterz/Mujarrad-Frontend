@@ -22,15 +22,15 @@ function CopyButton({ value }: { value: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch (err) {
-      console.error("Copy failed:", err);
+      console.error('Copy failed:', err);
     }
   };
 
   return (
     <button
       onClick={handleCopy}
-      className={`copy-btn ${copied ? "copied" : ""}`}
-      title={copied ? "Copied" : "Copy"}
+      className={`copy-btn ${copied ? 'copied' : ''}`}
+      title={copied ? 'Copied' : 'Copy'}
     >
       {copied ? <CheckIcon size={16} /> : <CopyIcon size={16} />}
     </button>
@@ -40,13 +40,10 @@ function CopyButton({ value }: { value: string }) {
 function AssistantMessage({ message }: any) {
   const contentRef = useRef<HTMLDivElement | null>(null);
 
-  const textToCopy =
-    contentRef.current?.innerText?.trim() ||
-    getMessageText(message);
+  const textToCopy = contentRef.current?.innerText?.trim() || getMessageText(message);
 
   return (
     <MessagePrimitive.Root className="message flex justify-start">
-      
       <div className="bubble-wrapper">
         <div ref={contentRef} className="message-bubble assistant">
           <MessagePrimitive.Content />
@@ -56,7 +53,6 @@ function AssistantMessage({ message }: any) {
           <CopyButton value={textToCopy} />
         </div>
       </div>
-
     </MessagePrimitive.Root>
   );
 }
@@ -64,13 +60,10 @@ function AssistantMessage({ message }: any) {
 function UserMessage({ message }: any) {
   const contentRef = useRef<HTMLDivElement | null>(null);
 
-  const textToCopy =
-    contentRef.current?.innerText?.trim() ||
-    getMessageText(message);
+  const textToCopy = contentRef.current?.innerText?.trim() || getMessageText(message);
 
   return (
     <MessagePrimitive.Root className="message flex justify-end">
-      
       <div className="bubble-wrapper">
         <div ref={contentRef} className="message-bubble user">
           <MessagePrimitive.Content />
@@ -80,13 +73,12 @@ function UserMessage({ message }: any) {
           <CopyButton value={textToCopy} />
         </div>
       </div>
-
     </MessagePrimitive.Root>
   );
 }
 
 export function ChatWindow() {
-  const { runtime } = useChatRuntime();
+  const { runtime, startNewConversation } = useChatRuntime();
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -100,6 +92,14 @@ export function ChatWindow() {
               UserMessage,
             }}
           />
+          {/* NEW: input section */}
+          <div className="chat-input-area">
+            <div className="new-chat-wrapper">
+              <button onClick={startNewConversation} className="new-chat-btn">
+                New Chat
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </AssistantRuntimeProvider>
