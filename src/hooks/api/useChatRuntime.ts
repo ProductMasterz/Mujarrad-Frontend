@@ -60,7 +60,11 @@ export function useChatRuntime() {
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const creatingRef = useRef(false);
-
+const [conversationCache, setConversationCache] = useState<
+  Record<string, AppendMessage[]>
+>({});
+  
+  
 const loadConversationHistory = useCallback(
   async (conversationId: string) => {
     const spaceSlug = 'default-space';
@@ -111,6 +115,11 @@ const loadConversationHistory = useCallback(
       }));
 
       setMessages(historyMessages);
+
+      setConversationCache((prev) => ({
+        ...prev,
+        [conversationId]: historyMessages,
+      }));
     } catch (error) {
       console.error('Failed to load history', error);
     }
@@ -118,14 +127,29 @@ const loadConversationHistory = useCallback(
   []
 );
 
-  useEffect(() => {
+const switchConversation = useCallback(
+  async (id: string) => {
+    setConversationId(id);
+
+    // instant load from cache 
+    if (conversationCache[id]) {
+      setMessages(conversationCache[id]);
+      return;
+    }
+
+    setMessages([]);
+    await loadConversationHistory(id);
+  },
+  [conversationCache, loadConversationHistory]
+);
+ /* useEffect(() => {
     if (!conversationId) return;
 
     // Prevent overwriting current session messages
-    if (messages.length > 0) return;
+    //if (messages.length > 0) return;
 
     loadConversationHistory(conversationId);
-  }, [conversationId, loadConversationHistory, messages.length]);
+  }, [conversationId, loadConversationHistory, messages.length]);*/
 
   //Processes a new user message by updating state, calling the agent API, handling the response, and persisting both messages.
   const handleNewMessage = useCallback(
@@ -209,6 +233,10 @@ const loadConversationHistory = useCallback(
         //UI
         const assistantMessage = createAssistantMessage(assistantText);
         setMessages((prev) => [...prev, assistantMessage]);
+        setConversationCache((prev) => ({
+        ...prev,
+        [currentConversationId!]: [...newMessages, assistantMessage],
+      }));
       } catch (error) {
         console.error(error);
       } finally {
@@ -247,5 +275,5 @@ const loadConversationHistory = useCallback(
   }
 }, []);
 
-  return { runtime,startNewConversation };
+  return { runtime,startNewConversation ,switchConversation, conversationId};
 }

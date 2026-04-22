@@ -9,6 +9,7 @@ import { useRef, useState } from 'react';
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import { MessagePrimitive } from '@assistant-ui/react';
 import { getMessageText } from '@/lib/utils/text';
+import { ConversationList } from './ConversationList';
 
 /* COPY BUTTON `*/
 function CopyButton({ value }: { value: string }) {
@@ -78,7 +79,7 @@ function UserMessage({ message }: any) {
 }
 
 export function ChatWindow() {
-  const { runtime, startNewConversation } = useChatRuntime();
+  const { runtime, startNewConversation, switchConversation, conversationId } = useChatRuntime();
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -100,6 +101,8 @@ export function ChatWindow() {
               </button>
             </div>
           </div>
+
+          <ConversationList activeId={conversationId} onSelect={switchConversation} />
         </div>
       </div>
     </AssistantRuntimeProvider>

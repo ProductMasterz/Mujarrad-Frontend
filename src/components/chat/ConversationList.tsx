@@ -2,8 +2,10 @@ import { useConversations } from "@/hooks/api/useConversations";
 
 export function ConversationList({
   onSelect,
+  activeId,
 }: {
   onSelect: (id: string) => void;
+  activeId: string | null;
 }) {
   const { conversations, loading } = useConversations();
   
