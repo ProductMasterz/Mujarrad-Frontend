@@ -485,3 +485,18 @@ button.aui-thread-scroll-to-bottom {
   background: #0d8f6d;
   transform: translateY(-1px);
 }
+
+.delete-convo-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+.delete-convo-btn:disabled {
+  background: #e5e7eb;
+  cursor: not-allowed;
+}

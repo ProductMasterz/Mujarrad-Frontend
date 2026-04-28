@@ -63,7 +63,48 @@ export function useChatRuntime() {
 const [conversationCache, setConversationCache] = useState<
   Record<string, AppendMessage[]>
 >({});
-  
+
+const deleteConversation = useCallback(async (id: string) => {
+  const spaceSlug = 'default-space';
+
+  try {
+    const attributes = await attributeService.getNodeAttributes(id);
+
+    const messageLinks = attributes.filter(
+      (attr) => attr.attributeName === 'contains'
+    );
+
+    
+    await Promise.all(
+      messageLinks.map(async (attr) => {
+        try {
+          await nodeService.deleteNode(spaceSlug, attr.targetNodeId, true);
+        } catch {
+         
+        }
+      })
+    );
+
+    
+    await nodeService.deleteNode(spaceSlug, id, true);
+
+   
+    if (conversationId === id) {
+      setConversationId(null);
+      setMessages([]);
+    }
+
+
+    setConversationCache((prev) => {
+      const updated = { ...prev };
+      delete updated[id];
+      return updated;
+    });
+
+  } catch (err) {
+    console.error('Delete failed', err);
+  }
+}, [conversationId]);
   
 const loadConversationHistory = useCallback(
   async (conversationId: string) => {
@@ -275,5 +316,5 @@ const switchConversation = useCallback(
   }
 }, []);
 
-  return { runtime,startNewConversation ,switchConversation, conversationId};
+  return { runtime,startNewConversation ,switchConversation, conversationId, deleteConversation};
 }

@@ -79,7 +79,8 @@ function UserMessage({ message }: any) {
 }
 
 export function ChatWindow() {
-  const { runtime, startNewConversation, switchConversation, conversationId } = useChatRuntime();
+  const { runtime, startNewConversation, switchConversation, conversationId, deleteConversation } =
+    useChatRuntime();
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -98,6 +99,23 @@ export function ChatWindow() {
             <div className="new-chat-wrapper">
               <button onClick={startNewConversation} className="new-chat-btn">
                 New Chat
+              </button>
+              <button
+                onClick={() => {
+                  if (!conversationId) return;
+
+                  const confirmed = window.confirm(
+                    'Are you sure you want to delete this conversation?'
+                  );
+
+                  if (confirmed) {
+                    deleteConversation(conversationId);
+                  }
+                }}
+                className="delete-convo-btn"
+                disabled={!conversationId}
+              >
+                Delete
               </button>
             </div>
           </div>
