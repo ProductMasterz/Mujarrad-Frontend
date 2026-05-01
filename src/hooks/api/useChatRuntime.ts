@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { AppendMessage, useExternalStoreRuntime } from '@assistant-ui/react';
 
 import { ChatMessage, sendChatMessage } from '@/services/api/chatService';
 import { nodeService } from '@/services/api/node.service';
 import { NodeType } from '@/types';
-import { conversationService } from '@/services/api/conversation.service';
 import { attributeService } from '@/services/api';
 import { AttributeKey, AttributeTypeMode } from '@/types/backend-dtos';
 
-//Converts structured message content into plain text.
+// ---------------- Helpers ----------------
+
 function extractText(content: any): string {
   if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
@@ -19,7 +19,6 @@ function extractText(content: any): string {
   return '';
 }
 
-//Transforms UI messages into a simplified format for the backend API.
 function mapToBackendMessages(messages: AppendMessage[]): ChatMessage[] {
   return messages
     .filter(
@@ -31,16 +30,13 @@ function mapToBackendMessages(messages: AppendMessage[]): ChatMessage[] {
       content: extractText(msg.content),
     }));
 }
-//Builds a properly structured assistant message object compatible with assistant-ui
+
 function createAssistantMessage(text: string): AppendMessage {
   return {
     role: 'assistant',
     content: [{ type: 'text', text }],
     createdAt: new Date(),
-    status: {
-      type: 'complete',
-      reason: 'stop',
-    },
+    status: { type: 'complete', reason: 'stop' },
     metadata: {
       unstable_state: null,
       unstable_annotations: [],
@@ -53,93 +49,129 @@ function createAssistantMessage(text: string): AppendMessage {
     runConfig: undefined,
   };
 }
-//Manages chat state, handles message flow, and connects the UI to the agent service via a custom runtime.
+
+// ---------------- Hook ----------------
+
 export function useChatRuntime() {
   const [messages, setMessages] = useState<AppendMessage[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-
   const [conversationId, setConversationId] = useState<string | null>(null);
+
+  const conversationRef = useRef<string | null>(null);
   const creatingRef = useRef(false);
-const [conversationCache, setConversationCache] = useState<
-  Record<string, AppendMessage[]>
->({});
+  const messageOrderRef = useRef(1);
 
-const deleteConversation = useCallback(async (id: string) => {
-  const spaceSlug = 'default-space';
+  const [conversationCache, setConversationCache] = useState<
+    Record<string, AppendMessage[]>
+  >({});
 
-  try {
-    const attributes = await attributeService.getNodeAttributes(id);
+  // ---------------- Conversation ----------------
 
-    const messageLinks = attributes.filter(
-      (attr) => attr.attributeName === 'contains'
-    );
+  const createConversationNode = async () => {
+    const spaceSlug = 'default-space';
 
-    
-    await Promise.all(
-      messageLinks.map(async (attr) => {
-        try {
-          await nodeService.deleteNode(spaceSlug, attr.targetNodeId, true);
-        } catch {
-         
-        }
-      })
-    );
-
-    
-    await nodeService.deleteNode(spaceSlug, id, true);
-
-   
-    if (conversationId === id) {
-      setConversationId(null);
-      setMessages([]);
-    }
-
-
-    setConversationCache((prev) => {
-      const updated = { ...prev };
-      delete updated[id];
-      return updated;
+    const node = await nodeService.createNode(spaceSlug, {
+      title: `Conversation ${new Date().toLocaleString()}`,
+      nodeType: NodeType.REGULAR,
+      content: '',
+      nodeDetails: {
+        createdFrom: 'chat',
+        chatNodeType: 'conversation',
+        role: 'conversation',
+      },
     });
 
-  } catch (err) {
-    console.error('Delete failed', err);
-  }
-}, [conversationId]);
-  
-const loadConversationHistory = useCallback(
-  async (conversationId: string) => {
+    return node.id;
+  };
+
+  const ensureConversation = async () => {
+    if (conversationRef.current) return conversationRef.current;
+    if (creatingRef.current) return null;
+
+    creatingRef.current = true;
+
+    const id = await createConversationNode();
+
+    conversationRef.current = id;
+    setConversationId(id);
+
+    creatingRef.current = false;
+
+    return id;
+  };
+
+  // ---------------- Delete ----------------
+
+  const deleteConversation = useCallback(
+    async (id: string) => {
+      const spaceSlug = 'default-space';
+
+      try {
+        const attributes = await attributeService.getNodeAttributes(id);
+
+        const messageLinks = attributes.filter(
+          (attr) => attr.attributeName === 'contains'
+        );
+
+        await Promise.all(
+          messageLinks.map(async (attr) => {
+            try {
+              await nodeService.deleteNode(spaceSlug, attr.targetNodeId, true);
+            } catch {}
+          })
+        );
+
+        await nodeService.deleteNode(spaceSlug, id, true);
+
+        if (conversationId === id) {
+          setConversationId(null);
+          conversationRef.current = null;
+          setMessages([]);
+        }
+
+        setConversationCache((prev) => {
+          const updated = { ...prev };
+          delete updated[id];
+          return updated;
+        });
+      } catch (err) {
+        console.error('Delete failed', err);
+      }
+    },
+    [conversationId]
+  );
+
+  // ---------------- Load History ----------------
+
+  const loadConversationHistory = useCallback(async (id: string) => {
     const spaceSlug = 'default-space';
 
     try {
-      const attributes = await attributeService.getNodeAttributes(
-        conversationId,
-        { attributeType: AttributeKey.CONTAINS }
-      );
+      const attributes = await attributeService.getNodeAttributes(id, {
+        attributeType: AttributeKey.CONTAINS,
+      });
 
       if (!attributes.length) {
         setMessages([]);
         return;
       }
 
-      const messageNodeIds = attributes.map(
-        (attr) => attr.targetNodeId
-      );
+      //  ORDER FIX
+      const ordered = attributes.sort((a, b) => {
+        const aOrder = Number(a.attributeValue?.order || 0);
+        const bOrder = Number(b.attributeValue?.order || 0);
+        return aOrder - bOrder;
+      });
 
-    
       const nodes = await Promise.all(
-        messageNodeIds.map((id) =>
-          nodeService.getNode(spaceSlug, id)
+        ordered.map((attr) =>
+          nodeService.getNode(spaceSlug, attr.targetNodeId)
         )
       );
 
-      nodes.sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() -
-          new Date(b.createdAt).getTime()
-      );
-
       const historyMessages: AppendMessage[] = nodes.map((node) => ({
-        role: node.title === 'agent-message' ? 'assistant' : 'user',
+        role:
+          node.nodeDetails?.role === 'assistant' ? 'assistant' : 'user',
         content: [{ type: 'text', text: node.content || '' }],
         createdAt: new Date(node.createdAt),
         status: { type: 'complete', reason: 'stop' },
@@ -159,40 +191,33 @@ const loadConversationHistory = useCallback(
 
       setConversationCache((prev) => ({
         ...prev,
-        [conversationId]: historyMessages,
+        [id]: historyMessages,
       }));
     } catch (error) {
       console.error('Failed to load history', error);
     }
-  },
-  []
-);
+  }, []);
 
-const switchConversation = useCallback(
-  async (id: string) => {
-    setConversationId(id);
+  // ---------------- Switch ----------------
 
-    // instant load from cache 
-    if (conversationCache[id]) {
-      setMessages(conversationCache[id]);
-      return;
-    }
+  const switchConversation = useCallback(
+    async (id: string) => {
+      setConversationId(id);
+      conversationRef.current = id; //  FIX
 
-    setMessages([]);
-    await loadConversationHistory(id);
-  },
-  [conversationCache, loadConversationHistory]
-);
- /* useEffect(() => {
-    if (!conversationId) return;
+      if (conversationCache[id]) {
+        setMessages(conversationCache[id]);
+        return;
+      }
 
-    // Prevent overwriting current session messages
-    //if (messages.length > 0) return;
+      setMessages([]);
+      await loadConversationHistory(id);
+    },
+    [conversationCache, loadConversationHistory]
+  );
 
-    loadConversationHistory(conversationId);
-  }, [conversationId, loadConversationHistory, messages.length]);*/
+  // ---------------- New Message ----------------
 
-  //Processes a new user message by updating state, calling the agent API, handling the response, and persisting both messages.
   const handleNewMessage = useCallback(
     async (message: AppendMessage) => {
       const spaceSlug = 'default-space';
@@ -204,117 +229,119 @@ const switchConversation = useCallback(
       setMessages(newMessages);
 
       try {
-        let currentConversationId = conversationId;
+        const currentConversationId = await ensureConversation();
+        if (!currentConversationId) return;
 
-        // Create conversation once
-
-        if (!currentConversationId) {
-          if (creatingRef.current) return;
-
-          creatingRef.current = true;
-
-          const convo = await conversationService.createConversation(spaceSlug);
-
-          currentConversationId = convo.id;
-          setConversationId(convo.id);
-
-          creatingRef.current = false;
-        }
-
-        //Create USER message node
-
+        // USER NODE
         const userNode = await nodeService.createNode(spaceSlug, {
           title: 'user-message',
           content: text,
           nodeType: NodeType.REGULAR,
           nodeDetails: {
-            type: 'message',
+            createdFrom: 'chat',
+            chatNodeType: 'message',
             role: 'user',
           },
         });
 
-        // Link USER → CONVERSATION
-        await attributeService.createAttribute(userNode.id, {
-          sourceNodeId: currentConversationId!,
+        await attributeService.createAttribute(currentConversationId, {
+          sourceNodeId: currentConversationId,
           targetNodeId: userNode.id,
-          attributeType: 'contains',
+          attributeType: 'CUSTOM',
           attributeTypeMode: AttributeTypeMode.SCHEMALESS,
           attributeName: 'contains',
-          attributeValue: {},
+          attributeValue: {
+            order: messageOrderRef.current++,
+          },
         });
 
-        //  Call backend AI
-
-        const response = await sendChatMessage(mapToBackendMessages(newMessages));
+        // AI CALL
+        const response = await sendChatMessage(
+          mapToBackendMessages(newMessages)
+        );
         const assistantText = response.reply;
 
-        //  Create ASSISTANT message node
-
+        // ASSISTANT NODE
         const assistantNode = await nodeService.createNode(spaceSlug, {
           title: 'agent-message',
           content: assistantText,
           nodeType: NodeType.REGULAR,
           nodeDetails: {
-            type: 'message',
+            createdFrom: 'chat',
+            chatNodeType: 'message',
             role: 'assistant',
           },
         });
 
-        //  Link ASSISTANT → CONVERSATION
-
-        await attributeService.createAttribute(assistantNode.id, {
-          sourceNodeId: currentConversationId!,
+        await attributeService.createAttribute(currentConversationId, {
+          sourceNodeId: currentConversationId,
           targetNodeId: assistantNode.id,
-          attributeType: 'contains',
+          attributeType: 'CUSTOM',
           attributeTypeMode: AttributeTypeMode.SCHEMALESS,
           attributeName: 'contains',
+          attributeValue: {
+            order: messageOrderRef.current++,
+          },
+        });
+
+        // reply link
+        await attributeService.createAttribute(userNode.id, {
+          sourceNodeId: userNode.id,
+          targetNodeId: assistantNode.id,
+          attributeType: 'CUSTOM',
+          attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+          attributeName: 'assistant_reply',
           attributeValue: {},
         });
 
-        //UI
+        // UI update
         const assistantMessage = createAssistantMessage(assistantText);
+
         setMessages((prev) => [...prev, assistantMessage]);
+
         setConversationCache((prev) => ({
-        ...prev,
-        [currentConversationId!]: [...newMessages, assistantMessage],
-      }));
+          ...prev,
+          [currentConversationId]: [...newMessages, assistantMessage],
+        }));
       } catch (error) {
         console.error(error);
       } finally {
         setIsRunning(false);
       }
     },
-    [messages, conversationId]
+    [messages]
   );
+
+  // ---------------- Runtime ----------------
 
   const runtime = useExternalStoreRuntime({
     messages: [...messages],
     isRunning,
     onNew: handleNewMessage,
-
-    convertMessage: (message: AppendMessage, idx: number) => {
-      console.log('RUNTIME MESSAGE:', message);
-      return {
-        id: String(idx),
-        role: message.role,
-        content: message.content,
-      };
-    },
+    convertMessage: (message: AppendMessage, idx: number) => ({
+      id: String(idx),
+      role: message.role,
+      content: message.content,
+    }),
   });
 
-  const startNewConversation = useCallback(async () => {
-  const spaceSlug = 'default-space';
+  // ---------------- Start New ----------------
 
+const startNewConversation = useCallback(async () => {
   setMessages([]);
-  creatingRef.current = true;
+  conversationRef.current = null;
+  messageOrderRef.current = 1;
 
-  try {
-    const convo = await conversationService.createConversation(spaceSlug);
-    setConversationId(convo.id);
-  } finally {
-    creatingRef.current = false;
-  }
+  const id = await createConversationNode();
+  conversationRef.current = id;
+  setConversationId(id);
 }, []);
 
-  return { runtime,startNewConversation ,switchConversation, conversationId, deleteConversation};
+  return {
+    runtime,
+    startNewConversation,
+    switchConversation,
+    conversationId,
+    deleteConversation,
+  };
 }

@@ -1,7 +1,15 @@
+import { useState } from "react";
 import { useConversations } from "@/hooks/api/useConversations";
-  
-function formatConversationTitle(dateString: string) {
-  const date = new Date(dateString);
+import { Node } from "@/types/backend-dtos";
+
+function getConversationTitle(conv: Node) {
+  if (conv.title && conv.title !== 'Conversation') {
+    return conv.title;
+  }
+
+  if (!conv.createdAt) return 'Untitled';
+
+  const date = new Date(conv.createdAt);
   const now = new Date();
 
   const isToday = date.toDateString() === now.toDateString();
@@ -18,6 +26,7 @@ function formatConversationTitle(dateString: string) {
     day: 'numeric',
   });
 }
+
 export function ConversationList({
   onSelect,
   activeId,
@@ -26,37 +35,45 @@ export function ConversationList({
   activeId: string | null;
 }) {
   const { conversations, loading } = useConversations();
+  const [query, setQuery] = useState('');
 
   if (loading) return <div>Loading...</div>;
+  if (!conversations.length) return <div>No conversations yet</div>;
 
-  if (!conversations.length)
-    return <div>No conversations yet</div>;
+ const filteredConversations = conversations.filter((conv) => {
+  const queryLower = query.toLowerCase();
+
+  const titleMatch = (conv.title || '')
+    .toLowerCase()
+    .includes(queryLower);
+
+  const contentMatch = (conv as any).searchableText?.includes(queryLower);
+
+  return titleMatch || contentMatch;
+});
 
   return (
     <div>
-  {conversations.map((conv) => {
- const title =
-  conv.title && conv.title !== 'Conversation'
-    ? conv.title
-    : conv.createdAt
-    ? formatConversationTitle(conv.createdAt)
-    : 'Untitled';
+      <input
+        type="text"
+        placeholder="Search conversations..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        className="conversation-search"
+      />
 
-  return (
-    <div
-      key={conv.id}
-      className={`conversation-item ${
-        activeId === conv.id
-    ? 'active'
-    : 'hover:bg-gray-100'
-
-      }`}
-      onClick={() => onSelect(conv.id)}
-    >
-      <div>{title}</div>
-    </div>
-  );
-})}
+      
+      {filteredConversations.map((conv) => (
+        <div
+          key={conv.id}
+          className={`conversation-item ${
+            activeId === conv.id ? 'active' : ''
+          }`}
+          onClick={() => onSelect(conv.id)}
+        >
+          <div>{getConversationTitle(conv)}</div>
+        </div>
+      ))}
     </div>
   );
 }

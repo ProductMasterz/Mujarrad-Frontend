@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { nodeService } from '@/services/api/node.service';
-import { Node, NodeType } from '@/types/backend-dtos';
+import { Node, NodeType ,AttributeKey} from '@/types/backend-dtos';
+
+import { attributeService } from '@/services/api';
+
 
 export function useConversations() {
   const [conversations, setConversations] = useState<Node[]>([]);
@@ -32,31 +35,61 @@ useEffect(() => {
   //end
   //API
   useEffect(() => {
-    const fetchConversations = async () => {
-      setLoading(true);
+  const fetchConversations = async () => {
+    setLoading(true);
 
-      try {
-        const nodes = await nodeService.getNodes('default-space');
+    try {
+      const nodes = await nodeService.getNodes('default-space');
 
-        const conversationNodes = nodes
-          .filter((node) => node.nodeType === NodeType.REGULAR)
-          .filter((node) => node.nodeDetails?.type === 'conversation') 
-          .sort(
-            (a, b) =>
-              new Date(b.createdAt).getTime() -
-              new Date(a.createdAt).getTime()
-          );
+      const conversationNodes = nodes
+        .filter((node) => node.nodeDetails?.role === 'conversation')
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() -
+            new Date(a.createdAt).getTime()
+        );
 
-        setConversations(conversationNodes);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      // Attach message text for search
+      const enriched = await Promise.all(
+        conversationNodes.map(async (conv) => {
+          try {
+            const attrs = await attributeService.getNodeAttributes(
+              conv.id,
+              { attributeType: AttributeKey.CONTAINS }
+            );
 
-    fetchConversations();
-  }, []);
+            const messageIds = attrs.map((a) => a.targetNodeId);
 
+            const messageNodes = await Promise.all(
+              messageIds.map((id) =>
+                nodeService.getNode('default-space', id)
+              )
+            );
+
+            const allText = messageNodes
+              .map((m) => m.content || '')
+              .join(' ')
+              .toLowerCase();
+
+            return {
+              ...conv,
+              searchableText: allText,
+            };
+          } catch {
+            return { ...conv, searchableText: '' };
+          }
+        })
+      );
+
+      setConversations(enriched);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchConversations();
+}, []);
   return { conversations, loading };
 }
