@@ -1,5 +1,7 @@
 'use client';
 
+import { BLOCK_META } from './blockMeta';
+import { BlockShell } from './BlockShell';
 import type { Block, BlockType, BlockProps, CalloutType } from './types';
 import { BLOCK_TYPES } from './types';
 import {
@@ -33,12 +35,6 @@ interface BlockRendererProps {
   readOnly?: boolean;
 }
 
-/**
- * BlockRenderer - Renders the appropriate block component based on type
- *
- * This component acts as a factory, selecting the correct block component
- * for each block type and passing through the necessary props.
- */
 export function BlockRenderer({
   block,
   isActive,
@@ -56,7 +52,6 @@ export function BlockRenderer({
   onMoveDown,
   readOnly = false,
 }: BlockRendererProps) {
-  // Common props for all block types
   const commonProps: BlockProps = {
     block,
     isActive,
@@ -71,27 +66,39 @@ export function BlockRenderer({
     readOnly,
   };
 
+  const meta = BLOCK_META[block.type];
+
+  const wrap = (children: React.ReactNode) => (
+    <BlockShell
+      badge={meta.shortLabel}
+      label={meta.label}
+      toneClassName={meta.tone}
+    >
+      {children}
+    </BlockShell>
+  );
+
   switch (block.type) {
     case BLOCK_TYPES.TEXT:
-      return <TextBlock {...commonProps} />;
+      return wrap(<TextBlock {...commonProps} />);
 
     case BLOCK_TYPES.HEADING_1:
     case BLOCK_TYPES.HEADING_2:
     case BLOCK_TYPES.HEADING_3:
-      return <HeadingBlock {...commonProps} />;
+      return wrap(<HeadingBlock {...commonProps} />);
 
     case BLOCK_TYPES.BULLET_LIST:
     case BLOCK_TYPES.NUMBERED_LIST:
-      return <ListBlock {...commonProps} listNumber={listNumber} />;
+      return wrap(<ListBlock {...commonProps} listNumber={listNumber} />);
 
     case BLOCK_TYPES.TODO:
-      return <TodoBlock {...commonProps} onCheckedChange={onCheckedChange} />;
+      return wrap(<TodoBlock {...commonProps} onCheckedChange={onCheckedChange} />);
 
     case BLOCK_TYPES.QUOTE:
-      return <QuoteBlock {...commonProps} />;
+      return wrap(<QuoteBlock {...commonProps} />);
 
     case BLOCK_TYPES.DIVIDER:
-      return (
+      return wrap(
         <DividerBlock
           block={block}
           isActive={isActive}
@@ -106,30 +113,52 @@ export function BlockRenderer({
       );
 
     case BLOCK_TYPES.CODE:
-      return <CodeBlock {...commonProps} onLanguageChange={onLanguageChange} />;
+      return wrap(<CodeBlock {...commonProps} onLanguageChange={onLanguageChange} />);
 
     case BLOCK_TYPES.MATH:
-      return <MathBlock {...commonProps} />;
+      return wrap(<MathBlock {...commonProps} />);
 
     case BLOCK_TYPES.MERMAID:
-      return <MermaidBlock {...commonProps} />;
+      return wrap(<MermaidBlock {...commonProps} />);
 
     case BLOCK_TYPES.CALLOUT:
-      return <CalloutBlock {...commonProps} onCalloutTypeChange={onCalloutTypeChange} />;
+      return wrap(
+        <CalloutBlock {...commonProps} onCalloutTypeChange={onCalloutTypeChange} />
+      );
 
     case BLOCK_TYPES.IMAGE:
-      return (
-        <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded text-center">
-          <div className="text-gray-500">Image Block (coming soon)</div>
+      return wrap(
+        <div
+          className="
+            rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/80 p-5 text-center
+            dark:border-zinc-700 dark:bg-zinc-900/60
+          "
+        >
+          <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+            Image block
+          </div>
+          <div className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Upload or embed an image here
+          </div>
+
           {block.imageUrl && (
-            <img src={block.imageUrl} alt={block.caption || 'Image'} className="max-w-full mt-2" />
+            <img
+              src={block.imageUrl}
+              alt={block.caption || 'Image'}
+              className="mt-4 max-h-[420px] max-w-full rounded-xl border border-zinc-200 object-contain dark:border-zinc-800"
+            />
+          )}
+
+          {block.caption && (
+            <div className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+              {block.caption}
+            </div>
           )}
         </div>
       );
 
     default:
-      // Fallback to text block for unknown types
-      return <TextBlock {...commonProps} />;
+      return wrap(<TextBlock {...commonProps} />);
   }
 }
 
