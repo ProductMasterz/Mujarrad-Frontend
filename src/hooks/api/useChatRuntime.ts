@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useRef } from "react";
-import { AppendMessage, useExternalStoreRuntime } from "@assistant-ui/react";
+import { useState, useCallback, useRef } from 'react';
+import { AppendMessage, useExternalStoreRuntime } from '@assistant-ui/react';
 
-import { ChatMessage, sendChatMessage } from "@/services/api/chatService";
-import { nodeService } from "@/services/api/node.service";
-import { NodeType } from "@/types";
+import { ChatMessage, sendChatMessage } from '@/services/api/chatService';
+import { nodeService } from '@/services/api/node.service';
+import { NodeType } from '@/types';
 
 //Converts structured message content into plain text.
 function extractText(content: any): string {
-  if (typeof content === "string") return content;
+  if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
-    return content.map((p) => p?.text || "").join("");
+    return content.map((p) => p?.text || '').join('');
   }
-  return "";
+  return '';
 }
 
 //Transforms UI messages into a simplified format for the backend API.
 function mapToBackendMessages(messages: AppendMessage[]): ChatMessage[] {
   return messages
     .filter(
-      (msg): msg is AppendMessage & { role: "user" | "assistant" } =>
-        msg.role === "user" || msg.role === "assistant"
+      (msg): msg is AppendMessage & { role: 'user' | 'assistant' } =>
+        msg.role === 'user' || msg.role === 'assistant'
     )
     .map((msg) => ({
       role: msg.role,
@@ -31,12 +31,12 @@ function mapToBackendMessages(messages: AppendMessage[]): ChatMessage[] {
 //Builds a properly structured assistant message object compatible with assistant-ui
 function createAssistantMessage(text: string): AppendMessage {
   return {
-    role: "assistant",
-    content: [{ type: "text", text }],
+    role: 'assistant',
+    content: [{ type: 'text', text }],
     createdAt: new Date(),
     status: {
-      type: "complete",
-      reason: "stop",
+      type: 'complete',
+      reason: 'stop',
     },
     metadata: {
       unstable_state: null,
@@ -54,56 +54,75 @@ function createAssistantMessage(text: string): AppendMessage {
 export function useChatRuntime() {
   const [messages, setMessages] = useState<AppendMessage[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-
+  const [conversationNodeId, setConversationNodeId] = useState<string | null>(null);
+  const creatingConversationRef = useRef(false);
   const messagesRef = useRef<AppendMessage[]>([]);
+  
+  const createConversationNode = async () => {
+    const spaceSlug = 'default-space';
 
-  const handleNewMessage = useCallback(async (message: AppendMessage) => {
-    if (isRunning) return;
+    const now = new Date();
+    const title = `Chat - ${now.toISOString().slice(0, 16).replace('T', ' ')}`;
 
-    const spaceSlug = "default-space";
-    const text = extractText(message.content);
-
-    setIsRunning(true);
-
-    setMessages((prev) => {
-      const updated = [...prev, message];
-      messagesRef.current = updated;
-      return updated;
+    const node = await nodeService.createNode(spaceSlug, {
+      title,
+      content: 'Conversation started',
+      nodeType: NodeType.REGULAR,
+      nodeDetails: {
+        type: 'conversation',
+      },
     });
 
-    try {
-      await nodeService.createNode(spaceSlug, {
-        title: text.slice(0, 50),
-        content: text,
-        nodeType: NodeType.REGULAR,
-      });
+    return node.id;
+  };
+  const handleNewMessage = useCallback(
+    async (message: AppendMessage) => {
+      if (isRunning) return;
 
-      await new Promise((res) => setTimeout(res, 300));
+      const spaceSlug = 'default-space';
+      const text = extractText(message.content);
 
-      const response = await sendChatMessage(
-        mapToBackendMessages(messagesRef.current)
-      );
-
-      const assistantMessage = createAssistantMessage(response.reply);
+      setIsRunning(true);
 
       setMessages((prev) => {
-        const updated = [...prev, assistantMessage];
+        const updated = [...prev, message];
         messagesRef.current = updated;
         return updated;
       });
 
-      await nodeService.createNode(spaceSlug, {
-        title: response.reply.slice(0, 50),
-        content: response.reply,
-        nodeType: NodeType.REGULAR,
-      });
+      try {
+        //  CREATE CONVERSATION NODE
+        let convoId = conversationNodeId;
 
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsRunning(false);
-    }
-  }, [isRunning]);
+        if (!convoId && !creatingConversationRef.current) {
+          creatingConversationRef.current = true;
+
+          try {
+            convoId = await createConversationNode();
+            setConversationNodeId(convoId);
+          } finally {
+            creatingConversationRef.current = false;
+          }
+        }
+
+        // Send chat request
+        const response = await sendChatMessage(mapToBackendMessages(messagesRef.current));
+
+        const assistantMessage = createAssistantMessage(response.reply);
+
+        setMessages((prev) => {
+          const updated = [...prev, assistantMessage];
+          messagesRef.current = updated;
+          return updated;
+        });
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsRunning(false);
+      }
+    },
+    [isRunning, conversationNodeId]
+  );
 
   const runtime = useExternalStoreRuntime({
     messages: [...messages],
@@ -111,8 +130,7 @@ export function useChatRuntime() {
     onNew: handleNewMessage,
 
     convertMessage: (message: AppendMessage, idx: number) => {
-
-      console.log("RUNTIME MESSAGE:", message);
+      console.log('RUNTIME MESSAGE:', message);
       return {
         id: String(idx),
         role: message.role,
