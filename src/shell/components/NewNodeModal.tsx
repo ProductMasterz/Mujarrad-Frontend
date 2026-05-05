@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { X, Maximize2, ChevronDown, FolderPlus, FilePlus, Box, Tag, Sparkles } from "lucide-react";
+import { X, Maximize2, ChevronDown, FolderPlus, FilePlus, Box, Tag, Sparkles, LayoutTemplate } from "lucide-react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,9 @@ import { DuplicateNodeModal } from "@/components/nodes/DuplicateNodeModal";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { useEntityTypeStore } from "@/stores/entityType.store";
+import { NodeTemplateModal } from "@/components/templates/NodeTemplateModal";
+import type { NodeTemplate } from "@/components/templates/nodeTemplates";
+import { createTemplateBlocks } from "@/components/templates/templateBlockService";
 
 // Entity types that can be created
 export type EntityType = "space" | "node" | "context";
@@ -99,7 +102,8 @@ export function NewNodeModal({
   const [createdFrom] = useState<"manual">("manual");
   const [createdEntityId, setCreatedEntityId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<NodeTemplate | null>(null);
 
 
   // Duplicate detection state
@@ -206,7 +210,8 @@ export function NewNodeModal({
       // Set default type when modal opens
       setEntityType(defaultType);
       setManualSystemNodeType(defaultType === "context" ? "CONTEXT" : "REGULAR");
-
+      setShowTemplateModal(false);
+      setSelectedTemplate(null);
     } else {
       // Reset everything when modal closes
       setTitle("");
@@ -220,7 +225,8 @@ export function NewNodeModal({
       setDuplicateNode(null);
       setPendingTitle("");
       setManualSystemNodeType(defaultType === "context" ? "CONTEXT" : "REGULAR");
-
+      setShowTemplateModal(false);
+      setSelectedTemplate(null);
     }
   }, [isOpen, defaultType]);
 
@@ -235,6 +241,31 @@ export function NewNodeModal({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+
+  const handleSelectTemplate = useCallback(
+    async (template: NodeTemplate) => {
+      setSelectedTemplate(template);
+
+      if (template.semanticType) {
+        const normalizedType = template.semanticType
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_");
+
+        setManualEntityType(normalizedType);
+        setManualEntityColor(template.accentColor ?? "#94a3b8");
+
+        upsertEntityType({
+          key: normalizedType,
+          label: normalizedType.replace(/_/g, " "),
+          color: template.accentColor ?? "#94a3b8",
+        });
+      }
+    },
+    [upsertEntityType]
+  );
+
 
   // Create entity only when user explicitly confirms creation
   const ensureEntityCreated = useCallback(
@@ -278,6 +309,15 @@ export function NewNodeModal({
           createdFrom,
         });
 
+        if (selectedTemplate) {
+          await createTemplateBlocks({
+            spaceSlug,
+            pageId: node.id,
+            blocks: selectedTemplate.blocks,
+          });
+        }
+
+
         if (options?.openAfterCreate && spaceSlug) {
           onClose();
           router.push(`/spaces/${spaceSlug}/node/${node.id}`);
@@ -301,6 +341,7 @@ export function NewNodeModal({
       manualEntityColor,
       manualSystemNodeType,
       createdFrom,
+      selectedTemplate,
       upsertEntityType,
       spaceSlug,
       createNodeMutation,
@@ -584,6 +625,34 @@ export function NewNodeModal({
                 Fill in the node details, then create it directly or open it in the full editor.
               </p>
 
+
+              <div className="mb-6 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowTemplateModal(true)}
+                  className="inline-flex h-[40px] items-center gap-2 rounded-[14px] border border-[#dbe3ee] bg-white px-4 text-[14px] font-semibold text-[#374151] transition hover:bg-[#f8fafc] dark:border-[#374151] dark:bg-[#111827] dark:text-[#e5e7eb] dark:hover:bg-[#1f2937]"
+                >
+                  <LayoutTemplate className="h-4 w-4" />
+                  {selectedTemplate ? "Change template" : "Start from template"}
+                </button>
+
+                {selectedTemplate && (
+                  <div className="flex items-center gap-2 rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[13px] text-[#4b5563] dark:border-[#374151] dark:bg-[#111827] dark:text-[#d1d5db]">
+                    <span className="font-medium">Template:</span>
+                    <span>{selectedTemplate.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTemplate(null)}
+                      className="ml-1 text-[#9ca3af] hover:text-[#ef4444]"
+                      title="Remove template"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+
+
               <div className="grid grid-cols-12 gap-6">
                 <div className="col-span-7 space-y-5">
                   <div>
@@ -745,6 +814,16 @@ export function NewNodeModal({
           </div>
         )}
       </div>
+
+
+      {showTemplateModal && (
+        <NodeTemplateModal
+          isOpen={showTemplateModal}
+          onClose={() => setShowTemplateModal(false)}
+          onUseTemplate={handleSelectTemplate}
+          showApplyMode={false}
+        />
+      )}
 
       {/* Duplicate Node Modal */}
       {duplicateNode && showDuplicateModal && (
