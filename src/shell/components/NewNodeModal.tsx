@@ -309,7 +309,7 @@ export function NewNodeModal({
           createdFrom,
         });
 
-        if (selectedTemplate) {
+        if (selectedTemplate && spaceSlug) {
           await createTemplateBlocks({
             spaceSlug,
             pageId: node.id,
