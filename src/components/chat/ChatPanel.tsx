@@ -20,25 +20,11 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notificationStore';
 
 type AgentProcessNode = Record<string, unknown>;
-
-type AgentProcessRelationship = {
-  source_id?: string;
-  target_id?: string;
-  type?: string;
-  name?: string;
-  description?: string;
-  level?: number;
-  source_title?: string;
-  target_title?: string;
-};
+type AgentProcessRelationship = Record<string, unknown>;
 
 type AgentProcessResponse = {
-  message_id?: string;
-  input_node_id?: string;
-  assistant_node_id?: string;
   nodes?: AgentProcessNode[];
   relationships?: AgentProcessRelationship[];
-  stats?: Record<string, unknown>;
   report?: string;
   error?: boolean;
   message?: string;
@@ -108,8 +94,6 @@ function getAgentSummary(data: AgentProcessResponse | null) {
   const report = typeof data?.report === 'string' ? data.report : '';
   const message = typeof data?.message === 'string' ? data.message : '';
   const code = typeof data?.code === 'string' ? data.code : '';
-  const inputNodeId = typeof data?.input_node_id === 'string' ? data.input_node_id : '';
-  const assistantNodeId = typeof data?.assistant_node_id === 'string' ? data.assistant_node_id : '';
 
   return {
     nodes,
@@ -117,8 +101,6 @@ function getAgentSummary(data: AgentProcessResponse | null) {
     report,
     message,
     code,
-    inputNodeId,
-    assistantNodeId,
   };
 }
 
@@ -939,7 +921,6 @@ export function ChatPanel({
   const token = useAuthStore((state) => state.token);
   const hasActiveSpace = !!spaceSlug?.trim();
   const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
-  const agentApiKey = process.env.NEXT_PUBLIC_AGENT_API_KEY;
   const queryClient = useQueryClient();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -1541,11 +1522,6 @@ export function ChatPanel({
             userText
           );
 
-        const conversationNode = sessions.find((session) => session.id === conversationNodeId);
-
-      const conversationTitle =
-        conversationNode?.title || `Conversation ${new Date().toLocaleString()}`;
-        
         let assistantText = '';
 
         if (!agentServiceUrl) {
@@ -1559,14 +1535,10 @@ export function ChatPanel({
               headers: {
                 'Content-Type': 'application/json',
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                ...(agentApiKey ? { 'X-API-Key': agentApiKey } : {}),
               },
               body: JSON.stringify({
                 text: userText,
                 space_slug: spaceSlug,
-                message_id: inputMessageNodeId,
-                conversation_node_id: conversationNodeId,
-                conversation_title: conversationTitle,
               }),
             });
             let data: AgentProcessResponse | null = null;
@@ -1577,7 +1549,7 @@ export function ChatPanel({
               data = null;
             }
 
-            const { nodes, relationships, report, message, code, inputNodeId, assistantNodeId } = getAgentSummary(data);
+            const { nodes, relationships, report, message, code } = getAgentSummary(data);
 
             console.log('Agent /process response:', {
               ok: response.ok,
@@ -1634,8 +1606,24 @@ export function ChatPanel({
           'assistant',
           assistantText
         );
+
+        await attributeService.createAttribute(inputMessageNodeId, {
+          sourceNodeId: inputMessageNodeId,
+          targetNodeId: assistantMessageNodeId,
+          attributeType: 'CUSTOM',
+          attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+          attributeName: 'assistant_reply',
+          attributeValue: {
+            relation: 'reply_to_input',
+          },
+        });
         
- 
+        
+        const conversationNode = sessions.find((session) => session.id === conversationNodeId);
+
+        const conversationTitle =
+          conversationNode?.title || `Conversation ${new Date().toLocaleString()}`;
+
         const [updatedSearchText, updatedPreview] = await Promise.all([
           buildConversationSearchText(conversationNodeId, conversationTitle),
           buildConversationPreview(conversationNodeId),

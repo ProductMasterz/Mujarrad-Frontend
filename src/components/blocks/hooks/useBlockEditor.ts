@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
 import { nodeKeys } from '@/hooks/api/useNodes';
@@ -15,11 +15,6 @@ import {
   isContinuousBlockType,
   calculateOrderBetween,
 } from '../types';
-import type { TemplateBlockDefinition } from '@/components/templates/nodeTemplates';
-import {
-  createTemplateBlocks,
-  deleteBlocks,
-} from '@/components/templates/templateBlockService';
 
 interface UseBlockEditorOptions {
   pageId: string;
@@ -35,7 +30,7 @@ interface BlockEditorState {
   isSaving: boolean;
   error: string | null;
 }
-type ApplyTemplateMode = 'replace' | 'append';
+
 /**
  * useBlockEditor - Core hook for block editor data management
  *
@@ -133,19 +128,13 @@ export function useBlockEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCreatingBlock, setIsCreatingBlock] = useState(false);
-  const [templateReplaceBackup, setTemplateReplaceBackup] = useState<
-    TemplateBlockDefinition[] | null
-  >(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingChangesRef = useRef<Map<string, Partial<Block>>>(new Map());
   const initialBlockAttemptedRef = useRef(false);
   const blocksRef = useRef<Block[]>([]);
 
   // Query key for this page's blocks
-  const blocksQueryKey = useMemo(
-    () => ['blocks', spaceSlug, pageId],
-    [spaceSlug, pageId]
-  );
+  const blocksQueryKey = ['blocks', spaceSlug, pageId];
 
   // Fetch blocks for the page
   // Use longer staleTime to prevent refetching while user is editing
@@ -784,9 +773,6 @@ const revertTemplateReplace = useCallback(async () => {
     getNextBlockType,
     saveNow,
     convertBlockToPage,
-    applyTemplateBlocks,
-    canRevertTemplateReplace: Boolean(templateReplaceBackup),
-    revertTemplateReplace,
   };
 }
 
