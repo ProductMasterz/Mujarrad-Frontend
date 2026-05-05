@@ -25,6 +25,7 @@ import {
 } from '@dnd-kit/sortable';
 
 import type { Block, BlockType } from './types';
+import type { TemplateBlockDefinition } from '@/components/templates/nodeTemplates';
 import { BLOCK_TYPES, isContinuousBlockType } from './types';
 import { SortableBlock } from './SortableBlock';
 import { SlashCommandMenu } from './SlashCommandMenu';
@@ -45,6 +46,10 @@ export interface BlockEditorRef {
   scrollToBlock: (blockId: string) => void;
   getBlocks: () => Block[];
   getFocusedBlockId: () => string | null;
+  applyTemplateBlocks: (
+    templateBlocks: TemplateBlockDefinition[],
+    mode: 'replace' | 'append'
+  ) => Promise<void>;
 }
 
 interface SlashMenuState {
@@ -85,6 +90,9 @@ export const BlockEditor = forwardRef<BlockEditorRef, BlockEditorProps>(function
     getNextBlockType,
     saveNow,
     convertBlockToPage,
+    applyTemplateBlocks,
+    canRevertTemplateReplace,
+    revertTemplateReplace,
   } = useBlockEditor({
     pageId,
     spaceSlug,
@@ -190,8 +198,9 @@ export const BlockEditor = forwardRef<BlockEditorRef, BlockEditorProps>(function
       scrollToBlock,
       getBlocks: () => blocks,
       getFocusedBlockId: () => focusedBlockId,
+      applyTemplateBlocks,
     }),
-    [saveNow, scrollToBlock, blocks, focusedBlockId]
+    [saveNow, scrollToBlock, blocks, focusedBlockId, applyTemplateBlocks]
   );
 
   useEffect(() => {
@@ -543,6 +552,16 @@ export const BlockEditor = forwardRef<BlockEditorRef, BlockEditorProps>(function
           >
             {isSelectionMode ? 'Exit selection' : 'Select blocks'}
           </button>
+
+          {canRevertTemplateReplace && (
+            <button
+              type="button"
+              onClick={revertTemplateReplace}
+              className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 transition hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950"
+            >
+              Revert template
+            </button>
+          )}
 
           {isSelectionMode && (
             <>
