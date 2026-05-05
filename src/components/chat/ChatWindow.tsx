@@ -1,10 +1,9 @@
 'use client';
 
+import './chat.css';
 import { AssistantRuntimeProvider } from '@assistant-ui/react';
 import { Thread } from '@assistant-ui/react-ui';
 import { useChatRuntime } from '@/hooks/api/useChatRuntime';
-import './chat.css';
-
 import { useRef, useState } from 'react';
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import { MessagePrimitive } from '@assistant-ui/react';

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { AppendMessage, useExternalStoreRuntime } from "@assistant-ui/react";
 
 import { ChatMessage, sendChatMessage } from "@/services/api/chatService";
@@ -54,9 +54,10 @@ function createAssistantMessage(text: string): AppendMessage {
 export function useChatRuntime() {
   const [messages, setMessages] = useState<AppendMessage[]>([]);
   const [isRunning, setIsRunning] = useState(false);
-//Processes a new user message by updating state, calling the agent API, handling the response, and persisting both messages.
-const handleNewMessage = useCallback(
-  async (message: AppendMessage) => {
+
+  const messagesRef = useRef<AppendMessage[]>([]);
+
+  const handleNewMessage = useCallback(async (message: AppendMessage) => {
     if (isRunning) return;
 
     const spaceSlug = "default-space";
@@ -64,49 +65,45 @@ const handleNewMessage = useCallback(
 
     setIsRunning(true);
 
-    //const newMessages = [...messages, message];
-    //setMessages(newMessages);
-    setMessages((prev) => [...prev, message]);
-    const newMessages = [...messages, message];
-
-    
+    setMessages((prev) => {
+      const updated = [...prev, message];
+      messagesRef.current = updated;
+      return updated;
+    });
 
     try {
-      // Save user message
       await nodeService.createNode(spaceSlug, {
         title: text.slice(0, 50),
         content: text,
         nodeType: NodeType.REGULAR,
       });
-      //1-Send user text to agent service
-      //adding small delay
+
       await new Promise((res) => setTimeout(res, 300));
+
       const response = await sendChatMessage(
-        mapToBackendMessages(newMessages)
+        mapToBackendMessages(messagesRef.current)
       );
 
-      const assistantText = response.reply;
-      //2-Receive response & append to messages
-      const assistantMessage = createAssistantMessage(assistantText);
+      const assistantMessage = createAssistantMessage(response.reply);
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => {
+        const updated = [...prev, assistantMessage];
+        messagesRef.current = updated;
+        return updated;
+      });
 
-      // Save assistant message (Persist messages as Mujarrad nodes)
       await nodeService.createNode(spaceSlug, {
-        title: assistantText.slice(0, 50),
-        content: assistantText,
+        title: response.reply.slice(0, 50),
+        content: response.reply,
         nodeType: NodeType.REGULAR,
       });
 
     } catch (error) {
       console.error(error);
     } finally {
-      //Manage loading state (isRunning)
       setIsRunning(false);
     }
-  },
-  [messages]
-);
+  }, [isRunning]);
 
   const runtime = useExternalStoreRuntime({
     messages: [...messages],
