@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
 import { nodeKeys } from '@/hooks/api/useNodes';
@@ -15,11 +15,6 @@ import {
   isContinuousBlockType,
   calculateOrderBetween,
 } from '../types';
-import type { TemplateBlockDefinition } from '@/components/templates/nodeTemplates';
-import {
-  createTemplateBlocks,
-  deleteBlocks,
-} from '@/components/templates/templateBlockService';
 
 interface UseBlockEditorOptions {
   pageId: string;
@@ -35,7 +30,7 @@ interface BlockEditorState {
   isSaving: boolean;
   error: string | null;
 }
-type ApplyTemplateMode = 'replace' | 'append';
+
 /**
  * useBlockEditor - Core hook for block editor data management
  *
@@ -46,79 +41,6 @@ type ApplyTemplateMode = 'replace' | 'append';
  * - Auto-save with debounce
  * - Wikilink processing for graph integration
  */
-function isTemplateContentField(type: BlockType): boolean {
-  return [
-    BLOCK_TYPES.TEXT,
-    BLOCK_TYPES.BULLET_LIST,
-    BLOCK_TYPES.NUMBERED_LIST,
-    BLOCK_TYPES.TODO,
-    BLOCK_TYPES.QUOTE,
-    BLOCK_TYPES.CALLOUT,
-  ].includes(type);
-}
-
-function isSourceContentBlock(block: Block): boolean {
-  if (block.type === BLOCK_TYPES.DIVIDER) return false;
-  return Boolean(block.content?.trim());
-}
-
-function moveExistingContentIntoTemplateFields(
-  existingBlocks: Block[],
-  templateBlocks: TemplateBlockDefinition[]
-): TemplateBlockDefinition[] {
-  const oldContents = existingBlocks
-    .filter(isSourceContentBlock)
-    .map((block) => block.content.trim());
-
-  if (oldContents.length === 0) {
-    return templateBlocks;
-  }
-
-  let oldContentIndex = 0;
-
-  const nextTemplateBlocks = templateBlocks.map((templateBlock) => {
-    if (!isTemplateContentField(templateBlock.type)) {
-      return templateBlock;
-    }
-
-    if (oldContentIndex >= oldContents.length) {
-      return templateBlock;
-    }
-
-    const movedContent = oldContents[oldContentIndex];
-    oldContentIndex += 1;
-
-    return {
-      ...templateBlock,
-      content: movedContent,
-    };
-  });
-
-  const remainingOldContents = oldContents.slice(oldContentIndex);
-
-  if (remainingOldContents.length === 0) {
-    return nextTemplateBlocks;
-  }
-
-  return [
-    ...nextTemplateBlocks,
-    ...remainingOldContents.map((content) => ({
-      type: BLOCK_TYPES.TEXT,
-      content,
-    })),
-  ];
-}
-
-function blockToTemplateBlock(block: Block): TemplateBlockDefinition {
-  return {
-    type: block.type,
-    content: block.content,
-    checked: block.checked,
-    language: block.language,
-    calloutType: block.calloutType,
-  };
-}
-
 export function useBlockEditor({
   pageId,
   spaceSlug,
@@ -131,19 +53,13 @@ export function useBlockEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCreatingBlock, setIsCreatingBlock] = useState(false);
-  const [templateReplaceBackup, setTemplateReplaceBackup] = useState<
-    TemplateBlockDefinition[] | null
-  >(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingChangesRef = useRef<Map<string, Partial<Block>>>(new Map());
   const initialBlockAttemptedRef = useRef(false);
   const blocksRef = useRef<Block[]>([]);
 
   // Query key for this page's blocks
-  const blocksQueryKey = useMemo(
-    () => ['blocks', spaceSlug, pageId],
-    [spaceSlug, pageId]
-  );
+  const blocksQueryKey = ['blocks', spaceSlug, pageId];
 
   // Fetch blocks for the page
   // Use longer staleTime to prevent refetching while user is editing
@@ -566,156 +482,6 @@ export function useBlockEditor({
     },
     [spaceSlug, queryClient]
   );
-  const applyTemplateBlocks = useCallback(
-    async (
-      templateBlocks: TemplateBlockDefinition[],
-      mode: ApplyTemplateMode = 'append'
-    ) => {
-      if (!templateBlocks.length) return;
-
-      setIsSaving(true);
-      onSaveStatusChange?.(true);
-
-      try {
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-        }
-
-        if (pendingChangesRef.current.size > 0) {
-          const changes = Array.from(pendingChangesRef.current.entries());
-
-          await Promise.all(
-            changes.map(([id, upd]) =>
-              updateBlockMutation.mutateAsync({ blockId: id, updates: upd })
-            )
-          );
-
-          pendingChangesRef.current.clear();
-        }
-
-        const currentBlocks = blocksRef.current;
-
-        const blocksToCreate =
-          mode === 'replace'
-            ? moveExistingContentIntoTemplateFields(currentBlocks, templateBlocks)
-            : templateBlocks;
-
-        if (mode === 'replace' && currentBlocks.length > 0) {
-          setTemplateReplaceBackup(currentBlocks.map(blockToTemplateBlock));
-
-          await deleteBlocks({
-            spaceSlug,
-            blockIds: currentBlocks.map((block) => block.id),
-          });
-
-          setBlocks([]);
-          blocksRef.current = [];
-        }
-
-        const baseBlocks = mode === 'replace' ? [] : blocksRef.current;
-        const lastOrder = baseBlocks[baseBlocks.length - 1]?.order ?? 0;
-        const startOrder = lastOrder + 1000;
-
-        const createdBlocks = await createTemplateBlocks({
-          spaceSlug,
-          pageId,
-          blocks: blocksToCreate,
-          startOrder,
-        });
-
-        setBlocks((prev) => {
-          const next =
-            mode === 'replace'
-              ? createdBlocks
-              : [...prev, ...createdBlocks];
-
-          return next.sort((a, b) => a.order - b.order);
-        });
-
-        blocksRef.current =
-          mode === 'replace'
-            ? createdBlocks
-            : [...blocksRef.current, ...createdBlocks].sort(
-                (a, b) => a.order - b.order
-              );
-
-        queryClient.invalidateQueries({ queryKey: blocksQueryKey });
-      } finally {
-        setIsSaving(false);
-        onSaveStatusChange?.(false);
-      }
-    },
-    [
-      blocksQueryKey,
-      onSaveStatusChange,
-      pageId,
-      queryClient,
-      spaceSlug,
-      updateBlockMutation,
-    ]
-  );
-  
-const revertTemplateReplace = useCallback(async () => {
-  if (!templateReplaceBackup || templateReplaceBackup.length === 0) return;
-
-  setIsSaving(true);
-  onSaveStatusChange?.(true);
-
-  try {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    if (pendingChangesRef.current.size > 0) {
-      const changes = Array.from(pendingChangesRef.current.entries());
-
-      await Promise.all(
-        changes.map(([id, upd]) =>
-          updateBlockMutation.mutateAsync({ blockId: id, updates: upd })
-        )
-      );
-
-      pendingChangesRef.current.clear();
-    }
-
-    const currentBlocks = blocksRef.current;
-
-    if (currentBlocks.length > 0) {
-      await deleteBlocks({
-        spaceSlug,
-        blockIds: currentBlocks.map((block) => block.id),
-      });
-    }
-
-    setBlocks([]);
-    blocksRef.current = [];
-
-    const restoredBlocks = await createTemplateBlocks({
-      spaceSlug,
-      pageId,
-      blocks: templateReplaceBackup,
-      startOrder: 1000,
-    });
-
-    setBlocks(restoredBlocks.sort((a, b) => a.order - b.order));
-    blocksRef.current = restoredBlocks.sort((a, b) => a.order - b.order);
-
-    setTemplateReplaceBackup(null);
-
-    queryClient.invalidateQueries({ queryKey: blocksQueryKey });
-  } finally {
-    setIsSaving(false);
-    onSaveStatusChange?.(false);
-  }
-}, [
-  blocksQueryKey,
-  onSaveStatusChange,
-  pageId,
-  queryClient,
-  spaceSlug,
-  templateReplaceBackup,
-  updateBlockMutation,
-]);
 
   // Get next block type for continuous types
   const getNextBlockType = useCallback(
@@ -782,9 +548,6 @@ const revertTemplateReplace = useCallback(async () => {
     getNextBlockType,
     saveNow,
     convertBlockToPage,
-    applyTemplateBlocks,
-    canRevertTemplateReplace: Boolean(templateReplaceBackup),
-    revertTemplateReplace,
   };
 }
 

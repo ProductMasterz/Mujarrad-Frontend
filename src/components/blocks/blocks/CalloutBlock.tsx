@@ -8,50 +8,58 @@ interface CalloutBlockProps extends BlockProps {
   onCalloutTypeChange?: (type: CalloutType) => void;
 }
 
-const CALLOUT_CONFIG: Record<
-  CalloutType,
-  {
-    icon: string;
-    label: string;
-    shellClassName: string;
-    labelClassName: string;
-    contentClassName: string;
-  }
-> = {
+// Callout type configurations
+const CALLOUT_CONFIG: Record<CalloutType, {
+  icon: string;
+  label: string;
+  bgColor: string;
+  borderColor: string;
+  textColor: string;
+}> = {
   [CALLOUT_TYPES.INFO]: {
     icon: 'ℹ️',
     label: 'Info',
-    shellClassName: 'border-blue-300 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40',
-    labelClassName: 'text-blue-800 dark:text-blue-300',
-    contentClassName: 'text-blue-900 dark:text-blue-100',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-400',
+    textColor: 'text-blue-800',
   },
   [CALLOUT_TYPES.WARNING]: {
     icon: '⚠️',
     label: 'Warning',
-    shellClassName: 'border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40',
-    labelClassName: 'text-amber-800 dark:text-amber-300',
-    contentClassName: 'text-amber-900 dark:text-amber-100',
+    bgColor: 'bg-yellow-50',
+    borderColor: 'border-yellow-400',
+    textColor: 'text-yellow-800',
   },
   [CALLOUT_TYPES.ERROR]: {
     icon: '❌',
     label: 'Error',
-    shellClassName: 'border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950/40',
-    labelClassName: 'text-red-800 dark:text-red-300',
-    contentClassName: 'text-red-900 dark:text-red-100',
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-400',
+    textColor: 'text-red-800',
   },
   [CALLOUT_TYPES.SUCCESS]: {
     icon: '✅',
     label: 'Success',
-    shellClassName: 'border-emerald-300 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40',
-    labelClassName: 'text-emerald-800 dark:text-emerald-300',
-    contentClassName: 'text-emerald-900 dark:text-emerald-100',
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-400',
+    textColor: 'text-green-800',
   },
 };
 
+/**
+ * CalloutBlock - Highlighted information box
+ *
+ * Features:
+ * - Multiple callout types (info, warning, error, success)
+ * - Type selector dropdown
+ * - Editable content
+ * - Color-coded based on type
+ */
 export function CalloutBlock({
   block,
   isActive,
   onContentChange,
+  onDelete,
   onEnter,
   onBackspace,
   onFocus,
@@ -61,12 +69,12 @@ export function CalloutBlock({
   readOnly = false,
 }: CalloutBlockProps) {
   const contentRef = useRef<HTMLDivElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
-
   const calloutType = (block.calloutType as CalloutType) || CALLOUT_TYPES.INFO;
   const config = CALLOUT_CONFIG[calloutType];
 
+  // Sync content with DOM when block content changes externally
+  // IMPORTANT: Only sync if not focused (user not actively typing) to avoid cursor reset
   useEffect(() => {
     if (contentRef.current && contentRef.current.innerText !== block.content) {
       if (document.activeElement === contentRef.current) {
@@ -76,9 +84,11 @@ export function CalloutBlock({
     }
   }, [block.content]);
 
+  // Focus management
   useEffect(() => {
     if (isActive && contentRef.current) {
       contentRef.current.focus();
+      // Move cursor to end
       const range = document.createRange();
       const selection = window.getSelection();
       range.selectNodeContents(contentRef.current);
@@ -88,19 +98,6 @@ export function CalloutBlock({
     }
   }, [isActive]);
 
-  useEffect(() => {
-    if (!showTypeSelector) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!wrapperRef.current?.contains(event.target as Node)) {
-        setShowTypeSelector(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showTypeSelector]);
-
   const handleInput = () => {
     if (contentRef.current) {
       onContentChange(contentRef.current.innerText);
@@ -108,66 +105,81 @@ export function CalloutBlock({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    // Enter - create new block (unless Shift is held for line break)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onEnter();
       return;
     }
 
+    // Backspace on empty block - delete
     if (e.key === 'Backspace' && block.content === '') {
       e.preventDefault();
       onBackspace();
       return;
     }
 
+    // Cmd/Ctrl + Shift + ArrowUp - move block up
     if (e.key === 'ArrowUp' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveUp();
       return;
     }
 
+    // Cmd/Ctrl + Shift + ArrowDown - move block down
     if (e.key === 'ArrowDown' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveDown();
+      return;
     }
   };
 
   const handleTypeChange = (newType: CalloutType) => {
-    onCalloutTypeChange?.(newType);
+    if (onCalloutTypeChange) {
+      onCalloutTypeChange(newType);
+    }
     setShowTypeSelector(false);
   };
 
   return (
     <div
-      ref={wrapperRef}
-      className={`relative rounded-2xl border px-4 py-3 ${config.shellClassName}`}
+      className={`
+        relative rounded-lg border-l-4 p-4
+        ${config.bgColor}
+        ${config.borderColor}
+      `}
     >
-      <div className="mb-2 flex items-center gap-2">
+      {/* Header with icon and type selector */}
+      <div className="flex items-center gap-2 mb-2">
+        {/* Icon button (opens type selector) */}
         <button
-          type="button"
-          onClick={() => !readOnly && setShowTypeSelector((prev) => !prev)}
+          onClick={() => !readOnly && setShowTypeSelector(!showTypeSelector)}
           disabled={readOnly}
-          className={`${!readOnly ? 'cursor-pointer hover:scale-105' : 'cursor-default'} text-lg transition-transform`}
+          className={`
+            text-lg flex-shrink-0 transition-transform
+            ${!readOnly ? 'hover:scale-110 cursor-pointer' : 'cursor-default'}
+          `}
           title="Change callout type"
         >
           {config.icon}
         </button>
 
-        <span className={`text-sm font-semibold ${config.labelClassName}`}>
+        {/* Type label */}
+        <span className={`text-sm font-medium ${config.textColor}`}>
           {config.label}
         </span>
 
+        {/* Type selector dropdown */}
         {showTypeSelector && (
-          <div className="absolute left-4 top-12 z-20 min-w-[140px] rounded-xl border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
+          <div className="absolute top-12 left-4 z-10 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px]">
             {Object.entries(CALLOUT_CONFIG).map(([type, typeConfig]) => (
               <button
                 key={type}
-                type="button"
                 onClick={() => handleTypeChange(type as CalloutType)}
                 className={`
-                  flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm
-                  text-zinc-900 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-zinc-900
-                  ${type === calloutType ? 'bg-zinc-100 dark:bg-zinc-900' : ''}
+                  w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-gray-900
+                  hover:bg-gray-100
+                  ${type === calloutType ? 'bg-gray-50' : ''}
                 `}
               >
                 <span>{typeConfig.icon}</span>
@@ -178,21 +190,39 @@ export function CalloutBlock({
         )}
       </div>
 
+      {/* Editable content */}
       <div
         ref={contentRef}
         contentEditable={!readOnly}
         suppressContentEditableWarning
         className={`
-          min-h-[1.75em] rounded-xl px-2 py-1.5 text-[15px] leading-7 outline-none transition-colors
-          hover:bg-white/40 focus:bg-white/50 dark:hover:bg-black/10 dark:focus:bg-black/10
-          ${config.contentClassName}
+          outline-none min-h-[1.5em] leading-relaxed
+          ${config.textColor}
         `}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onFocus={onFocus}
+        onBlur={() => setShowTypeSelector(false)}
         data-placeholder="Type your callout content..."
-        style={{ wordBreak: 'break-word' }}
+        style={{
+          wordBreak: 'break-word',
+        }}
       />
+
+      {/* Placeholder when empty */}
+      {block.content === '' && !readOnly && (
+        <div className={`absolute left-14 top-[52px] pointer-events-none text-gray-400`}>
+          Type your callout content...
+        </div>
+      )}
+
+      {/* Click outside to close type selector */}
+      {showTypeSelector && (
+        <div
+          className="fixed inset-0 z-0"
+          onClick={() => setShowTypeSelector(false)}
+        />
+      )}
     </div>
   );
 }
