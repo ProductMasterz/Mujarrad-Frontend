@@ -40,8 +40,7 @@ function shouldRetry(error: AxiosError): boolean {
  */
 const API_BASE_URL = process.env.NODE_ENV === 'test'
   ? 'http://localhost:3000/api'
-  : process.env.NEXT_PUBLIC_API_URL;//'api';
-  //'https://mujarrad.onrender.com';//
+  : '/api';
 
 /**
  * Axios instance with base configuration
