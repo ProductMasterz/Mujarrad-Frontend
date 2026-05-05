@@ -20,6 +20,9 @@ import type { Block } from '@/components/blocks/types';
 import type { UpdateNodeRequest, Attribute } from '@/types/backend-dtos';
 import { getNodeEntityType, withUpdatedEntityType } from '@/lib/entity-types';
 import { useEntityTypeStore } from '@/stores/entityType.store';
+import { LayoutTemplate, Info } from 'lucide-react';
+import { NodeTemplateModal } from '@/components/templates/NodeTemplateModal';
+import type { NodeTemplate } from '@/components/templates/nodeTemplates';
 
 export default function NodeDetailPage() {
   const params = useParams();
@@ -60,6 +63,8 @@ export default function NodeDetailPage() {
   });
 
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showNodeDetails, setShowNodeDetails] = useState(false);
   const [title, setTitle] = useState('');
   const [entityTypeValue, setEntityTypeValue] = useState('');
   const [entityColorValue, setEntityColorValue] = useState('#94a3b8');
@@ -144,6 +149,32 @@ export default function NodeDetailPage() {
     });
   }, [node, entityTypeValue, entityColorValue, upsertEntityType, updateNodeMutation]);
 
+  const handleUseTemplate = useCallback(
+    async (template: NodeTemplate, mode: 'replace' | 'append') => {
+      await blockEditorRef.current?.applyTemplateBlocks(template.blocks, mode);
+
+      if (template.semanticType && node) {
+        const normalizedType = template.semanticType
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '_');
+
+        upsertEntityType({
+          key: normalizedType,
+          label: normalizedType.replace(/_/g, ' '),
+          color: template.accentColor ?? entityColorValue,
+        });
+
+        setEntityTypeValue(normalizedType);
+        setEntityColorValue(template.accentColor ?? entityColorValue);
+
+        updateNodeMutation.mutate({
+          nodeDetails: withUpdatedEntityType(node.nodeDetails, normalizedType),
+        });
+      }
+    },
+    [entityColorValue, node, updateNodeMutation, upsertEntityType]
+  );
 
   const handleHomeClick = () => {
     router.push('/');
@@ -296,11 +327,37 @@ export default function NodeDetailPage() {
               />
 
               <p
-                className="mb-8 font-['Roboto:Regular',sans-serif] text-[13px] font-normal text-muted-foreground"
+                className="mb-4 font-['Roboto:Regular',sans-serif] text-[13px] font-normal text-muted-foreground"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
                 Last edited {node.updatedAt ? new Date(node.updatedAt).toLocaleDateString() : 'recently'}
               </p>
+
+              <div className="mb-8 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowTemplateModal(true)}
+                  className="gap-2 rounded-xl"
+                >
+                  <LayoutTemplate className="h-4 w-4" />
+                  Templates
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowNodeDetails((prev) => !prev)}
+                  className="gap-2 rounded-xl"
+                >
+                  <Info className="h-4 w-4" />
+                  {showNodeDetails ? 'Hide node details' : 'Node details'}
+                </Button>
+              </div>
+
+              {showNodeDetails && (
+                <>
+
               
               <div className="mb-8 rounded-[16px] border border-border bg-muted/20 p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
@@ -397,7 +454,7 @@ export default function NodeDetailPage() {
                     <Badge variant="outline">Extracted From</Badge>
                   )}
                 </div>
-
+                
                 {isLoadingAttributes || (originNodeId && isLoadingOriginNode) ? (
                   <p className="text-[14px] text-muted-foreground">Loading source information...</p>
                 ) : originAttribute && originNode ? (
@@ -430,6 +487,8 @@ export default function NodeDetailPage() {
                   </p>
                 )}
               </div>
+                </>
+)}
 
               <BlockEditor
                 ref={blockEditorRef}
@@ -442,6 +501,14 @@ export default function NodeDetailPage() {
             </div>
           ) : null}
         </div>
+        {showTemplateModal && (
+          <NodeTemplateModal
+            isOpen={showTemplateModal}
+            onClose={() => setShowTemplateModal(false)}
+            onUseTemplate={handleUseTemplate}
+            showApplyMode={true}
+          />
+        )}
 
         {showShareModal && (
           <ShareModal

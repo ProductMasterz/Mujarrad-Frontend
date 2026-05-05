@@ -5,7 +5,6 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import type { BlockProps } from '../types';
 
-// Common programming languages for the dropdown
 const LANGUAGES = [
   { value: 'plaintext', label: 'Plain Text' },
   { value: 'javascript', label: 'JavaScript' },
@@ -36,12 +35,6 @@ interface CodeBlockProps extends BlockProps {
   onLanguageChange?: (language: string) => void;
 }
 
-/**
- * CodeBlock - Inline-editable code block with syntax highlighting
- *
- * Like Notion: Click anywhere in the code to edit directly.
- * Syntax highlighting updates on blur for performance.
- */
 export function CodeBlock({
   block,
   isActive,
@@ -60,14 +53,12 @@ export function CodeBlock({
   const [isFocused, setIsFocused] = useState(false);
   const language = block.language || 'plaintext';
 
-  // Sync local content when block changes externally
   useEffect(() => {
     if (!isFocused) {
       setLocalContent(block.content);
     }
   }, [block.content, isFocused]);
 
-  // Highlight code when not focused or content changes
   useEffect(() => {
     if (highlightRef.current && !isFocused) {
       const code = highlightRef.current.querySelector('code');
@@ -76,21 +67,17 @@ export function CodeBlock({
         code.className = `language-${language} hljs`;
         try {
           hljs.highlightElement(code);
-        } catch (e) {
-          // Ignore highlighting errors
-        }
+        } catch {}
       }
     }
   }, [localContent, language, isFocused]);
 
-  // Focus management
   useEffect(() => {
     if (isActive && textareaRef.current) {
       textareaRef.current.focus();
     }
   }, [isActive]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -103,9 +90,7 @@ export function CodeBlock({
       await navigator.clipboard.writeText(block.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
+    } catch {}
   }, [block.content]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -115,7 +100,6 @@ export function CodeBlock({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    // Tab - insert spaces
     if (e.key === 'Tab') {
       e.preventDefault();
       const textarea = textareaRef.current;
@@ -123,14 +107,15 @@ export function CodeBlock({
 
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      const spaces = '  '; // 2 spaces
+      const spaces = '  ';
 
       if (e.shiftKey) {
-        // Unindent
         const lineStart = localContent.lastIndexOf('\n', start - 1) + 1;
         const lineText = localContent.substring(lineStart, start);
         if (lineText.startsWith(spaces)) {
-          const newContent = localContent.substring(0, lineStart) + localContent.substring(lineStart + spaces.length);
+          const newContent =
+            localContent.substring(0, lineStart) +
+            localContent.substring(lineStart + spaces.length);
           setLocalContent(newContent);
           onContentChange(newContent);
           setTimeout(() => {
@@ -138,8 +123,8 @@ export function CodeBlock({
           }, 0);
         }
       } else {
-        // Indent
-        const newContent = localContent.substring(0, start) + spaces + localContent.substring(end);
+        const newContent =
+          localContent.substring(0, start) + spaces + localContent.substring(end);
         setLocalContent(newContent);
         onContentChange(newContent);
         setTimeout(() => {
@@ -149,25 +134,21 @@ export function CodeBlock({
       return;
     }
 
-    // Backspace on empty - delete block
     if (e.key === 'Backspace' && localContent === '') {
       e.preventDefault();
       onBackspace();
       return;
     }
 
-    // Cmd/Ctrl + Shift + ArrowUp - move block up
     if (e.key === 'ArrowUp' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveUp();
       return;
     }
 
-    // Cmd/Ctrl + Shift + ArrowDown - move block down
     if (e.key === 'ArrowDown' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveDown();
-      return;
     }
   };
 
@@ -181,37 +162,49 @@ export function CodeBlock({
   };
 
   return (
-    <div className="group relative rounded-lg bg-gray-50 border border-gray-200 overflow-hidden">
-      {/* Header with language selector and copy button */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-100 border-b border-gray-200">
+    <div className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-100/80 px-4 py-2 dark:border-zinc-800 dark:bg-zinc-900/80">
         <select
           value={language}
           onChange={(e) => onLanguageChange?.(e.target.value)}
           disabled={readOnly}
-          className="bg-transparent text-gray-600 text-sm focus:outline-none cursor-pointer hover:text-gray-900 disabled:cursor-not-allowed"
+          className="
+            cursor-pointer bg-transparent text-sm text-zinc-600 outline-none
+            hover:text-zinc-900 disabled:cursor-not-allowed
+            dark:text-zinc-400 dark:hover:text-zinc-100
+          "
         >
           {LANGUAGES.map((lang) => (
-            <option key={lang.value} value={lang.value} className="bg-white">
+            <option
+              key={lang.value}
+              value={lang.value}
+              className="bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100"
+            >
               {lang.label}
             </option>
           ))}
         </select>
 
         <button
+          type="button"
           onClick={handleCopy}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-900 transition-colors"
+          className="
+            flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 transition-colors
+            hover:bg-zinc-200/70 hover:text-zinc-900
+            dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100
+          "
           title="Copy to clipboard"
         >
           {copied ? (
             <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Copied!
             </>
           ) : (
             <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -225,22 +218,19 @@ export function CodeBlock({
         </button>
       </div>
 
-      {/* Code content - overlaid textarea and syntax highlight */}
       <div className="relative min-h-[100px]">
-        {/* Syntax highlighted background (visible when not focused) */}
         {!isFocused && (
           <pre
             ref={highlightRef}
-            className="p-4 overflow-x-auto"
+            className="overflow-x-auto p-4 text-sm"
             onClick={() => textareaRef.current?.focus()}
           >
-            <code className={`language-${language} hljs text-sm`}>
+            <code className={`language-${language} hljs`}>
               {localContent || '// Click to start typing...'}
             </code>
           </pre>
         )}
 
-        {/* Editable textarea (always present, visible when focused) */}
         <textarea
           ref={textareaRef}
           value={localContent}
@@ -250,22 +240,21 @@ export function CodeBlock({
           onBlur={handleBlur}
           disabled={readOnly}
           className={`
-            absolute inset-0 w-full h-full p-4 font-mono text-sm text-gray-900 bg-transparent
-            resize-none focus:outline-none
+            absolute inset-0 h-full w-full resize-none bg-transparent p-4 font-mono text-sm
+            text-zinc-900 outline-none caret-zinc-900
+            dark:text-zinc-100 dark:caret-zinc-100
             ${isFocused ? 'opacity-100' : 'opacity-0'}
           `}
           style={{
             tabSize: 2,
             lineHeight: '1.5',
-            caretColor: '#333',
           }}
           spellCheck={false}
           placeholder="// Enter your code here..."
         />
 
-        {/* Show textarea when focused for proper editing */}
         {isFocused && (
-          <div className="p-4 font-mono text-sm text-transparent whitespace-pre-wrap" style={{ lineHeight: '1.5' }}>
+          <div className="whitespace-pre-wrap p-4 font-mono text-sm text-transparent" style={{ lineHeight: '1.5' }}>
             {localContent || ' '}
           </div>
         )}

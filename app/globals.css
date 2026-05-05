@@ -174,20 +174,12 @@
 
 /* Block Editor Styles */
 @layer components {
-  /* ContentEditable placeholder styling */
   [contenteditable="true"]:empty:before {
     content: attr(data-placeholder);
-    color: #9ca3af;
+    color: hsl(var(--muted-foreground));
     pointer-events: none;
   }
 
-  /* Ensure block text is always visible in light mode */
-  [contenteditable="true"] {
-    color: hsl(var(--foreground)) !important;
-    caret-color: hsl(var(--foreground));
-  }
-
-  /* Block editor container */
   .block-editor [contenteditable="true"] {
     min-height: 1.5em;
     outline: none;

@@ -3,16 +3,10 @@
 import { useRef, useEffect, KeyboardEvent } from 'react';
 import type { BlockProps } from '../types';
 
-/**
- * QuoteBlock - Block quote with left border accent
- *
- * Renders text with italic styling and a left border.
- */
 export function QuoteBlock({
   block,
   isActive,
   onContentChange,
-  onDelete,
   onEnter,
   onBackspace,
   onFocus,
@@ -22,8 +16,6 @@ export function QuoteBlock({
 }: BlockProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Sync content with DOM
-  // IMPORTANT: Only sync if not focused (user not actively typing) to avoid cursor reset
   useEffect(() => {
     if (contentRef.current && contentRef.current.innerText !== block.content) {
       if (document.activeElement === contentRef.current) {
@@ -33,7 +25,6 @@ export function QuoteBlock({
     }
   }, [block.content]);
 
-  // Focus management
   useEffect(() => {
     if (isActive && contentRef.current) {
       contentRef.current.focus();
@@ -53,51 +44,49 @@ export function QuoteBlock({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    // Enter - create new text block (not quote)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onEnter();
       return;
     }
 
-    // Backspace on empty - delete block
     if (e.key === 'Backspace' && block.content === '') {
       e.preventDefault();
       onBackspace();
       return;
     }
 
-    // Move up
     if (e.key === 'ArrowUp' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveUp();
       return;
     }
 
-    // Move down
     if (e.key === 'ArrowDown' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveDown();
-      return;
     }
   };
 
   return (
-    <div className="border-l-4 pl-4" style={{ borderColor: '#d1d5db' }}>
+    <div className="rounded-2xl border-l-4 border-zinc-300 pl-4 dark:border-zinc-700">
       <div
         ref={contentRef}
         contentEditable={!readOnly}
         suppressContentEditableWarning
-        className="outline-none min-h-[1.5em] italic"
+        className="
+          min-h-[1.75em] rounded-r-xl px-2 py-1.5
+          text-[15px] italic leading-7 outline-none transition-colors
+          text-zinc-600 caret-zinc-600
+          hover:bg-zinc-50/80 focus:bg-zinc-50/80
+          dark:text-zinc-300 dark:caret-zinc-300
+          dark:hover:bg-zinc-900/60 dark:focus:bg-zinc-900/60
+        "
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onFocus={onFocus}
         data-placeholder="Quote..."
-        style={{
-          wordBreak: 'break-word',
-          color: '#4b5563',
-          caretColor: '#4b5563',
-        }}
+        style={{ wordBreak: 'break-word' }}
       />
     </div>
   );
