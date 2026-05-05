@@ -46,15 +46,17 @@ type ApplyTemplateMode = 'replace' | 'append';
  * - Auto-save with debounce
  * - Wikilink processing for graph integration
  */
+const TEMPLATE_CONTENT_FIELD_TYPES: BlockType[] = [
+  BLOCK_TYPES.TEXT,
+  BLOCK_TYPES.BULLET_LIST,
+  BLOCK_TYPES.NUMBERED_LIST,
+  BLOCK_TYPES.TODO,
+  BLOCK_TYPES.QUOTE,
+  BLOCK_TYPES.CALLOUT,
+];
+
 function isTemplateContentField(type: BlockType): boolean {
-  return [
-    BLOCK_TYPES.TEXT,
-    BLOCK_TYPES.BULLET_LIST,
-    BLOCK_TYPES.NUMBERED_LIST,
-    BLOCK_TYPES.TODO,
-    BLOCK_TYPES.QUOTE,
-    BLOCK_TYPES.CALLOUT,
-  ].includes(type);
+  return TEMPLATE_CONTENT_FIELD_TYPES.includes(type);
 }
 
 function isSourceContentBlock(block: Block): boolean {
@@ -654,7 +656,7 @@ export function useBlockEditor({
       updateBlockMutation,
     ]
   );
-  
+
 const revertTemplateReplace = useCallback(async () => {
   if (!templateReplaceBackup || templateReplaceBackup.length === 0) return;
 
