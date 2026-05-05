@@ -5,12 +5,6 @@ import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import type { BlockProps } from '../types';
 
-/**
- * MathBlock - Inline-editable LaTeX math equation block
- *
- * Like Notion: Click on the rendered math to edit.
- * Shows rendered math, click to edit LaTeX source.
- */
 export function MathBlock({
   block,
   isActive,
@@ -28,14 +22,12 @@ export function MathBlock({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Sync local content when block changes externally
   useEffect(() => {
     if (!isFocused) {
       setLocalContent(block.content);
     }
   }, [block.content, isFocused]);
 
-  // Render math with KaTeX when not editing
   useEffect(() => {
     if (previewRef.current && !isFocused) {
       try {
@@ -54,14 +46,12 @@ export function MathBlock({
     }
   }, [localContent, isFocused]);
 
-  // Focus management
   useEffect(() => {
     if (isActive && isFocused && textareaRef.current) {
       textareaRef.current.focus();
     }
   }, [isActive, isFocused]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -74,9 +64,7 @@ export function MathBlock({
       await navigator.clipboard.writeText(block.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
+    } catch {}
   }, [block.content]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -86,27 +74,23 @@ export function MathBlock({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    // Escape - exit editing
     if (e.key === 'Escape') {
       setIsFocused(false);
       return;
     }
 
-    // Backspace on empty - delete block
     if (e.key === 'Backspace' && localContent === '') {
       e.preventDefault();
       onBackspace();
       return;
     }
 
-    // Cmd/Ctrl + Shift + ArrowUp - move block up
     if (e.key === 'ArrowUp' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveUp();
       return;
     }
 
-    // Cmd/Ctrl + Shift + ArrowDown - move block down
     if (e.key === 'ArrowDown' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveDown();
@@ -130,33 +114,37 @@ export function MathBlock({
   };
 
   return (
-    <div className="group relative rounded-lg border border-gray-200 bg-white overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
+    <div className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-4 py-2 dark:border-zinc-800 dark:bg-zinc-900/80">
         <div className="flex items-center gap-2">
-          <span className="text-gray-500 text-sm font-medium">
+          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
             ∑ Math
           </span>
           {error && !isFocused && (
-            <span className="text-red-500 text-xs">(error)</span>
+            <span className="text-xs text-red-500 dark:text-red-400">(error)</span>
           )}
         </div>
 
         <button
+          type="button"
           onClick={handleCopy}
-          className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-700 transition-colors"
+          className="
+            flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 transition-colors
+            hover:bg-zinc-100 hover:text-zinc-900
+            dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100
+          "
           title="Copy LaTeX"
         >
           {copied ? (
             <>
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Copied!
             </>
           ) : (
             <>
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -170,10 +158,8 @@ export function MathBlock({
         </button>
       </div>
 
-      {/* Content area */}
       <div className="p-4">
         {isFocused ? (
-          // Edit mode - LaTeX source
           <div>
             <textarea
               ref={textareaRef}
@@ -182,36 +168,40 @@ export function MathBlock({
               onKeyDown={handleKeyDown}
               onFocus={handleFocus}
               onBlur={handleBlur}
-              className="w-full min-h-[60px] p-2 font-mono text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="
+                min-h-[60px] w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 p-3
+                font-mono text-sm text-zinc-900 outline-none
+                focus:border-zinc-300 focus:ring-2 focus:ring-zinc-200
+                dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100
+                dark:focus:border-zinc-700 dark:focus:ring-zinc-800
+              "
               placeholder="E = mc^2"
               spellCheck={false}
             />
-            <div className="mt-2 text-xs text-gray-500">
-              Press <kbd className="px-1 bg-gray-100 rounded">Esc</kbd> to preview or click outside
+            <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+              Press <kbd className="rounded border border-zinc-300 bg-zinc-100 px-1 dark:border-zinc-700 dark:bg-zinc-900">Esc</kbd> to preview
             </div>
           </div>
         ) : (
-          // Preview mode - Rendered math
           <div
             ref={previewRef}
             onClick={handlePreviewClick}
-            className="min-h-[40px] flex items-center justify-center cursor-pointer overflow-x-auto hover:bg-gray-50 rounded transition-colors"
-          >
-            {/* KaTeX renders here */}
-          </div>
+            className="
+              flex min-h-[56px] cursor-pointer items-center justify-center overflow-x-auto rounded-xl p-2
+              transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/60
+            "
+          />
         )}
 
-        {/* Error display */}
         {error && !isFocused && (
-          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
             Click to edit: {error}
           </div>
         )}
       </div>
 
-      {/* Empty hint */}
       {localContent === '' && !isFocused && !readOnly && (
-        <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+        <div className="absolute bottom-2 right-3 text-xs text-zinc-400 dark:text-zinc-500">
           Click to add equation
         </div>
       )}

@@ -5,15 +5,11 @@ import type { BlockProps } from '../types';
 
 /**
  * TextBlock - Plain text paragraph block
- *
- * This is the default block type for general content.
- * Supports inline wikilinks via [[Page Name]] syntax.
  */
 export function TextBlock({
   block,
   isActive,
   onContentChange,
-  onDelete,
   onEnter,
   onBackspace,
   onFocus,
@@ -23,11 +19,8 @@ export function TextBlock({
 }: BlockProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Sync content with DOM when block content changes externally
-  // IMPORTANT: Only sync if not focused (user not actively typing) to avoid cursor reset
   useEffect(() => {
     if (contentRef.current && contentRef.current.innerText !== block.content) {
-      // Don't update DOM if user is actively typing in this element
       if (document.activeElement === contentRef.current) {
         return;
       }
@@ -35,11 +28,9 @@ export function TextBlock({
     }
   }, [block.content]);
 
-  // Focus management
   useEffect(() => {
     if (isActive && contentRef.current) {
       contentRef.current.focus();
-      // Move cursor to end
       const range = document.createRange();
       const selection = window.getSelection();
       range.selectNodeContents(contentRef.current);
@@ -56,32 +47,27 @@ export function TextBlock({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    // Enter - create new block
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onEnter();
       return;
     }
 
-    // Backspace on empty block - delete
     if (e.key === 'Backspace' && block.content === '') {
       e.preventDefault();
       onBackspace();
       return;
     }
 
-    // Cmd/Ctrl + Shift + ArrowUp - move block up
     if (e.key === 'ArrowUp' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveUp();
       return;
     }
 
-    // Cmd/Ctrl + Shift + ArrowDown - move block down
     if (e.key === 'ArrowDown' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveDown();
-      return;
     }
   };
 
@@ -90,16 +76,22 @@ export function TextBlock({
       ref={contentRef}
       contentEditable={!readOnly}
       suppressContentEditableWarning
-      className="outline-none min-h-[1.5em] leading-relaxed"
+      className="
+        min-h-[1.75em] w-full rounded-xl px-2 py-1.5
+        text-[15px] leading-7 outline-none transition-colors
+        text-zinc-900 caret-zinc-900
+        placeholder:text-zinc-400
+        hover:bg-zinc-50/80
+        focus:bg-zinc-50/80
+        dark:text-zinc-100 dark:caret-zinc-100
+        dark:hover:bg-zinc-900/60
+        dark:focus:bg-zinc-900/60
+      "
       onInput={handleInput}
       onKeyDown={handleKeyDown}
       onFocus={onFocus}
       data-placeholder="Type '/' for commands..."
-      style={{
-        wordBreak: 'break-word',
-        color: '#111827',
-        caretColor: '#111827',
-      }}
+      style={{ wordBreak: 'break-word' }}
     />
   );
 }
