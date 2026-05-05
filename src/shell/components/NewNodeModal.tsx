@@ -278,6 +278,15 @@ export function NewNodeModal({
           createdFrom,
         });
 
+       if (selectedTemplate && spaceSlug) {
+          await createTemplateBlocks({
+            spaceSlug,
+            pageId: node.id,
+            blocks: selectedTemplate.blocks,
+          });
+        }
+
+
         if (options?.openAfterCreate && spaceSlug) {
           onClose();
           router.push(`/spaces/${spaceSlug}/node/${node.id}`);
