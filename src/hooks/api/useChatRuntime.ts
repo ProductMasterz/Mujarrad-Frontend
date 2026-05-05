@@ -57,7 +57,7 @@ export function useChatRuntime() {
   const [conversationNodeId, setConversationNodeId] = useState<string | null>(null);
   const creatingConversationRef = useRef(false);
   const messagesRef = useRef<AppendMessage[]>([]);
-  
+
   const createConversationNode = async () => {
     const spaceSlug = 'default-space';
 
@@ -66,7 +66,7 @@ export function useChatRuntime() {
 
     const node = await nodeService.createNode(spaceSlug, {
       title,
-      content: 'Conversation started',
+      content: title,
       nodeType: NodeType.REGULAR,
       nodeDetails: {
         type: 'conversation',
