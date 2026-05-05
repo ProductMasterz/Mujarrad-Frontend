@@ -8,10 +8,17 @@ interface ListBlockProps extends BlockProps {
   listNumber?: number;
 }
 
+/**
+ * ListBlock - Bullet and numbered list blocks
+ *
+ * Renders list items with appropriate indicator (bullet or number).
+ * Consecutive list blocks of the same type appear as a unified list.
+ */
 export function ListBlock({
   block,
   isActive,
   onContentChange,
+  onDelete,
   onEnter,
   onBackspace,
   onFocus,
@@ -23,6 +30,8 @@ export function ListBlock({
   const contentRef = useRef<HTMLDivElement>(null);
   const isBullet = block.type === BLOCK_TYPES.BULLET_LIST;
 
+  // Sync content with DOM
+  // IMPORTANT: Only sync if not focused (user not actively typing) to avoid cursor reset
   useEffect(() => {
     if (contentRef.current && contentRef.current.innerText !== block.content) {
       if (document.activeElement === contentRef.current) {
@@ -32,6 +41,7 @@ export function ListBlock({
     }
   }, [block.content]);
 
+  // Focus management
   useEffect(() => {
     if (isActive && contentRef.current) {
       contentRef.current.focus();
@@ -51,58 +61,57 @@ export function ListBlock({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    // Enter - create new list item (same type)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onEnter();
       return;
     }
 
+    // Backspace on empty - delete or convert to text
     if (e.key === 'Backspace' && block.content === '') {
       e.preventDefault();
       onBackspace();
       return;
     }
 
+    // Move up
     if (e.key === 'ArrowUp' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveUp();
       return;
     }
 
+    // Move down
     if (e.key === 'ArrowDown' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveDown();
+      return;
     }
   };
 
   return (
-    <div className="flex items-start gap-3">
-      <span
-        className="
-          w-7 shrink-0 select-none pt-[3px] text-right text-sm font-medium
-          text-zinc-400 dark:text-zinc-500
-        "
-      >
+    <div className="flex items-start gap-2">
+      {/* List indicator */}
+      <span className="flex-shrink-0 select-none w-6 text-right" style={{ color: '#6b7280' }}>
         {isBullet ? '•' : `${listNumber}.`}
       </span>
 
+      {/* Content */}
       <div
         ref={contentRef}
         contentEditable={!readOnly}
         suppressContentEditableWarning
-        className="
-          min-h-[1.75em] flex-1 rounded-xl px-2 py-1.5
-          text-[15px] leading-7 outline-none transition-colors
-          text-zinc-900 caret-zinc-900
-          hover:bg-zinc-50/80 focus:bg-zinc-50/80
-          dark:text-zinc-100 dark:caret-zinc-100
-          dark:hover:bg-zinc-900/60 dark:focus:bg-zinc-900/60
-        "
+        className="flex-1 outline-none min-h-[1.5em]"
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onFocus={onFocus}
         data-placeholder="List item..."
-        style={{ wordBreak: 'break-word' }}
+        style={{
+          wordBreak: 'break-word',
+          color: '#111827',
+          caretColor: '#111827',
+        }}
       />
     </div>
   );

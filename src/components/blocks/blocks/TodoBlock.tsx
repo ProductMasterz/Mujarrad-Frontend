@@ -7,10 +7,17 @@ interface TodoBlockProps extends BlockProps {
   onCheckedChange?: (checked: boolean) => void;
 }
 
+/**
+ * TodoBlock - Checkbox/task list block
+ *
+ * Renders a checkbox with text content.
+ * Checked items display with strikethrough text.
+ */
 export function TodoBlock({
   block,
   isActive,
   onContentChange,
+  onDelete,
   onEnter,
   onBackspace,
   onFocus,
@@ -22,6 +29,8 @@ export function TodoBlock({
   const contentRef = useRef<HTMLDivElement>(null);
   const isChecked = block.checked ?? false;
 
+  // Sync content with DOM
+  // IMPORTANT: Only sync if not focused (user not actively typing) to avoid cursor reset
   useEffect(() => {
     if (contentRef.current && contentRef.current.innerText !== block.content) {
       if (document.activeElement === contentRef.current) {
@@ -31,6 +40,7 @@ export function TodoBlock({
     }
   }, [block.content]);
 
+  // Focus management
   useEffect(() => {
     if (isActive && contentRef.current) {
       contentRef.current.focus();
@@ -50,27 +60,32 @@ export function TodoBlock({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    // Enter - create new todo (unchecked)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onEnter();
       return;
     }
 
+    // Backspace on empty - delete or convert to text
     if (e.key === 'Backspace' && block.content === '') {
       e.preventDefault();
       onBackspace();
       return;
     }
 
+    // Move up
     if (e.key === 'ArrowUp' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveUp();
       return;
     }
 
+    // Move down
     if (e.key === 'ArrowDown' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
       e.preventDefault();
       onMoveDown();
+      return;
     }
   };
 
@@ -81,18 +96,18 @@ export function TodoBlock({
   };
 
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-2">
+      {/* Checkbox */}
       <button
         type="button"
         onClick={handleCheckboxChange}
         disabled={readOnly}
         className={`
-          mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border
-          transition-colors
-          ${
-            isChecked
-              ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900'
-              : 'border-zinc-300 bg-white text-transparent hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:border-zinc-600'
+          flex-shrink-0 w-4 h-4 mt-1 rounded border-2
+          transition-colors duration-150
+          ${isChecked
+            ? 'bg-blue-500 border-blue-500'
+            : 'border-gray-300 hover:border-gray-400'
           }
           ${readOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
         `}
@@ -100,7 +115,7 @@ export function TodoBlock({
       >
         {isChecked && (
           <svg
-            className="h-3.5 w-3.5"
+            className="w-full h-full text-white"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -115,26 +130,24 @@ export function TodoBlock({
         )}
       </button>
 
+      {/* Content */}
       <div
         ref={contentRef}
         contentEditable={!readOnly}
         suppressContentEditableWarning
         className={`
-          min-h-[1.75em] flex-1 rounded-xl px-2 py-1.5
-          text-[15px] leading-7 outline-none transition-colors
-          hover:bg-zinc-50/80 focus:bg-zinc-50/80
-          dark:hover:bg-zinc-900/60 dark:focus:bg-zinc-900/60
-          ${
-            isChecked
-              ? 'text-zinc-400 line-through dark:text-zinc-500'
-              : 'text-zinc-900 caret-zinc-900 dark:text-zinc-100 dark:caret-zinc-100'
-          }
+          flex-1 outline-none min-h-[1.5em]
+          ${isChecked ? 'line-through' : ''}
         `}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         onFocus={onFocus}
         data-placeholder="To-do..."
-        style={{ wordBreak: 'break-word' }}
+        style={{
+          wordBreak: 'break-word',
+          color: isChecked ? '#9ca3af' : '#111827',
+          caretColor: '#111827',
+        }}
       />
     </div>
   );
