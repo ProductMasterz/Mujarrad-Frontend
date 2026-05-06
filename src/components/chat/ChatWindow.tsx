@@ -88,18 +88,14 @@ export function ChatWindow() {
   const { runtime } = useChatRuntime();
 
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <div className="chat-container">
-        <div className="chat-header">Chat Assistant</div>
-
-        <div className="chat-scroll">
-          <Thread
-            components={{
-              AssistantMessage,
-              UserMessage,
-            }}
-          />
-        </div>
+       <AssistantRuntimeProvider runtime={runtime}>
+      <div className="fixed bottom-6 right-6 w-[380px] h-[420px] bg-white shadow-xl rounded-lg border z-50">
+        <Thread
+          components={{
+            AssistantMessage,
+            UserMessage,
+          }}
+        />
       </div>
     </AssistantRuntimeProvider>
   );
