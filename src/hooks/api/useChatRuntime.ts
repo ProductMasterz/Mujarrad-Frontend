@@ -52,10 +52,7 @@ function createAssistantMessage(text: string): AppendMessage {
   };
 }
 // LinkMessageConverstationNode associates a message node with a conversation node in the backend.
-async function linkMessageToConversation(
-  conversationId: string,
-  messageNodeId: string
-) {
+async function linkMessageToConversation(conversationId: string, messageNodeId: string) {
   await fetch(`/api/nodes/${conversationId}/attributes`, {
     method: 'POST',
     headers: {
@@ -70,7 +67,7 @@ async function linkMessageToConversation(
 
 function toAppendMessage(node: any): AppendMessage {
   return {
-    role: node.title === 'user-message' ? 'user' : 'assistant',
+    role: node.nodeDetails.role,
     content: [{ type: 'text', text: node.content }],
     createdAt: new Date(node.createdAt),
 
@@ -98,152 +95,180 @@ export function useChatRuntime() {
   const creatingConversationRef = useRef(false);
   const messagesRef = useRef<AppendMessage[]>([]);
 
-    useEffect(() => {
-      const stored = localStorage.getItem('conversationId');
 
-      if (stored) {
-        setConversationNodeId(stored);
-      }
-    }, []);
+  const [conversations, setConversations] = useState<Node[]>([]);
 
-    useEffect(() => {
-  if (!conversationNodeId) return;
-
-  const loadHistory = async () => {
+  const loadConversationHistory = async (conversationId: string): Promise<AppendMessage[]> => {
     const spaceSlug = 'default-space';
 
     const allNodes = await nodeService.getNodes(spaceSlug);
 
-    console.log('ALL NODES:', allNodes);
-    const messageNodes = allNodes.filter((n: any) => {
-  return (
-    n.nodeDetails?.type === 'message' &&
-    n.attributes?.some?.(
-      (a: any) =>
-        a.type === 'CONTAINS' &&
-        a.sourceNodeId === conversationNodeId
-    )
-  );
-});
-console.log('MESSAGE NODES:', messageNodes);
-const sorted = messageNodes.sort(
-  (a: any, b: any) =>
-    new Date(a.createdAt).getTime() -
-    new Date(b.createdAt).getTime()
-);
-const mapped = sorted.map(toAppendMessage);
-setMessages(mapped);
-messagesRef.current = mapped;
+    // descendants of conversation
+    const messageNodes = allNodes.filter(
+      (node: any) =>
+        node.nodeDetails?.type === 'message' &&
+        node.attributes?.some(
+          (attr: any) => attr.type === 'CONTAINS' && attr.sourceNodeId === conversationId
+        )
+    );
 
+    // chronological order
+    const sorted = messageNodes.sort(
+      (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    console.log('ALL NODES', allNodes);
+    return sorted.map(toAppendMessage);
   };
 
-  loadHistory();
-  
-}, [conversationNodeId]);
+
+const loadConversations = async (spaceSlug: string) => {
+  const nodes = await nodeService.getNodes(spaceSlug);
+
+  const conversations = nodes
+    .filter((node: any) =>
+      node.nodeDetails?.type === 'conversation'
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime()
+    );
+
+  return conversations;
+};
 
 
-  
-  const createConversationNode = async () => {
-    const spaceSlug = 'default-space';
 
-    const now = new Date();
-    const title = `Chat - ${now.toISOString().slice(0, 16).replace('T', ' ')}`;
+  useEffect(() => {
+    const stored = localStorage.getItem('conversationId');
 
-    const node = await nodeService.createNode(spaceSlug, {
-      title,
-      content: title,
-      nodeType: NodeType.REGULAR,
-      nodeDetails: {
-        type: 'conversation',
-      },
+    if (stored) {
+      setConversationNodeId(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!conversationNodeId) return;
+
+    const init = async () => {
+      try {
+        const history = await loadConversationHistory(conversationNodeId);
+
+        setMessages(history);
+        messagesRef.current = history;
+      } catch (error) {
+        console.error('Failed to load history', error);
+      }
+    };
+
+    init();
+  }, [conversationNodeId]);
+
+const createConversationNode = async (spaceSlug: string) => {
+  const now = new Date();
+  const title = `Chat - ${now.toISOString().slice(0, 16).replace('T', ' ')}`;
+
+  const node = await nodeService.createNode(spaceSlug, {
+    title,
+    nodeType: NodeType.REGULAR,
+    content: title,
+    nodeDetails: {
+      type: 'conversation',
+    },
+  });
+
+  return node.id;
+};
+
+const handleNewMessage = useCallback(
+  async (message: AppendMessage) => {
+    if (isRunning) return;
+
+    const spaceSlug = 'test-parent-node'; 
+    const text = extractText(message.content);
+
+    setIsRunning(true);
+
+    setMessages((prev) => {
+      const updated = [...prev];
+      updated.push(message);
+      messagesRef.current = updated;
+      return updated;
     });
 
-    return node.id;
-  };
-  const handleNewMessage = useCallback(
-    async (message: AppendMessage) => {
-      if (isRunning) return;
+    try {
+      // 1. ENSURE CONVERSATION EXISTS
+      let convoId = conversationNodeId;
 
-      const spaceSlug = 'default-space';
-      const text = extractText(message.content);
+      if (!convoId && !creatingConversationRef.current) {
+        creatingConversationRef.current = true;
 
-      setIsRunning(true);
+        try {
+          convoId = await createConversationNode(spaceSlug);
+          setConversationNodeId(convoId);
+
+          // ⚠️ temporary persistence (remove later if not needed)
+          localStorage.setItem('conversationId', convoId);
+        } finally {
+          creatingConversationRef.current = false;
+        }
+      }
+
+      if (!convoId) {
+        throw new Error('Conversation node not created');
+      }
+
+      // 2. CREATE USER MESSAGE NODE
+      const userNode = await nodeService.createNode(spaceSlug, {
+        title: 'user-message',
+        content: text,
+        nodeType: NodeType.REGULAR,
+        nodeDetails: {
+          type: 'message',
+          role: 'user',
+          content: text,
+        },
+      });
+
+      // 3. LINK USER MESSAGE → CONVERSATION
+      await linkMessageToConversation(convoId, userNode.id);
+
+      // 4. CALL LLM
+      const response = await sendChatMessage(
+        mapToBackendMessages(messagesRef.current)
+      );
+
+      const assistantMessage = createAssistantMessage(response.reply);
 
       setMessages((prev) => {
-        const updated = [...prev, message];
+        const updated = [...prev];
+        updated.push(assistantMessage);
         messagesRef.current = updated;
         return updated;
       });
 
-      try {
-        // check CONVERSATION EXISTS
-        let convoId = conversationNodeId;
-
-        if (!convoId && !creatingConversationRef.current) {
-          creatingConversationRef.current = true;
-
-          try {
-            convoId = await createConversationNode();
-            setConversationNodeId(convoId);
-            localStorage.setItem('conversationId', convoId);
-          } finally {
-            creatingConversationRef.current = false;
-          }
-        }
-        if (!convoId) {
-          throw new Error('Conversation node not created');
-        }
-
-        //  CREATE USER MESSAGE NODE 
-        const userNode = await nodeService.createNode(spaceSlug, {
-          title: 'user-message',
-          content: text,
-          nodeType: NodeType.REGULAR,
-          nodeDetails: {
-            type: 'message',
-            content: text,
-          },
-        });
-
-        // 3️ LINK USER MESSAGE → CONVERSATION
-        await linkMessageToConversation(convoId, userNode.id);
-
-        const response = await sendChatMessage(
-          mapToBackendMessages(messagesRef.current)
-        );
-
-        const assistantMessage = createAssistantMessage(response.reply);
-
-        
-        setMessages((prev) => {
-          const updated = [...prev, assistantMessage];
-          messagesRef.current = updated;
-          return updated;
-        });
-
-        // AGENT MESSAGE NODE
-        const agentNode = await nodeService.createNode(spaceSlug, {
-          title: 'agent-message',
+      // 5. CREATE ASSISTANT NODE
+      const agentNode = await nodeService.createNode(spaceSlug, {
+        title: 'agent-message',
+        content: response.reply,
+        nodeType: NodeType.REGULAR,
+        nodeDetails: {
+          type: 'message',
+          role: 'assistant',
           content: response.reply,
-          nodeType: NodeType.REGULAR,
-          nodeDetails: {
-            type: 'message',
-            content: response.reply,
-          },
-        });
+        },
+      });
 
-        //  LINK AGENT MESSAGE → CONVERSATION
-        await linkMessageToConversation(convoId, agentNode.id);
-
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsRunning(false);
-      }
-    },
-    [isRunning, conversationNodeId]
-  );
-
+      // 6. LINK ASSISTANT → CONVERSATION
+      await linkMessageToConversation(convoId, agentNode.id);
+    } catch (error) {
+      console.error('handleNewMessage error:', error);
+    } finally {
+      setIsRunning(false);
+    }
+  },
+  [isRunning, conversationNodeId]
+);
   const runtime = useExternalStoreRuntime({
     messages: [...messages],
     isRunning,
@@ -261,4 +286,3 @@ messagesRef.current = mapped;
 
   return { runtime };
 }
-
