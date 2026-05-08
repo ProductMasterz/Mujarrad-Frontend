@@ -85,10 +85,8 @@ function UserMessage({ message }: any) {
     </MessagePrimitive.Root>
   );
 }
-
-export function ChatWindow() {
-  const { runtime } = useChatRuntime();
-
+export function ChatWindow({ spaceId }: { spaceId: string }) {
+  const { runtime } = useChatRuntime(spaceId);
   const [open, setOpen] = useState(true);
 
   return (
