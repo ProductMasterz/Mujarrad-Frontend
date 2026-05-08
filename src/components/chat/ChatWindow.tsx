@@ -5,12 +5,7 @@ import { AssistantRuntimeProvider } from '@assistant-ui/react';
 import { Thread } from '@assistant-ui/react-ui';
 import { useChatRuntime } from '@/hooks/api/useChatRuntime';
 import { useRef, useState } from 'react';
-import {
-  CheckIcon,
-  CopyIcon,
-  XIcon,
-  MessageCircleIcon,
-} from 'lucide-react';
+import { CheckIcon, CopyIcon, XIcon, MessageCircleIcon } from 'lucide-react';
 
 import { MessagePrimitive } from '@assistant-ui/react';
 import { getMessageText } from '@/lib/utils/text';
@@ -45,9 +40,7 @@ function CopyButton({ value }: { value: string }) {
 function AssistantMessage({ message }: any) {
   const contentRef = useRef<HTMLDivElement | null>(null);
 
-  const textToCopy =
-    contentRef.current?.innerText?.trim() ||
-    getMessageText(message);
+  const textToCopy = contentRef.current?.innerText?.trim() || getMessageText(message);
 
   return (
     <MessagePrimitive.Root className="message flex justify-start">
@@ -67,9 +60,7 @@ function AssistantMessage({ message }: any) {
 function UserMessage({ message }: any) {
   const contentRef = useRef<HTMLDivElement | null>(null);
 
-  const textToCopy =
-    contentRef.current?.innerText?.trim() ||
-    getMessageText(message);
+  const textToCopy = contentRef.current?.innerText?.trim() || getMessageText(message);
 
   return (
     <MessagePrimitive.Root className="message flex justify-end">
@@ -86,8 +77,8 @@ function UserMessage({ message }: any) {
   );
 }
 
-export function ChatWindow() {
-  const { runtime } = useChatRuntime();
+export function ChatWindow({ spaceId }: { spaceId: string }) {
+  const { runtime, startNewConversation } = useChatRuntime(spaceId);
 
   const [open, setOpen] = useState(true);
 
@@ -107,19 +98,22 @@ export function ChatWindow() {
       {open && (
         <AssistantRuntimeProvider runtime={runtime}>
           <div className="fixed bottom-6 right-6 w-[380px] h-[420px] bg-white shadow-xl rounded-lg border z-50 flex flex-col">
-            
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b">
-              <h2 className="font-semibold text-sm">
-                Assistant
-              </h2>
+              <h2 className="font-semibold text-sm">Assistant</h2>
 
-              <button
-                onClick={() => setOpen(false)}
-                className="p-1 rounded hover:bg-gray-100"
-              >
-                <XIcon size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={startNewConversation}
+                  className="text-xs px-2 py-1 rounded bg-black text-white hover:bg-gray-800"
+                >
+                  New Chat
+                </button>
+
+                <button onClick={() => setOpen(false)} className="p-1 rounded hover:bg-gray-100">
+                  <XIcon size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Thread */}

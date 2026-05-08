@@ -48,6 +48,7 @@ function createAssistantMessage(text: string): AppendMessage {
   };
 }
 
+
 async function linkMessageToConversation(
   conversationId: string,
   messageNodeId: string
@@ -81,7 +82,7 @@ function toAppendMessage(node: any): AppendMessage {
   };
 }
 
-// -------------------- hook --------------------
+
 
 export function useChatRuntime(spaceId: string) {
 
@@ -93,7 +94,7 @@ export function useChatRuntime(spaceId: string) {
   const creatingConversationRef = useRef(false);
   const messagesRef = useRef<AppendMessage[]>([]);
 
-  // -------------------- LOAD CONVERSATIONS (LIST PAGE STORY) --------------------
+
 
   const loadConversations = async (spaceSlug: string) => {
     const nodes = await nodeService.getNodes(spaceSlug);
@@ -109,7 +110,7 @@ export function useChatRuntime(spaceId: string) {
     return conversationNodes;
   };
 
-  // -------------------- LOAD CHAT HISTORY --------------------
+ 
 
   const loadConversationHistory = async (conversationId: string) => {
     const spaceSlug = spaceId;
@@ -133,8 +134,36 @@ export function useChatRuntime(spaceId: string) {
     return messageNodes.map(toAppendMessage);
   };
 
-  // -------------------- INIT CONVERSATION FROM STORAGE --------------------
 
+const startNewConversation = async () => {
+  const spaceSlug = spaceId;
+
+  // clear current messages
+  setMessages([]);
+  messagesRef.current = [];
+
+  // reset current conversation
+  setConversationNodeId(null);
+
+  // clear persisted conversation
+  localStorage.removeItem('conversationId');
+
+  // create fresh conversation
+  const newConversationId =
+    await createConversationNode(spaceSlug);
+
+  // set active conversation
+  setConversationNodeId(newConversationId);
+
+  // persist it
+  localStorage.setItem(
+    'conversationId',
+    newConversationId
+  );
+
+  // reload conversation list
+  await loadConversations(spaceSlug);
+};
  useEffect(() => {
   setMessages([]);
   setConversationNodeId(null);
@@ -144,7 +173,7 @@ export function useChatRuntime(spaceId: string) {
   if (stored) setConversationNodeId(stored);
 }, [spaceId]);
 
-  // -------------------- CREATE CONVERSATION --------------------
+  
 
   const createConversationNode = async (spaceSlug: string) => {
     const now = new Date();
@@ -162,13 +191,12 @@ export function useChatRuntime(spaceId: string) {
     return node.id;
   };
 
-  // -------------------- MAIN CHAT HANDLER --------------------
 
   const handleNewMessage = useCallback(
     async (message: AppendMessage) => {
       if (isRunning) return;
 
-      const spaceSlug = spaceId; // assuming spaceId is the slug, adjust if needed
+      const spaceSlug = spaceId; 
       const text = extractText(message.content);
 
       setIsRunning(true);
@@ -211,7 +239,7 @@ export function useChatRuntime(spaceId: string) {
 
         await linkMessageToConversation(convoId, userNode.id);
 
-        // 3. send to LLM
+        // 3. send 
         const response = await sendChatMessage(
           mapToBackendMessages(messagesRef.current)
         );
@@ -246,7 +274,7 @@ export function useChatRuntime(spaceId: string) {
     [isRunning, conversationNodeId, spaceId]
   );
 
-  // -------------------- RUNTIME --------------------
+ 
 
   const runtime = useExternalStoreRuntime({
     messages: [...messages],
@@ -263,5 +291,6 @@ export function useChatRuntime(spaceId: string) {
     runtime,
     conversations,
     loadConversations,
+    startNewConversation,
   };
 }
