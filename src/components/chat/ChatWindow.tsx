@@ -78,7 +78,13 @@ function UserMessage({ message }: any) {
 }
 
 export function ChatWindow({ spaceId }: { spaceId: string }) {
-  const { runtime, startNewConversation } = useChatRuntime(spaceId);
+  const {
+    runtime,
+    conversations,
+    conversationNodeId,
+    setConversationNodeId,
+    startNewConversation,
+  } = useChatRuntime(spaceId);
 
   const [open, setOpen] = useState(true);
 
@@ -97,7 +103,7 @@ export function ChatWindow({ spaceId }: { spaceId: string }) {
       {/* Chat Window */}
       {open && (
         <AssistantRuntimeProvider runtime={runtime}>
-          <div className="fixed bottom-6 right-6 w-[380px] h-[420px] bg-white shadow-xl rounded-lg border z-50 flex flex-col">
+          <div className="fixed bottom-6 right-6 w-[700px] h-[420px] bg-white shadow-xl rounded-lg border z-50 flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <h2 className="font-semibold text-sm">Assistant</h2>
@@ -118,6 +124,31 @@ export function ChatWindow({ spaceId }: { spaceId: string }) {
 
             {/* Thread */}
             <div className="flex-1 overflow-hidden">
+              {/* SIDEBAR */}
+              <div className="w-[220px] border-r bg-gray-50 overflow-x-auto">
+                <div className="p-2">
+                  {conversations.map((conversation: any) => {
+                    const active = conversation.id === conversationNodeId;
+
+                    return (
+                      <button
+                        key={conversation.id}
+                        onClick={() => setConversationNodeId(conversation.id)}
+                        className={`w-full text-left p-2 rounded mb-1 text-sm transition ${
+                          active ? 'bg-black text-white' : 'hover:bg-gray-200'
+                        }`}
+                      >
+                        <div className="font-medium truncate">{conversation.title}</div>
+
+                        <div className="text-xs opacity-70">
+                          {new Date(conversation.createdAt).toLocaleString()}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <Thread
                 components={{
                   AssistantMessage,

@@ -48,11 +48,7 @@ function createAssistantMessage(text: string): AppendMessage {
   };
 }
 
-
-async function linkMessageToConversation(
-  conversationId: string,
-  messageNodeId: string
-) {
+async function linkMessageToConversation(conversationId: string, messageNodeId: string) {
   await fetch(`/api/nodes/${conversationId}/attributes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -82,10 +78,7 @@ function toAppendMessage(node: any): AppendMessage {
   };
 }
 
-
-
 export function useChatRuntime(spaceId: string) {
-
   const [messages, setMessages] = useState<AppendMessage[]>([]);
   const [conversations, setConversations] = useState<any[]>([]);
   const [conversationNodeId, setConversationNodeId] = useState<string | null>(null);
@@ -94,23 +87,16 @@ export function useChatRuntime(spaceId: string) {
   const creatingConversationRef = useRef(false);
   const messagesRef = useRef<AppendMessage[]>([]);
 
-
-
   const loadConversations = async (spaceSlug: string) => {
     const nodes = await nodeService.getNodes(spaceSlug);
 
     const conversationNodes = nodes
       .filter((node: any) => node.nodeDetails?.type === 'conversation')
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     setConversations(conversationNodes);
     return conversationNodes;
   };
-
- 
 
   const loadConversationHistory = async (conversationId: string) => {
     const spaceSlug = spaceId;
@@ -121,59 +107,75 @@ export function useChatRuntime(spaceId: string) {
       .filter((node: any) => node.nodeDetails?.type === 'message')
       .filter((node: any) =>
         node.attributes?.some(
-          (attr: any) =>
-            attr.type === 'CONTAINS' &&
-            attr.sourceNodeId === conversationId
+          (attr: any) => attr.type === 'CONTAINS' && attr.sourceNodeId === conversationId
         )
       )
-      .sort(
-        (a: any, b: any) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      );
+      .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
     return messageNodes.map(toAppendMessage);
   };
 
+  const startNewConversation = async () => {
+    const spaceSlug = spaceId;
 
-const startNewConversation = async () => {
-  const spaceSlug = spaceId;
+    // clear current messages
+    setMessages([]);
+    messagesRef.current = [];
 
-  // clear current messages
-  setMessages([]);
-  messagesRef.current = [];
+    // reset current conversation
+    setConversationNodeId(null);
 
-  // reset current conversation
-  setConversationNodeId(null);
+    // clear persisted conversation
+    localStorage.removeItem('conversationId');
 
-  // clear persisted conversation
-  localStorage.removeItem('conversationId');
+    // create fresh conversation
+    const newConversationId = await createConversationNode(spaceSlug);
 
-  // create fresh conversation
-  const newConversationId =
-    await createConversationNode(spaceSlug);
+    // set active conversation
+    setConversationNodeId(newConversationId);
 
-  // set active conversation
-  setConversationNodeId(newConversationId);
+    // persist it
+    localStorage.setItem('conversationId', newConversationId);
 
-  // persist it
-  localStorage.setItem(
-    'conversationId',
-    newConversationId
-  );
+    // reload conversation list
+    await loadConversations(spaceSlug);
+  };
 
-  // reload conversation list
-  await loadConversations(spaceSlug);
-};
- useEffect(() => {
-  setMessages([]);
-  setConversationNodeId(null);
-  messagesRef.current = [];
+  useEffect(() => {
+    loadConversations(spaceId);
+  }, [spaceId]);
 
-  const stored = localStorage.getItem(`conversationId:${spaceId}`);
-  if (stored) setConversationNodeId(stored);
-}, [spaceId]);
+  useEffect(() => {
+    setMessages([]);
+    setConversationNodeId(null);
+    messagesRef.current = [];
 
-  
+    const stored = localStorage.getItem(`conversationId:${spaceId}`);
+    if (stored) setConversationNodeId(stored);
+  }, [spaceId]);
+
+  useEffect(() => {
+  if (!conversationNodeId) return;
+
+  const load = async () => {
+    try {
+      const history =
+        await loadConversationHistory(conversationNodeId);
+
+      setMessages(history);
+      messagesRef.current = history;
+
+      localStorage.setItem(
+        `conversationId:${spaceId}`,
+        conversationNodeId
+      );
+    } catch (err) {
+      console.error('Failed loading conversation', err);
+    }
+  };
+
+  load();
+}, [conversationNodeId, spaceId]);
 
   const createConversationNode = async (spaceSlug: string) => {
     const now = new Date();
@@ -191,12 +193,11 @@ const startNewConversation = async () => {
     return node.id;
   };
 
-
   const handleNewMessage = useCallback(
     async (message: AppendMessage) => {
       if (isRunning) return;
 
-      const spaceSlug = spaceId; 
+      const spaceSlug = spaceId;
       const text = extractText(message.content);
 
       setIsRunning(true);
@@ -217,7 +218,7 @@ const startNewConversation = async () => {
           try {
             convoId = await createConversationNode(spaceSlug);
             setConversationNodeId(convoId);
-           localStorage.setItem(`conversationId:${spaceId}`, convoId);
+            localStorage.setItem(`conversationId:${spaceId}`, convoId);
           } finally {
             creatingConversationRef.current = false;
           }
@@ -239,10 +240,8 @@ const startNewConversation = async () => {
 
         await linkMessageToConversation(convoId, userNode.id);
 
-        // 3. send 
-        const response = await sendChatMessage(
-          mapToBackendMessages(messagesRef.current)
-        );
+        // 3. send
+        const response = await sendChatMessage(mapToBackendMessages(messagesRef.current));
 
         const assistantMessage = createAssistantMessage(response.reply);
 
@@ -274,8 +273,6 @@ const startNewConversation = async () => {
     [isRunning, conversationNodeId, spaceId]
   );
 
- 
-
   const runtime = useExternalStoreRuntime({
     messages: [...messages],
     isRunning,
@@ -290,6 +287,9 @@ const startNewConversation = async () => {
   return {
     runtime,
     conversations,
+    conversationNodeId,
+    setConversationNodeId,
+    loadConversationHistory,
     loadConversations,
     startNewConversation,
   };
