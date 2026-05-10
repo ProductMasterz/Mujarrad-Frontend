@@ -17,6 +17,7 @@ import { useRenameSpace } from '@/hooks/api';
 import type { Space } from '@/types/backend-dtos';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { DeleteSpaceModal } from '@/shell/components/DeleteSpaceModal';
 
 // Convert Space to Scratchup Card format
 function spaceToCard(space: Space): Card {
@@ -62,7 +63,8 @@ export default function SpacesPage() {
     y: number;
     cardId: string;
   } | null>(null);
-
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [spaceToDelete, setSpaceToDelete] = useState<Space | null>(null);
  
   // Tabs state
   const [tabs, setTabs] = useState<Tab[]>([
@@ -193,7 +195,7 @@ export default function SpacesPage() {
     });
   };
 
-  const handleContextMenuAction = (action: string) => {
+  const handleContextMenuAction = async (action: string) => {
     if (!contextMenu) return;
 
     const space = apiSpaces.find((s) => s.id === contextMenu.cardId);
@@ -204,26 +206,62 @@ export default function SpacesPage() {
           window.open(`/spaces/${space.slug}`, '_blank');
         }
         break;
+
       case 'openAsNode':
         if (space) {
           router.push(`/spaces/${space.slug}`);
         }
         break;
+
       case 'rename':
         if (space) {
           setSpaceToRename(space);
           setShowRenameModal(true);
         }
         break;
+
+      case 'duplicate':
+        if (space) {
+          try {
+            const duplicated = await spaceService.createSpace({
+              name: `${space.name} Copy`,
+              slug: `${space.slug}-copy-${Date.now()}`,
+            });
+
+            setApiSpaces((prev) => [duplicated, ...prev]);
+
+            addNotification({
+              type: 'info',
+              source: 'space',
+              title: 'Space duplicated',
+              description: `"${space.name}" was duplicated as "${duplicated.name}".`,
+            });
+          } catch (err) {
+            console.error('[SpacesPage] Duplicate failed:', err);
+
+            addNotification({
+              type: 'error',
+              source: 'space',
+              title: 'Duplicate failed',
+              description: 'Failed to duplicate space.',
+            });
+          }
+        }
+        break;
+
       case 'share':
         setSelectedCardId(contextMenu.cardId);
         setShowShareModal(true);
         break;
+
       case 'delete':
-        // TODO: Implement delete functionality
-        console.log('Delete space:', contextMenu.cardId);
+        if (space) {
+          setSpaceToDelete(space);
+          setShowDeleteModal(true);
+        }
         break;
     }
+
     setContextMenu(null);
   };
 
@@ -286,6 +324,40 @@ export default function SpacesPage() {
       throw new Error(result.error || 'Failed to rename space');
     }
   };
+
+
+  const handleDeleteSpace = async () => {
+    if (!spaceToDelete) return;
+
+    const deletedName = spaceToDelete.name;
+
+    try {
+      await spaceService.deleteSpace(spaceToDelete.id);
+
+      setApiSpaces((prev) => prev.filter((space) => space.id !== spaceToDelete.id));
+
+      addNotification({
+        type: 'info',
+        source: 'space',
+        title: 'Space deleted',
+        description: `"${deletedName}" was deleted.`,
+      });
+
+      setSpaceToDelete(null);
+    } catch (err) {
+      console.error('[SpacesPage] Delete failed:', err);
+
+      addNotification({
+        type: 'error',
+        source: 'space',
+        title: 'Delete failed',
+        description: 'Failed to delete space.',
+      });
+
+      throw err;
+    }
+  };
+
 
   // Build sidebar data from API spaces
   const sidebarData = useMemo(
@@ -543,6 +615,21 @@ export default function SpacesPage() {
             entityLabel="Space"
           />
         )}
+
+
+        {spaceToDelete && (
+          <DeleteSpaceModal
+            isOpen={showDeleteModal}
+            onClose={() => {
+              setShowDeleteModal(false);
+              setSpaceToDelete(null);
+            }}
+            spaceName={spaceToDelete.name}
+            onDelete={handleDeleteSpace}
+          />
+        )}
+
+
       </div>
     </ProtectedRoute>
   );

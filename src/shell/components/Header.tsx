@@ -1,7 +1,6 @@
 'use client';
 
 import { MessageSquare, ArrowLeft, MoreVertical, Bell } from 'lucide-react';
-import { Breadcrumb } from './Breadcrumb';
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { MoreMenuDropdown } from './MoreMenuDropdown';
@@ -150,8 +149,7 @@ export function Header({
               <ArrowLeft className="size-6" strokeWidth={1.5} />
             </button>
           )}
-
-          <Breadcrumb path={breadcrumbPath} onBreadcrumbClick={onBreadcrumbClick} />
+          {/* Breadcrumb moved to top Navbar. Keep this second bar clean. */}
         </div>
 
         <div className="flex items-center gap-2">

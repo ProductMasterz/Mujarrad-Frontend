@@ -49,7 +49,7 @@ export function ContextMenu({
 
   const menuItems = [
     { label: "Open in New Tab", onClick: onOpenNewTab },
-    { label: "Open as Node", onClick: onOpenAsNode },
+    { label: "Open Space", onClick: onOpenAsNode },
     { label: "Rename", onClick: onRename },
     { label: "Duplicate", onClick: onDuplicate },
     { label: "Share", onClick: onShare },

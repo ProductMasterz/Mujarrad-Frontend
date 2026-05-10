@@ -1,14 +1,17 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, FolderKanban, Network, Bell, Settings } from 'lucide-react';
+import { Home, FolderKanban, Network, Bell, Settings, ChevronRight } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { NotificationsDropdown } from '@/shell/components/NotificationsDropdown';
 import { MoreMenuDropdown } from '@/shell/components/MoreMenuDropdown';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { spaceService } from '@/services/api';
+import { nodeService } from '@/services/api/node.service';
 
 interface NavbarProps {
   className?: string;
@@ -32,15 +35,35 @@ export function Navbar({ className }: NavbarProps) {
   const notificationSettings = useNotificationStore((state) => state.settings);
   const [mounted, setMounted] = useState(false);
 
+  const pathParts = useMemo(() => pathname.split('/').filter(Boolean), [pathname]);
+
+  const isSpacesRoute = pathParts[0] === 'spaces';
+  const currentSpaceSlug = isSpacesRoute && pathParts[1] ? pathParts[1] : undefined;
+  const currentNodeId =
+    isSpacesRoute && pathParts[2] === 'node' && pathParts[3] ? pathParts[3] : undefined;
+
+  const { data: currentSpace } = useQuery({
+    queryKey: ['navbar', 'space', currentSpaceSlug],
+    queryFn: () => spaceService.getSpaceBySlug(currentSpaceSlug as string),
+    enabled: !!currentSpaceSlug,
+  });
+
+  const { data: currentNode } = useQuery({
+    queryKey: ['navbar', 'space', currentSpaceSlug, 'node', currentNodeId],
+    queryFn: () => nodeService.getNode(currentSpaceSlug as string, currentNodeId as string),
+    enabled: !!currentSpaceSlug && !!currentNodeId,
+  });
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
   const unreadCount = notifications.filter((item) => !item.read).length;
   const showUnreadBadge =
-  mounted &&
-  notificationSettings.showUnreadBadge &&
-  notificationSettings.enabled &&
-  unreadCount > 0;
+    mounted &&
+    notificationSettings.showUnreadBadge &&
+    notificationSettings.enabled &&
+    unreadCount > 0;
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
@@ -90,12 +113,12 @@ export function Navbar({ className }: NavbarProps) {
   return (
     <nav className={`fixed inset-x-0 top-0 z-50 border-b bg-background ${className || ''}`}>
       <div className="flex h-16 items-center gap-6 px-6">
-        <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
+        <Link href="/" className="flex shrink-0 items-center gap-2 text-lg font-semibold">
           <Network className="h-6 w-6" />
           <span>Mujarrad</span>
         </Link>
 
-        <div className="flex flex-1 items-center gap-1">
+        <div className="flex min-w-0 flex-1 items-center gap-1">
           <Link href="/">
             <Button
               variant={isActive('/') ? 'secondary' : 'ghost'}
@@ -107,6 +130,8 @@ export function Navbar({ className }: NavbarProps) {
             </Button>
           </Link>
 
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+
           <Link href="/spaces">
             <Button
               variant={isActive('/spaces') ? 'secondary' : 'ghost'}
@@ -117,9 +142,53 @@ export function Navbar({ className }: NavbarProps) {
               Spaces
             </Button>
           </Link>
+
+          {currentSpaceSlug && (
+            <>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+
+              <Link
+                href={`/spaces/${currentSpaceSlug}`}
+                className="min-w-0"
+              >
+                <Button
+                  variant={!currentNodeId ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="max-w-[220px] gap-2 truncate"
+                  title={currentSpace?.name || currentSpaceSlug}
+                >
+                  <span className="truncate">
+                    {currentSpace?.name || currentSpaceSlug}
+                  </span>
+                </Button>
+              </Link>
+            </>
+          )}
+
+          {currentNodeId && (
+            <>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+
+              <Link
+                href={`/spaces/${currentSpaceSlug}/node/${currentNodeId}`}
+                className="min-w-0"
+              >
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="max-w-[260px] truncate"
+                  title={currentNode?.title || 'Node'}
+                >
+                  <span className="truncate">
+                    {currentNode?.title || 'Node'}
+                  </span>
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <div className="relative">
             <button
               ref={notificationButtonRef}
@@ -175,7 +244,6 @@ export function Navbar({ className }: NavbarProps) {
             onClose={() => setNotificationsOpen(false)}
           />
         </div>
-        
       )}
     </nav>
   );

@@ -1,5 +1,4 @@
 // src/hooks/api/useSpaces.ts
-// @deprecated - Use useSpaces from './useSpaces' instead
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { spaceService } from '@/services/api';
@@ -58,11 +57,42 @@ export function useUpdateSpace(id: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: UpdateSpaceRequest) => spaceService.updateSpace(Number(id), data),
+    mutationFn: (data: UpdateSpaceRequest) => spaceService.updateSpace(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
     },
   });
+}
+
+export function useRenameSpace() {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      spaceService.updateSpace(id, {
+        name,
+        projectType: 'BACKEND',
+        mode: 'CONFIGURATION',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spaces'] });
+    },
+  });
+
+  return {
+    rename: async (id: string, name: string) => {
+      try {
+        await mutation.mutateAsync({ id, name });
+        return { success: true as const };
+      } catch (err) {
+        const error =
+          err instanceof Error ? err.message : 'Failed to rename space';
+
+        return { success: false as const, error };
+      }
+    },
+    isLoading: mutation.isPending,
+  };
 }
 
 /** @deprecated Use useDeleteSpace instead */
@@ -70,7 +100,7 @@ export function useDeleteSpace() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => spaceService.deleteSpace(Number(id)),
+    mutationFn: (id: string) => spaceService.deleteSpace(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
     },

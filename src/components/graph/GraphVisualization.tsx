@@ -173,6 +173,8 @@ export function GraphVisualization({
           onNodeClick={handleNodeClick}
           nodeTypes={nodeTypes}
           fitView
+          minZoom={0.125}
+          maxZoom={4}
         >
           <Background color="hsl(var(--border))" gap={20} />
           <Controls />
