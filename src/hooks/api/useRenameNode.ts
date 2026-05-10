@@ -119,9 +119,4 @@ export const useRenameNodeSimple = (spaceSlug: string) => {
   return useRenameNode({ spaceSlug, entityType: 'node' });
 };
 
-/**
- * Simplified hook specifically for renaming spaces
- */
-export const useRenameSpace = () => {
-  return useRenameNode({ entityType: 'space' });
-};
+

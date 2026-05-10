@@ -8,7 +8,7 @@ import type {
   SpaceCollaborator,
   InviteCollaboratorRequest,
 } from '@/types/backend-dtos';
-import type { PaginatedResponse, PaginationParams } from '@/types/api';
+import type { PaginationParams } from '@/types/api';
 
 export const spaceService = {
   /**
@@ -55,9 +55,10 @@ export const spaceService = {
 
   /**
    * Update space
+   * Backend uses PATCH /api/spaces/{id}
    */
   async updateSpace(id: string | number, data: UpdateSpaceRequest): Promise<Space> {
-    const response = await apiClient.put<Space>(`/spaces/${id}`, data);
+    const response = await apiClient.patch<Space>(`/spaces/${id}`, data);
     return response.data;
   },
 

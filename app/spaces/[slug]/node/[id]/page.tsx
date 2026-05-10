@@ -108,18 +108,13 @@ export default function NodeDetailPage() {
 
 
   const breadcrumbPath = useMemo(() => {
-    const path = [{ id: 'spaces', title: 'Spaces' }];
-
-    if (space) {
-      path.push({ id: space.id, title: space.name });
-    }
-
-    if (node) {
-      path.push({ id: node.id, title: node.title });
-    }
-
-    return path;
-  }, [space, node]);
+    return [
+      { id: 'home', title: 'Home' },
+      { id: 'spaces', title: 'Spaces' },
+      { id: space?.id || slug, title: space?.name || slug },
+      { id: node?.id || nodeId, title: node?.title || 'Node' },
+    ];
+  }, [space, node, slug, nodeId]);
 
   const isLoading = spaceLoading || nodeLoading;
 
@@ -185,18 +180,23 @@ export default function NodeDetailPage() {
   };
 
   const handleBreadcrumbClick = (index: number) => {
-    if (index === -1) {
+    if (index === -1 || index === 0) {
       router.push('/');
       return;
     }
 
-    if (index === 0) {
+    if (index === 1) {
       router.push('/spaces');
       return;
     }
 
-    if (index === 1 && space) {
+    if (index === 2) {
       router.push(`/spaces/${slug}`);
+      return;
+    }
+
+    if (index === 3) {
+      router.push(`/spaces/${slug}/node/${nodeId}`);
     }
   };
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from "react";
-import { X } from "lucide-react";
+import { useState, useRef, useEffect } from 'react';
+import { X } from 'lucide-react';
 
 type RenameModalProps = {
   isOpen: boolean;
@@ -36,41 +36,49 @@ export function RenameModal({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === 'Escape') onClose();
     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+    const handleSubmit = async (e?: React.FormEvent) => {
+      e?.preventDefault();
 
-    if (!name.trim()) {
-      setError("Name cannot be empty");
-      return;
-    }
+      const trimmedName = name.trim();
 
-    if (name === currentName) {
-      onClose();
-      return;
-    }
+      if (!trimmedName) {
+        setError('Name cannot be empty');
+        return;
+      }
 
-    setIsLoading(true);
-    setError(null);
+      if (trimmedName === currentName) {
+        onClose();
+        return;
+      }
 
-    try {
-      await onRename(name.trim());
-      onClose();
-    } catch (err) {
-      console.error("Failed to rename:", err);
-      setError("Failed to rename. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      setIsLoading(true);
+      setError(null);
 
-  if (!isOpen) return null;
+      try {
+        await onRename(trimmedName);
+        onClose();
+      } catch (err) {
+        console.error('Failed to rename:', err);
+
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'Failed to rename. Please try again.';
+
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -84,7 +92,9 @@ export function RenameModal({
           >
             Rename {entityLabel}
           </h2>
+
           <button
+            type="button"
             onClick={onClose}
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
@@ -101,6 +111,7 @@ export function RenameModal({
             >
               Name
             </label>
+
             <input
               ref={inputRef}
               id="rename-input"
@@ -115,6 +126,7 @@ export function RenameModal({
               style={{ fontVariationSettings: "'wdth' 100" }}
               placeholder={`Enter ${entityLabel.toLowerCase()} name`}
             />
+
             {error && (
               <p
                 className="mt-[8px] font-['Roboto:Regular',sans-serif] text-[12px] font-normal tracking-[-0.08px] text-destructive"
@@ -135,6 +147,7 @@ export function RenameModal({
             >
               Cancel
             </button>
+
             <button
               type="submit"
               disabled={isLoading || !name.trim()}
@@ -147,7 +160,7 @@ export function RenameModal({
                   Renaming...
                 </>
               ) : (
-                "Rename"
+                'Rename'
               )}
             </button>
           </div>

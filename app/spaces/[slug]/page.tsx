@@ -254,14 +254,12 @@ export default function SpaceDetailPage() {
 
   // Build breadcrumb
   const breadcrumbPath = useMemo(() => {
-    const path = [{ id: 'spaces', title: 'Spaces' }];
-
-    if (space) {
-      path.push({ id: space.id, title: space.name });
-    }
-
-    return path;
-  }, [space]);
+    return [
+      { id: 'home', title: 'Home' },
+      { id: 'spaces', title: 'Spaces' },
+      { id: space?.id || slug, title: space?.name || slug },
+    ];
+  }, [space, slug]);
 
   // Loading state
   const isLoading = spaceLoading || nodesLoading;
@@ -298,6 +296,11 @@ export default function SpaceDetailPage() {
 
     if (index === 1) {
       router.push('/spaces');
+      return;
+    }
+
+    if (index === 2) {
+      router.push(`/spaces/${slug}`);
     }
   };
 

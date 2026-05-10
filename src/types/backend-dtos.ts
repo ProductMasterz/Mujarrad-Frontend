@@ -231,13 +231,17 @@ export interface CreateSpaceRequest {
 
 /**
  * Request body for updating a space
- * Backend: SpaceUpdateRequest for PUT /api/spaces/{id}
+ * Backend: SpaceUpdateRequest for PATCH /api/spaces/{id}
  */
 export interface UpdateSpaceRequest {
-  /** New space name (optional) */
+  /** New space name */
   name?: string;
-  /** New slug (optional, must be unique) */
   slug?: string;
+  /** Optional backend project type */
+  projectType?: 'BACKEND' | 'FRONTEND' | 'CONSUMER';
+
+  /** Optional backend mode */
+  mode?: 'CONFIGURATION' | 'PRODUCTION';
 }
 
 /**
