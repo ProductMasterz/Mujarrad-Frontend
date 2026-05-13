@@ -141,6 +141,67 @@ export function useChatRuntime(spaceId: string) {
     await loadConversations(spaceSlug);
   };
 
+  const deleteConversation = async (
+  conversationId: string
+) => {
+  const spaceSlug = spaceId;
+
+  try {
+    // 1. load all nodes
+    const allNodes =
+      await nodeService.getNodes(spaceSlug);
+
+    // 2. find message nodes belonging to conversation
+    const messageNodes = allNodes.filter(
+      (node: any) =>
+        node.nodeDetails?.type === 'message' &&
+        node.attributes?.some(
+          (attr: any) =>
+            attr.type === 'CONTAINS' &&
+            attr.sourceNodeId === conversationId
+        )
+    );
+
+    // 3. delete all message nodes
+    await Promise.all(
+      messageNodes.map((node: any) =>
+        nodeService.deleteNode(
+          spaceSlug,
+          node.id,
+          true
+        )
+      )
+    );
+console.log('DELETE SPACE SLUG', spaceSlug);
+    // 4. delete conversation node
+    await nodeService.deleteNode(
+      spaceSlug,
+      conversationId,
+      true
+    );
+
+    // 5. remove from UI state
+    setConversations((prev) =>
+      prev.filter((c) => c.id !== conversationId)
+    );
+
+    // 6. clear active conversation if deleted
+    if (conversationNodeId === conversationId) {
+      setConversationNodeId(null);
+      setMessages([]);
+      messagesRef.current = [];
+
+      localStorage.removeItem(
+        `conversationId:${spaceId}`
+      );
+    }
+  } catch (err) {
+    console.error(
+      'Failed deleting conversation',
+      err
+    );
+  }
+};
   useEffect(() => {
     loadConversations(spaceId);
   }, [spaceId]);
@@ -292,5 +353,6 @@ export function useChatRuntime(spaceId: string) {
     loadConversationHistory,
     loadConversations,
     startNewConversation,
+    deleteConversation,
   };
 }

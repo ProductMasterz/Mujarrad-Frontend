@@ -261,7 +261,9 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   //chat
   const [showChatModal, setShowChatModal] = useState(false);
-  
+  //SpaceId
+  const activeSpaceId = selectedItem;
+
   const handleUserClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setUserMenuAnchor(event.currentTarget);
   };
@@ -394,7 +396,9 @@ export function Sidebar({ isOpen, onItemClick, selectedItem, onNavigate, onAddNo
 
         {/* Chat body */}
         <div className="flex-1">
-          <ChatWindow />
+        <ChatWindow
+  spaceId={selectedItem?.split("/")[0] ?? "default-space"}
+/>
         </div>
 
   </div>

@@ -167,3 +167,16 @@
   border: none;
   opacity: 1;
 }
+
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+.conversation-delete {
+  opacity: 0;
+  transition: 0.2s ease;
+}
+
+.group:hover .conversation-delete {
+  opacity: 1;
+}

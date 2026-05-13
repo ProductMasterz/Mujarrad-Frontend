@@ -4,11 +4,12 @@ import './chat.css';
 import { AssistantRuntimeProvider } from '@assistant-ui/react';
 import { Thread } from '@assistant-ui/react-ui';
 import { useChatRuntime } from '@/hooks/api/useChatRuntime';
-import { useRef, useState } from 'react';
-import { CheckIcon, CopyIcon, XIcon, MessageCircleIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 import { MessagePrimitive } from '@assistant-ui/react';
 import { getMessageText } from '@/lib/utils/text';
+import { CheckIcon, CopyIcon, XIcon, MessageCircleIcon, Trash2Icon } from 'lucide-react';
+import { nodeService } from '@/services/api';
 
 /* COPY BUTTON */
 function CopyButton({ value }: { value: string }) {
@@ -84,10 +85,38 @@ export function ChatWindow({ spaceId }: { spaceId: string }) {
     conversationNodeId,
     setConversationNodeId,
     startNewConversation,
+    deleteConversation,
   } = useChatRuntime(spaceId);
 
   const [open, setOpen] = useState(true);
 
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    nodeId: string | null;
+    type: 'conversation' | 'node';
+  } | null>(null);
+
+  const handleRightClick = (e: React.MouseEvent, nodeId: string) => {
+    e.preventDefault();
+
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      nodeId,
+      type: 'conversation',
+    });
+  };
+
+  useEffect(() => {
+  const closeMenu = () => setContextMenu(null);
+
+  window.addEventListener('click', closeMenu);
+
+  return () => {
+    window.removeEventListener('click', closeMenu);
+  };
+}, []);
   return (
     <>
       {/* Floating Open Button */}
@@ -123,27 +152,45 @@ export function ChatWindow({ spaceId }: { spaceId: string }) {
             </div>
 
             {/* Thread */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden">
               {/* SIDEBAR */}
-              <div className="w-[220px] border-r bg-gray-50 overflow-x-auto">
+              <div className="w-[220px] border-r bg-gray-50 overflow-y-auto">
                 <div className="p-2">
                   {conversations.map((conversation: any) => {
                     const active = conversation.id === conversationNodeId;
 
                     return (
-                      <button
+                      <div
                         key={conversation.id}
-                        onClick={() => setConversationNodeId(conversation.id)}
-                        className={`w-full text-left p-2 rounded mb-1 text-sm transition ${
+                        className={`group flex items-center justify-between p-2 rounded mb-1 cursor-pointer ${
                           active ? 'bg-black text-white' : 'hover:bg-gray-200'
                         }`}
+                        onClick={() => setConversationNodeId(conversation.id)}
+                        onContextMenu={(e) => handleRightClick(e, conversation.id)}
                       >
-                        <div className="font-medium truncate">{conversation.title}</div>
+                        <div className="flex-1 overflow-hidden">
+                          <div className="font-medium truncate">{conversation.title}</div>
 
-                        <div className="text-xs opacity-70">
-                          {new Date(conversation.createdAt).toLocaleString()}
+                          <div className="text-xs opacity-70">
+                            {new Date(conversation.createdAt).toLocaleString()}
+                          </div>
                         </div>
-                      </button>
+
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+
+                            const confirmed = window.confirm('Delete this conversation?');
+
+                            if (!confirmed) return;
+
+                            await deleteConversation(conversation.id);
+                          }}
+                          className="ml-2 text-red-500"
+                        >
+                          <Trash2Icon size={16} />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -155,6 +202,54 @@ export function ChatWindow({ spaceId }: { spaceId: string }) {
                   UserMessage,
                 }}
               />
+              {/*  ADD CONTEXT MENU HERE (STEP 4) */}
+              {contextMenu && (
+                <div
+                  className="fixed bg-white rounded-[12px] shadow z-[100]"
+                  style={{
+                    left: contextMenu.x,
+                    top: contextMenu.y,
+                  }}
+                >
+                  <button onClick={() => console.log('open tab')}>Open on new Tab Window</button>
+
+                  <button onClick={() => console.log('open node')}>Open as a node</button>
+
+                  <button
+                    onClick={async () => {
+                      const newName = window.prompt('Rename');
+                      if (!newName || !contextMenu.nodeId) return;
+
+                      await nodeService.updateNode(spaceId, contextMenu.nodeId, {
+                        title: newName,
+                      });
+
+                      setContextMenu(null);
+                    }}
+                  >
+                    Rename
+                  </button>
+
+                  <button onClick={() => console.log('duplicate')}>Duplicate</button>
+
+                  <button onClick={() => console.log('share')}>Share</button>
+
+                  <button
+                    onClick={async () => {
+                      if (!contextMenu.nodeId) return;
+
+                      const confirmed = window.confirm('Delete?');
+                      if (!confirmed) return;
+
+                      await deleteConversation(contextMenu.nodeId);
+
+                      setContextMenu(null);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </AssistantRuntimeProvider>
