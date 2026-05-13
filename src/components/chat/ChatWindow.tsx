@@ -109,14 +109,14 @@ export function ChatWindow({ spaceId }: { spaceId: string }) {
   };
 
   useEffect(() => {
-  const closeMenu = () => setContextMenu(null);
+    const closeMenu = () => setContextMenu(null);
 
-  window.addEventListener('click', closeMenu);
+    window.addEventListener('click', closeMenu);
 
-  return () => {
-    window.removeEventListener('click', closeMenu);
-  };
-}, []);
+    return () => {
+      window.removeEventListener('click', closeMenu);
+    };
+  }, []);
   return (
     <>
       {/* Floating Open Button */}
@@ -169,7 +169,13 @@ export function ChatWindow({ spaceId }: { spaceId: string }) {
                         onContextMenu={(e) => handleRightClick(e, conversation.id)}
                       >
                         <div className="flex-1 overflow-hidden">
-                          <div className="font-medium truncate">{conversation.title}</div>
+                          <div className="font-medium truncate">
+                            {conversation.title ||
+                              new Date(conversation.createdAt).toLocaleString(undefined, {
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                              })}
+                          </div>
 
                           <div className="text-xs opacity-70">
                             {new Date(conversation.createdAt).toLocaleString()}
@@ -202,7 +208,7 @@ export function ChatWindow({ spaceId }: { spaceId: string }) {
                   UserMessage,
                 }}
               />
-             
+
               {contextMenu && (
                 <div
                   className="fixed bg-white rounded-[12px] shadow z-[100]"

@@ -240,12 +240,15 @@ console.log('DELETE SPACE SLUG', spaceSlug);
 
   const createConversationNode = async (spaceSlug: string) => {
     const now = new Date();
-    const title = `Chat - ${now.toISOString().slice(0, 16).replace('T', ' ')}`;
+    const title = new Date().toLocaleString(undefined, {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+});
 
     const node = await nodeService.createNode(spaceSlug, {
       title,
       nodeType: NodeType.REGULAR,
-      content: title,
+      content: '',
       nodeDetails: {
         type: 'conversation',
       },
