@@ -202,7 +202,7 @@ export function ChatWindow({ spaceId }: { spaceId: string }) {
                   UserMessage,
                 }}
               />
-              {/*  ADD CONTEXT MENU HERE (STEP 4) */}
+             
               {contextMenu && (
                 <div
                   className="fixed bg-white rounded-[12px] shadow z-[100]"
