@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, Loader2, Search, SendHorizontal } from 'lucide-react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { Check, Copy, LayoutGrid, Loader2, Search, SendHorizontal } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   AssistantRuntimeProvider,
   ComposerPrimitive,
@@ -12,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
+import { nodeKeys } from '@/hooks/api';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -133,12 +136,20 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
   const [newTitle, setNewTitle] = useState('');
   const [historyExtensionOpen, setHistoryExtensionOpen] = useState(false);
   const copiedResetTimeoutRef = useRef<number | null>(null);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [isWorkspaceTransitionPending, startWorkspaceTransition] = useTransition();
 
-  const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
+  const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL?.trim() || 'https://mujarrad-agents-api.onrender.com';
   const { runtime, isDemoMode, isRunning, conversations, activeConversationId, loadConversationById, startNewConversation, deleteConversation, renameConversation } = useMujarradExternalStoreRuntime({
     agentServiceUrl,
     spaceSlug,
     onLatencyUpdate: setLastLatencyMs,
+    onWorkspaceDataChange: () => {
+      queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'attributes'] });
+      queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'graph'] });
+    },
   });
 
   const filteredConversations = conversations.filter(c => {
@@ -179,9 +190,27 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
           <h1 className={isPanel ? 'text-lg font-semibold tracking-tight' : 'text-2xl font-semibold tracking-tight'}>
             Chat
           </h1>
-          <Button variant="outline" size="sm" onClick={() => void startNewConversation()}>
-            New Conversation
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                startWorkspaceTransition(() => {
+                  queryClient.invalidateQueries({
+                    queryKey: nodeKeys.list(spaceSlug, { page: 1, size: 1000 }),
+                  });
+                  router.push(`/spaces/${spaceSlug}`);
+                });
+              }}
+              disabled={!spaceSlug || isWorkspaceTransitionPending}
+            >
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              Workspace
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void startNewConversation()}>
+              New Conversation
+            </Button>
+          </div>
         </div>
 
         <p className="mt-2 text-sm text-muted-foreground">
@@ -412,7 +441,7 @@ export function ChatWorkspace({ spaceSlug, mode = 'page' }: ChatWorkspaceProps) 
                         <MessagePrimitive.Root className="flex justify-start">
                           <div className="max-w-[88%] lg:max-w-[82%]">
                             <div className="rounded-2xl border border-border/70 bg-card px-4 py-3 text-sm text-foreground shadow-sm">
-                              <div className="whitespace-pre-wrap">
+                              <div className="min-w-0">
                                 {renderAssistantMessage(assistantMarkdown, isRunning)}
                               </div>
                             </div>

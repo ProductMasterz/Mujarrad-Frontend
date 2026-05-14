@@ -17,11 +17,14 @@ import { RenameModal } from '@/shell/components/RenameModal';
 import { useSpace, nodeKeys, useRenameNodeSimple } from '@/hooks/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
+import { attributeService } from '@/services/api/attribute.service';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNavigationStore } from '@/stores/navigationStore';
-import type { Node } from '@/types/backend-dtos';
+import type { Node, Attribute } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
 import { getEffectiveVisibility, NodeVisibility } from '@/types/node-system';
+import { GraphVisualization } from '@/components/graph/GraphVisualization';
+import { ENTITY_VISUAL_STYLES, getNodeEntityVisualStyle } from '@/lib/node-entity-visuals';
 
 // Convert Node to Scratchup Card format
 function nodeToCard(node: Node): Card {
@@ -33,10 +36,12 @@ function nodeToCard(node: Node): Card {
     cardType = CardType.NODE;
   }
 
+  const visual = getNodeEntityVisualStyle(node);
+
   return {
     id: node.id,
     title: node.title,
-    color: '#248bf2', // Default blue color
+    color: visual.color,
     type: cardType,
   };
 }
@@ -72,6 +77,13 @@ export default function SpaceDetailPage() {
     enabled: !!space,
   });
 
+  // Fetch relationships for graph visualization
+  const { data: attributes, isLoading: attributesLoading, isError: attributesError } = useQuery<Attribute[]>({
+    queryKey: ['spaces', slug, 'attributes'],
+    queryFn: () => attributeService.getSpaceAttributes(String(space!.id)),
+    enabled: !!space?.id,
+  });
+
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showNewNodeModal, setShowNewNodeModal] = useState(false);
@@ -90,6 +102,8 @@ export default function SpaceDetailPage() {
     y: number;
     cardId: string;
   } | null>(null);
+  const [workspaceView, setWorkspaceView] = useState<'cards' | 'graph'>('cards');
+  const [selectedGraphNodeId, setSelectedGraphNodeId] = useState<string | null>(null);
 
   // Navigation state
   const [navigationPath, setNavigationPath] = useState<string[]>([]);
@@ -118,9 +132,8 @@ export default function SpaceDetailPage() {
     }
   }, [space]);
 
-  // Convert nodes to card format - filter out block nodes (showInSpaceList: false)
-  const cards = useMemo(() => {
-    const filteredNodes = (nodes || []).filter((node) => {
+  const visibleNodes = useMemo(() => {
+    return (nodes || []).filter((node) => {
       // Handle nodeDetails being a string (JSON) or object
       let details: Record<string, unknown> | undefined;
       if (typeof node.nodeDetails === 'string') {
@@ -134,30 +147,69 @@ export default function SpaceDetailPage() {
       }
 
       const visibility = getEffectiveVisibility(details as Record<string, unknown> | undefined);
+
       const nodeTitle = (node.title || '').toLowerCase().trim();
       const isLegacyChatMessageTitle = /^input:\s*msg-\d+$/.test(nodeTitle) || /^output:\s*msg-\d+$/.test(nodeTitle);
-      const isChatRuntimeNode = details?.source === 'chat-runtime' || !!details?.chatNodeType;
+      const isChatRuntimeNode = details?.source === 'chat-runtime' || details?.chatNodeType === 'conversation' || details?.chatNodeType === 'message';
 
       // Only show nodes that should appear in the space list
-      // Use visibility system first (with legacy fallbacks from getEffectiveVisibility)
+      // Use visibility system first, then hide only chat runtime scaffolding.
       if (visibility !== NodeVisibility.VISIBLE) {
         return false;
       }
 
-      // Explicitly hide chat-schema/helper nodes from main space cards
       if (isChatRuntimeNode || isLegacyChatMessageTitle) {
-        return false;
-      }
-
-      // Extra safety for block-like nodes
-      if (details?.blockType) {
         return false;
       }
 
       return true;
     });
-    return filteredNodes.map(nodeToCard);
   }, [nodes]);
+
+  // Convert nodes to card format
+  const cards = useMemo(() => {
+    return visibleNodes.map(nodeToCard);
+  }, [visibleNodes]);
+
+  const selectedGraphNode = useMemo(() => {
+    if (!selectedGraphNodeId) return null;
+    return visibleNodes.find((node) => node.id === selectedGraphNodeId) || null;
+  }, [visibleNodes, selectedGraphNodeId]);
+
+  const graphRelationships = useMemo(() => {
+    if (!selectedGraphNodeId || !attributes) return [];
+
+    const nodeTitleById = new Map(visibleNodes.map((node) => [node.id, node.title]));
+
+    return attributes
+      .filter(
+        (attr) =>
+          attr.sourceNodeId === selectedGraphNodeId || attr.targetNodeId === selectedGraphNodeId
+      )
+      .map((attr) => {
+        const isOutgoing = attr.sourceNodeId === selectedGraphNodeId;
+        const connectedNodeId = isOutgoing ? attr.targetNodeId : attr.sourceNodeId;
+
+        return {
+          id: attr.id,
+          direction: isOutgoing ? 'Outgoing' : 'Incoming',
+          relationshipType: attr.attributeName || attr.attributeType || 'related',
+          connectedNodeId,
+          connectedNodeTitle: nodeTitleById.get(connectedNodeId) || 'Unknown node',
+        };
+      });
+  }, [attributes, selectedGraphNodeId, visibleNodes]);
+
+  const legendItems = useMemo(
+    () => [
+      ENTITY_VISUAL_STYLES.person,
+      ENTITY_VISUAL_STYLES.place,
+      ENTITY_VISUAL_STYLES.event,
+      ENTITY_VISUAL_STYLES.topic,
+      ENTITY_VISUAL_STYLES.action,
+    ],
+    []
+  );
 
   // Build breadcrumb
   const breadcrumbPath = useMemo(() => {
@@ -438,6 +490,56 @@ export default function SpaceDetailPage() {
             marginLeft: sidebarOpen ? '276px' : '0',
           }}
         >
+          <div className="mb-4 flex items-center gap-2">
+            <button
+              onClick={() => {
+                setWorkspaceView('cards');
+                setSelectedGraphNodeId(null);
+              }}
+              className={`h-[34px] px-[14px] rounded-[100px] text-[13px] font-['Roboto:Medium',sans-serif] transition-colors ${
+                workspaceView === 'cards'
+                  ? 'bg-[#248bf2] text-white'
+                  : 'bg-[#f3f3f5] text-[#4f4f4f] hover:bg-[#e9ebef]'
+              }`}
+              style={{ fontVariationSettings: "'wdth' 100" }}
+            >
+              Cards
+            </button>
+            <button
+              onClick={() => setWorkspaceView('graph')}
+              className={`h-[34px] px-[14px] rounded-[100px] text-[13px] font-['Roboto:Medium',sans-serif] transition-colors ${
+                workspaceView === 'graph'
+                  ? 'bg-[#248bf2] text-white'
+                  : 'bg-[#f3f3f5] text-[#4f4f4f] hover:bg-[#e9ebef]'
+              }`}
+              style={{ fontVariationSettings: "'wdth' 100" }}
+            >
+              Graph
+            </button>
+          </div>
+
+          <div className="mb-4 rounded-[12px] border border-[#e0e0e0] bg-white px-3 py-2">
+            <div
+              className="text-[12px] font-['Roboto:Medium',sans-serif] text-[#4f4f4f] mb-2"
+              style={{ fontVariationSettings: "'wdth' 100" }}
+            >
+              Entity Type Legend
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {legendItems.map((item) => (
+                <div key={item.label} className="flex items-center gap-2">
+                  <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span
+                    className="text-[12px] font-['Roboto:Regular',sans-serif] text-[#4f4f4f]"
+                    style={{ fontVariationSettings: "'wdth' 100" }}
+                  >
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {isLoading ? (
             <div className="flex items-center justify-center h-[400px]">
               <div className="animate-spin h-8 w-8 border-4 border-[#248bf2] border-t-transparent rounded-full" />
@@ -456,6 +558,113 @@ export default function SpaceDetailPage() {
               >
                 Click the + button to create your first node
               </p>
+            </div>
+          ) : workspaceView === 'graph' ? (
+            <div className="h-[calc(100vh-180px)] w-full rounded-[12px] border border-[#e0e0e0] bg-white p-2 flex gap-2">
+              {attributesLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin h-8 w-8 border-4 border-[#248bf2] border-t-transparent rounded-full" />
+                </div>
+              ) : attributesError ? (
+                <div className="flex items-center justify-center h-full text-center px-4">
+                  <p
+                    className="text-[14px] font-['Roboto:Regular',sans-serif] font-normal text-[#828282] tracking-[-0.24px]"
+                    style={{ fontVariationSettings: "'wdth' 100" }}
+                  >
+                    Could not load relationships right now. Please try again in a moment.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className={`${selectedGraphNode ? 'flex-1' : 'w-full'} min-w-0`}>
+                    <GraphVisualization
+                      nodes={visibleNodes}
+                      attributes={attributes || []}
+                      onNodeClick={(nodeId) => setSelectedGraphNodeId(nodeId)}
+                    />
+                  </div>
+
+                  {selectedGraphNode && (
+                    <aside className="w-[360px] border border-[#e0e0e0] rounded-[12px] p-4 bg-[#fafafa] overflow-auto">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3
+                          className="text-[16px] font-['Roboto:Bold',sans-serif] font-bold text-[#333]"
+                          style={{ fontVariationSettings: "'wdth' 100" }}
+                        >
+                          Node Details
+                        </h3>
+                        <button
+                          onClick={() => setSelectedGraphNodeId(null)}
+                          className="h-[28px] px-3 rounded-[100px] bg-[#f3f3f5] text-[#4f4f4f] hover:bg-[#e9ebef] text-[12px]"
+                        >
+                          Close
+                        </button>
+                      </div>
+
+                      <div className="space-y-3 text-[13px] text-[#4f4f4f]">
+                        <div>
+                          <span className="font-semibold text-[#333]">Entity Type:</span>{' '}
+                          <span
+                            className="inline-flex items-center rounded-full px-2 py-[2px] text-[11px] font-medium"
+                            style={{
+                              backgroundColor: `${getNodeEntityVisualStyle(selectedGraphNode).color}22`,
+                              color: getNodeEntityVisualStyle(selectedGraphNode).color,
+                            }}
+                          >
+                            {getNodeEntityVisualStyle(selectedGraphNode).label}
+                          </span>
+                        </div>
+                        <div><span className="font-semibold text-[#333]">Title:</span> {selectedGraphNode.title}</div>
+                        <div><span className="font-semibold text-[#333]">Type:</span> {selectedGraphNode.nodeType}</div>
+                        <div><span className="font-semibold text-[#333]">ID:</span> {selectedGraphNode.id}</div>
+                        <div><span className="font-semibold text-[#333]">Space ID:</span> {selectedGraphNode.spaceId}</div>
+                        <div><span className="font-semibold text-[#333]">Slug:</span> {selectedGraphNode.slug}</div>
+                        <div><span className="font-semibold text-[#333]">Current Version ID:</span> {selectedGraphNode.currentVersionId}</div>
+                        <div><span className="font-semibold text-[#333]">Created By:</span> {selectedGraphNode.createdBy}</div>
+                        <div><span className="font-semibold text-[#333]">Modified By:</span> {selectedGraphNode.modifiedBy}</div>
+                        <div><span className="font-semibold text-[#333]">Created At:</span> {selectedGraphNode.createdAt}</div>
+                        <div><span className="font-semibold text-[#333]">Updated At:</span> {selectedGraphNode.updatedAt}</div>
+                        <div>
+                          <div className="font-semibold text-[#333] mb-1">Content:</div>
+                          <div className="p-2 rounded border border-[#e0e0e0] bg-white whitespace-pre-wrap break-words">
+                            {selectedGraphNode.content || 'No content'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-[#333] mb-1">Node Details:</div>
+                          <pre className="p-2 rounded border border-[#e0e0e0] bg-white whitespace-pre-wrap break-all text-[12px]">
+{JSON.stringify(selectedGraphNode.nodeDetails || {}, null, 2)}
+                          </pre>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-[#333] mb-2">Relationships:</div>
+                          {graphRelationships.length === 0 ? (
+                            <p className="text-[#828282]">No connected relationships</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {graphRelationships.map((rel) => (
+                                <div key={rel.id} className="p-2 rounded border border-[#e0e0e0] bg-white">
+                                  <div><span className="font-semibold text-[#333]">Type:</span> {rel.relationshipType}</div>
+                                  <div><span className="font-semibold text-[#333]">Direction:</span> {rel.direction}</div>
+                                  <div>
+                                    <span className="font-semibold text-[#333]">Connected Node:</span>{' '}
+                                    <button
+                                      onClick={() => setSelectedGraphNodeId(rel.connectedNodeId)}
+                                      className="text-[#248bf2] hover:underline"
+                                    >
+                                      {rel.connectedNodeTitle}
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </aside>
+                  )}
+                </>
+              )}
             </div>
           ) : (
             <div className="flex gap-[19px] flex-wrap pt-[15px]">

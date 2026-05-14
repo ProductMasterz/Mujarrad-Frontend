@@ -4,6 +4,7 @@
  */
 
 import type { Node, Attribute } from '@/types/backend-dtos';
+import { getEffectiveVisibility, NodeVisibility } from '@/types/node-system';
 import {
   GraphNode,
   GraphEdge,
@@ -11,6 +12,7 @@ import {
   BuildGraphDataParams,
   GraphViewMode,
 } from '@/types/graph';
+import { getNodeEntityVisualStyle } from '@/lib/node-entity-visuals';
 
 /**
  * Detect bidirectional edges (A→B and B→A both exist)
@@ -68,6 +70,15 @@ export function buildGraphData(
 
   // Filter nodes based on view mode
   const filteredNodes = nodes.filter(node => {
+    const details = node.nodeDetails as Record<string, unknown> | undefined;
+    const visibility = getEffectiveVisibility(details);
+    if (visibility !== NodeVisibility.VISIBLE) return false;
+
+    const nodeTitle = (node.title || '').toLowerCase().trim();
+    const isLegacyChatMessageTitle = /^input:\s*msg-\d+$/.test(nodeTitle) || /^output:\s*msg-\d+$/.test(nodeTitle);
+    const isChatRuntimeNode = details?.source === 'chat-runtime' || details?.chatNodeType === 'conversation' || details?.chatNodeType === 'message';
+    if (isChatRuntimeNode || isLegacyChatMessageTitle) return false;
+
     const nodeTypeStr = node.nodeType.toString().toUpperCase();
     if (nodeTypeStr === 'CONTEXT' && !viewMode.showContext) return false;
     if (nodeTypeStr === 'REGULAR' && !viewMode.showRegular) return false;
@@ -95,16 +106,28 @@ export function buildGraphData(
   const bidirectionalSet = detectBidirectionalEdges(filteredAttributes);
 
   // Transform nodes to GraphNodes
-  const graphNodes: GraphNode[] = filteredNodes.map((node, index) => ({
-    id: node.id.toString(),
-    type: node.nodeType.toLowerCase() === 'context' ? 'context' : 'regular',
-    data: {
-      node,
-      label: node.title,
-      isSelected: node.id.toString() === selectedNodeId,
-    },
-    position: calculateNodePosition(index, filteredNodes.length),
-  }));
+  const graphNodes: GraphNode[] = filteredNodes.map((node, index) => {
+    const visual = getNodeEntityVisualStyle(node);
+
+    return {
+      id: node.id.toString(),
+      type: node.nodeType.toLowerCase() === 'context' ? 'context' : 'regular',
+      data: {
+        node,
+        label: node.title,
+        isSelected: node.id.toString() === selectedNodeId,
+      },
+      position: calculateNodePosition(index, filteredNodes.length),
+      style: {
+        borderColor: visual.color,
+        borderWidth: 2,
+        borderStyle: 'solid',
+        background: '#ffffff',
+        color: '#1f2937',
+        boxShadow: `0 0 0 2px ${visual.color}22`,
+      },
+    };
+  });
 
   // Transform attributes to GraphEdges
   const graphEdges: GraphEdge[] = filteredAttributes.map(attr => {

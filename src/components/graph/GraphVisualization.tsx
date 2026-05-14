@@ -19,6 +19,7 @@ import 'reactflow/dist/style.css';
 
 import type { Node, Attribute } from '@/types/backend-dtos';
 import { buildGraphData } from '@/lib/graph-utils';
+import { getNodeEntityVisualStyle } from '@/lib/node-entity-visuals';
 import { useGraphStore } from '@/stores/graphStore';
 import { GraphControls } from './GraphControls';
 
@@ -132,7 +133,12 @@ export function GraphVisualization({
         >
           <Background />
           <Controls />
-          <MiniMap />
+          <MiniMap
+            nodeColor={(node) => {
+              const graphNode = nodes.find((n) => n.id.toString() === node.id);
+              return graphNode ? getNodeEntityVisualStyle(graphNode).color : '#6b7280';
+            }}
+          />
         </ReactFlow>
       </div>
     </div>

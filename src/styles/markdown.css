@@ -18,6 +18,9 @@
 /* Chat assistant message markdown: high contrast, neutral palette for eye comfort */
 .chat-message-markdown {
   @apply prose prose-sm max-w-none;
+  @apply min-w-0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   --tw-prose-body: hsl(var(--foreground));
   --tw-prose-headings: hsl(var(--foreground));
   --tw-prose-bold: hsl(var(--foreground));
@@ -33,11 +36,25 @@
 }
 
 .chat-message-markdown pre {
-  @apply rounded-lg border border-border/80 bg-muted;
+  @apply max-w-full overflow-x-auto rounded-lg border border-border/80 bg-muted p-3;
 }
 
 .chat-message-markdown :not(pre) > code {
   @apply rounded bg-muted px-1.5 py-0.5;
+}
+
+.chat-message-markdown pre code {
+  @apply block whitespace-pre;
+}
+
+.chat-message-markdown table {
+  @apply block max-w-full overflow-x-auto;
+}
+
+.chat-message-markdown img,
+.chat-message-markdown video,
+.chat-message-markdown iframe {
+  @apply h-auto max-w-full;
 }
 
 /* Documentation page styling - light theme with high contrast */

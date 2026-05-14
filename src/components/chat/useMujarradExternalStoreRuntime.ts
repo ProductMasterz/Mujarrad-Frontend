@@ -24,6 +24,18 @@ type RuntimeOptions = {
   agentServiceUrl?: string;
   spaceSlug: string;
   onLatencyUpdate?: (ms: number) => void;
+  onWorkspaceDataChange?: () => void;
+};
+
+type AgentRequestContext = {
+  messageId: string;
+  conversationNodeId?: string;
+  conversationTitle?: string;
+};
+
+type AgentEntityCandidate = {
+  id?: string;
+  title?: string;
 };
 
 function parseNodeDetails(node: Node): Record<string, unknown> {
@@ -112,8 +124,8 @@ function extractTextFromAppendMessage(message: AppendMessage): string {
 function buildConversationNodeTitle(): string {
   const date = new Date();
   const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-  return `Conversation (${dateStr} ${timeStr})`;
+  const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return `Conversation (${dateStr} ${timeStr} ${date.getMilliseconds()})`;
 }
 
 async function createConversationNode(
@@ -138,8 +150,12 @@ async function createMessageNode(
   conversationNodeId: string,
   role: 'user' | 'assistant',
   content: string,
+  messageId?: string,
 ): Promise<string> {
-  const title = role === 'user' ? 'user-message' : 'agent-message';
+  const uniqueSuffix = messageId || (typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const title = role === 'user' ? `user-message-${uniqueSuffix}` : `agent-message-${uniqueSuffix}`;
 
   // Create message node
   const messageNode = await nodeService.createNode(spaceSlug, {
@@ -168,10 +184,125 @@ async function createMessageNode(
   return messageNode.id;
 }
 
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1)}...`;
+}
+
+async function createInputTraceNode(
+  spaceSlug: string,
+  conversationNodeId: string,
+  inputText: string,
+  messageId: string,
+): Promise<string> {
+  const inputNode = await nodeService.createNode(spaceSlug, {
+    title: `Input Trace: ${truncateText(inputText.replace(/\s+/g, ' ').trim(), 72)}`,
+    nodeType: NodeType.REGULAR,
+    content: inputText,
+    nodeDetails: {
+      source: 'chat-origin',
+      chatTraceType: 'input',
+      messageId,
+      conversationNodeId,
+      persistedAt: new Date().toISOString(),
+    },
+  });
+
+  await attributeService.createAttribute(conversationNodeId, {
+    sourceNodeId: conversationNodeId,
+    targetNodeId: inputNode.id,
+    attributeType: AttributeKey.CONTAINS,
+    attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+    attributeName: AttributeKey.CONTAINS,
+    attributeValue: { role: 'input-trace', date: new Date().toISOString() },
+  });
+
+  return inputNode.id;
+}
+
+function extractAgentEntityCandidates(nodes: unknown[] | undefined): AgentEntityCandidate[] {
+  if (!Array.isArray(nodes)) return [];
+
+  const candidates: AgentEntityCandidate[] = [];
+
+  for (const item of nodes) {
+    if (!item || typeof item !== 'object') continue;
+    const record = item as Record<string, unknown>;
+
+    const id =
+      (typeof record.id === 'string' && record.id) ||
+      (typeof record.nodeId === 'string' && record.nodeId) ||
+      (typeof record.node_id === 'string' && record.node_id) ||
+      undefined;
+
+    const title =
+      (typeof record.title === 'string' && record.title) ||
+      (typeof record.name === 'string' && record.name) ||
+      (typeof record.label === 'string' && record.label) ||
+      undefined;
+
+    if (!id && !title) continue;
+    candidates.push({ id, title });
+  }
+
+  return candidates;
+}
+
+async function linkInputToAgentEntities(
+  spaceSlug: string,
+  inputNodeId: string,
+  candidates: AgentEntityCandidate[],
+): Promise<void> {
+  if (!candidates.length) return;
+
+  const spaceNodes = await nodeService.getNodes(spaceSlug, { page: 1, size: 1000 }).catch(() => []);
+  const byId = new Map(spaceNodes.map((node) => [node.id, node]));
+  const byTitle = new Map(spaceNodes.map((node) => [node.title.toLowerCase().trim(), node]));
+
+  const targetIds = new Set<string>();
+  for (const candidate of candidates) {
+    if (candidate.id && byId.has(candidate.id)) {
+      targetIds.add(candidate.id);
+      continue;
+    }
+
+    if (candidate.title) {
+      const matched = byTitle.get(candidate.title.toLowerCase().trim());
+      if (matched) {
+        targetIds.add(matched.id);
+      }
+    }
+  }
+
+  if (!targetIds.size) return;
+
+  for (const targetNodeId of targetIds) {
+    if (targetNodeId === inputNodeId) continue;
+
+    try {
+      await attributeService.createAttribute(inputNodeId, {
+        sourceNodeId: inputNodeId,
+        targetNodeId,
+        attributeType: AttributeKey.REFERENCES,
+        attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+        attributeName: AttributeKey.REFERENCES,
+        attributeValue: {
+          source: 'chat-origin-trace',
+          createdAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      // Skip per-edge failures to avoid breaking chat flow.
+      console.warn('[Chat Runtime] Failed to create input trace reference:', error);
+    }
+  }
+}
+
 async function getAgentResponse(
   agentServiceUrl: string | undefined,
   text: string,
   spaceSlug: string,
+  requestContext: AgentRequestContext,
   signal?: AbortSignal,
 ): Promise<AgentProcessResponse> {
   if (!agentServiceUrl) {
@@ -229,6 +360,9 @@ async function getAgentResponse(
     body: JSON.stringify({
       text,
       space_slug: spaceSlug,
+      message_id: requestContext.messageId,
+      conversation_node_id: requestContext.conversationNodeId ?? null,
+      conversation_title: requestContext.conversationTitle ?? null,
     }),
   });
 
@@ -245,6 +379,7 @@ export function useMujarradExternalStoreRuntime({
   agentServiceUrl,
   spaceSlug,
   onLatencyUpdate,
+  onWorkspaceDataChange,
 }: RuntimeOptions) {
   const [messages, setMessages] = useState<ThreadMessage[]>([
     createAssistantMessage('Welcome to Mujarrad chat. This is the initial chat shell for Squad A.'),
@@ -489,6 +624,16 @@ export function useMujarradExternalStoreRuntime({
     const userText = extractTextFromAppendMessage(message);
     if (!userText || isRunningRef.current) return;
 
+    const requestMessageId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const activeConversation = conversations.find((conversation) => conversation.id === activeConversationId) || null;
+    const requestContext: AgentRequestContext = {
+      messageId: requestMessageId,
+      conversationNodeId: conversationNodeIdRef.current ?? undefined,
+      conversationTitle: activeConversation?.title || undefined,
+    };
+
     isRunningRef.current = true;
     setMessages((prev) => [...prev, createUserMessage(userText)]);
     setIsRunning(true);
@@ -502,11 +647,15 @@ export function useMujarradExternalStoreRuntime({
         agentServiceUrl,
         userText,
         spaceSlug,
+        requestContext,
         controller.signal,
       );
 
       const assistantText = data.report || 'Your message was processed successfully.';
       setMessages((prev) => [...prev, createAssistantMessage(assistantText)]);
+
+      // Agent processing may create/update graph entities. Signal workspace queries to refetch.
+      onWorkspaceDataChange?.();
 
       try {
         if (!conversationNodeIdRef.current) {
@@ -516,8 +665,21 @@ export function useMujarradExternalStoreRuntime({
           await fetchConversations(true);
         }
 
-        await createMessageNode(spaceSlug, conversationNodeIdRef.current, 'user', userText);
-        await createMessageNode(spaceSlug, conversationNodeIdRef.current, 'assistant', assistantText);
+        const inputNodeId = await createInputTraceNode(
+          spaceSlug,
+          conversationNodeIdRef.current,
+          userText,
+          `${requestMessageId}-input`
+        );
+
+        await linkInputToAgentEntities(
+          spaceSlug,
+          inputNodeId,
+          extractAgentEntityCandidates(data.nodes)
+        );
+
+        await createMessageNode(spaceSlug, conversationNodeIdRef.current, 'user', userText, `${requestMessageId}-user`);
+        await createMessageNode(spaceSlug, conversationNodeIdRef.current, 'assistant', assistantText, `${requestMessageId}-assistant`);
 
         // Refresh synchronously so history is available immediately after reopening.
         await fetchConversations(true);
@@ -544,7 +706,15 @@ export function useMujarradExternalStoreRuntime({
       isRunningRef.current = false;
       abortControllerRef.current = null;
     }
-  }, [agentServiceUrl, onLatencyUpdate, spaceSlug, fetchConversations]);
+  }, [
+    agentServiceUrl,
+    onLatencyUpdate,
+    onWorkspaceDataChange,
+    spaceSlug,
+    fetchConversations,
+    conversations,
+    activeConversationId,
+  ]);
 
   const onCancel = useCallback(async () => {
     if (abortControllerRef.current) {
