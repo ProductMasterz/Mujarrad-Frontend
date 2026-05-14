@@ -47,9 +47,12 @@ function createAssistantMessage(text: string): AppendMessage {
     runConfig: undefined,
   };
 }
-
-async function linkMessageToConversation(conversationId: string, messageNodeId: string) {
-  await fetch(`/api/nodes/${conversationId}/attributes`, {
+async function linkMessageToConversation(
+  spaceSlug: string,
+  conversationId: string,
+  messageNodeId: string
+) {
+  await fetch(`/api/spaces/${spaceSlug}/nodes/${conversationId}/attributes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -99,7 +102,7 @@ export function useChatRuntime(spaceId: string) {
   };
 
   const loadConversationHistory = async (conversationId: string) => {
-    const spaceSlug = spaceId;
+    const spaceSlug = 'default-space';
 
     const allNodes = await nodeService.getNodes(spaceSlug);
 
@@ -116,7 +119,7 @@ export function useChatRuntime(spaceId: string) {
   };
 
   const startNewConversation = async () => {
-    const spaceSlug = spaceId;
+    const spaceSlug = 'default-space';
 
     // clear current messages
     setMessages([]);
@@ -126,7 +129,7 @@ export function useChatRuntime(spaceId: string) {
     setConversationNodeId(null);
 
     // clear persisted conversation
-    localStorage.removeItem('conversationId');
+    localStorage.removeItem(`conversationId:${spaceId}`);
 
     // create fresh conversation
     const newConversationId = await createConversationNode(spaceSlug);
@@ -299,7 +302,7 @@ console.log('DELETE SPACE SLUG', spaceSlug);
           },
         });
 
-        await linkMessageToConversation(convoId, userNode.id);
+        await linkMessageToConversation(spaceId, convoId, userNode.id);
 
         // 3. send
         const response = await sendChatMessage(mapToBackendMessages(messagesRef.current));
@@ -324,7 +327,7 @@ console.log('DELETE SPACE SLUG', spaceSlug);
           },
         });
 
-        await linkMessageToConversation(convoId, agentNode.id);
+        await linkMessageToConversation(spaceId, convoId, agentNode.id);
       } catch (err) {
         console.error('handleNewMessage error:', err);
       } finally {
