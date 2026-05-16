@@ -1064,7 +1064,7 @@ export function ChatPanel({
   const createConversationSession = async (): Promise<string> => {
     if (!spaceSlug) throw new Error('spaceSlug is required');
     const createdConversation = await nodeService.createNode(spaceSlug, {
-      title: `Conversation ${new Date().toLocaleString()}`,
+      title: `Conversation ${new Date().toLocaleString()} - ${Date.now()}`,
       nodeType: NodeType.REGULAR,
       content: '',
       nodeDetails: {
@@ -1120,8 +1120,9 @@ export function ChatPanel({
   const persistMessageNode = async (
     conversationNodeId: string,
     role: 'user' | 'assistant',
-    text: string
-  ) => {
+    text: string,
+    extraDetails: Record<string, unknown> = {}
+  ): Promise<BackendNode> => {
     if (!spaceSlug) throw new Error('spaceSlug is required');
 
     const createdMessage = await nodeService.createNode(spaceSlug, {
@@ -1135,6 +1136,7 @@ export function ChatPanel({
         role,
         conversationNodeId,
         messageType: role,
+        ...extraDetails,
       },
     });
 
@@ -1147,10 +1149,28 @@ export function ChatPanel({
       attributeValue: {
         order: messageOrderRef.current++,
         relation: 'conversation',
+        source: 'frontend',
       },
     });
 
-    return createdMessage.id;
+    return createdMessage;
+  };
+
+  const linkUserMessageToAssistantMessage = async (
+    userMessageNodeId: string,
+    assistantMessageNodeId: string
+  ) => {
+    await attributeService.createAttribute(userMessageNodeId, {
+      sourceNodeId: userMessageNodeId,
+      targetNodeId: assistantMessageNodeId,
+      attributeType: 'CUSTOM',
+      attributeTypeMode: AttributeTypeMode.SCHEMALESS,
+      attributeName: 'answered_by',
+      attributeValue: {
+        relation: 'chat_reply',
+        source: 'frontend',
+      },
+    });
   };
 
   const loadSessionMessages = async (conversationId: string): Promise<ChatMessage[]> => {
@@ -1228,7 +1248,6 @@ export function ChatPanel({
           await rebuildSessionSearchIndex(mappedSessions);
 
           if (conversationNodes.length === 0) {
-            const createdId = await createConversationSession();
             setMessages([
               {
                 id: 'welcome',
@@ -1237,8 +1256,10 @@ export function ChatPanel({
                 createdAt: new Date().toISOString(),
               },
             ]);
-            setActiveSessionId(createdId);
-            conversationNodeIdRef.current = createdId;
+
+            setActiveSessionId(null);
+            conversationNodeIdRef.current = null;
+            messageOrderRef.current = 1;
             return;
           }
 
@@ -1535,10 +1556,25 @@ export function ChatPanel({
             throw new Error('Could not create or resolve conversation node.');
           }
 
-          const inputMessageNodeId = await persistMessageNode(
+          const inputMessageNode = await persistMessageNode(
             conversationNodeId,
             'user',
             userText
+          );
+
+          const assistantPlaceholderNode = await persistMessageNode(
+            conversationNodeId,
+            'assistant',
+            '',
+            {
+              status: 'pending',
+              responseToMessageNodeId: inputMessageNode.id,
+            }
+          );
+
+          await linkUserMessageToAssistantMessage(
+            inputMessageNode.id,
+            assistantPlaceholderNode.id
           );
 
         const conversationNode = sessions.find((session) => session.id === conversationNodeId);
@@ -1564,9 +1600,10 @@ export function ChatPanel({
               body: JSON.stringify({
                 text: userText,
                 space_slug: spaceSlug,
-                message_id: inputMessageNodeId,
+                message_id: inputMessageNode.id,
                 conversation_node_id: conversationNodeId,
                 conversation_title: conversationTitle,
+                assistant_node_id: assistantPlaceholderNode.id,
               }),
             });
             let data: AgentProcessResponse | null = null;
@@ -1577,7 +1614,7 @@ export function ChatPanel({
               data = null;
             }
 
-            const { nodes, relationships, report, message, code, inputNodeId, assistantNodeId } = getAgentSummary(data);
+            const { nodes, relationships, report, message, code } = getAgentSummary(data);
 
             console.log('Agent /process response:', {
               ok: response.ok,
@@ -1621,19 +1658,33 @@ export function ChatPanel({
         }
 
         const assistantMessage: ChatMessage = {
-          id: crypto.randomUUID(),
+          id: assistantPlaceholderNode.id,
           role: 'assistant',
           text: assistantText,
-          createdAt: new Date().toISOString(),
+          createdAt: assistantPlaceholderNode.createdAt || new Date().toISOString(),
         };
 
         setMessages((current) => [...current, assistantMessage]);
 
-        const assistantMessageNodeId = await persistMessageNode(
-          conversationNodeId,
-          'assistant',
-          assistantText
-        );
+        try {
+          await nodeService.updateNode(spaceSlug as string, assistantPlaceholderNode.id, {
+            title: `Assistant Message ${Date.now()}`,
+            content: assistantText,
+            nodeDetails: {
+              ...assistantPlaceholderNode.nodeDetails,
+              showInSpaceList: false,
+              createdFrom: 'chat',
+              chatNodeType: 'message',
+              role: 'assistant',
+              conversationNodeId,
+              messageType: 'assistant',
+              status: 'completed',
+              responseToMessageNodeId: inputMessageNode.id,
+            },
+          });
+        } catch (error) {
+          console.error('Failed to update assistant placeholder node:', error);
+        }
         
  
         const [updatedSearchText, updatedPreview] = await Promise.all([
