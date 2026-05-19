@@ -1,0 +1,291 @@
+'use client';
+
+/**
+ * ExcalidrawWrapper - Direct Excalidraw import with custom double-click behavior
+ * This wrapper is dynamically imported to avoid SSR issues
+ */
+
+import { useRef, useCallback, useEffect } from 'react';
+import { useTheme } from 'next-themes';
+import { Excalidraw, MainMenu, Sidebar } from '@excalidraw/excalidraw';
+import '@excalidraw/excalidraw/index.css';
+
+import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
+import type { ExcalidrawElement, WhiteboardAppState, BinaryFileData } from '@/types/whiteboard';
+
+interface ExcalidrawWrapperProps {
+  initialElements?: ExcalidrawElement[];
+  initialAppState?: Partial<WhiteboardAppState>;
+  initialFiles?: Record<string, BinaryFileData>;
+  onChange?: (elements: readonly ExcalidrawElement[], appState: any, files: Record<string, BinaryFileData>) => void;
+  onMount?: (api: ExcalidrawImperativeAPI) => void;
+  onContextMenu?: (elementId: string, x: number, y: number) => void;
+  readOnly?: boolean;
+}
+
+// Generate unique ID for elements
+function generateId(): string {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+// Create a rectangle with bound text
+function createBoundRectangleWithText(x: number, y: number, isDark: boolean): ExcalidrawElement[] {
+  const rectId = generateId();
+  const textId = generateId();
+  const now = Date.now();
+
+  const rectangle: ExcalidrawElement = {
+    id: rectId,
+    type: 'rectangle',
+    x: x - 75,
+    y: y - 30,
+    width: 150,
+    height: 60,
+    angle: 0,
+    strokeColor: isDark ? '#e5e7eb' : '#1e1e1e',
+    backgroundColor: isDark ? '#111827' : '#f8f9fa',
+    fillStyle: 'solid',
+    strokeWidth: 2,
+    strokeStyle: 'solid',
+    roughness: 0,
+    opacity: 100,
+    groupIds: [],
+    frameId: null,
+    version: 1,
+    versionNonce: now,
+    isDeleted: false,
+    boundElements: [{ id: textId, type: 'text' }],
+  };
+
+  const text: ExcalidrawElement = {
+    id: textId,
+    type: 'text',
+    x: x - 75,
+    y: y - 10,
+    width: 150,
+    height: 20,
+    angle: 0,
+    strokeColor: isDark ? '#e5e7eb' : '#1e1e1e',
+    backgroundColor: 'transparent',
+    fillStyle: 'solid',
+    strokeWidth: 1,
+    strokeStyle: 'solid',
+    roughness: 1,
+    opacity: 100,
+    groupIds: [],
+    frameId: null,
+    version: 1,
+    versionNonce: now + 1,
+    isDeleted: false,
+    boundElements: null,
+    containerId: rectId,
+    text: '',
+    fontSize: 16,
+    fontFamily: 2,
+    textAlign: 'center',
+    verticalAlign: 'middle',
+  };
+
+  return [rectangle, text];
+}
+
+export default function ExcalidrawWrapper({
+  initialElements = [],
+  initialAppState = {},
+  initialFiles = {},
+  onChange,
+  onMount,
+  onContextMenu,
+  readOnly = false,
+}: ExcalidrawWrapperProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleAPIMount = useCallback((api: ExcalidrawImperativeAPI) => {
+    excalidrawAPIRef.current = api;
+    onMount?.(api);
+  }, [onMount]);
+
+  // Custom double-click handler
+  useEffect(() => {
+    if (readOnly || !containerRef.current) return;
+
+    const container = containerRef.current;
+
+    const handleDoubleClick = (e: MouseEvent) => {
+      const api = excalidrawAPIRef.current;
+      if (!api) return;
+
+      const appState = api.getAppState();
+      const elements = api.getSceneElements();
+
+      // Convert screen coordinates to canvas coordinates
+      const { scrollX, scrollY, zoom } = appState;
+      const rect = container.getBoundingClientRect();
+      const canvasX = (e.clientX - rect.left - scrollX) / zoom.value;
+      const canvasY = (e.clientY - rect.top - scrollY) / zoom.value;
+
+      // Check if there's a selected element
+      const selectedIds = Object.keys(appState.selectedElementIds || {});
+      if (selectedIds.length > 0) {
+        return;
+      }
+
+      // Check if clicking on an existing element
+      const padding = 10;
+      const clickedElement = elements.find((el: any) => {
+        if (el.isDeleted) return false;
+        if (el.type === 'text' && el.containerId) return false;
+
+        return (
+          canvasX >= el.x - padding &&
+          canvasX <= el.x + el.width + padding &&
+          canvasY >= el.y - padding &&
+          canvasY <= el.y + el.height + padding
+        );
+      });
+
+      if (!clickedElement) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const newElements = createBoundRectangleWithText(canvasX, canvasY, isDark);
+        const allElements = [...elements, ...newElements];
+
+        api.updateScene({
+          elements: allElements as any,
+          appState: {
+            ...appState,
+            selectedElementIds: { [newElements[0].id]: true },
+          },
+        });
+
+        setTimeout(() => {
+          api.updateScene({
+            appState: {
+              ...api.getAppState(),
+              editingTextElement: newElements[1] as any,
+            },
+          });
+        }, 50);
+      }
+    };
+
+    // Use bubble phase instead of capture to avoid blocking Excalidraw's event handlers
+    container.addEventListener('dblclick', handleDoubleClick);
+
+    return () => {
+      container.removeEventListener('dblclick', handleDoubleClick);
+    };
+  }, [readOnly, isDark]);
+
+  // Custom right-click handler for context menu
+  useEffect(() => {
+    if (readOnly || !containerRef.current || !onContextMenu) return;
+
+    const container = containerRef.current;
+
+    const handleContextMenu = (e: MouseEvent) => {
+      const api = excalidrawAPIRef.current;
+      if (!api) return;
+
+      const appState = api.getAppState();
+
+      // Check if there's exactly one selected element
+      const selectedIds = Object.keys(appState.selectedElementIds || {});
+      if (selectedIds.length !== 1) {
+        return; // Only show context menu for single selection
+      }
+
+      const selectedId = selectedIds[0];
+      const elements = api.getSceneElements();
+      const selectedElement = elements.find((el: any) => el.id === selectedId);
+
+      // Only show for shape elements (not text, lines, or connectors)
+      if (!selectedElement) return;
+      if (selectedElement.isDeleted) return;
+      if (selectedElement.type === 'text' && selectedElement.containerId) return;
+      if (selectedElement.type === 'line' || selectedElement.type === 'arrow') return;
+
+      // Show our custom context menu
+      e.preventDefault();
+      onContextMenu(selectedId, e.clientX, e.clientY);
+    };
+
+    container.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      container.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [readOnly, onContextMenu]);
+
+  return (
+    <div ref={containerRef} className="relative h-full w-full">
+      {/* Hide library button via CSS */}
+      <style>{`
+        .library-button,
+        [data-testid="library-button"],
+        .App-menu_top__left button[title*="Library"],
+        .library-menu-items-container,
+        .sidebar-trigger {
+          display: none !important;
+        }
+      `}</style>
+      <Excalidraw
+        excalidrawAPI={handleAPIMount}
+        initialData={{
+        elements: initialElements,
+        appState: {
+          viewBackgroundColor: isDark ? '#0f172a' : '#ffffff',
+          currentItemBackgroundColor: isDark ? '#111827' : '#f8f9fa',
+          currentItemFillStyle: 'solid',
+          currentItemStrokeColor: isDark ? '#e5e7eb' : '#1e1e1e',
+          currentItemStrokeWidth: 2,
+          currentItemRoughness: 0,
+          currentItemFontFamily: 2,
+          currentItemRoundness: 'sharp',
+          ...initialAppState,
+        },
+        files: initialFiles,
+      } as any}
+        onChange={onChange as any}
+        viewModeEnabled={readOnly}
+        zenModeEnabled={false}
+        gridModeEnabled={false}
+        theme={isDark ? 'dark' : 'light'}
+        name="Mujarrad Whiteboard"
+        UIOptions={{
+          canvasActions: {
+            changeViewBackgroundColor: true,
+            clearCanvas: !readOnly,
+            export: { saveFileToDisk: true },
+            loadScene: !readOnly,
+            saveToActiveFile: false,
+            toggleTheme: false,
+            saveAsImage: true,
+          },
+          tools: {
+            image: true,
+          },
+          welcomeScreen: false,
+        }}
+        langCode="en"
+        renderTopRightUI={() => null}
+      >
+        <MainMenu>
+          <MainMenu.DefaultItems.LoadScene />
+          <MainMenu.DefaultItems.Export />
+          <MainMenu.DefaultItems.SaveAsImage />
+          <MainMenu.DefaultItems.ClearCanvas />
+          <MainMenu.DefaultItems.ChangeCanvasBackground />
+        </MainMenu>
+        {/* Hide the library sidebar */}
+        <Sidebar name="library" onDock={() => {}} docked={false}>
+          <Sidebar.Header />
+        </Sidebar>
+      </Excalidraw>
+    </div>
+  );
+}
