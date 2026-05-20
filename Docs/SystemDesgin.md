@@ -89,6 +89,8 @@ rules:
 - ALS must be serializable (JSON) so it can be versioned or shared later.
 - Layer 2 does not generate code — it only abstracts logic.
 
+**Abstract Logic Repo:**
+- https://github.com/Wider-Community/Abstract-Logic
 ---
 
 ## Layer 3 — Code Generation
@@ -114,6 +116,8 @@ rules:
 - Generated code is a scaffold, not production-ready. Make this explicit in the UI.
 - No code is executed server-side.
 
+**Code Machine Repo:** 
+- https://github.com/moazbuilds/CodeMachine-CLI
 ---
 
 ## End-to-End Flow
