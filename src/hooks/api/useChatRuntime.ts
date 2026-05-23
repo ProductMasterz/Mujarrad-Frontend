@@ -3,70 +3,39 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { AppendMessage, useExternalStoreRuntime } from '@assistant-ui/react';
 
-import { ChatMessage, sendChatMessage } from '@/services/api/chatService';
 import { nodeService } from '@/services/api/node.service';
-import { NodeType } from '@/types';
+import { NodeType, UpdateNodeRequest } from '@/types';
+import { useSearchNodes } from './useSearchNodes';
 
 // -------------------- helpers --------------------
+function formatConversationTitle(date: Date) {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(date);
+}
 
 function extractText(content: any): string {
   if (typeof content === 'string') return content;
-  if (Array.isArray(content)) {
-    return content.map((p) => p?.text || '').join('');
-  }
+  if (Array.isArray(content)) return content.map((p) => p?.text || '').join('');
   return '';
 }
 
-function mapToBackendMessages(messages: AppendMessage[]): ChatMessage[] {
-  return messages
-    .filter(
-      (msg): msg is AppendMessage & { role: 'user' | 'assistant' } =>
-        msg.role === 'user' || msg.role === 'assistant'
-    )
-    .map((msg) => ({
-      role: msg.role,
-      content: extractText(msg.content),
-    }));
-}
+type StoredMessage = {
+  role: AppendMessage['role'];
+  content: string;
+  createdAt: string;
+};
 
-function createAssistantMessage(text: string): AppendMessage {
+function toAppendMessage(msg: StoredMessage): AppendMessage {
   return {
-    role: 'assistant',
-    content: [{ type: 'text', text }],
-    createdAt: new Date(),
-    status: { type: 'complete', reason: 'stop' },
-    metadata: {
-      unstable_state: null,
-      unstable_annotations: [],
-      unstable_data: [],
-      steps: [],
-      custom: {},
-    },
-    parentId: null,
-    sourceId: null,
-    runConfig: undefined,
-  };
-}
-async function linkMessageToConversation(
-  spaceSlug: string,
-  conversationId: string,
-  messageNodeId: string
-) {
-  await fetch(`/api/spaces/${spaceSlug}/nodes/${conversationId}/attributes`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      targetNodeId: messageNodeId,
-      type: 'CONTAINS',
-    }),
-  });
-}
-
-function toAppendMessage(node: any): AppendMessage {
-  return {
-    role: node.nodeDetails?.role || 'assistant',
-    content: [{ type: 'text', text: node.content }],
-    createdAt: new Date(node.createdAt),
+    role: msg.role,
+    content: [{ type: 'text', text: msg.content }],
+    createdAt: new Date(msg.createdAt),
     status: { type: 'complete', reason: 'stop' },
     metadata: {
       unstable_state: null,
@@ -81,280 +50,300 @@ function toAppendMessage(node: any): AppendMessage {
   };
 }
 
-export function useChatRuntime(spaceId: string) {
+// -------------------- hook --------------------
+
+export function useChatRuntime(spaceSlug: string) {
   const [messages, setMessages] = useState<AppendMessage[]>([]);
   const [conversations, setConversations] = useState<any[]>([]);
   const [conversationNodeId, setConversationNodeId] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
 
-  const creatingConversationRef = useRef(false);
   const messagesRef = useRef<AppendMessage[]>([]);
+  const isCreatingRef = useRef(false);
+  const [searchQuery, setSearchQuery] = useState('');
+const { data: searchResults } =
+  useSearchNodes(spaceSlug, searchQuery);
 
-  const loadConversations = async (spaceSlug: string) => {
+  
+
+  const displayedConversations = (
+  searchQuery.trim()
+    ? searchResults?.content
+    : conversations
+)?.filter((n: any) => n.nodeDetails?.type === 'conversation') ?? [];
+
+  // -------------------- load conversations --------------------
+
+  const loadConversations = async () => {
     const nodes = await nodeService.getNodes(spaceSlug);
 
-    const conversationNodes = nodes
-      .filter((node: any) => node.nodeDetails?.type === 'conversation')
+    const convs = nodes
+      .filter((n: any) => n.nodeDetails?.type === 'conversation')
       .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    setConversations(conversationNodes);
-    return conversationNodes;
+    setConversations(convs);
+    
+    return convs;
   };
 
-  const loadConversationHistory = async (conversationId: string) => {
-    const spaceSlug = 'default-space';
+  // -------------------- safe parse --------------------
 
-    const allNodes = await nodeService.getNodes(spaceSlug);
+  const parseMessages = (node: any): StoredMessage[] => {
+    try {
+      if (!node.content) return [];
 
-    const messageNodes = allNodes
-      .filter((node: any) => node.nodeDetails?.type === 'message')
-      .filter((node: any) =>
-        node.attributes?.some(
-          (attr: any) => attr.type === 'CONTAINS' && attr.sourceNodeId === conversationId
-        )
-      )
-      .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      const parsed = typeof node.content === 'string' ? JSON.parse(node.content) : node.content;
 
-    return messageNodes.map(toAppendMessage);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
   };
 
-  const startNewConversation = async () => {
-    const spaceSlug = 'default-space';
+  // -------------------- load single conversation --------------------
 
-    // clear current messages
-    setMessages([]);
-    messagesRef.current = [];
+  const loadConversation = async (conversationId: string) => {
+    try {
+      const node = await nodeService.getNode(spaceSlug, conversationId);
 
-    // reset current conversation
-    setConversationNodeId(null);
+      const rawMessages = parseMessages(node);
 
-    // clear persisted conversation
-    localStorage.removeItem(`conversationId:${spaceId}`);
+      const formatted = rawMessages.map(toAppendMessage);
 
-    // create fresh conversation
-    const newConversationId = await createConversationNode(spaceSlug);
+      setMessages(formatted);
+      messagesRef.current = formatted;
 
-    // set active conversation
-    setConversationNodeId(newConversationId);
+      return formatted;
+    } catch (err) {
+      console.warn('Conversation not found, resetting state');
 
-    // persist it
-    localStorage.setItem('conversationId', newConversationId);
-
-    // reload conversation list
-    await loadConversations(spaceSlug);
-  };
-
-  const deleteConversation = async (
-  conversationId: string
-) => {
-  const spaceSlug = spaceId;
-
-  try {
-    // 1. load all nodes
-    const allNodes =
-      await nodeService.getNodes(spaceSlug);
-
-    // 2. find message nodes belonging to conversation
-    const messageNodes = allNodes.filter(
-      (node: any) =>
-        node.nodeDetails?.type === 'message' &&
-        node.attributes?.some(
-          (attr: any) =>
-            attr.type === 'CONTAINS' &&
-            attr.sourceNodeId === conversationId
-        )
-    );
-
-    // 3. delete all message nodes
-    await Promise.all(
-      messageNodes.map((node: any) =>
-        nodeService.deleteNode(
-          spaceSlug,
-          node.id,
-          true
-        )
-      )
-    );
-console.log('DELETE SPACE SLUG', spaceSlug);
-    // 4. delete conversation node
-    await nodeService.deleteNode(
-      spaceSlug,
-      conversationId,
-      true
-    );
-
-    // 5. remove from UI state
-    setConversations((prev) =>
-      prev.filter((c) => c.id !== conversationId)
-    );
-
-    // 6. clear active conversation if deleted
-    if (conversationNodeId === conversationId) {
+      localStorage.removeItem(`conversationId:${spaceSlug}`);
       setConversationNodeId(null);
       setMessages([]);
       messagesRef.current = [];
+      
 
-      localStorage.removeItem(
-        `conversationId:${spaceId}`
-      );
-    }
-  } catch (err) {
-    console.error(
-      'Failed deleting conversation',
-      err
-    );
-  }
-};
-  useEffect(() => {
-    loadConversations(spaceId);
-  }, [spaceId]);
-
-  useEffect(() => {
-    setMessages([]);
-    setConversationNodeId(null);
-    messagesRef.current = [];
-
-    const stored = localStorage.getItem(`conversationId:${spaceId}`);
-    if (stored) setConversationNodeId(stored);
-  }, [spaceId]);
-
-  useEffect(() => {
-  if (!conversationNodeId) return;
-
-  const load = async () => {
-    try {
-      const history =
-        await loadConversationHistory(conversationNodeId);
-
-      setMessages(history);
-      messagesRef.current = history;
-
-      localStorage.setItem(
-        `conversationId:${spaceId}`,
-        conversationNodeId
-      );
-    } catch (err) {
-      console.error('Failed loading conversation', err);
+      return [];
     }
   };
 
-  load();
-}, [conversationNodeId, spaceId]);
+  // -------------------- create conversation --------------------
 
-  const createConversationNode = async (spaceSlug: string) => {
-    const now = new Date();
-    const title = `Chat - ${now.toISOString().slice(0, 16).replace('T', ' ')}`;
+  const createConversation = async () => {
+    if (isCreatingRef.current) return null;
 
+    isCreatingRef.current = true;
+
+    try {
+      const node = await nodeService.createNode(spaceSlug, {
+        title: `Chat - ${formatConversationTitle(new Date())}`,
+        nodeType: NodeType.REGULAR,
+        content: JSON.stringify([]),
+        nodeDetails: {
+          type: 'conversation',
+        },
+      });
+
+      return node.id;
+    } finally {
+      isCreatingRef.current = false;
+    }
+  };
+
+  // -------------------- ensure conversation --------------------
+
+  const ensureConversation = async (): Promise<string> => {
+    let convoId = conversationNodeId || localStorage.getItem(`conversationId:${spaceSlug}`);
+
+    if (convoId) {
+      try {
+        await nodeService.getNode(spaceSlug, convoId);
+        return convoId;
+      } catch {
+        localStorage.removeItem(`conversationId:${spaceSlug}`);
+      }
+    }
+
+    const newId = await createConversation();
+    if (!newId) throw new Error('Failed to create conversation');
+
+    setConversationNodeId(newId);
+    localStorage.setItem(`conversationId:${spaceSlug}`, newId);
+
+    return newId;
+  };
+  //------------------------Upsert conversation (save)------------------------//
+  const upsertConversation = async (): Promise<string> => {
+    let id = conversationNodeId || localStorage.getItem(`conversationId:${spaceSlug}`);
+
+    // 1. Try to validate existing node
+    if (id) {
+      try {
+        await nodeService.getNode(spaceSlug, id);
+        return id; // exists → reuse
+      } catch {
+        localStorage.removeItem(`conversationId:${spaceSlug}`);
+        setConversationNodeId(null);
+      }
+    }
+
+    // 2. Create new node if missing
     const node = await nodeService.createNode(spaceSlug, {
-      title,
+      title: `Chat - ${formatConversationTitle(new Date())}`,
       nodeType: NodeType.REGULAR,
-      content: title,
+      content: JSON.stringify([]),
       nodeDetails: {
         type: 'conversation',
       },
     });
 
-    return node.id;
+    const newId = node.id;
+
+    setConversationNodeId(newId);
+    localStorage.setItem(`conversationId:${spaceSlug}`, newId);
+
+    return newId;
   };
+
+  // -------------------- save conversation --------------------
+
+  const saveConversation = async (conversationId: string, msgs: StoredMessage[]) => {
+    const safeMsgs = msgs.map((m) => ({
+      role: m.role,
+      content: String(m.content ?? ''),
+      createdAt: new Date(m.createdAt ?? Date.now()).toISOString(),
+    }));
+
+    const payload: UpdateNodeRequest = {
+      title: `Chat - ${formatConversationTitle(new Date())}`,
+      content: JSON.stringify(safeMsgs),
+      nodeDetails: {
+        type: 'conversation',
+      },
+    };
+
+    await nodeService.updateNode(spaceSlug, conversationId, payload);
+  };
+
+  // -------------------- new message --------------------
 
   const handleNewMessage = useCallback(
     async (message: AppendMessage) => {
       if (isRunning) return;
 
-      const spaceSlug = spaceId;
       const text = extractText(message.content);
+      if (!text.trim()) return;
 
       setIsRunning(true);
 
-      setMessages((prev) => {
-        const updated = [...prev, message];
-        messagesRef.current = updated;
-        return updated;
-      });
-
       try {
-        // 1. ensure conversation exists
-        let convoId = conversationNodeId ?? localStorage.getItem(`conversationId:${spaceId}`);
+        const convoId = await ensureConversation();
 
-        if (!convoId && !creatingConversationRef.current) {
-          creatingConversationRef.current = true;
+        const updatedMessages: AppendMessage[] = [...messagesRef.current, message];
 
-          try {
-            convoId = await createConversationNode(spaceSlug);
-            setConversationNodeId(convoId);
-            localStorage.setItem(`conversationId:${spaceId}`, convoId);
-          } finally {
-            creatingConversationRef.current = false;
-          }
-        }
+        // 1. update UI (NO conversion)
+        messagesRef.current = updatedMessages;
+        setMessages(updatedMessages);
 
-        if (!convoId) throw new Error('Conversation not created');
+        // 2. convert ONLY for DB
+        const stored: StoredMessage[] = updatedMessages.map((m) => ({
+          role: m.role,
+          content: extractText(m.content),
+          createdAt: (m.createdAt ?? new Date()).toISOString(),
+        }));
 
-        // 2. create user message node
-        const userNode = await nodeService.createNode(spaceSlug, {
-          title: 'user-message',
-          content: text,
-          nodeType: NodeType.REGULAR,
-          nodeDetails: {
-            type: 'message',
-            role: 'user',
-            content: text,
-          },
-        });
-
-        await linkMessageToConversation(spaceId, convoId, userNode.id);
-
-        // 3. send
-        const response = await sendChatMessage(mapToBackendMessages(messagesRef.current));
-
-        const assistantMessage = createAssistantMessage(response.reply);
-
-        setMessages((prev) => {
-          const updated = [...prev, assistantMessage];
-          messagesRef.current = updated;
-          return updated;
-        });
-
-        // 4. create assistant node
-        const agentNode = await nodeService.createNode(spaceSlug, {
-          title: 'agent-message',
-          content: response.reply,
-          nodeType: NodeType.REGULAR,
-          nodeDetails: {
-            type: 'message',
-            role: 'assistant',
-            content: response.reply,
-          },
-        });
-
-        await linkMessageToConversation(spaceId, convoId, agentNode.id);
+        await saveConversation(convoId, stored);
       } catch (err) {
         console.error('handleNewMessage error:', err);
       } finally {
         setIsRunning(false);
       }
     },
-    [isRunning, conversationNodeId, spaceId]
+    [isRunning, conversationNodeId, spaceSlug]
   );
 
+  // -------------------- runtime --------------------
+
   const runtime = useExternalStoreRuntime({
-    messages: [...messages],
+    messages,
     isRunning,
     onNew: handleNewMessage,
-    convertMessage: (message: AppendMessage, idx: number) => ({
+    convertMessage: (msg: AppendMessage, idx: number) => ({
       id: String(idx),
-      role: message.role,
-      content: message.content,
+      role: msg.role,
+      content: msg.content,
     }),
   });
 
+  // -------------------- effects --------------------
+
+  useEffect(() => {
+    loadConversations();
+  }, [spaceSlug]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(`conversationId:${spaceSlug}`);
+
+    if (!stored) return;
+
+    const validate = async () => {
+      try {
+        await nodeService.getNode(spaceSlug, stored);
+        setConversationNodeId(stored);
+      } catch (e) {
+        localStorage.removeItem(`conversationId:${spaceSlug}`);
+      }
+    };
+
+    validate();
+  }, [spaceSlug]);
+
+  useEffect(() => {
+    if (!conversationNodeId) return;
+    loadConversation(conversationNodeId);
+  }, [conversationNodeId]);
+
+  // -------------------- actions --------------------
+
+  const startNewConversation = async () => {
+    setMessages([]);
+    messagesRef.current = [];
+
+    const id = await createConversation();
+    if (!id) return;
+
+    setConversationNodeId(id);
+    localStorage.setItem(`conversationId:${spaceSlug}`, id);
+
+    await loadConversations();
+  };
+
+  const deleteConversation = async (id: string) => {
+    await nodeService.deleteNode(spaceSlug, id, true);
+
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+
+    if (conversationNodeId === id) {
+      setConversationNodeId(null);
+      setMessages([]);
+      messagesRef.current = [];
+      localStorage.removeItem(`conversationId:${spaceSlug}`);
+    }
+  };
+
+  // -------------------- return --------------------
+
   return {
     runtime,
+    messages,
     conversations,
+    displayedConversations,
+    searchQuery,
+    setSearchQuery,
     conversationNodeId,
     setConversationNodeId,
-    loadConversationHistory,
     loadConversations,
+    loadConversation,
     startNewConversation,
     deleteConversation,
   };

@@ -180,3 +180,185 @@
 .group:hover .conversation-delete {
   opacity: 1;
 }
+
+button div[data-name="vuesax/linear/code-circle"] {
+  display: none;
+}
+
+/* Sidebar container */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid #e5e7eb;
+  background: #f9fafb;
+  overflow-y: auto;
+}
+
+/* Each conversation wrapper */
+.sidebar-item {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+/* Button */
+.sidebar-item button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #374151;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Hover (ChatGPT feel) */
+.sidebar-item button:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* Active conversation */
+.sidebar-item.active button {
+  background: #e5e7eb;
+  color: #111827;
+  font-weight: 500;
+}
+
+/* Text */
+.sidebar-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ❌ REMOVE ICON COMPLETELY */
+.sidebar-item svg {
+  display: none !important;
+}
+
+.sidebar-item [data-name="vuesax/linear/code-circle"] {
+  display: none !important;
+}
+
+.sidebar-item [data-name="vuesax/linear/Node"] {
+  display: none !important;
+}
+
+
+html, body {
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+}
+
+
+.chat-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+  background: white;
+  padding: 12px;
+  display: flex;
+  justify-content: center;
+  border-top: 1px solid #eee;
+}
+
+:root {
+  --top-nav-height: 100px;
+}
+
+
+.aui-thread-root {
+  display: flex;
+  flex-direction: column;
+
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+
+  margin: 20px;
+}
+
+.relative.w-full.h-full {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Card grid container */
+.flex.gap-\[19px\].flex-wrap {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+
+  gap: 20px;
+  width: 100%;
+  padding-top: 16px;
+
+  align-items: start;
+
+  /* IMPORTANT */
+  height: 100%;
+  min-height: 0;
+    overflow-y: auto;
+  overflow-x: hidden;
+
+ 
+
+  position: relative;
+  z-index: 1;
+
+  align-content: start;
+}
+
+/* Workspace cards */
+.flex.gap-\[19px\].flex-wrap > button {
+  width: 100% !important;
+
+  min-width: 215px;
+  max-width: none;
+
+  border-radius: 16px;
+  overflow: hidden;
+
+  flex-shrink: 0;
+
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease,
+    border-color .2s ease;
+
+  will-change: transform;
+}
+
+/* Card border */
+.flex.gap-\[19px\].flex-wrap > button > div:first-child {
+  border-color: #e5e7eb !important;
+  border-radius: 16px !important;
+
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.04);
+}
+
+.parent-container {
+  display: flex;
+  flex-direction: column;
+
+  height: 100vh; /* or available height */
+  min-height: 0;
+  overflow: hidden;
+}
+
+.content-area {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.flex.gap-\[19px\].flex-wrap {
+  max-height: 400px !important;
+  overflow-y: auto !important;
+}
