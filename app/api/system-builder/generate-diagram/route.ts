@@ -91,5 +91,15 @@ export async function POST(req: NextRequest) {
   // Sanitize unescaped & in attribute values
   raw = raw.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#)/g, '&amp;');
 
+  // Fix empty id attributes — assign sequential ids
+  let counter = 100;
+  raw = raw.replace(/id=""/g, () => `id="${counter++}"`);
+
+  // Fix missing id attributes on mxCell elements
+  raw = raw.replace(/<mxCell(?![^>]*\bid=)/g, () => `<mxCell id="${counter++}"`);
+
+  // Fix empty parent attributes
+  raw = raw.replace(/parent=""/g, 'parent="1"');
+
   return NextResponse.json({ xml: raw });
 }
