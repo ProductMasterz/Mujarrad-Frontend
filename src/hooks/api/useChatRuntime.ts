@@ -6,6 +6,7 @@ import { AppendMessage, useExternalStoreRuntime } from '@assistant-ui/react';
 import { nodeService } from '@/services/api/node.service';
 import { NodeType, UpdateNodeRequest } from '@/types';
 import { useSearchNodes } from './useSearchNodes';
+import { useCreateNode } from './useCreateNode';
 
 // -------------------- helpers --------------------
 function formatConversationTitle(date: Date) {
@@ -60,29 +61,42 @@ export function useChatRuntime(spaceSlug: string) {
 
   const messagesRef = useRef<AppendMessage[]>([]);
   const isCreatingRef = useRef(false);
+  const isRunningRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
-const { data: searchResults } =
-  useSearchNodes(spaceSlug, searchQuery);
+  const { data: searchResults } = useSearchNodes(spaceSlug, searchQuery);
+  const createNodeMutation = useCreateNode();
 
-  
-
-  const displayedConversations = (
-  searchQuery.trim()
-    ? searchResults?.content
-    : conversations
-)?.filter((n: any) => n.nodeDetails?.type === 'conversation') ?? [];
+  const displayedConversations =
+    (searchQuery.trim() ? searchResults?.content : conversations)?.filter(
+      (n: any) => n.nodeDetails?.type === 'conversation'
+    ) ?? [];
 
   // -------------------- load conversations --------------------
 
   const loadConversations = async () => {
     const nodes = await nodeService.getNodes(spaceSlug);
+  console.log('ALL NODES', nodes);
 
+nodes.forEach((node: any) => {
+  console.log('NODE ID', node.id);
+  console.log('NODE TYPE', node.nodeDetails?.type);
+  console.log('NODE CONTENT', node.content);
+
+  try {
+    console.log(
+      'PARSED',
+      JSON.parse(node.content || '[]')
+    );
+  } catch (e) {
+    console.log('PARSE ERROR', e);
+  }
+});
     const convs = nodes
       .filter((n: any) => n.nodeDetails?.type === 'conversation')
       .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     setConversations(convs);
-    
+
     return convs;
   };
 
@@ -101,31 +115,34 @@ const { data: searchResults } =
   };
 
   // -------------------- load single conversation --------------------
+const loadConversation = async (conversationId: string) => {
+  try {
+    const node = await nodeService.getNode(spaceSlug, conversationId);
 
-  const loadConversation = async (conversationId: string) => {
-    try {
-      const node = await nodeService.getNode(spaceSlug, conversationId);
-
-      const rawMessages = parseMessages(node);
-
-      const formatted = rawMessages.map(toAppendMessage);
-
-      setMessages(formatted);
-      messagesRef.current = formatted;
-
-      return formatted;
-    } catch (err) {
-      console.warn('Conversation not found, resetting state');
-
-      localStorage.removeItem(`conversationId:${spaceSlug}`);
-      setConversationNodeId(null);
-      setMessages([]);
-      messagesRef.current = [];
-      
-
+    if (node.nodeDetails?.type !== 'conversation') {
+      console.warn('Invalid conversation node');
       return [];
     }
-  };
+
+    const rawMessages = parseMessages(node);
+
+    const formatted = rawMessages.map(toAppendMessage);
+
+    setMessages(formatted);
+    messagesRef.current = formatted;
+
+    return formatted;
+  } catch (err) {
+    console.warn('Conversation not found, resetting state');
+
+    localStorage.removeItem(`conversationId:${spaceSlug}`);
+    setConversationNodeId(null);
+    setMessages([]);
+    messagesRef.current = [];
+
+    return [];
+  }
+};
 
   // -------------------- create conversation --------------------
 
@@ -135,12 +152,15 @@ const { data: searchResults } =
     isCreatingRef.current = true;
 
     try {
-      const node = await nodeService.createNode(spaceSlug, {
-        title: `Chat - ${formatConversationTitle(new Date())}`,
-        nodeType: NodeType.REGULAR,
-        content: JSON.stringify([]),
-        nodeDetails: {
-          type: 'conversation',
+      const node = await createNodeMutation.mutateAsync({
+        spaceSlug,
+        data: {
+          title: `Chat - ${formatConversationTitle(new Date())}`,
+          nodeType: NodeType.REGULAR,
+          content: JSON.stringify([]),
+          nodeDetails: {
+            type: 'conversation',
+          },
         },
       });
 
@@ -157,7 +177,12 @@ const { data: searchResults } =
 
     if (convoId) {
       try {
-        await nodeService.getNode(spaceSlug, convoId);
+       // await nodeService.getNode(spaceSlug, convoId);
+       const node = await nodeService.getNode(spaceSlug, convoId);
+
+if (node.nodeDetails?.type !== 'conversation') {
+  throw new Error('Not a conversation node');
+}
         return convoId;
       } catch {
         localStorage.removeItem(`conversationId:${spaceSlug}`);
@@ -165,39 +190,8 @@ const { data: searchResults } =
     }
 
     const newId = await createConversation();
+    await loadConversations();
     if (!newId) throw new Error('Failed to create conversation');
-
-    setConversationNodeId(newId);
-    localStorage.setItem(`conversationId:${spaceSlug}`, newId);
-
-    return newId;
-  };
-  //------------------------Upsert conversation (save)------------------------//
-  const upsertConversation = async (): Promise<string> => {
-    let id = conversationNodeId || localStorage.getItem(`conversationId:${spaceSlug}`);
-
-    // 1. Try to validate existing node
-    if (id) {
-      try {
-        await nodeService.getNode(spaceSlug, id);
-        return id; // exists → reuse
-      } catch {
-        localStorage.removeItem(`conversationId:${spaceSlug}`);
-        setConversationNodeId(null);
-      }
-    }
-
-    // 2. Create new node if missing
-    const node = await nodeService.createNode(spaceSlug, {
-      title: `Chat - ${formatConversationTitle(new Date())}`,
-      nodeType: NodeType.REGULAR,
-      content: JSON.stringify([]),
-      nodeDetails: {
-        type: 'conversation',
-      },
-    });
-
-    const newId = node.id;
 
     setConversationNodeId(newId);
     localStorage.setItem(`conversationId:${spaceSlug}`, newId);
@@ -214,54 +208,82 @@ const { data: searchResults } =
       createdAt: new Date(m.createdAt ?? Date.now()).toISOString(),
     }));
 
+    //const existingNode = await nodeService.getNode(spaceSlug, conversationId);
+
+    /*const payload: UpdateNodeRequest = {
+  title: existingNode.title,
+  content: JSON.stringify(safeMsgs),
+  nodeDetails: {
+    type: 'conversation',
+  },
+};*/
     const payload: UpdateNodeRequest = {
-      title: `Chat - ${formatConversationTitle(new Date())}`,
       content: JSON.stringify(safeMsgs),
       nodeDetails: {
         type: 'conversation',
       },
     };
 
+    console.log('SAVE PAYLOAD', payload);
+
     await nodeService.updateNode(spaceSlug, conversationId, payload);
+
+    const verify = await nodeService.getNode(spaceSlug, conversationId);
+
+    console.log('AFTER SAVE', verify.content);
+
+    // await nodeService.updateNode(spaceSlug, conversationId, payload);
+  };
+
+  const persistMessages = async (conversationId: string, msgs: AppendMessage[]) => {
+    const stored: StoredMessage[] = msgs.map((m) => ({
+      role: m.role,
+      content: extractText(m.content),
+      createdAt: (m.createdAt ?? new Date()).toISOString(),
+    }));
+
+    await saveConversation(conversationId, stored);
+    await loadConversations();
   };
 
   // -------------------- new message --------------------
 
   const handleNewMessage = useCallback(
-    async (message: AppendMessage) => {
-      if (isRunning) return;
+  async (message: AppendMessage) => {
+    if (isRunningRef.current) return;
 
-      const text = extractText(message.content);
-      if (!text.trim()) return;
+    isRunningRef.current = true;
+    setIsRunning(true);
 
-      setIsRunning(true);
+    const text = extractText(message.content);
 
-      try {
-        const convoId = await ensureConversation();
+    if (!text.trim()) {
+      isRunningRef.current = false;
+      setIsRunning(false);
+      return;
+    }
 
-        const updatedMessages: AppendMessage[] = [...messagesRef.current, message];
+    try {
+      const convoId = await ensureConversation();
 
-        // 1. update UI (NO conversion)
-        messagesRef.current = updatedMessages;
-        setMessages(updatedMessages);
+      const updatedMessages = [...messagesRef.current, message];
 
-        // 2. convert ONLY for DB
-        const stored: StoredMessage[] = updatedMessages.map((m) => ({
-          role: m.role,
-          content: extractText(m.content),
-          createdAt: (m.createdAt ?? new Date()).toISOString(),
-        }));
+      messagesRef.current = updatedMessages;
+      setMessages(updatedMessages);
 
-        await saveConversation(convoId, stored);
-      } catch (err) {
-        console.error('handleNewMessage error:', err);
-      } finally {
-        setIsRunning(false);
-      }
-    },
-    [isRunning, conversationNodeId, spaceSlug]
-  );
+      queueMicrotask(() => {
+        persistMessages(convoId, updatedMessages);
+      });
 
+    } catch (err) {
+      console.error('handleNewMessage error:', err);
+    } finally {
+      isRunningRef.current = false;
+      setIsRunning(false);
+    }
+  },
+  [spaceSlug]
+);
   // -------------------- runtime --------------------
 
   const runtime = useExternalStoreRuntime({
@@ -302,6 +324,12 @@ const { data: searchResults } =
     if (!conversationNodeId) return;
     loadConversation(conversationNodeId);
   }, [conversationNodeId]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  const hasLoadedRef = useRef(false);
 
   // -------------------- actions --------------------
 
