@@ -1,6 +1,6 @@
 // src/services/api/virtual-context.service.ts
 
-import apiClient from './client';
+import apiClient, { extractPage } from './client';
 import type {
   VirtualContext,
   VirtualContextCreateRequest,
@@ -22,8 +22,8 @@ export const virtualContextService = {
    * @returns Array of virtual contexts
    */
   async listVirtualContexts(): Promise<VirtualContext[]> {
-    const response = await apiClient.get<VirtualContext[]>('/virtual-contexts');
-    return response.data;
+    const response = await apiClient.get<any>('/virtual-contexts');
+    return extractPage<VirtualContext>(response.data);
   },
 
   /**
@@ -65,8 +65,8 @@ export const virtualContextService = {
    * @returns Array of virtual context members
    */
   async listMembers(id: string): Promise<VirtualContextMember[]> {
-    const response = await apiClient.get<VirtualContextMember[]>(`/virtual-contexts/${id}/members`);
-    return response.data;
+    const response = await apiClient.get<any>(`/virtual-contexts/${id}/members`);
+    return extractPage<VirtualContextMember>(response.data);
   },
 
   /**
@@ -87,7 +87,7 @@ export const virtualContextService = {
    * @returns Array of cross-space attributes
    */
   async listCrossSpaceAttributes(id: string): Promise<CrossSpaceAttributeResponse[]> {
-    const response = await apiClient.get<CrossSpaceAttributeResponse[]>(
+    const response = await apiClient.get<any>(
       `/virtual-contexts/${id}/attributes`
     );
     return response.data;
@@ -118,7 +118,7 @@ export const virtualContextService = {
    * @returns Array of cross-space attributes
    */
   async getNodeCrossSpaceAttributes(nodeId: string): Promise<CrossSpaceAttributeResponse[]> {
-    const response = await apiClient.get<CrossSpaceAttributeResponse[]>(
+    const response = await apiClient.get<any>(
       `/nodes/${nodeId}/cross-space-attributes`
     );
     return response.data;

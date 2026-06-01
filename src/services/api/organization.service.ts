@@ -1,6 +1,6 @@
 // src/services/api/organization.service.ts
 
-import apiClient from './client';
+import apiClient, { extractPage } from './client';
 import type {
   Organization,
   OrganizationCreateRequest,
@@ -20,8 +20,8 @@ export const organizationService = {
    * @returns Array of organizations
    */
   async listOrganizations(): Promise<Organization[]> {
-    const response = await apiClient.get<Organization[]>('/organizations');
-    return response.data;
+    const response = await apiClient.get<any>('/organizations');
+    return extractPage<Organization>(response.data);
   },
 
   /**
@@ -63,8 +63,8 @@ export const organizationService = {
    * @returns Array of organization members
    */
   async listMembers(id: string): Promise<OrganizationMember[]> {
-    const response = await apiClient.get<OrganizationMember[]>(`/organizations/${id}/members`);
-    return response.data;
+    const response = await apiClient.get<any>(`/organizations/${id}/members`);
+    return extractPage<OrganizationMember>(response.data);
   },
 
   /**

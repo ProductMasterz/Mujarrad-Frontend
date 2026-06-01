@@ -291,4 +291,16 @@ export function clearRedirectAfterLogin(): void {
   }
 }
 
+/**
+ * Extract array from API response that may be raw T[] or PageResponse<T>.
+ * All list endpoints now return PageResponse, but this handles both for safety.
+ */
+export function extractPage<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === 'object' && 'content' in data) {
+    return (data as { content: T[] }).content ?? [];
+  }
+  return [];
+}
+
 export default apiClient;

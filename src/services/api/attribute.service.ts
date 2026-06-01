@@ -1,6 +1,6 @@
 // src/services/api/attribute.service.ts
 
-import apiClient from './client';
+import apiClient, { extractPage } from './client';
 import type { Attribute, CreateAttributeRequest } from '@/types/backend-dtos';
 
 export const attributeService = {
@@ -13,11 +13,11 @@ export const attributeService = {
     nodeId: string,
     params?: { attributeType?: string }
   ): Promise<Attribute[]> {
-    const response = await apiClient.get<Attribute[]>(
+    const response = await apiClient.get<any>(
       `/nodes/${nodeId}/attributes`,
       { params }
     );
-    return response.data;
+    return extractPage<Attribute>(response.data);
   },
 
   /**
@@ -53,9 +53,9 @@ export const attributeService = {
    * API Contract: GET /api/spaces/{id}/attributes
    */
   async getSpaceAttributes(spaceId: string): Promise<Attribute[]> {
-    const response = await apiClient.get<Attribute[]>(
+    const response = await apiClient.get<any>(
       `/spaces/${spaceId}/attributes`
     );
-    return response.data;
+    return extractPage<Attribute>(response.data);
   },
 };

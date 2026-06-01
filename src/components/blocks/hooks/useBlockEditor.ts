@@ -246,26 +246,16 @@ export function useBlockEditor({
         order = lastOrder + 1000;
       }
 
-      // Create the node (hidden from space list - blocks only show inside pages)
+      // Create block as a child of the page (atomic — auto-creates CONTAINS)
       const nodeDetails: BlockNodeDetails = {
         blockType: type,
-        showInSpaceList: false,  // Blocks don't appear in the main node list
+        showInSpaceList: false,
       };
-      const newNode = await nodeService.createNode(spaceSlug, {
+      const newNode = await nodeService.createChildNode(spaceSlug, pageId, {
         title: `Block ${Date.now()}`,
         nodeType: NodeType.REGULAR,
         content,
-        nodeDetails: nodeDetails as unknown as Record<string, unknown>,
-      });
-
-      // Create containment attribute linking the new block to the page
-      await attributeService.createAttribute(pageId, {
-        sourceNodeId: pageId,
-        targetNodeId: newNode.id,
-        attributeType: AttributeKey.CONTAINS,
-        attributeTypeMode: AttributeTypeMode.SCHEMALESS,
-        attributeName: AttributeKey.CONTAINS,
-        attributeValue: { order },
+        nodeDetails: { ...nodeDetails, order } as unknown as Record<string, unknown>,
       });
 
       return { node: newNode, order };

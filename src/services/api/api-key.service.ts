@@ -1,6 +1,6 @@
 // src/services/api/api-key.service.ts
 
-import apiClient from './client';
+import apiClient, { extractPage } from './client';
 import type {
   ApiKeyResponse,
   ApiKeyListResponse,
@@ -10,10 +10,10 @@ import type {
 
 export const apiKeyService = {
   async listKeys(activeOnly = false): Promise<ApiKeyListResponse[]> {
-    const response = await apiClient.get<ApiKeyListResponse[]>('/api-keys', {
+    const response = await apiClient.get<any>('/api-keys', {
       params: { activeOnly },
     });
-    return response.data;
+    return extractPage<ApiKeyListResponse>(response.data);
   },
 
   async getKey(keyId: string): Promise<ApiKeyListResponse> {

@@ -27,3 +27,4 @@ export * from './useMigrateNode';
 export * from './useVirtualContexts';
 export * from './useContextNodes';
 export * from './useContextTypes';
+export * from './useChildNodes';

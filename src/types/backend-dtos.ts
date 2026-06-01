@@ -143,6 +143,14 @@ export interface Node {
   lockLevel: 'UNLOCKED' | 'CONTENT_LOCKED' | 'FULLY_LOCKED';
   /** Whether this is a builtin node (e.g. The Blank) */
   isBuiltin: boolean;
+  /** Computed lock level considering parent, space, and schema locks */
+  effectiveLockLevel?: 'UNLOCKED' | 'CONTENT_LOCKED' | 'FULLY_LOCKED';
+  /** Whether the lock is inherited from a parent/space rather than self */
+  lockInherited?: boolean;
+  /** Source of the lock */
+  lockSource?: 'space' | 'schema' | 'parent' | 'self' | null;
+  /** Parent node ID (for block nodes) */
+  parentNodeId?: string | null;
   /** Last update timestamp (ISO 8601) */
   updatedAt: string;
 }

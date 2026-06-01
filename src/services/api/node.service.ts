@@ -1,6 +1,6 @@
 // src/services/api/node.service.ts
 
-import apiClient from './client';
+import apiClient, { extractPage } from './client';
 import type {
   Node,
   CreateNodeRequest,
@@ -38,9 +38,7 @@ export const nodeService = {
       `/spaces/${spaceSlug}/nodes`,
       { params: paginationParams }
     );
-    const data = response.data;
-    if (Array.isArray(data)) return data;
-    return data.content;
+    return extractPage<Node>(response.data);
   },
 
   /**
@@ -126,9 +124,7 @@ export const nodeService = {
       `/spaces/${spaceSlug}/contexts/${contextSlug}/nodes`,
       { params: paginationParams }
     );
-    const data = response.data;
-    if (Array.isArray(data)) return data;
-    return data.content;
+    return extractPage<Node>(response.data);
   },
 
   async createNestedContext(
@@ -153,9 +149,7 @@ export const nodeService = {
       `/spaces/${spaceSlug}/contexts/${contextSlug}/children`,
       { params: paginationParams }
     );
-    const data = response.data;
-    if (Array.isArray(data)) return data;
-    return data.content;
+    return extractPage<Node>(response.data);
   },
 
   // ---------------------------------------------------------------------------
@@ -168,12 +162,10 @@ export const nodeService = {
   ): Promise<Node[]> {
     const paginationParams = { page: params?.page ?? 0, size: params?.size ?? 100, ...params };
     const response = await apiClient.get<PageResponse<Node>>(
-      `/spaces/${spaceSlug}/blank`,
+      `/spaces/${spaceSlug}/blank/nodes`,
       { params: paginationParams }
     );
-    const data = response.data;
-    if (Array.isArray(data)) return data;
-    return data.content;
+    return extractPage<Node>(response.data);
   },
 
   async getBlankCount(spaceSlug: string): Promise<number> {
@@ -189,8 +181,8 @@ export const nodeService = {
     contextSlug: string
   ): Promise<Node> {
     const response = await apiClient.post<Node>(
-      `/spaces/${spaceSlug}/blank/${nodeId}/assign`,
-      { contextSlug } as AssignFromBlankRequest
+      `/spaces/${spaceSlug}/blank/assign`,
+      { nodeId, contextSlug }
     );
     return response.data;
   },
@@ -203,6 +195,46 @@ export const nodeService = {
     await apiClient.post(
       `/spaces/${spaceSlug}/blank/assign-bulk`,
       { nodeIds, contextSlug } as BulkAssignFromBlankRequest
+    );
+  },
+
+  // ---------------------------------------------------------------------------
+  // Child Nodes (blocks inside pages)
+  // ---------------------------------------------------------------------------
+
+  async createChildNode(
+    spaceSlug: string,
+    parentNodeId: string,
+    data: CreateNodeRequest
+  ): Promise<Node> {
+    const response = await apiClient.post<Node>(
+      `/spaces/${spaceSlug}/nodes/${parentNodeId}/children`,
+      data
+    );
+    return response.data;
+  },
+
+  async getChildNodes(
+    spaceSlug: string,
+    parentNodeId: string,
+    params?: PaginationParams
+  ): Promise<Node[]> {
+    const paginationParams = { page: params?.page ?? 0, size: params?.size ?? 100, ...params };
+    const response = await apiClient.get<any>(
+      `/spaces/${spaceSlug}/nodes/${parentNodeId}/children`,
+      { params: paginationParams }
+    );
+    return extractPage<Node>(response.data);
+  },
+
+  async reorderChildren(
+    spaceSlug: string,
+    parentNodeId: string,
+    nodeIds: string[]
+  ): Promise<void> {
+    await apiClient.patch(
+      `/spaces/${spaceSlug}/nodes/${parentNodeId}/children/reorder`,
+      { nodeIds }
     );
   },
 

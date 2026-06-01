@@ -9,7 +9,7 @@ import { formatDateTime } from '@/lib/utils';
 
 interface VersionHistoryProps {
   spaceSlug: string;
-  nodeId: number;
+  nodeId: string;
   currentVersion: number;
 }
 

@@ -1,6 +1,6 @@
 // src/services/api/space.service.ts
 
-import apiClient from './client';
+import apiClient, { extractPage } from './client';
 import type {
   Space,
   CreateSpaceRequest,
@@ -13,13 +13,12 @@ import type { PaginationParams } from '@/types/api';
 export const spaceService = {
   /**
    * Get all spaces for current user
-   * Note: Backend returns a plain array, not a PaginatedResponse
    */
   async getSpaces(params?: PaginationParams): Promise<Space[]> {
-    const response = await apiClient.get<Space[]>('/spaces', {
+    const response = await apiClient.get<any>('/spaces', {
       params,
     });
-    return response.data;
+    return extractPage<Space>(response.data);
   },
 
   /**

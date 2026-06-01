@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { versionService } from '@/services/api';
 
-export function useNodeVersions(spaceSlug: string, nodeId: number) {
+export function useNodeVersions(spaceSlug: string, nodeId: string) {
   return useQuery({
     queryKey: ['spaces', spaceSlug, 'nodes', nodeId, 'versions'],
     queryFn: () => versionService.getNodeVersions(spaceSlug, nodeId),
@@ -11,7 +11,7 @@ export function useNodeVersions(spaceSlug: string, nodeId: number) {
   });
 }
 
-export function useVersion(spaceSlug: string, nodeId: number, versionId: number) {
+export function useVersion(spaceSlug: string, nodeId: string, versionId: number) {
   return useQuery({
     queryKey: ['spaces', spaceSlug, 'nodes', nodeId, 'versions', versionId],
     queryFn: () => versionService.getVersion(spaceSlug, nodeId, versionId),
@@ -19,7 +19,7 @@ export function useVersion(spaceSlug: string, nodeId: number, versionId: number)
   });
 }
 
-export function useRestoreVersion(spaceSlug: string, nodeId: number) {
+export function useRestoreVersion(spaceSlug: string, nodeId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -40,7 +40,7 @@ export function useRestoreVersion(spaceSlug: string, nodeId: number) {
   });
 }
 
-export function useDeleteVersion(spaceSlug: string, nodeId: number) {
+export function useDeleteVersion(spaceSlug: string, nodeId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({

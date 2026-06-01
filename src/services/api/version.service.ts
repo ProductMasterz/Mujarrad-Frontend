@@ -1,25 +1,19 @@
 // src/services/api/version.service.ts
 
-import apiClient from './client';
+import apiClient, { extractPage } from './client';
 import type { NodeVersion, Node } from '@/types/backend-dtos';
 
 export const versionService = {
-  /**
-   * Get all versions for a node
-   */
-  async getNodeVersions(spaceSlug: string, nodeId: number): Promise<NodeVersion[]> {
-    const response = await apiClient.get<NodeVersion[]>(
+  async getNodeVersions(spaceSlug: string, nodeId: string): Promise<NodeVersion[]> {
+    const response = await apiClient.get<any>(
       `/spaces/${spaceSlug}/nodes/${nodeId}/versions`
     );
-    return response.data;
+    return extractPage<NodeVersion>(response.data);
   },
 
-  /**
-   * Get specific version
-   */
   async getVersion(
     spaceSlug: string,
-    nodeId: number,
+    nodeId: string,
     versionId: number
   ): Promise<NodeVersion> {
     const response = await apiClient.get<NodeVersion>(
@@ -28,13 +22,9 @@ export const versionService = {
     return response.data;
   },
 
-  /**
-   * Restore node to a previous version
-   * Creates a new version with the historical content
-   */
   async restoreVersion(
     spaceSlug: string,
-    nodeId: number,
+    nodeId: string,
     versionId: number
   ): Promise<Node> {
     const response = await apiClient.post<Node>(
@@ -43,12 +33,9 @@ export const versionService = {
     return response.data;
   },
 
-  /**
-   * Delete a specific version from history
-   */
   async deleteVersion(
     spaceSlug: string,
-    nodeId: number,
+    nodeId: string,
     versionId: number
   ): Promise<void> {
     await apiClient.delete(

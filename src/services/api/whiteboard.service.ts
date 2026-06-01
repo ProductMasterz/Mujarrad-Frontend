@@ -2,7 +2,7 @@
  * Whiteboard Service - Simplified context-only persistence
  */
 
-import { apiClient } from '@/services/api/client';
+import { apiClient, extractPage } from '@/services/api/client';
 import {
   ExcalidrawElement,
   WhiteboardNode,
@@ -22,7 +22,7 @@ export const whiteboardService = {
     params?: Record<string, unknown>
   ): Promise<any> {
     const response = await apiClient.get(`/spaces/${spaceSlug}/nodes`, { params });
-    return response.data;
+    return extractPage<any>(response.data);
   },
 
   /**
@@ -75,12 +75,13 @@ export const whiteboardService = {
    * Get the whiteboard context node for a space (if exists)
    */
   async getWhiteboardContext(spaceSlug: string): Promise<WhiteboardNode | null> {
-    const response = await apiClient.get<WhiteboardNode[]>(
+    const response = await apiClient.get<any>(
       `/spaces/${spaceSlug}/nodes`,
       { params: { node_type: 'CONTEXT', size: 100 } }
     );
 
-    const contextNode = response.data.find(
+    const nodes = extractPage<WhiteboardNode>(response.data);
+    const contextNode = nodes.find(
       (node) => (node.nodeDetails as any)?.whiteboard_context?.context_type === 'whiteboard'
     );
 

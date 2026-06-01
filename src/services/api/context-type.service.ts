@@ -1,4 +1,4 @@
-import apiClient from './client';
+import apiClient, { extractPage } from './client';
 import type {
   ContextType,
   ContextTypeCreateRequest,
@@ -7,10 +7,10 @@ import type {
 
 export const contextTypeService = {
   async listContextTypes(spaceId: string): Promise<ContextType[]> {
-    const response = await apiClient.get<ContextType[]>(
+    const response = await apiClient.get<any>(
       `/spaces/${spaceId}/context-types`
     );
-    return response.data;
+    return extractPage<ContextType>(response.data);
   },
 
   async getContextType(spaceId: string, slug: string): Promise<ContextType> {

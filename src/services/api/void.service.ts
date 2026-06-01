@@ -1,6 +1,6 @@
 // src/services/api/void.service.ts
 
-import apiClient from './client';
+import apiClient, { extractPage } from './client';
 import type {
   Node,
   VoidNodeCreateRequest,
@@ -21,9 +21,7 @@ export const voidService = {
    */
   async listVoidNodes(): Promise<Node[]> {
     const response = await apiClient.get<any>('/void/nodes');
-    const data = response.data;
-    const nodes: Node[] = Array.isArray(data) ? data : (data?.content ?? []);
-    return nodes.filter((n: Node) => !n.isBuiltin);
+    return extractPage<Node>(response.data).filter((n: Node) => !n.isBuiltin);
   },
 
   /**
