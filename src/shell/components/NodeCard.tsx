@@ -67,7 +67,7 @@ function getNodeKindChipClasses(nodeKindLabel?: string) {
     return "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200";
   }
 
-  if (normalized === "assumption") {
+  if (normalized === "attribute") {
     return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200";
   }
 

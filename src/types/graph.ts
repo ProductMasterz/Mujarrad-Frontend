@@ -69,8 +69,7 @@ export interface GraphViewMode {
   showSystem: boolean;
   showRegular: boolean;
   showContext: boolean;
-  showAssumption: boolean;
-  showTemplate: boolean;
+  showAttribute: boolean;
   showBlocks: boolean;
 
   // Legacy / generic relations if still needed

@@ -38,8 +38,7 @@ const DEFAULT_VIEW_MODE: GraphViewMode = {
   showSystem: true,
   showRegular: true,
   showContext: true,
-  showAssumption: true,
-  showTemplate: true,
+  showAttribute: true,
   showBlocks: false,
 
   // Other

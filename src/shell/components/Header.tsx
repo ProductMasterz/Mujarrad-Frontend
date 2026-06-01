@@ -9,6 +9,7 @@ import { ChatPanel } from '@/components/chat/ChatPanel';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { ShortcutsModal } from './ShortcutsModal';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { QuickNoteButton } from '@/components/void/QuickNoteButton';
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -153,6 +154,8 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-2">
+          <QuickNoteButton />
+
           {showChatButton && (
             <div className="relative">
               <button

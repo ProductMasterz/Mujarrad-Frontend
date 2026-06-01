@@ -24,17 +24,11 @@ export const spaceService = {
 
   /**
    * Get space by slug
-   * Note: Backend doesn't support get-by-slug, so we fetch all and find by slug
+   * Backend: GET /api/spaces/slug/{slug}
    */
   async getSpaceBySlug(slug: string): Promise<Space> {
-    const spaces = await this.getSpaces();
-    const space = spaces.find((w) => w.slug === slug);
-
-    if (!space) {
-      throw new Error(`Space with slug "${slug}" not found`);
-    }
-
-    return space;
+    const response = await apiClient.get<Space>(`/spaces/slug/${slug}`);
+    return response.data;
   },
 
   /**

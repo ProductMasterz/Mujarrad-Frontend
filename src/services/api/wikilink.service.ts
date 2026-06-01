@@ -110,7 +110,8 @@ export const wikiLinkService = {
    */
   async createPlaceholders(
     resolutions: WikiLinkResolution[],
-    spaceId: string
+    spaceId: string,
+    contextSlug?: string
   ): Promise<CreatePlaceholdersResult> {
     const unresolvedLinks = resolutions.filter(r => r.needsPlaceholder);
 
@@ -137,7 +138,9 @@ export const wikiLinkService = {
           },
         };
 
-        const createdNode = await nodeService.createNode(spaceId, createRequest);
+        const createdNode = contextSlug
+          ? await nodeService.createNodeInContext(spaceId, contextSlug, createRequest)
+          : await nodeService.createNode(spaceId, createRequest);
         createdNodes.push(createdNode);
       } catch (error: any) {
         errors.push({

@@ -35,3 +35,20 @@ export interface ValidationProblemDetail extends ProblemDetail {
 export interface CircularContainmentError extends ProblemDetail {
   cyclePath: number[]; // Array of node IDs forming the cycle
 }
+
+/**
+ * Locking conflict error detail (409)
+ * Returned when attempting to modify a locked node, attribute, or space
+ */
+export interface LockingConflictError extends ProblemDetail {
+  lockLevel?: 'CONTENT_LOCKED' | 'FULLY_LOCKED';
+  lockedEntity?: 'node' | 'attribute' | 'space';
+}
+
+/**
+ * Context action required error detail (422)
+ * Returned when a node move requires context resolution
+ */
+export interface ContextActionRequiredError extends ProblemDetail {
+  requiredAction?: string;
+}

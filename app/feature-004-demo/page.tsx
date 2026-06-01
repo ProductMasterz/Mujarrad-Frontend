@@ -26,6 +26,8 @@ const mockNodes: Node[] = [
     title: 'Product Documentation',
     slug: 'product-documentation',
     nodeType: NodeType.CONTEXT,
+    lockLevel: 'UNLOCKED',
+    isBuiltin: false,
     content: '',
     nodeDetails: {},
     currentVersionId: 'v1',
@@ -40,6 +42,8 @@ const mockNodes: Node[] = [
     title: 'Getting Started',
     slug: 'getting-started',
     nodeType: NodeType.REGULAR,
+    lockLevel: 'UNLOCKED',
+    isBuiltin: false,
     content: '# Getting Started\n\nWelcome to our product! Check out [[Installation Guide]] and [[Configuration]].\n\n## Prerequisites\n- Node.js 18+\n- npm or yarn',
     nodeDetails: {},
     currentVersionId: 'v1',
@@ -54,6 +58,8 @@ const mockNodes: Node[] = [
     title: 'Installation Guide',
     slug: 'installation-guide',
     nodeType: NodeType.REGULAR,
+    lockLevel: 'UNLOCKED',
+    isBuiltin: false,
     content: '# Installation Guide\n\n```bash\nnpm install my-product\n```\n\nSee [[Configuration]] for next steps.',
     nodeDetails: {},
     currentVersionId: 'v1',
@@ -68,6 +74,8 @@ const mockNodes: Node[] = [
     title: 'Configuration',
     slug: 'configuration',
     nodeType: NodeType.REGULAR,
+    lockLevel: 'UNLOCKED',
+    isBuiltin: false,
     content: '# Configuration\n\nCreate a `.env` file with:\n```\nAPI_KEY=your_key\nDATABASE_URL=postgres://...\n```',
     nodeDetails: {},
     currentVersionId: 'v1',
@@ -82,6 +90,8 @@ const mockNodes: Node[] = [
     title: 'API Reference',
     slug: 'api-reference',
     nodeType: NodeType.CONTEXT,
+    lockLevel: 'UNLOCKED',
+    isBuiltin: false,
     content: '',
     nodeDetails: {},
     currentVersionId: 'v1',
@@ -96,6 +106,8 @@ const mockNodes: Node[] = [
     title: 'Authentication',
     slug: 'authentication',
     nodeType: NodeType.REGULAR,
+    lockLevel: 'UNLOCKED',
+    isBuiltin: false,
     content: '# Authentication\n\nUse JWT tokens for authentication. See [[Getting Started]] for setup.',
     nodeDetails: {},
     currentVersionId: 'v1',
@@ -109,7 +121,9 @@ const mockNodes: Node[] = [
     spaceId: 'demo-space',
     title: 'Security Assumptions',
     slug: 'security-assumptions',
-    nodeType: NodeType.ASSUMPTION,
+    nodeType: NodeType.REGULAR,
+    lockLevel: 'UNLOCKED',
+    isBuiltin: false,
     content: '# Security Assumptions\n\n- Users are authenticated via OAuth2\n- All data is encrypted at rest\n- Rate limiting is enforced',
     nodeDetails: {},
     currentVersionId: 'v1',
@@ -256,7 +270,7 @@ export default function Feature004DemoPage() {
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         selectedNode.nodeType === NodeType.CONTEXT
                           ? 'bg-purple-100 text-purple-800'
-                          : selectedNode.nodeType === NodeType.ASSUMPTION
+                          : selectedNode.nodeType === NodeType.REGULAR
                           ? 'bg-yellow-100 text-yellow-800'
                           : 'bg-blue-100 text-blue-800'
                       }`}>
@@ -336,7 +350,7 @@ export default function Feature004DemoPage() {
                     <div>
                       <h4 className="font-medium text-gray-900">Wave 5: Graph UI</h4>
                       <ul className="list-disc list-inside text-sm text-gray-600 mt-2 space-y-1">
-                        <li>CustomNode with type-based styling (CONTEXT, REGULAR, ASSUMPTION)</li>
+                        <li>CustomNode with type-based styling (CONTEXT, REGULAR, ATTRIBUTE)</li>
                         <li>Bidirectional edge detection with ↔ markers</li>
                         <li>GraphVisualization with React Flow</li>
                         <li>GraphControls with node/edge type filters</li>

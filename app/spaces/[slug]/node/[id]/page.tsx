@@ -22,7 +22,10 @@ import { getNodeEntityType, withUpdatedEntityType } from '@/lib/entity-types';
 import { useEntityTypeStore } from '@/stores/entityType.store';
 import { LayoutTemplate, Info } from 'lucide-react';
 import { NodeTemplateModal } from '@/components/templates/NodeTemplateModal';
+import { LockToggle } from '@/components/locking/LockToggle';
+import { MigrateNodeDialog } from '@/components/migration/MigrateNodeDialog';
 import type { NodeTemplate } from '@/components/templates/nodeTemplates';
+import { ArrowRightLeft } from 'lucide-react';
 
 export default function NodeDetailPage() {
   const params = useParams();
@@ -65,6 +68,7 @@ export default function NodeDetailPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showNodeDetails, setShowNodeDetails] = useState(false);
+  const [showMigrateDialog, setShowMigrateDialog] = useState(false);
   const [title, setTitle] = useState('');
   const [entityTypeValue, setEntityTypeValue] = useState('');
   const [entityColorValue, setEntityColorValue] = useState('#94a3b8');
@@ -334,6 +338,12 @@ export default function NodeDetailPage() {
               </p>
 
               <div className="mb-8 flex flex-wrap items-center gap-2">
+                <LockToggle
+                  spaceSlug={slug}
+                  nodeId={nodeId}
+                  currentLockLevel={(node.lockLevel as 'UNLOCKED' | 'CONTENT_LOCKED' | 'FULLY_LOCKED') || 'UNLOCKED'}
+                />
+
                 <Button
                   type="button"
                   variant="outline"
@@ -342,6 +352,16 @@ export default function NodeDetailPage() {
                 >
                   <LayoutTemplate className="h-4 w-4" />
                   Templates
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowMigrateDialog(true)}
+                  className="gap-2 rounded-xl"
+                >
+                  <ArrowRightLeft className="h-4 w-4" />
+                  Migrate
                 </Button>
 
                 <Button
@@ -507,6 +527,16 @@ export default function NodeDetailPage() {
             onClose={() => setShowTemplateModal(false)}
             onUseTemplate={handleUseTemplate}
             showApplyMode={true}
+          />
+        )}
+
+        {showMigrateDialog && node && (
+          <MigrateNodeDialog
+            spaceSlug={slug}
+            nodeId={nodeId}
+            nodeTitle={node.title}
+            open={showMigrateDialog}
+            onOpenChange={setShowMigrateDialog}
           />
         )}
 

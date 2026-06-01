@@ -402,7 +402,7 @@ A node represents any piece of content or concept:
 | \`title\` | String | Display title (max 500 chars) |
 | \`slug\` | String | URL-friendly identifier |
 | \`content\` | String | Main text content |
-| \`nodeType\` | Enum | REGULAR, CONTEXT, ASSUMPTION, ATTRIBUTE |
+| \`nodeType\` | Enum | REGULAR, CONTEXT, ATTRIBUTE, TEMPLATE |
 | \`nodeDetails\` | JSONB | Flexible custom properties |
 | \`contextTypeId\` | UUID | Schema reference (BACKEND spaces) |
 | \`visibility\` | Enum | VISIBLE, INTERNAL, HIDDEN |
@@ -436,21 +436,6 @@ curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceSlug}/nodes" \\
   -d '{
     "title": "Projects",
     "nodeType": "CONTEXT"
-  }'
-\`\`\`
-
-### ASSUMPTION
-
-Hypothesis or assumption nodes:
-
-\`\`\`bash
-curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceSlug}/nodes" \\
-  -H "Authorization: Bearer $TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "title": "Users prefer dark mode",
-    "content": "Based on user feedback...",
-    "nodeType": "ASSUMPTION"
   }'
 \`\`\`
 

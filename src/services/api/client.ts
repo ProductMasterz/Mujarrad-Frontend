@@ -126,13 +126,50 @@ apiClient.interceptors.response.use(
         }
       }
 
-      // Handle 403 Forbidden - log details
+      // Handle 400 Bad Request - invalid input (ATTRIBUTE in void, CONTAINS cross-space, invalid nodeType)
+      if (status === 400) {
+        const errorData = data as { detail?: string; title?: string };
+        console.warn('400 Bad Request:', {
+          url: error.config?.url,
+          detail: errorData?.detail || errorData?.title,
+        });
+      }
+
+      // Handle 403 Forbidden - log details (includes cross-org operations)
       if (status === 403) {
         console.error('403 Forbidden - Access denied:', {
           url: error.config?.url,
           method: error.config?.method,
           hasAuthHeader: !!error.config?.headers?.Authorization,
           data
+        });
+      }
+
+      // Handle 409 Conflict - locking conflicts, VC active connections, duplicate slugs
+      if (status === 409) {
+        const errorData = data as { message?: string; detail?: string };
+        const msg = errorData?.message || errorData?.detail || '';
+        const isLocking = /lock/i.test(msg);
+        console.warn(`409 Conflict${isLocking ? ' (Locking)' : ''}:`, {
+          url: error.config?.url,
+          method: error.config?.method,
+          message: msg,
+        });
+      }
+
+      // Handle 410 Gone - deprecated endpoint removed
+      if (status === 410) {
+        console.error('410 Gone - Endpoint removed:', {
+          url: error.config?.url,
+          detail: (data as { detail?: string })?.detail,
+        });
+      }
+
+      // Handle 422 Unprocessable Entity - context action required on move
+      if (status === 422) {
+        console.warn('422 Unprocessable Entity:', {
+          url: error.config?.url,
+          data,
         });
       }
 

@@ -22,7 +22,7 @@ import { createTemplateBlocks } from "@/components/templates/templateBlockServic
 // Entity types that can be created
 export type EntityType = "space" | "node" | "context";
 
-type ManualSystemNodeType = "REGULAR" | "CONTEXT" | "ASSUMPTION" | "TEMPLATE";
+type ManualSystemNodeType = "REGULAR" | "CONTEXT" | "ATTRIBUTE";
 type ManualEntityType = string;
 // Icons for each entity type
 const ENTITY_ICONS: Record<EntityType, React.ReactNode> = {
@@ -45,8 +45,7 @@ const MANUAL_SYSTEM_NODE_TYPE_OPTIONS: Array<{
 }> = [
   { value: "REGULAR", label: "Regular" },
   { value: "CONTEXT", label: "Context" },
-  { value: "ASSUMPTION", label: "Assumption" },
-  { value: "TEMPLATE", label: "Template" },
+  { value: "ATTRIBUTE", label: "Attribute" },
 ];
 
 type NewNodeModalProps = {

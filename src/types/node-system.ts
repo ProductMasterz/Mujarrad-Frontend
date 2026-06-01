@@ -113,7 +113,7 @@ export function inferNodeCapabilities(
   return {
     canRenderAsWhiteboardShape: !!details.element_subtype,
     canRenderAsBlock: !!details.blockType,
-    canRenderAsPage: nodeType === 'REGULAR' || nodeType === 'ASSUMPTION' || nodeType === 'TEMPLATE',
+    canRenderAsPage: nodeType === 'REGULAR',
     canRenderAsMarkdown: !!content,
     isWhiteboardContext: !!details.whiteboard_context,
   };

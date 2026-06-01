@@ -38,7 +38,7 @@ Successfully implemented all Zod validation schemas for form inputs in the Mujar
 
 - ✓ `createNodeSchema`: Node creation validation
   - Title: Required, 1-200 chars, auto-trimmed
-  - NodeType: Enum validation (REGULAR, CONTEXT, ASSUMPTION)
+  - NodeType: Enum validation (REGULAR, CONTEXT, ATTRIBUTE, TEMPLATE)
   - MarkdownContent: Max 50,000 chars, defaults to empty string
   - NodeDetails: Optional JSON object
 - ✓ `updateNodeSchema`: Partial update with version control

@@ -27,8 +27,7 @@ interface NodeCardProps {
 const nodeTypeColors: Record<NodeType, string> = {
   [NodeType.REGULAR]: 'bg-blue-100 text-blue-800',
   [NodeType.CONTEXT]: 'bg-purple-100 text-purple-800',
-  [NodeType.ASSUMPTION]: 'bg-yellow-100 text-yellow-800',
-  [NodeType.TEMPLATE]: 'bg-green-100 text-green-800',
+  [NodeType.ATTRIBUTE]: 'bg-yellow-100 text-yellow-800',
 };
 
 export function NodeCard({ node, spaceSlug, onDeleted }: NodeCardProps) {

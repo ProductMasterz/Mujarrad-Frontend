@@ -26,6 +26,14 @@ export interface Space {
   ownerId: string;
   /** Creation timestamp (ISO 8601) */
   createdAt: string;
+  /** Organization ID (UUID v4) — always populated */
+  organizationId: string;
+  /** Project type classification */
+  projectType?: 'CONSUMER' | 'BACKEND';
+  /** Operational mode (BACKEND spaces only) */
+  mode?: 'CONFIGURATION' | 'PRODUCTION';
+  /** Whether the space is locked — defaults false */
+  isLocked: boolean;
   /** Last update timestamp (ISO 8601) */
   updatedAt: string;
 }
@@ -36,8 +44,7 @@ export interface Space {
 export enum NodeType {
   REGULAR = 'REGULAR',
   CONTEXT = 'CONTEXT',
-  ASSUMPTION = 'ASSUMPTION',
-  TEMPLATE = 'TEMPLATE',
+  ATTRIBUTE = 'ATTRIBUTE',
 }
 
 /**
@@ -132,6 +139,10 @@ export interface Node {
   modifiedBy: string;
   /** Creation timestamp (ISO 8601) */
   createdAt: string;
+  /** Lock level for this node */
+  lockLevel: 'UNLOCKED' | 'CONTENT_LOCKED' | 'FULLY_LOCKED';
+  /** Whether this is a builtin node (e.g. The Blank) */
+  isBuiltin: boolean;
   /** Last update timestamp (ISO 8601) */
   updatedAt: string;
 }
@@ -159,10 +170,13 @@ export interface Attribute {
   targetNodeId: string;
   attributeName: string;
   attributeType: string;
-  attributeTypeMode: AttributeTypeMode;
+  attributeTypeMode: string;
   attributeDataType?: string | null;
   attributeValue: Record<string, unknown>;
-  properties?: Record<string, unknown> | null;
+  properties: Record<string, unknown>;
+  representativeNodeId?: string;
+  isLocked: boolean;
+  virtualContextId?: string;
   createdBy: string;
   createdAt: string;
 }
@@ -227,6 +241,10 @@ export interface CreateSpaceRequest {
   name: string;
   /** Optional slug (auto-generated from name if omitted) */
   slug?: string;
+  /** Optional project type */
+  projectType?: 'CONSUMER' | 'BACKEND';
+  /** Organization ID (optional — defaults to user's individual org) */
+  organizationId?: string;
 }
 
 /**
@@ -238,7 +256,7 @@ export interface UpdateSpaceRequest {
   name?: string;
   slug?: string;
   /** Optional backend project type */
-  projectType?: 'BACKEND' | 'FRONTEND' | 'CONSUMER';
+  projectType?: 'BACKEND' | 'CONSUMER';
 
   /** Optional backend mode */
   mode?: 'CONFIGURATION' | 'PRODUCTION';
@@ -367,4 +385,319 @@ export interface ApiKeyCreateRequest {
  */
 export interface ApiKeyRotateRequest {
   currentSecretKey: string;
+}
+
+// ============================================================
+// Lock Level Enum
+// ============================================================
+
+/**
+ * Lock level enum - must match backend exactly
+ */
+export enum LockLevel {
+  UNLOCKED = 'UNLOCKED',
+  CONTENT_LOCKED = 'CONTENT_LOCKED',
+  FULLY_LOCKED = 'FULLY_LOCKED',
+}
+
+// ============================================================
+// Organization DTOs
+// ============================================================
+
+/**
+ * Organization entity from backend
+ * Backend: OrganizationResponse from /api/organizations endpoints
+ */
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  type: 'INDIVIDUAL' | 'TEAM';
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Organization member entity from backend
+ */
+export interface OrganizationMember {
+  userId: string;
+  username: string;
+  role: 'OWNER' | 'ADMIN' | 'MEMBER';
+  joinedAt: string;
+}
+
+/**
+ * Request body for creating an organization
+ */
+export interface OrganizationCreateRequest {
+  name: string;
+}
+
+/**
+ * Request body for adding an organization member
+ */
+export interface OrganizationMemberRequest {
+  userId: string;
+  role?: 'OWNER' | 'ADMIN' | 'MEMBER';
+}
+
+// ============================================================
+// Virtual Context DTOs
+// ============================================================
+
+/**
+ * Virtual context entity from backend
+ * Backend: VirtualContextResponse from /api/virtual-contexts endpoints
+ */
+export interface VirtualContext {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  ownerSpaceId: string;
+  visibility?: string;
+  createdAt: string;
+}
+
+/**
+ * Virtual context member entity from backend
+ */
+export interface VirtualContextMember {
+  spaceId: string;
+  spaceName: string;
+  role: 'OWNER' | 'CONTRIBUTOR' | 'READONLY';
+  joinedAt: string;
+}
+
+/**
+ * Request body for creating a virtual context
+ */
+export interface VirtualContextCreateRequest {
+  name: string;
+  description?: string;
+  ownerSpaceId: string;
+  visibility?: string;
+}
+
+/**
+ * Request body for adding a virtual context member
+ */
+export interface VirtualContextAddMemberRequest {
+  spaceId: string;
+  role?: 'OWNER' | 'CONTRIBUTOR' | 'READONLY';
+}
+
+// ============================================================
+// Cross-Space Attribute DTOs
+// ============================================================
+
+/**
+ * Cross-space attribute entity from backend
+ */
+export interface CrossSpaceAttributeResponse {
+  id: string;
+  virtualContextId: string;
+  sourceSpaceId: string;
+  sourceNodeId: string;
+  targetSpaceId: string;
+  targetNodeId: string;
+  attributeName: string;
+  attributeType: string;
+  attributeValue: Record<string, unknown>;
+  crossSpace: boolean;
+  createdAt: string;
+}
+
+/**
+ * Request body for creating a cross-space attribute
+ */
+export interface CrossSpaceAttributeCreateRequest {
+  sourceNodeId: string;
+  targetNodeId: string;
+  attributeName: string;
+  attributeType: string;
+  attributeValue?: Record<string, unknown>;
+  properties?: Record<string, unknown>;
+}
+
+// ============================================================
+// Node Move DTOs
+// ============================================================
+
+/**
+ * Request body for moving a node between spaces
+ */
+export interface MoveNodeRequest {
+  targetSpaceId: string;
+  targetContextId?: string;
+  contextAction?: string;
+  confirm?: boolean;
+}
+
+/**
+ * Response from moving a node between spaces
+ */
+export interface MoveNodeResponse {
+  node: Node;
+  convertedRelationships: number;
+  severedRelationships: number;
+  contextAction?: string;
+  preview?: MovePreview;
+}
+
+/**
+ * Preview information for a node move
+ */
+export interface MovePreview {
+  totalRelationships: number;
+  relationships: RelationshipInfo[];
+}
+
+/**
+ * Relationship info used in move preview
+ */
+export interface RelationshipInfo {
+  attributeId: string;
+  attributeName: string;
+  connectedNodeId: string;
+  connectedNodeTitle: string;
+}
+
+// ============================================================
+// Void Node DTOs
+// ============================================================
+
+/**
+ * Request body for creating a void node
+ */
+export interface VoidNodeCreateRequest {
+  title: string;
+  content?: string;
+  nodeType?: 'REGULAR' | 'CONTEXT' | 'ATTRIBUTE';
+  nodeDetails?: Record<string, unknown>;
+}
+
+/**
+ * Request body for updating a void node
+ */
+export interface VoidNodeUpdateRequest {
+  title?: string;
+  content?: string;
+  nodeDetails?: Record<string, unknown>;
+}
+
+/**
+ * Request body for assigning a void node to a space
+ */
+export interface AssignToSpaceRequest {
+  spaceId: string;
+  contextId?: string;
+}
+
+// ============================================================
+// Lock DTOs
+// ============================================================
+
+/**
+ * Response from lock/unlock operations
+ */
+export interface LockResponse {
+  success: boolean;
+  message?: string;
+}
+
+/**
+ * Request body for locking a node
+ */
+export interface LockNodeRequest {
+  lockLevel: LockLevel;
+}
+
+// ============================================================
+// Pagination
+// ============================================================
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+  cursor: string | null;
+}
+
+// ============================================================
+// Node Migration DTOs
+// ============================================================
+
+export interface MigrateNodeRequest {
+  targetSpaceId: string;
+  targetContextId?: string;
+  includeReference?: boolean;
+}
+
+export interface MigrateNodeResponse {
+  original: Node;
+  copy: Node;
+  referenceAttributeId: string | null;
+}
+
+// ============================================================
+// The Blank DTOs
+// ============================================================
+
+export interface BlankCount {
+  count: number;
+}
+
+export interface AssignFromBlankRequest {
+  contextSlug: string;
+}
+
+export interface BulkAssignFromBlankRequest {
+  nodeIds: string[];
+  contextSlug: string;
+}
+
+// ============================================================
+// Context Type / Schema DTOs
+// ============================================================
+
+export interface FieldSchema {
+  type: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATE' | 'NODE_REF' | 'LIST';
+  required?: boolean;
+  description?: string;
+  default?: unknown;
+}
+
+export interface SchemaRelationshipDefinition {
+  type: string;
+  targetContextType: string;
+  cardinality: 'ONE_TO_ONE' | 'ONE_TO_MANY' | 'MANY_TO_ONE' | 'MANY_TO_MANY';
+}
+
+export interface ContextType {
+  id: string;
+  spaceId: string;
+  name: string;
+  slug: string;
+  attributeSchema: Record<string, FieldSchema>;
+  schemaRelationships: SchemaRelationshipDefinition[];
+  isBuiltin: boolean;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface ContextTypeCreateRequest {
+  name: string;
+  slug?: string;
+  attributeSchema?: Record<string, FieldSchema>;
+  schemaRelationships?: SchemaRelationshipDefinition[];
+}
+
+export interface ContextTypeUpdateRequest {
+  name?: string;
+  attributeSchema?: Record<string, FieldSchema>;
+  schemaRelationships?: SchemaRelationshipDefinition[];
 }

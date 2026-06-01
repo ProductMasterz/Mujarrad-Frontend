@@ -23,6 +23,14 @@ import { spaceService } from '@/services/api';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { getNodeEntityType } from '@/lib/entity-types';
 import { useEntityTypeStore } from '@/stores/entityType.store';
+import { FolderOpen } from 'lucide-react';
+import { LockedBanner } from '@/components/locking/LockedBanner';
+import { SpaceLockToggle } from '@/components/locking/SpaceLockToggle';
+import { BlankBadge } from '@/components/blank/BlankBadge';
+import { BlankNodesPanel } from '@/components/blank/BlankNodesPanel';
+import { ContextCard } from '@/components/contexts/ContextCard';
+import { VCPanel } from '@/components/virtual-contexts/VCPanel';
+import { ContextList } from '@/components/contexts/ContextList';
 
 function isAgentCreatedNode(node: Node): boolean {
   let details: Record<string, unknown> | undefined;
@@ -134,7 +142,7 @@ export default function SpaceDetailPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [filterNodeType, setFilterNodeType] = useState<'ALL' | 'REGULAR' | 'CONTEXT' | 'ASSUMPTION' | 'TEMPLATE'>('ALL');
+  const [filterNodeType, setFilterNodeType] = useState<'ALL' | 'REGULAR' | 'CONTEXT' | 'ATTRIBUTE'>('ALL');
   const [filterEntityType, setFilterEntityType] = useState<string>('ALL');
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -226,6 +234,14 @@ export default function SpaceDetailPage() {
         );
       });
   }, [nodes, searchTerm, sortBy, filterNodeType, filterEntityType]);
+
+  const contexts = useMemo(() => {
+    return allDisplayableNodes.filter(n => n.nodeType === NodeType.CONTEXT && !n.isBuiltin);
+  }, [allDisplayableNodes]);
+
+  const regularNodes = useMemo(() => {
+    return allDisplayableNodes.filter(n => n.nodeType !== NodeType.CONTEXT);
+  }, [allDisplayableNodes]);
 
   const totalNodeCount = allDisplayableNodes.length;
 
@@ -551,12 +567,26 @@ export default function SpaceDetailPage() {
             marginLeft: '0',
           }}
         >
+          {space?.isLocked && (
+            <div className="mb-4">
+              <LockedBanner spaceSlug={slug} />
+            </div>
+          )}
+
           <div className="mb-4 rounded-[22px] border border-border bg-background px-5 py-5 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h1 className="text-[28px] font-semibold leading-tight text-foreground">
-                  {space?.name || 'Space'}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-[28px] font-semibold leading-tight text-foreground">
+                    {space?.name || 'Space'}
+                  </h1>
+                  <BlankBadge spaceSlug={slug} />
+                  {space?.isLocked && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-200">
+                      Locked
+                    </span>
+                  )}
+                </div>
                 <p className="mt-1 max-w-[680px] text-sm leading-5 text-muted-foreground">
                   Review, create, and organize structured nodes and contexts in this space.
                 </p>
@@ -594,6 +624,8 @@ export default function SpaceDetailPage() {
                 >
                   Whiteboard
                 </button>
+
+                <SpaceLockToggle spaceSlug={slug} isLocked={!!space?.isLocked} />
               </div>
             </div>
 
@@ -630,7 +662,7 @@ export default function SpaceDetailPage() {
                   value={filterNodeType}
                   onChange={(e) =>
                     setFilterNodeType(
-                      e.target.value as 'ALL' | 'REGULAR' | 'CONTEXT' | 'ASSUMPTION' | 'TEMPLATE'
+                      e.target.value as 'ALL' | 'REGULAR' | 'CONTEXT' | 'ATTRIBUTE'
                     )
                   }
                   className="h-[42px] w-full rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
@@ -638,8 +670,7 @@ export default function SpaceDetailPage() {
                   <option value="ALL">All node types</option>
                   <option value="REGULAR">Regular</option>
                   <option value="CONTEXT">Context</option>
-                  <option value="ASSUMPTION">Assumption</option>
-                  <option value="TEMPLATE">Template</option>
+                  <option value="ATTRIBUTE">Attribute</option>
                 </select>
 
                 <select
@@ -708,6 +739,18 @@ export default function SpaceDetailPage() {
             </div>
           </div>
 
+          {/* Context filter and Connections */}
+          {space && (
+            <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-[240px_1fr]">
+              <div className="rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
+                <ContextList spaceSlug={slug} onSelectContext={(ctx) => setSearchTerm(ctx ? `context:${ctx}` : '')} />
+              </div>
+              <div className="rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
+                <VCPanel spaceSlug={slug} spaceId={space.id} />
+              </div>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex items-center justify-center h-[400px]">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -733,8 +776,44 @@ export default function SpaceDetailPage() {
             </div>
           ) : (
             <>
+              {/* Contexts Section */}
+              <div className="mb-6">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                    Contexts ({contexts.length})
+                  </h2>
+                </div>
+                {contexts.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-purple-200 dark:border-purple-800 p-8 text-center">
+                    <FolderOpen className="h-8 w-8 mx-auto text-purple-400 mb-2" />
+                    <p className="text-sm text-muted-foreground">No contexts yet</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">Create a context to organize your nodes</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
+                    {contexts.map((ctx) => (
+                      <ContextCard
+                        key={ctx.id}
+                        spaceSlug={slug}
+                        contextId={ctx.id}
+                        contextSlug={ctx.slug}
+                        title={ctx.title}
+                        nodeCount={regularNodes.length}
+                        isBuiltin={ctx.isBuiltin}
+                        lockLevel={ctx.lockLevel}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* The Blank — Unorganized Nodes */}
+              <div className="mb-6">
+                <BlankNodesPanel spaceSlug={slug} />
+              </div>
+
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Nodes</h2>
+                <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">All Nodes</h2>
               </div>
 
               {viewMode === 'grid' ? (
@@ -749,10 +828,8 @@ export default function SpaceDetailPage() {
                     const nodeKindLabel =
                       node.nodeType === NodeType.CONTEXT
                         ? 'Context'
-                        : node.nodeType === NodeType.ASSUMPTION
-                        ? 'Assumption'
-                        : node.nodeType === NodeType.TEMPLATE
-                        ? 'Template'
+                        : node.nodeType === NodeType.ATTRIBUTE
+                        ? 'Attribute'
                         : node.nodeType === NodeType.REGULAR
                         ? 'Regular'
                         : 'Node';
@@ -806,10 +883,8 @@ export default function SpaceDetailPage() {
                     const nodeKindLabel =
                       node.nodeType === NodeType.CONTEXT
                         ? 'Context'
-                        : node.nodeType === NodeType.ASSUMPTION
-                        ? 'Assumption'
-                        : node.nodeType === NodeType.TEMPLATE
-                        ? 'Template'
+                        : node.nodeType === NodeType.ATTRIBUTE
+                        ? 'Attribute'
                         : node.nodeType === NodeType.REGULAR
                         ? 'Regular'
                         : 'Node';
@@ -818,7 +893,7 @@ export default function SpaceDetailPage() {
                     const nodeKindBadgeClasses =
                       nodeKindLabel.toLowerCase() === 'context'
                         ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
-                        : nodeKindLabel.toLowerCase() === 'assumption'
+                        : nodeKindLabel.toLowerCase() === 'attribute'
                         ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200'
                         : nodeKindLabel.toLowerCase() === 'template'
                         ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200'

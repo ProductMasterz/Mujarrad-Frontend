@@ -150,7 +150,7 @@ export interface WhiteboardNode {
   id: string;
   title: string;
   content?: string;
-  nodeType: 'CONTEXT' | 'REGULAR' | 'TEMPLATE' | 'ASSUMPTION';
+  nodeType: 'CONTEXT' | 'REGULAR' | 'ATTRIBUTE';
   nodeDetails: WhiteboardNodeDetails;
   createdAt: string;
   updatedAt: string;
@@ -239,7 +239,7 @@ export type TitleSource = 'text' | 'auto' | 'custom';
 
 export interface ElementTypeConfig {
   excalidraw_type: ExcalidrawElementType;
-  mujarrad_node_type: 'CONTEXT' | 'REGULAR' | 'TEMPLATE' | 'ASSUMPTION';
+  mujarrad_node_type: 'CONTEXT' | 'REGULAR' | 'ATTRIBUTE';
   element_subtype: WhiteboardElementSubtype;
   title_source: TitleSource;
   title_prefix?: string;

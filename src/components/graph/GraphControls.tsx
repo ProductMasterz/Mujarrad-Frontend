@@ -131,8 +131,7 @@ export function GraphControls({
       showSystem: checked,
       showRegular: checked,
       showContext: checked,
-      showAssumption: checked,
-      showTemplate: checked,
+      showAttribute: checked,
       showBlocks: checked,
       showReferences: checked,
     });
@@ -252,14 +251,9 @@ export function GraphControls({
               onChange={(checked) => onViewModeChange({ showContext: checked })}
             />
             <Toggle
-              label="Assumptions"
-              checked={viewMode.showAssumption}
-              onChange={(checked) => onViewModeChange({ showAssumption: checked })}
-            />
-            <Toggle
-              label="Templates"
-              checked={viewMode.showTemplate}
-              onChange={(checked) => onViewModeChange({ showTemplate: checked })}
+              label="Attributes"
+              checked={viewMode.showAttribute}
+              onChange={(checked) => onViewModeChange({ showAttribute: checked })}
             />
             <Toggle
               label="Blocks"

@@ -544,8 +544,13 @@ export default function SpacesPage() {
                     className="grid w-full grid-cols-[minmax(0,2fr)_160px_140px] items-center gap-4 border-b border-border/60 px-4 py-3 text-left transition hover:bg-muted/40 last:border-b-0"
                   >
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-foreground">
+                      <div className="truncate text-sm font-medium text-foreground flex items-center gap-1.5">
                         {space.name}
+                        {space.isLocked && (
+                          <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-200">
+                            Locked
+                          </span>
+                        )}
                       </div>
                       <div className="mt-1 truncate text-xs text-muted-foreground">
                         {space.slug}

@@ -1,9 +1,19 @@
+'use client';
+
 import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronDown, ChevronRight, CloudOff, Package, FolderOpen, FileText, Plus } from "lucide-react";
 import clsx from "clsx";
 import { projectsData, Card, CardType } from "../data/projects";
 import VuesaxLinearContext from "../imports/VuesaxLinearContext";
 import VuesaxLinearNode from "../imports/VuesaxLinearNode";
+import { OrgSwitcher } from "@/components/organizations/OrgSwitcher";
+import { Badge } from "@/components/ui/badge";
+import { useSpaces } from "@/hooks/api/useSpaces";
+import { useVoidNodes } from "@/hooks/api/useVoidNodes";
+import { useNodes } from "@/hooks/api/useNodes";
+import { useBlankCount } from "@/hooks/api/useBlankNodes";
+import { NodeType } from "@/types/backend-dtos";
 
 type SidebarProps = {
   isOpen: boolean;
@@ -241,6 +251,88 @@ function SidebarItem({
   );
 }
 
+/** Expanded space showing its contexts and blank count */
+function SpaceContextList({ spaceSlug }: { spaceSlug: string }) {
+  const router = useRouter();
+  const { data: nodes } = useNodes(spaceSlug);
+  const { data: blankCount } = useBlankCount(spaceSlug);
+
+  const contexts = (nodes ?? []).filter(
+    (n) => n.nodeType === NodeType.CONTEXT
+  );
+
+  return (
+    <div className="ml-[28px] mt-[4px] flex flex-col gap-[2px]">
+      {contexts.map((ctx) => (
+        <button
+          key={ctx.id}
+          onClick={() => router.push(`/spaces/${spaceSlug}/context/${ctx.slug}`)}
+          className="flex w-full items-center gap-[6px] rounded-lg px-[8px] py-[5px] text-left text-[13px] text-slate-500 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/60"
+        >
+          <FolderOpen className="size-3.5 shrink-0" strokeWidth={1.5} />
+          <span className="flex-1 truncate">{ctx.title}</span>
+        </button>
+      ))}
+      {(blankCount ?? 0) > 0 && (
+        <button
+          onClick={() => router.push(`/spaces/${spaceSlug}`)}
+          className="flex w-full items-center gap-[6px] rounded-lg px-[8px] py-[5px] text-left text-[13px] text-slate-500 transition-colors hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/60"
+        >
+          <FileText className="size-3.5 shrink-0" strokeWidth={1.5} />
+          <span className="flex-1 truncate">Blank</span>
+          <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">
+            {blankCount}
+          </Badge>
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Space item in the sidebar with expand-on-select behavior */
+function SpaceItem({
+  space,
+  isActive,
+}: {
+  space: { id: string; slug: string; name: string };
+  isActive: boolean;
+}) {
+  const router = useRouter();
+  const [isExpanded, setIsExpanded] = useState(isActive);
+
+  // Auto-expand when active
+  if (isActive && !isExpanded) {
+    setIsExpanded(true);
+  }
+
+  return (
+    <div>
+      <button
+        onClick={() => {
+          setIsExpanded(!isExpanded);
+          router.push(`/spaces/${space.slug}`);
+        }}
+        className={clsx(
+          "flex w-full items-center gap-[8px] rounded-xl px-[10px] py-[7px] text-left text-[14px] transition-colors",
+          isActive
+            ? "bg-slate-100 font-medium text-slate-900 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-white dark:ring-slate-700"
+            : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/60"
+        )}
+      >
+        <div className="shrink-0">
+          {isExpanded ? (
+            <ChevronDown className="size-3" strokeWidth={1.5} />
+          ) : (
+            <ChevronRight className="size-3" strokeWidth={1.5} />
+          )}
+        </div>
+        <span className="flex-1 truncate">{space.name}</span>
+      </button>
+      {isExpanded && <SpaceContextList spaceSlug={space.slug} />}
+    </div>
+  );
+}
+
 export function Sidebar({
   isOpen,
   selectedItem,
@@ -250,7 +342,18 @@ export function Sidebar({
   isSpacesLevel = false,
   onQuickCreateSpace,
 }: SidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const sidebarItems = items || projectsData;
+
+  const { data: spaces } = useSpaces();
+  const { data: voidNodes } = useVoidNodes();
+
+  const voidCount = voidNodes?.length ?? 0;
+
+  // Extract current space slug from URL
+  const spaceSlugMatch = pathname.match(/^\/spaces\/([^/]+)/);
+  const currentSpaceSlug = spaceSlugMatch ? spaceSlugMatch[1] : null;
 
   const handleAddNode = (parentPath: string[], position?: number) => {
     if (onAddNode) {
@@ -267,22 +370,77 @@ export function Sidebar({
       style={{ overflow: isOpen ? "visible" : "hidden" }}
     >
       <div className="flex h-full w-[276px] flex-col">
+        {/* Org Switcher */}
+        <div className="border-b border-border px-[16px] py-[12px]">
+          <OrgSwitcher />
+        </div>
+
         <div className="flex-1 overflow-y-auto px-[16px] pt-[20px]">
-          <div className="flex flex-col gap-[12px]">
-            {sidebarItems.map((item, idx) => (
-              <SidebarItem
-                key={item.id}
-                item={item}
-                onNavigate={onNavigate}
-                selectedItem={selectedItem}
-                onAddChild={handleAddNode}
-                onAddSibling={handleAddNode}
-                index={idx}
-                isSpacesLevel={isSpacesLevel}
-                onQuickCreateSpace={onQuickCreateSpace}
-              />
-            ))}
+          {/* Spaces Section */}
+          <div className="mb-[16px]">
+            <div className="mb-[8px] flex items-center gap-[6px] px-[10px] text-[12px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              <Package className="size-3.5" strokeWidth={1.5} />
+              <span>Spaces</span>
+            </div>
+            <div className="flex flex-col gap-[4px]">
+              {(spaces ?? []).map((space) => (
+                <SpaceItem
+                  key={space.id}
+                  space={space}
+                  isActive={currentSpaceSlug === space.slug}
+                />
+              ))}
+              {/* + Create Space */}
+              <button
+                onClick={() => onQuickCreateSpace?.()}
+                className="flex w-full items-center gap-[8px] rounded-xl px-[10px] py-[7px] text-left text-[13px] text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800/60 dark:hover:text-slate-300"
+              >
+                <Plus className="size-3.5" strokeWidth={1.5} />
+                <span>Create Space</span>
+              </button>
+            </div>
           </div>
+
+          {/* Separator */}
+          <div className="mx-[10px] mb-[16px] border-t border-border" />
+
+          {/* The Void */}
+          <button
+            onClick={() => router.push('/void')}
+            className={clsx(
+              "flex w-full items-center gap-[8px] rounded-xl px-[10px] py-[8px] text-left text-[14px] transition-colors",
+              pathname === '/void'
+                ? "bg-slate-100 font-medium text-slate-900 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-white dark:ring-slate-700"
+                : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/60"
+            )}
+          >
+            <CloudOff className="size-4 shrink-0" strokeWidth={1.5} />
+            <span className="flex-1">The Void</span>
+            {voidCount > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {voidCount}
+              </Badge>
+            )}
+          </button>
+
+          {/* Legacy sidebar items (if any non-space items passed) */}
+          {sidebarItems.length > 0 && !spaces?.length && (
+            <div className="mt-[16px] flex flex-col gap-[12px]">
+              {sidebarItems.map((item, idx) => (
+                <SidebarItem
+                  key={item.id}
+                  item={item}
+                  onNavigate={onNavigate}
+                  selectedItem={selectedItem}
+                  onAddChild={handleAddNode}
+                  onAddSibling={handleAddNode}
+                  index={idx}
+                  isSpacesLevel={isSpacesLevel}
+                  onQuickCreateSpace={onQuickCreateSpace}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

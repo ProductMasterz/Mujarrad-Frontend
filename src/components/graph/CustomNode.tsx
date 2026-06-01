@@ -6,6 +6,7 @@ import { NodeType, type Node as BackendNode } from '@/types/backend-dtos';
 import { cn } from '@/lib/utils';
 import { useEntityTypeStore } from '@/stores/entityType.store';
 import { getNodeEntityType } from '@/lib/entity-types';
+import { Lock, Shield } from 'lucide-react';
 
 const nodeTypeStyles: Record<
   NodeType,
@@ -34,21 +35,13 @@ const nodeTypeStyles: Record<
     surface: 'bg-purple-50 dark:bg-purple-950/30',
     label: 'Context',
   },
-  [NodeType.ASSUMPTION]: {
+  [NodeType.ATTRIBUTE]: {
     border: 'border-yellow-200 dark:border-yellow-800',
     accent: 'bg-yellow-500',
     badgeBg: 'bg-yellow-100 dark:bg-yellow-900/60',
     badgeText: 'text-yellow-700 dark:text-yellow-200',
     surface: 'bg-yellow-50 dark:bg-yellow-950/30',
-    label: 'Assumption',
-  },
-  [NodeType.TEMPLATE]: {
-    border: 'border-green-200 dark:border-green-800',
-    accent: 'bg-green-500',
-    badgeBg: 'bg-green-100 dark:bg-green-900/60',
-    badgeText: 'text-green-700 dark:text-green-200',
-    surface: 'bg-green-50 dark:bg-green-950/30',
-    label: 'Template',
+    label: 'Attribute',
   },
 };
 
@@ -60,6 +53,10 @@ export const CustomNode = memo(({ data, selected }: NodeProps) => {
     entityType?: string;
     node?: BackendNode;
   };
+
+  const isLocked = node?.lockLevel && node.lockLevel !== 'UNLOCKED';
+  const isFullyLocked = node?.lockLevel === 'FULLY_LOCKED';
+  const isBuiltin = node?.isBuiltin === true;
 
   const getType = useEntityTypeStore((state) => state.getType);
 
@@ -101,7 +98,19 @@ export const CustomNode = memo(({ data, selected }: NodeProps) => {
 
       <div className="px-3 py-3">
         <div className="mb-2 flex items-start justify-between gap-2">
-          <div className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">
+          <div className="line-clamp-2 text-sm font-semibold leading-5 text-foreground flex items-center gap-1.5">
+            {isBuiltin && (
+              <Shield className="h-3.5 w-3.5 shrink-0 text-blue-500" aria-label="Built-in node" />
+            )}
+            {isLocked && (
+              <Lock
+                className={cn(
+                  'h-3.5 w-3.5 shrink-0',
+                  isFullyLocked ? 'text-red-500' : 'text-amber-500'
+                )}
+                aria-label={isFullyLocked ? 'Fully locked' : 'Content locked'}
+              />
+            )}
             {label}
           </div>
 
@@ -125,7 +134,15 @@ export const CustomNode = memo(({ data, selected }: NodeProps) => {
         </div>
 
         <div className="text-[11px] text-muted-foreground">
-          {hasSemanticType ? 'Semantic node' : `${nodeTypeLabel} node`}
+          {isBuiltin
+            ? 'Built-in'
+            : isLocked
+            ? isFullyLocked
+              ? 'Fully locked'
+              : 'Content locked'
+            : hasSemanticType
+            ? 'Semantic node'
+            : `${nodeTypeLabel} node`}
         </div>
       </div>
 

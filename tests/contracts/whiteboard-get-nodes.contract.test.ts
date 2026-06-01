@@ -101,7 +101,7 @@ describe('API Contract: GET /api/spaces/{slug}/nodes (Whiteboard)', () => {
       expect(response.content[0]).toMatchObject({
         id: expect.any(String),
         title: expect.any(String),
-        node_type: expect.stringMatching(/^(REGULAR|CONTEXT|TEMPLATE|ASSUMPTION)$/),
+        node_type: expect.stringMatching(/^(REGULAR|CONTEXT|TEMPLATE|ATTRIBUTE)$/),
         node_details: expect.objectContaining({
           element_subtype: 'shape_rectangle',
           excalidraw_element: expect.objectContaining({

@@ -44,7 +44,7 @@ export function NodeDetailView({
     switch (nodeType.toUpperCase()) {
       case 'CONTEXT':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case 'ASSUMPTION':
+      case 'ATTRIBUTE':
         return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
       default:
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';

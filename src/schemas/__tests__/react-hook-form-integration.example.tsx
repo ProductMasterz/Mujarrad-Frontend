@@ -140,7 +140,7 @@ export function CreateNodeFormExample() {
         <select {...register('nodeType')}>
           <option value={NodeType.REGULAR}>Regular</option>
           <option value={NodeType.CONTEXT}>Context</option>
-          <option value={NodeType.ASSUMPTION}>Assumption</option>
+          <option value={NodeType.ATTRIBUTE}>Attribute</option>
         </select>
         {errors.nodeType && <span>{errors.nodeType.message}</span>}
       </div>

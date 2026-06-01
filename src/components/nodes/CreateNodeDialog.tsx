@@ -66,55 +66,27 @@ export function CreateNodeDialog({ spaceSlug }: CreateNodeDialogProps) {
   });
 
   const onSubmit = (data: CreatePageFormData) => {
-    // Create node with block editor mode by default
     const nodeData = {
       title: data.title,
       nodeType: data.nodeType,
-      content: '', // Empty content - user will add via block editor
+      content: '',
       nodeDetails: { editorMode: 'blocks', isPage: true },
     };
 
-    createNode({ spaceSlug: spaceSlug, data: nodeData }, {
+    const selectedParent = selectedParentId
+      ? nodes.find(n => n.id === selectedParentId)
+      : null;
+
+    createNode({
+      spaceSlug,
+      data: nodeData,
+      contextSlug: selectedParent?.slug,
+    }, {
       onSuccess: (newNode) => {
-        // If a parent was selected, create the CONTAINS relationship
-        if (selectedParentId) {
-          createAttribute({
-            sourceNodeId: selectedParentId,
-            data: {
-              sourceNodeId: selectedParentId,
-              targetNodeId: newNode.id,
-              attributeType: AttributeKey.CONTAINS,
-              attributeTypeMode: AttributeTypeMode.SCHEMALESS,
-              attributeName: AttributeKey.CONTAINS,
-              attributeValue: {},
-            },
-          }, {
-            onSuccess: () => {
-              setOpen(false);
-              reset();
-              setSelectedParentId(null);
-              // Navigate to the new page
-              router.push(`/spaces/${spaceSlug}/node/${newNode.id}`);
-            },
-            onError: (error) => {
-              if (isApiError(error)) {
-                if (error.statusCode === 400 && error.message.toLowerCase().includes('circular')) {
-                  setError('root', {
-                    message: `Cannot create this relationship: it would create a circular dependency. ${error.detail || ''}`
-                  });
-                } else {
-                  setError('root', { message: `Node created but failed to add to parent: ${error.getUserMessage()}` });
-                }
-              }
-            },
-          });
-        } else {
-          setOpen(false);
-          reset();
-          setSelectedParentId(null);
-          // Navigate to the new page
-          router.push(`/spaces/${spaceSlug}/node/${newNode.id}`);
-        }
+        setOpen(false);
+        reset();
+        setSelectedParentId(null);
+        router.push(`/spaces/${spaceSlug}/node/${newNode.id}`);
       },
       onError: (error) => {
         if (isApiError(error)) {
@@ -162,7 +134,7 @@ export function CreateNodeDialog({ spaceSlug }: CreateNodeDialogProps) {
               <SelectContent position="popper" className="z-[100]">
                 <SelectItem value={NodeType.REGULAR}>Regular Page</SelectItem>
                 <SelectItem value={NodeType.CONTEXT}>Context (Folder)</SelectItem>
-                <SelectItem value={NodeType.ASSUMPTION}>Assumption</SelectItem>
+                <SelectItem value={NodeType.ATTRIBUTE}>Attribute</SelectItem>
               </SelectContent>
             </Select>
             {errors.nodeType && <p className="text-sm text-destructive">{errors.nodeType.message}</p>}

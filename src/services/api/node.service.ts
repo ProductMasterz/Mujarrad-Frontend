@@ -5,6 +5,12 @@ import type {
   Node,
   CreateNodeRequest,
   UpdateNodeRequest,
+  PageResponse,
+  BlankCount,
+  AssignFromBlankRequest,
+  BulkAssignFromBlankRequest,
+  MigrateNodeRequest,
+  MigrateNodeResponse,
 } from '@/types/backend-dtos';
 import type { PaginatedResponse, PaginationParams, SearchParams } from '@/types/api';
 
@@ -27,11 +33,14 @@ export const nodeService = {
     spaceSlug: string,
     params?: PaginationParams
   ): Promise<Node[]> {
-    const response = await apiClient.get<Node[]>(
+    const paginationParams = { page: params?.page ?? 0, size: params?.size ?? 100, ...params };
+    const response = await apiClient.get<PageResponse<Node>>(
       `/spaces/${spaceSlug}/nodes`,
-      { params }
+      { params: paginationParams }
     );
-    return response.data;
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    return data.content;
   },
 
   /**
@@ -47,7 +56,7 @@ export const nodeService = {
   },
 
   /**
-   * Create new node in a space
+   * @deprecated Use createNodeInContext instead. Flat creation lands nodes in The Blank.
    * API Contract: POST /api/spaces/{spaceSlug}/nodes
    * @param spaceSlug - Space slug (URL-friendly identifier)
    * @param data - Node creation data
@@ -89,6 +98,128 @@ export const nodeService = {
   async deleteNode(spaceSlug: string, nodeId: string, force?: boolean): Promise<void> {
     const params = force !== undefined ? { force } : undefined;
     await apiClient.delete(`/spaces/${spaceSlug}/nodes/${nodeId}`, { params });
+  },
+
+  // ---------------------------------------------------------------------------
+  // Context-Scoped Node Access (RECOMMENDED)
+  // ---------------------------------------------------------------------------
+
+  async createNodeInContext(
+    spaceSlug: string,
+    contextSlug: string,
+    data: CreateNodeRequest
+  ): Promise<Node> {
+    const response = await apiClient.post<Node>(
+      `/spaces/${spaceSlug}/contexts/${contextSlug}/nodes`,
+      data
+    );
+    return response.data;
+  },
+
+  async getNodesInContext(
+    spaceSlug: string,
+    contextSlug: string,
+    params?: PaginationParams
+  ): Promise<Node[]> {
+    const paginationParams = { page: params?.page ?? 0, size: params?.size ?? 100, ...params };
+    const response = await apiClient.get<PageResponse<Node>>(
+      `/spaces/${spaceSlug}/contexts/${contextSlug}/nodes`,
+      { params: paginationParams }
+    );
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    return data.content;
+  },
+
+  async createNestedContext(
+    spaceSlug: string,
+    parentContextSlug: string,
+    data: CreateNodeRequest
+  ): Promise<Node> {
+    const response = await apiClient.post<Node>(
+      `/spaces/${spaceSlug}/contexts/${parentContextSlug}/contexts`,
+      data
+    );
+    return response.data;
+  },
+
+  async getChildContexts(
+    spaceSlug: string,
+    contextSlug: string,
+    params?: PaginationParams
+  ): Promise<Node[]> {
+    const paginationParams = { page: params?.page ?? 0, size: params?.size ?? 100, ...params };
+    const response = await apiClient.get<PageResponse<Node>>(
+      `/spaces/${spaceSlug}/contexts/${contextSlug}/children`,
+      { params: paginationParams }
+    );
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    return data.content;
+  },
+
+  // ---------------------------------------------------------------------------
+  // The Blank (unorganized nodes)
+  // ---------------------------------------------------------------------------
+
+  async getBlankNodes(
+    spaceSlug: string,
+    params?: PaginationParams
+  ): Promise<Node[]> {
+    const paginationParams = { page: params?.page ?? 0, size: params?.size ?? 100, ...params };
+    const response = await apiClient.get<PageResponse<Node>>(
+      `/spaces/${spaceSlug}/blank`,
+      { params: paginationParams }
+    );
+    const data = response.data;
+    if (Array.isArray(data)) return data;
+    return data.content;
+  },
+
+  async getBlankCount(spaceSlug: string): Promise<number> {
+    const response = await apiClient.get<BlankCount>(
+      `/spaces/${spaceSlug}/blank/count`
+    );
+    return response.data.count;
+  },
+
+  async assignFromBlank(
+    spaceSlug: string,
+    nodeId: string,
+    contextSlug: string
+  ): Promise<Node> {
+    const response = await apiClient.post<Node>(
+      `/spaces/${spaceSlug}/blank/${nodeId}/assign`,
+      { contextSlug } as AssignFromBlankRequest
+    );
+    return response.data;
+  },
+
+  async bulkAssignFromBlank(
+    spaceSlug: string,
+    nodeIds: string[],
+    contextSlug: string
+  ): Promise<void> {
+    await apiClient.post(
+      `/spaces/${spaceSlug}/blank/assign-bulk`,
+      { nodeIds, contextSlug } as BulkAssignFromBlankRequest
+    );
+  },
+
+  // ---------------------------------------------------------------------------
+  // Node Migration (replaces move)
+  // ---------------------------------------------------------------------------
+
+  async migrateNode(
+    spaceSlug: string,
+    nodeId: string,
+    data: MigrateNodeRequest
+  ): Promise<MigrateNodeResponse> {
+    const response = await apiClient.post<MigrateNodeResponse>(
+      `/spaces/${spaceSlug}/nodes/${nodeId}/migrate`,
+      data
+    );
+    return response.data;
   },
 
   /**

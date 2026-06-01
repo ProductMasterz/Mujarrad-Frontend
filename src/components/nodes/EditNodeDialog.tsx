@@ -142,7 +142,7 @@ export function EditNodeDialog({ spaceSlug, nodeId, open, onOpenChange }: EditNo
                   <SelectContent position="popper" className="z-[100]">
                     <SelectItem value={NodeType.REGULAR}>Regular</SelectItem>
                     <SelectItem value={NodeType.CONTEXT}>Context</SelectItem>
-                    <SelectItem value={NodeType.ASSUMPTION}>Assumption</SelectItem>
+                    <SelectItem value={NodeType.ATTRIBUTE}>Attribute</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

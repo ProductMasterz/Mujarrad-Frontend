@@ -169,9 +169,9 @@ export default function SpaceGraphPage() {
     );
   });
 
-  const originSourceNodeIds = extractedFromAttributes.map((attr) =>
-    attr.sourceNodeId === selectedNodeId ? attr.targetNodeId : attr.sourceNodeId
-  );
+  const originSourceNodeIds = extractedFromAttributes
+    .map((attr) => attr.sourceNodeId === selectedNodeId ? attr.targetNodeId : attr.sourceNodeId)
+    .filter((id): id is string => id !== null);
 
   const originSourceNodes = originSourceNodeIds
     .map((id) => nodeMap.get(id))
@@ -218,6 +218,7 @@ export default function SpaceGraphPage() {
         .map((attr) =>
           attr.sourceNodeId === originNode.id ? attr.targetNodeId : attr.sourceNodeId
         )
+        .filter((id): id is string => id !== null)
         .map((id) => nodeMap.get(id))
         .filter((node) => {
           if (!node) return false;

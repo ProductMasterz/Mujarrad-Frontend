@@ -70,7 +70,7 @@ export interface PaginationParams {
  */
 export interface SearchParams extends PaginationParams {
   q: string; // Query string
-  nodeType?: 'REGULAR' | 'CONTEXT' | 'ASSUMPTION' | 'TEMPLATE'; // Optional filter
+  nodeType?: 'REGULAR' | 'CONTEXT' | 'ATTRIBUTE'; // Optional filter
 }
 
 /**

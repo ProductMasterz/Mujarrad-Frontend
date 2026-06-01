@@ -71,6 +71,23 @@ export class ApiError extends Error {
   }
 
   /**
+   * Check if error is a conflict error (409)
+   * Used for locking conflicts, VC active connections, duplicate slugs
+   */
+  isConflictError(): boolean {
+    return this.statusCode === 409;
+  }
+
+  /**
+   * Check if error is a locking conflict (409 with lock-related message)
+   */
+  isLockingError(): boolean {
+    if (this.statusCode !== 409) return false;
+    const msg = (this.detail || this.message || '').toLowerCase();
+    return msg.includes('lock') || msg.includes('locked');
+  }
+
+  /**
    * Check if error is a server error (5xx)
    */
   isServerError(): boolean {

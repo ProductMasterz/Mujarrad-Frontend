@@ -14,13 +14,17 @@ import { spaceKeys } from './useSpaces';
 export interface CreateNodeVariables {
   spaceSlug: string;
   data: CreateNodeRequest;
+  contextSlug?: string;
 }
 
 export const useCreateNode = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ spaceSlug, data }: CreateNodeVariables) => {
+    mutationFn: async ({ spaceSlug, data, contextSlug }: CreateNodeVariables) => {
+      if (contextSlug) {
+        return await nodeService.createNodeInContext(spaceSlug, contextSlug, data);
+      }
       return await nodeService.createNode(spaceSlug, data);
     },
 

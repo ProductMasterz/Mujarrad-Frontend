@@ -110,8 +110,7 @@ const nodeTypeStr = node.nodeType.toString().toUpperCase();
 
 const isRegular = nodeTypeStr === 'REGULAR';
 const isContext = nodeTypeStr === 'CONTEXT';
-const isAssumption = nodeTypeStr === 'ASSUMPTION';
-const isTemplate = nodeTypeStr === 'TEMPLATE';
+const isAttribute = nodeTypeStr === 'ATTRIBUTE';
 
 // Chat group
 if (isConversation && (!viewMode.showChat || !viewMode.showConversationNodes)) return false;
@@ -133,8 +132,7 @@ if (
 // System group
 if (isRegular && !isEntity && !isConversation && !isAnyMessage && (!viewMode.showSystem || !viewMode.showRegular)) return false;
 if (isContext && (!viewMode.showSystem || !viewMode.showContext)) return false;
-if (isAssumption && (!viewMode.showSystem || !viewMode.showAssumption)) return false;
-if (isTemplate && (!viewMode.showSystem || !viewMode.showTemplate)) return false;
+if (isAttribute && (!viewMode.showSystem || !viewMode.showAttribute)) return false;
 if (isBlock && (!viewMode.showSystem || !viewMode.showBlocks)) return false;
 
 return true;
@@ -342,8 +340,7 @@ export const DEFAULT_GRAPH_VIEW_MODE: GraphViewMode = {
   showSystem: true,
   showRegular: true,
   showContext: true,
-  showAssumption: true,
-  showTemplate: true,
+  showAttribute: true,
   showBlocks: false,
 
   // Other

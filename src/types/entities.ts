@@ -12,7 +12,7 @@ export interface Node {
   spaceId: string;
   title: string;
   slug: string;
-  nodeType: 'REGULAR' | 'CONTEXT';
+  nodeType: 'REGULAR' | 'CONTEXT' | 'ATTRIBUTE';
   markdownContent?: string;
   nodeDetails?: Record<string, any>;
   createdBy: string;
@@ -87,7 +87,7 @@ export interface SearchResult {
   id: string;
   title: string;
   slug: string;
-  nodeType: 'REGULAR' | 'CONTEXT';
+  nodeType: 'REGULAR' | 'CONTEXT' | 'ATTRIBUTE';
   excerpt: string;
   score: number;
 }
@@ -109,7 +109,7 @@ export interface User {
 export interface CreateNodePayload {
   title: string;
   spaceId: string;
-  nodeType: 'REGULAR' | 'CONTEXT';
+  nodeType: 'REGULAR' | 'CONTEXT' | 'ATTRIBUTE';
   markdownContent?: string;
   nodeDetails?: Record<string, any>;
 }
@@ -119,7 +119,7 @@ export interface CreateNodePayload {
  */
 export interface UpdateNodePayload {
   title: string;
-  nodeType: 'REGULAR' | 'CONTEXT';
+  nodeType: 'REGULAR' | 'CONTEXT' | 'ATTRIBUTE';
   markdownContent?: string;
   nodeDetails?: Record<string, any>;
   version: number; // Required for optimistic locking

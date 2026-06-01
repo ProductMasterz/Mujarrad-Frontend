@@ -78,7 +78,7 @@ Validates node creation form data.
 
 **Fields:**
 - `title`: Required, 1-200 characters, automatically trimmed
-- `nodeType`: Must be valid `NodeType` enum (REGULAR, CONTEXT, ASSUMPTION)
+- `nodeType`: Must be valid `NodeType` enum (REGULAR, CONTEXT, ATTRIBUTE, TEMPLATE)
 - `markdownContent`: Max 50,000 characters, defaults to empty string
 - `nodeDetails`: Optional JSON object
 

@@ -83,7 +83,7 @@ export function SwaggerEmbed({ tag, title, className }: SwaggerEmbedProps) {
     });
   };
 
-  const swaggerUrl = `https://mujarrad.onrender.com/swagger-ui/index.html#/${encodeURIComponent(tag)}`;
+  const specUrl = `https://mujarrad.onrender.com/v3/api-docs`;
 
   if (loading) {
     return (
@@ -104,7 +104,7 @@ export function SwaggerEmbed({ tag, title, className }: SwaggerEmbedProps) {
             {error || 'No endpoints found for this section'}
           </span>
           <a
-            href={swaggerUrl}
+            href={specUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
@@ -137,7 +137,7 @@ export function SwaggerEmbed({ tag, title, className }: SwaggerEmbedProps) {
           </span>
         </div>
         <a
-          href={swaggerUrl}
+          href={specUrl}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
@@ -197,7 +197,7 @@ export function SwaggerEmbed({ tag, title, className }: SwaggerEmbedProps) {
                       </p>
                     )}
                     <a
-                      href={`https://mujarrad.onrender.com/swagger-ui/index.html#/${encodeURIComponent(tag)}/${endpoint.operationId || ''}`}
+                      href={`https://mujarrad.onrender.com/v3/api-docs#/${encodeURIComponent(tag)}/${endpoint.operationId || ''}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 mt-2"
