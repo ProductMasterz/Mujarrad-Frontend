@@ -13,6 +13,33 @@ import { ShareModal } from '@/shell/components/ShareModal';
 import { Tab } from '@/shell/components/TabsBar';
 import { CardType, Card } from '@/shell/data/projects';
 import { spaceService } from '@/services/api';
+import { useVoidNodes } from '@/hooks/api/useVoidNodes';
+import { CloudOff } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
+function VoidCard() {
+  const router = useRouter();
+  const { data: voidNodes } = useVoidNodes();
+  const count = voidNodes?.length ?? 0;
+
+  return (
+    <button
+      onClick={() => router.push('/void')}
+      className="group relative flex flex-col items-start gap-2 rounded-2xl border-2 border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900 p-5 text-left transition hover:border-neutral-400 dark:hover:border-neutral-600 hover:shadow-md"
+    >
+      <div className="flex items-center gap-2">
+        <CloudOff className="h-5 w-5 text-neutral-500" />
+        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">The Void</span>
+        {count > 0 && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-neutral-200 dark:bg-neutral-800 border-neutral-400">
+            {count}
+          </Badge>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">Quick notes — no space needed</p>
+    </button>
+  );
+}
 import { useRenameSpace } from '@/hooks/api';
 import type { Space } from '@/types/backend-dtos';
 import { useNavigationStore } from '@/stores/navigationStore';
@@ -524,6 +551,8 @@ export default function SpacesPage() {
                   onContextMenu={(e) => handleCardContextMenu(e, card.id)}
                 />
               ))}
+              {/* The Void card — always visible */}
+              <VoidCard />
             </div>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-border/70 bg-background">

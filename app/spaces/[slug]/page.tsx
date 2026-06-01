@@ -29,6 +29,10 @@ import { SpaceLockToggle } from '@/components/locking/SpaceLockToggle';
 import { BlankBadge } from '@/components/blank/BlankBadge';
 import { BlankNodesPanel } from '@/components/blank/BlankNodesPanel';
 import { ContextCard } from '@/components/contexts/ContextCard';
+import { useBlankCount } from '@/hooks/api/useBlankNodes';
+import { Inbox } from 'lucide-react';
+import { Card as UICard, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { VCPanel } from '@/components/virtual-contexts/VCPanel';
 import { ContextList } from '@/components/contexts/ContextList';
 
@@ -95,6 +99,36 @@ function isDisplayableNode(node: Node): boolean {
   return true;
 }
 
+
+function BlankCard({ spaceSlug }: { spaceSlug: string }) {
+  const { data: count = 0 } = useBlankCount(spaceSlug);
+
+  return (
+    <UICard className="border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md transition-all cursor-pointer"
+      onClick={() => {
+        const panel = document.querySelector('[data-blank-panel]');
+        if (panel) panel.scrollIntoView({ behavior: 'smooth' });
+      }}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-800">
+            <Inbox className="h-4 w-4 text-gray-500" />
+          </div>
+          <div>
+            <h3 className="font-medium text-sm text-gray-700 dark:text-gray-300">The Blank</h3>
+          </div>
+          {count > 0 && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-gray-200 dark:bg-gray-800 border-gray-400 ml-auto">
+              {count}
+            </Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">Unorganized nodes</p>
+      </CardContent>
+    </UICard>
+  );
+}
 
 export default function SpaceDetailPage() {
   const params = useParams();
@@ -784,10 +818,12 @@ export default function SpaceDetailPage() {
                   </h2>
                 </div>
                 {contexts.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-purple-200 dark:border-purple-800 p-8 text-center">
-                    <FolderOpen className="h-8 w-8 mx-auto text-purple-400 mb-2" />
-                    <p className="text-sm text-muted-foreground">No contexts yet</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">Create a context to organize your nodes</p>
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
+                    <div className="rounded-lg border border-dashed border-purple-200 dark:border-purple-800 p-6 text-center col-span-full sm:col-span-1">
+                      <FolderOpen className="h-6 w-6 mx-auto text-purple-400 mb-1" />
+                      <p className="text-xs text-muted-foreground">No contexts yet</p>
+                    </div>
+                    <BlankCard spaceSlug={slug} />
                   </div>
                 ) : (
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
@@ -803,12 +839,14 @@ export default function SpaceDetailPage() {
                         lockLevel={ctx.lockLevel}
                       />
                     ))}
+                    {/* The Blank card — always visible alongside contexts */}
+                    <BlankCard spaceSlug={slug} />
                   </div>
                 )}
               </div>
 
-              {/* The Blank — Unorganized Nodes */}
-              <div className="mb-6">
+              {/* Expanded Blank panel */}
+              <div className="mb-6" data-blank-panel>
                 <BlankNodesPanel spaceSlug={slug} />
               </div>
 
