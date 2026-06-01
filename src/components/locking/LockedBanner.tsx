@@ -1,6 +1,6 @@
 'use client';
 
-import { Lock } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useUnlockSpace } from '@/hooks/api/useLocking';
@@ -18,10 +18,10 @@ export function LockedBanner({ spaceSlug, onUnlock }: LockedBannerProps) {
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/40">
-      <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-200">
-        <Lock className="h-4 w-4" />
-        This space is locked. All editing is disabled.
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 dark:border-purple-800 dark:bg-purple-950/40">
+      <div className="flex items-center gap-2 text-sm font-medium text-purple-800 dark:text-purple-200">
+        <Shield className="h-4 w-4" />
+        Schema locked — structure changes disabled. Content editing still works.
       </div>
       <Button
         variant="outline"
@@ -30,7 +30,7 @@ export function LockedBanner({ spaceSlug, onUnlock }: LockedBannerProps) {
         disabled={unlockSpace.isPending}
         className="rounded-xl"
       >
-        {unlockSpace.isPending ? <Spinner size="sm" /> : 'Unlock'}
+        {unlockSpace.isPending ? <Spinner size="sm" /> : 'Unlock Schema'}
       </Button>
     </div>
   );

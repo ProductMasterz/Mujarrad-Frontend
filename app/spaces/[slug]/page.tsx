@@ -18,21 +18,15 @@ import { nodeService } from '@/services/api/node.service';
 import { useNavigationStore } from '@/stores/navigationStore';
 import type { Node } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
-import { NodeCard } from '@/shell/components/NodeCard';
+import { ProjectCard } from '@/shell/components/ProjectCard';
 import { spaceService } from '@/services/api';
 import { useNotificationStore } from '@/stores/notificationStore';
-import { getNodeEntityType } from '@/lib/entity-types';
-import { useEntityTypeStore } from '@/stores/entityType.store';
 import { FolderOpen } from 'lucide-react';
 import { LockedBanner } from '@/components/locking/LockedBanner';
 import { SpaceLockToggle } from '@/components/locking/SpaceLockToggle';
+import { SpaceModeToggle } from '@/components/locking/SpaceModeToggle';
 import { BlankBadge } from '@/components/blank/BlankBadge';
 import { BlankNodesPanel } from '@/components/blank/BlankNodesPanel';
-import { ContextCard } from '@/components/contexts/ContextCard';
-import { useBlankCount } from '@/hooks/api/useBlankNodes';
-import { Inbox } from 'lucide-react';
-import { Card as UICard, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { VCPanel } from '@/components/virtual-contexts/VCPanel';
 import { ContextList } from '@/components/contexts/ContextList';
 
@@ -100,35 +94,6 @@ function isDisplayableNode(node: Node): boolean {
 }
 
 
-function BlankCard({ spaceSlug }: { spaceSlug: string }) {
-  const { data: count = 0 } = useBlankCount(spaceSlug);
-
-  return (
-    <UICard className="border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md transition-all cursor-pointer"
-      onClick={() => {
-        const panel = document.querySelector('[data-blank-panel]');
-        if (panel) panel.scrollIntoView({ behavior: 'smooth' });
-      }}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-800">
-            <Inbox className="h-4 w-4 text-gray-500" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm text-gray-700 dark:text-gray-300">The Blank</h3>
-          </div>
-          {count > 0 && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-gray-200 dark:bg-gray-800 border-gray-400 ml-auto">
-              {count}
-            </Badge>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground">Unorganized nodes</p>
-      </CardContent>
-    </UICard>
-  );
-}
 
 export default function SpaceDetailPage() {
   const params = useParams();
@@ -137,9 +102,6 @@ export default function SpaceDetailPage() {
   const navigateToSpace = useNavigationStore((state) => state.navigateToSpace);
   const slug = params.slug as string;
   const { rename: renameNode } = useRenameNodeSimple(slug);
-  const entityTypeMap = useEntityTypeStore((state) => state.types);
-  const getEntityType = useEntityTypeStore((state) => state.getType);
-
   // Fetch space data
   const { data: space, isLoading: spaceLoading, error: spaceError } = useSpace(slug);
 
@@ -175,9 +137,6 @@ export default function SpaceDetailPage() {
   const [selectedCardId, setSelectedCardId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [filterNodeType, setFilterNodeType] = useState<'ALL' | 'REGULAR' | 'CONTEXT' | 'ATTRIBUTE'>('ALL');
-  const [filterEntityType, setFilterEntityType] = useState<string>('ALL');
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -214,68 +173,23 @@ export default function SpaceDetailPage() {
   }, [nodes]);
 
 
-  const entityTypeOptions = useMemo(() => {
-    const fromNodes = allDisplayableNodes
-      .map((node) => getNodeEntityType(node))
-      .filter((type) => type && type !== 'unknown');
-
-    const fromStore = Object.keys(entityTypeMap);
-
-    return Array.from(new Set([...fromStore, ...fromNodes])).sort();
-  }, [allDisplayableNodes, entityTypeMap]);
-
-
-  // Convert nodes to card format - filter out block nodes (showInSpaceList: false)
-  const visibleNodes = useMemo(() => {
-    return (nodes || [])
-      .filter((node) => {
-        if (!isDisplayableNode(node)) return false;
-
-        const term = searchTerm.trim().toLowerCase();
-        const entityType = getNodeEntityType(node);
-
-        const matchesSearch =
-          !term ||
-          node.title.toLowerCase().includes(term) ||
-          (node.content || '').toLowerCase().includes(term) ||
-          entityType.includes(term);
-
-        const nodeTypeValue = String(node.nodeType).toUpperCase();
-
-        const matchesNodeType =
-          filterNodeType === 'ALL' || nodeTypeValue === filterNodeType;
-
-        const matchesEntityType =
-          filterEntityType === 'ALL' || entityType === filterEntityType;
-
-        return matchesSearch && matchesNodeType && matchesEntityType;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'name') {
-          return a.title.localeCompare(b.title);
-        }
-
-        if (sortBy === 'createdAt') {
-          return (
-            new Date(b.createdAt || 0).getTime() -
-            new Date(a.createdAt || 0).getTime()
-          );
-        }
-
-        return (
-          new Date(b.updatedAt || b.createdAt || 0).getTime() -
-          new Date(a.updatedAt || a.createdAt || 0).getTime()
-        );
-      });
-  }, [nodes, searchTerm, sortBy, filterNodeType, filterEntityType]);
 
   const contexts = useMemo(() => {
     return allDisplayableNodes.filter(n => n.nodeType === NodeType.CONTEXT && !n.isBuiltin);
   }, [allDisplayableNodes]);
 
-  const regularNodes = useMemo(() => {
-    return allDisplayableNodes.filter(n => n.nodeType !== NodeType.CONTEXT);
-  }, [allDisplayableNodes]);
+  const filteredContexts = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    let result = contexts;
+    if (term) {
+      result = result.filter(ctx => ctx.title.toLowerCase().includes(term));
+    }
+    return result.sort((a, b) => {
+      if (sortBy === 'name') return a.title.localeCompare(b.title);
+      if (sortBy === 'createdAt') return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      return new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime();
+    });
+  }, [contexts, searchTerm, sortBy]);
 
   const totalNodeCount = allDisplayableNodes.length;
 
@@ -289,7 +203,7 @@ export default function SpaceDetailPage() {
     [allDisplayableNodes]
   );
 
-  const sidebarData = useMemo(() => visibleNodes.map(nodeToCard), [visibleNodes]);
+  const sidebarData = useMemo(() => allDisplayableNodes.map(nodeToCard), [allDisplayableNodes]);
 
   const chatAvailableSpaces = useMemo(
     () =>
@@ -659,6 +573,12 @@ export default function SpaceDetailPage() {
                   Whiteboard
                 </button>
 
+                <SpaceModeToggle
+                  spaceId={space?.id || ''}
+                  currentMode={space?.mode || null}
+                  projectType={space?.projectType || 'CONSUMER'}
+                  isLocked={!!space?.isLocked}
+                />
                 <SpaceLockToggle spaceSlug={slug} isLocked={!!space?.isLocked} />
               </div>
             </div>
@@ -682,93 +602,26 @@ export default function SpaceDetailPage() {
             </div>
           </div>
           <div className="mb-5 rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
-            <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(320px,1.4fr)_minmax(220px,0.8fr)_minmax(220px,0.8fr)]">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search nodes by title, content, or entity type..."
-                  className="h-[42px] w-full rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition placeholder:text-muted-foreground/80 focus:border-primary focus:ring-2 focus:ring-primary/15"
-                />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search contexts by name..."
+                className="h-[42px] w-full sm:flex-1 rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition placeholder:text-muted-foreground/80 focus:border-primary focus:ring-2 focus:ring-primary/15"
+              />
 
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
                 <select
-                  value={filterNodeType}
-                  onChange={(e) =>
-                    setFilterNodeType(
-                      e.target.value as 'ALL' | 'REGULAR' | 'CONTEXT' | 'ATTRIBUTE'
-                    )
-                  }
-                  className="h-[42px] w-full rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
+                  className="h-[42px] min-w-[180px] rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                 >
-                  <option value="ALL">All node types</option>
-                  <option value="REGULAR">Regular</option>
-                  <option value="CONTEXT">Context</option>
-                  <option value="ATTRIBUTE">Attribute</option>
+                  <option value="updatedAt">Date modified</option>
+                  <option value="createdAt">Date created</option>
+                  <option value="name">Name</option>
                 </select>
-
-                <select
-                  value={filterEntityType}
-                  onChange={(e) => setFilterEntityType(e.target.value)}
-                  className="h-[42px] w-full rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                >
-                  <option value="ALL">All semantic types</option>
-                  <option value="unknown">No semantic type</option>
-                  {entityTypeOptions.map((typeKey) => {
-                    const config = getEntityType(typeKey);
-
-                    return (
-                      <option key={typeKey} value={typeKey}>
-                        {config.label}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
-                    className="h-[40px] min-w-[180px] rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                  >
-                    <option value="updatedAt">Date modified</option>
-                    <option value="createdAt">Date created</option>
-                    <option value="name">Name</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-medium text-muted-foreground">View</span>
-
-                  <div className="inline-flex rounded-xl border border-border/70 bg-background p-1">
-                    <button
-                      type="button"
-                      onClick={() => setViewMode('grid')}
-                      className={`rounded-lg px-3 py-1.5 text-sm transition ${
-                        viewMode === 'grid'
-                          ? 'bg-foreground text-background'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                      }`}
-                    >
-                      Grid
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setViewMode('list')}
-                      className={`rounded-lg px-3 py-1.5 text-sm transition ${
-                        viewMode === 'list'
-                          ? 'bg-foreground text-background'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                      }`}
-                    >
-                      List
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -789,58 +642,57 @@ export default function SpaceDetailPage() {
             <div className="flex items-center justify-center h-[400px]">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
-          ) : visibleNodes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-[400px] text-center">
-              <p
-                className="text-[15px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground tracking-[-0.24px]"
-                style={{ fontVariationSettings: "'wdth' 100" }}
-              >
-                {searchTerm.trim() || filterNodeType !== 'ALL' || filterEntityType !== 'ALL'
-                  ? 'No matching nodes'
-                  : 'No nodes in this space'}
-              </p>
-              <p
-                className="text-[13px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground/70 mt-2 tracking-[-0.24px]"
-                style={{ fontVariationSettings: "'wdth' 100" }}
-              >
-                {searchTerm.trim() || filterNodeType !== 'ALL' || filterEntityType !== 'ALL'
-                  ? 'Try changing your search or filters.'
-                  : 'Use the New Node or New Context actions above to get started.'}
-              </p>
-            </div>
           ) : (
             <>
               {/* Contexts Section */}
               <div className="mb-6">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                    Contexts ({contexts.length})
+                    Contexts ({filteredContexts.length})
                   </h2>
                 </div>
-                {contexts.length === 0 ? (
+                {filteredContexts.length === 0 ? (
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
                     <div className="rounded-lg border border-dashed border-purple-200 dark:border-purple-800 p-6 text-center col-span-full sm:col-span-1">
                       <FolderOpen className="h-6 w-6 mx-auto text-purple-400 mb-1" />
-                      <p className="text-xs text-muted-foreground">No contexts yet</p>
+                      <p className="text-xs text-muted-foreground">
+                        {searchTerm.trim() ? 'No matching contexts' : 'No contexts yet'}
+                      </p>
                     </div>
-                    <BlankCard spaceSlug={slug} />
+                    <ProjectCard
+                      title="The Blank"
+                      color="#9ca3af"
+                      type={CardType.NODE}
+                      onClick={() => {
+                        const panel = document.querySelector('[data-blank-panel]');
+                        if (panel) panel.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      onContextMenu={(e) => e.preventDefault()}
+                    />
                   </div>
                 ) : (
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
-                    {contexts.map((ctx) => (
-                      <ContextCard
+                    {filteredContexts.map((ctx) => (
+                      <ProjectCard
                         key={ctx.id}
-                        spaceSlug={slug}
-                        contextId={ctx.id}
-                        contextSlug={ctx.slug}
                         title={ctx.title}
-                        nodeCount={regularNodes.length}
-                        isBuiltin={ctx.isBuiltin}
-                        lockLevel={ctx.lockLevel}
+                        color="#9333ea"
+                        type={CardType.FULFILLED_CONTEXT}
+                        onClick={() => router.push(`/spaces/${slug}/context/${ctx.slug}`)}
+                        onContextMenu={(e) => handleCardContextMenu(e, ctx.id)}
                       />
                     ))}
                     {/* The Blank card — always visible alongside contexts */}
-                    <BlankCard spaceSlug={slug} />
+                    <ProjectCard
+                      title="The Blank"
+                      color="#9ca3af"
+                      type={CardType.NODE}
+                      onClick={() => {
+                        const panel = document.querySelector('[data-blank-panel]');
+                        if (panel) panel.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      onContextMenu={(e) => e.preventDefault()}
+                    />
                   </div>
                 )}
               </div>
@@ -849,164 +701,6 @@ export default function SpaceDetailPage() {
               <div className="mb-6" data-blank-panel>
                 <BlankNodesPanel spaceSlug={slug} />
               </div>
-
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">All Nodes</h2>
-              </div>
-
-              {viewMode === 'grid' ? (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 pt-1">
-                  {visibleNodes.map((node) => {
-                   
-
-                    const isAgentCreated = isAgentCreatedNode(node);
-
-                    const entityType = getNodeEntityType(node);
-
-                    const nodeKindLabel =
-                      node.nodeType === NodeType.CONTEXT
-                        ? 'Context'
-                        : node.nodeType === NodeType.ATTRIBUTE
-                        ? 'Attribute'
-                        : node.nodeType === NodeType.REGULAR
-                        ? 'Regular'
-                        : 'Node';
-
-                    const previewSource =
-                      (node.content || '').trim() ||
-                      (entityType && entityType !== 'unknown'
-                        ? `Entity type: ${getEntityType(entityType).label}`
-                        : node.nodeType === NodeType.CONTEXT
-                        ? 'Context node'
-                        : 'No preview available');
-
-                    const preview = previewSource.replace(/\s+/g, ' ').slice(0, 110);
-
-                    const meta =
-                      node.updatedAt
-                        ? `Updated ${new Date(node.updatedAt).toLocaleDateString()}`
-                        : node.createdAt
-                        ? `Created ${new Date(node.createdAt).toLocaleDateString()}`
-                        : undefined;
-
-                    return (
-                      <NodeCard
-                        key={node.id}
-                        title={node.title}
-                        preview={preview}
-                        meta={meta}
-                        type={node.nodeType === NodeType.CONTEXT ? CardType.FULFILLED_CONTEXT : CardType.NODE}
-                        entityType={entityType}
-                        nodeKindLabel={nodeKindLabel}
-                        badge={isAgentCreated ? 'AI' : 'Manual'}
-                        onClick={() => handleCardClick(node.id)}
-                        onContextMenu={(e) => handleCardContextMenu(e, node.id)}
-                      />
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="overflow-hidden rounded-2xl border border-border/70 bg-background">
-                  {visibleNodes.map((node) => {
-                
-
-                    const isAgentCreated = isAgentCreatedNode(node);
-
-                    const entityType = getNodeEntityType(node);
-                    const semanticConfig = getEntityType(entityType);
-                    const hasSemanticType = entityType && entityType !== 'unknown';
-                    const semanticLabel = hasSemanticType ? semanticConfig.label : 'Unclassified';
-                    const semanticColor = hasSemanticType ? semanticConfig.color : '#94a3b8';
-                    
-                    const nodeKindLabel =
-                      node.nodeType === NodeType.CONTEXT
-                        ? 'Context'
-                        : node.nodeType === NodeType.ATTRIBUTE
-                        ? 'Attribute'
-                        : node.nodeType === NodeType.REGULAR
-                        ? 'Regular'
-                        : 'Node';
-
-  
-                    const nodeKindBadgeClasses =
-                      nodeKindLabel.toLowerCase() === 'context'
-                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
-                        : nodeKindLabel.toLowerCase() === 'attribute'
-                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200'
-                        : nodeKindLabel.toLowerCase() === 'template'
-                        ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200'
-                        : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
-
-                    const preview =
-                      ((node.content || '').trim() || 'No preview available')
-                        .replace(/\s+/g, ' ')
-                        .slice(0, 120);
-
-                    const meta =
-                      node.updatedAt
-                        ? `Updated ${new Date(node.updatedAt).toLocaleDateString()}`
-                        : node.createdAt
-                        ? `Created ${new Date(node.createdAt).toLocaleDateString()}`
-                        : '—';
-
-                    return (
-                      <button
-                        key={node.id}
-                        type="button"
-                        onClick={() => handleCardClick(node.id)}
-                        onContextMenu={(e) => handleCardContextMenu(e, node.id)}
-                        className="grid w-full grid-cols-[minmax(0,2fr)_130px_140px_110px_140px] items-center gap-4 border-b border-l-4 border-border/60 px-4 py-3 text-left transition hover:bg-muted/40 last:border-b-0"
-                        style={{ borderLeftColor: semanticColor }}
-                      >
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium text-foreground">
-                            {node.title}
-                          </div>
-                          <div className="mt-1 truncate text-xs text-muted-foreground">
-                            {preview}
-                          </div>
-                        </div>
-
-                        <div>
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${nodeKindBadgeClasses}`}
-                          >
-                            {nodeKindLabel}
-                          </span>
-                        </div>
-
-                        <div>
-                         <span
-                          className="inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium"
-                          style={{
-                            backgroundColor: `${semanticColor}22`,
-                            color: semanticColor,
-                          }}
-                        >
-                          {semanticLabel}
-                        </span>
-                        </div>
-
-                        <div>
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                              isAgentCreated
-                                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                            }`}
-                          >
-                            {isAgentCreated ? 'AI' : 'Manual'}
-                          </span>
-                        </div>
-
-                        <div className="text-xs text-muted-foreground whitespace-nowrap">
-                          {meta}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
             </>
           )}
         </div>

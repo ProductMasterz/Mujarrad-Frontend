@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Lock, Unlock } from 'lucide-react';
+import { Shield, ShieldOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -54,27 +54,27 @@ export function SpaceLockToggle({ spaceSlug, isLocked, onLockChanged }: SpaceLoc
         {isPending ? (
           <Spinner size="sm" />
         ) : isLocked ? (
-          <Unlock className="h-4 w-4 text-red-500" />
+          <ShieldOff className="h-4 w-4 text-purple-500" />
         ) : (
-          <Lock className="h-4 w-4" />
+          <Shield className="h-4 w-4 text-purple-500" />
         )}
-        {isLocked ? 'Unlock Space' : 'Lock Space'}
+        {isLocked ? 'Unlock Schema' : 'Lock Schema'}
       </Button>
 
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Lock this space?</DialogTitle>
+            <DialogTitle>Lock this space&apos;s schema?</DialogTitle>
             <DialogDescription>
-              Locking a space blocks ALL writes. No nodes can be created, edited, or deleted until the space is unlocked.
+              Locking the schema prevents structural changes — context types, schemas, and space mode cannot be modified. Content editing (creating and editing nodes) will still work.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirm(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleConfirmLock} disabled={lockSpace.isPending}>
-              {lockSpace.isPending ? <Spinner size="sm" /> : 'Lock Space'}
+            <Button className="bg-purple-600 hover:bg-purple-700" onClick={handleConfirmLock} disabled={lockSpace.isPending}>
+              {lockSpace.isPending ? <Spinner size="sm" /> : 'Lock Schema'}
             </Button>
           </DialogFooter>
         </DialogContent>

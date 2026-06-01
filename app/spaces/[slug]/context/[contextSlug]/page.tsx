@@ -7,9 +7,9 @@ import { useContextNodes, useChildContexts, useCreateNodeInContext } from '@/hoo
 import { useSpace } from '@/hooks/api';
 import { NodeType } from '@/types/backend-dtos';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { NodeCard } from '@/shell/components/NodeCard';
+import { CardType } from '@/shell/data/projects';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,7 @@ import {
   ArrowLeft,
   Lock,
 } from 'lucide-react';
-import { ContextCard } from '@/components/contexts/ContextCard';
+import { ProjectCard } from '@/shell/components/ProjectCard';
 import type { Node } from '@/types/backend-dtos';
 
 export default function ContextDetailPage() {
@@ -129,14 +129,13 @@ export default function ContextDetailPage() {
               </h2>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
                 {childContexts.map((ctx: Node) => (
-                  <ContextCard
+                  <ProjectCard
                     key={ctx.id}
-                    spaceSlug={spaceSlug}
-                    contextId={ctx.id}
-                    contextSlug={ctx.slug}
                     title={ctx.title}
-                    isBuiltin={ctx.isBuiltin}
-                    lockLevel={ctx.lockLevel}
+                    color="#9333ea"
+                    type={CardType.FULFILLED_CONTEXT}
+                    onClick={() => router.push(`/spaces/${spaceSlug}/context/${ctx.slug}`)}
+                    onContextMenu={(e) => e.preventDefault()}
                   />
                 ))}
               </div>
@@ -170,37 +169,25 @@ export default function ContextDetailPage() {
             </div>
           ) : (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-              {regularNodes.map((node: Node) => (
-                <Card
-                  key={node.id}
-                  className="cursor-pointer hover:shadow-md transition-all group"
-                  onClick={() => router.push(`/spaces/${spaceSlug}/node/${node.id}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-1">
-                      <h3 className="font-medium text-sm group-hover:text-primary transition-colors line-clamp-2">
-                        {node.title}
-                      </h3>
-                      {node.lockLevel !== 'UNLOCKED' && (
-                        <Lock className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 ml-2" />
-                      )}
-                    </div>
-                    {node.content && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                        {node.content.slice(0, 100)}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 mt-3">
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                        {node.nodeType}
-                      </Badge>
-                      <span className="text-[10px] text-muted-foreground">
-                        {new Date(node.updatedAt || node.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {regularNodes.map((node: Node) => {
+                const preview = (node.content || '').trim().slice(0, 120) || undefined;
+                const meta = node.updatedAt
+                  ? `Updated ${new Date(node.updatedAt).toLocaleDateString()}`
+                  : `Created ${new Date(node.createdAt).toLocaleDateString()}`;
+
+                return (
+                  <NodeCard
+                    key={node.id}
+                    title={node.title}
+                    preview={preview}
+                    meta={meta}
+                    type={CardType.NODE}
+                    nodeKindLabel={node.nodeType === 'ATTRIBUTE' ? 'Attribute' : 'Regular'}
+                    onClick={() => router.push(`/spaces/${spaceSlug}/node/${node.id}`)}
+                    onContextMenu={(e) => e.preventDefault()}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
