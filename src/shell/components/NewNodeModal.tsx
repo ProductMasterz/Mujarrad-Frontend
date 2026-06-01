@@ -129,7 +129,18 @@ export function NewNodeModal({
         entityType?: string;
         createdFrom: "manual";
       }) => {
-        if (!spaceSlug) throw new Error("spaceSlug is required for node creation");
+        if (!spaceSlug) {
+          // No space selected — create in The Void
+          const { voidService } = await import("@/services/api/void.service");
+          return voidService.createVoidNode({
+            title: data.title || "Untitled",
+            content: data.content || "",
+            nodeDetails: {
+              createdFrom: data.createdFrom,
+              ...(data.entityType ? { entityType: data.entityType } : {}),
+            },
+          });
+        }
 
         return nodeService.createNode(spaceSlug, {
           title: data.title || "Untitled",

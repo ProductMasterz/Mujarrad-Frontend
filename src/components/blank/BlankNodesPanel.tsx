@@ -58,17 +58,7 @@ export function BlankNodesPanel({ spaceSlug }: BlankNodesPanelProps) {
   }
 
   if (nodes.length === 0) {
-    return (
-      <div className="rounded-xl border border-gray-200 bg-gray-50 p-8 text-center dark:border-gray-700 dark:bg-gray-900">
-        <CheckSquare className="mx-auto h-10 w-10 text-gray-400" />
-        <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-300">
-          All nodes are organized
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          No unorganized nodes in this space.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (

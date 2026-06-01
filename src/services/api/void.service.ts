@@ -20,8 +20,10 @@ export const voidService = {
    * @returns Array of nodes
    */
   async listVoidNodes(): Promise<Node[]> {
-    const response = await apiClient.get<Node[]>('/void/nodes');
-    return response.data;
+    const response = await apiClient.get<any>('/void/nodes');
+    const data = response.data;
+    const nodes: Node[] = Array.isArray(data) ? data : (data?.content ?? []);
+    return nodes.filter((n: Node) => !n.isBuiltin);
   },
 
   /**
