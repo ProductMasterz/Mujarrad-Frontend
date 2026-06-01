@@ -1227,7 +1227,7 @@ export function ChatPanel({
 
 
         try {
-          const allNodes = await nodeService.getNodes(spaceSlug, { page: 1, size: 1000 });
+          const allNodes = await nodeService.getNodes(spaceSlug, { page: 0, size: 1000 });
 
           const conversationNodes = allNodes
             .filter((node) => isConversationNode(node))
@@ -1481,7 +1481,7 @@ export function ChatPanel({
 
     await Promise.all([
       queryClient.invalidateQueries({
-        queryKey: nodeKeys.list(spaceSlug, { page: 1, size: 1000 }),
+        queryKey: nodeKeys.list(spaceSlug, { page: 0, size: 1000 }),
       }),
       queryClient.invalidateQueries({
         queryKey: ['spaces'],

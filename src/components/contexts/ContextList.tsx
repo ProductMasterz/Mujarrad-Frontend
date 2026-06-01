@@ -15,8 +15,8 @@ export function ContextList({ spaceSlug, onSelectContext }: ContextListProps) {
   const [activeContext, setActiveContext] = useState<string | null>(null);
 
   const { data: nodes = [] } = useQuery({
-    queryKey: nodeKeys.list(spaceSlug, { page: 1, size: 1000 }),
-    queryFn: () => nodeService.getNodes(spaceSlug, { page: 1, size: 1000 }),
+    queryKey: nodeKeys.list(spaceSlug, { page: 0, size: 1000 }),
+    queryFn: () => nodeService.getNodes(spaceSlug, { page: 0, size: 1000 }),
     enabled: !!spaceSlug,
   });
 

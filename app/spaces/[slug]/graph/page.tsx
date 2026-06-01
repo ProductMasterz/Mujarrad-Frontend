@@ -119,7 +119,7 @@ export default function SpaceGraphPage() {
 
   const { data: nodes = [], isLoading: nodesLoading } = useQuery({
     queryKey: ['spaces', slug, 'graph-page', 'nodes'],
-    queryFn: () => nodeService.getNodes(slug, { page: 1, size: 1000 }),
+    queryFn: () => nodeService.getNodes(slug, { page: 0, size: 1000 }),
     enabled: !!slug,
   });
 

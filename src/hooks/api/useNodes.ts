@@ -47,10 +47,10 @@ export const useSpaceNodes = (
   options?: { type?: NodeType }
 ) => {
   return useQuery({
-    queryKey: [...nodeKeys.list(spaceSlug, { page: 1, size: 1000 }), 'filtered', options],
+    queryKey: [...nodeKeys.list(spaceSlug, { page: 0, size: 1000 }), 'filtered', options],
     queryFn: async () => {
       // Fetch nodes by space slug
-      const nodes = await nodeService.getNodes(spaceSlug, { page: 1, size: 1000 });
+      const nodes = await nodeService.getNodes(spaceSlug, { page: 0, size: 1000 });
 
       // Filter by type if specified
       if (options?.type) {

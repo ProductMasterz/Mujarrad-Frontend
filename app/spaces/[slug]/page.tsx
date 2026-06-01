@@ -118,8 +118,8 @@ export default function SpaceDetailPage() {
 
   // Fetch nodes for this space using standardized query keys
   const { data: nodes, isLoading: nodesLoading } = useQuery({
-    queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }),
-    queryFn: () => nodeService.getNodes(slug, { page: 1, size: 1000 }),
+    queryKey: nodeKeys.list(slug, { page: 0, size: 1000 }),
+    queryFn: () => nodeService.getNodes(slug, { page: 0, size: 1000 }),
     enabled: !!space,
   });
 
@@ -430,7 +430,7 @@ export default function SpaceDetailPage() {
 
     setShowDeleteDialog(false);
     setNodeToDelete(null);
-    queryClient.invalidateQueries({ queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }) });
+    queryClient.invalidateQueries({ queryKey: nodeKeys.list(slug, { page: 0, size: 1000 }) });
   };
 
   // Handle node rename using shared hook
@@ -448,7 +448,7 @@ export default function SpaceDetailPage() {
       });
 
       queryClient.invalidateQueries({
-        queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }),
+        queryKey: nodeKeys.list(slug, { page: 0, size: 1000 }),
       });
     } else {
       addNotification({
@@ -482,7 +482,7 @@ export default function SpaceDetailPage() {
       });
 
       queryClient.invalidateQueries({
-        queryKey: nodeKeys.list(slug, { page: 1, size: 1000 }),
+        queryKey: nodeKeys.list(slug, { page: 0, size: 1000 }),
       });
     } catch (error) {
       console.error('Failed to clear space:', error);
