@@ -384,6 +384,7 @@ export default function SpacesPage() {
           onChatChangeSpace={(nextSpaceSlug) => {
             router.push(`/spaces/${nextSpaceSlug}`);
           }}
+          onCreateNode={() => setShowNewNodeModal(true)}
         />
 
         <Sidebar
@@ -411,11 +412,11 @@ export default function SpacesPage() {
               </div>
 
               <button
-                onClick={handleAddClick}
+                onClick={() => setShowNewNodeModal(true)}
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-foreground px-4 text-sm font-medium text-background transition hover:opacity-90"
                 type="button"
               >
-                New Space
+                New
               </button>
             </div>
           </div>

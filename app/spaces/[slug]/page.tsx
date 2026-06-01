@@ -498,6 +498,7 @@ export default function SpaceDetailPage() {
           onChatChangeSpace={(nextSpaceSlug) => {
             router.push(`/spaces/${nextSpaceSlug}`);
           }}
+          onCreateNode={() => setShowNewNodeModal(true)}
         />
 
         <Sidebar
@@ -550,11 +551,11 @@ export default function SpaceDetailPage() {
                 </button>
 
                 <button
-                  onClick={handleAddContext}
+                  onClick={() => setShowNewNodeModal(true)}
                   className="inline-flex h-9 items-center rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground transition hover:bg-muted"
                   type="button"
                 >
-                  New Context
+                  New
                 </button>
 
                 <button

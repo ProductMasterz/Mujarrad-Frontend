@@ -9,7 +9,7 @@ import { ChatPanel } from '@/components/chat/ChatPanel';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { ShortcutsModal } from './ShortcutsModal';
 import { useNotificationStore } from '@/stores/notificationStore';
-import { QuickNoteButton } from '@/components/void/QuickNoteButton';
+import { Plus } from 'lucide-react';
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -28,6 +28,7 @@ type HeaderProps = {
   onChatChangeSpace?: (nextSpaceSlug: string) => void;
   showChatButton?: boolean;
   showUtilityActions?: boolean;
+  onCreateNode?: () => void;
 };
 
 export function Header({
@@ -47,6 +48,7 @@ export function Header({
   onChatChangeSpace,
   showChatButton = true,
   showUtilityActions = false,
+  onCreateNode,
 }: HeaderProps) {
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const notificationsPanelRef = useRef<HTMLDivElement>(null);
@@ -154,7 +156,15 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-2">
-          <QuickNoteButton />
+          {onCreateNode && (
+            <button
+              onClick={onCreateNode}
+              className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="size-3.5" />
+              New
+            </button>
+          )}
 
           {showChatButton && (
             <div className="relative">
