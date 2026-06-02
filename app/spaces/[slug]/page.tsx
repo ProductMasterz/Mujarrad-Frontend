@@ -665,8 +665,7 @@ export default function SpaceDetailPage() {
                       color="#9ca3af"
                       type={CardType.NODE}
                       onClick={() => {
-                        const panel = document.querySelector('[data-blank-panel]');
-                        if (panel) panel.scrollIntoView({ behavior: 'smooth' });
+                        router.push(`/spaces/${slug}/blank`);
                       }}
                       onContextMenu={(e) => e.preventDefault()}
                     />
@@ -689,8 +688,7 @@ export default function SpaceDetailPage() {
                       color="#9ca3af"
                       type={CardType.NODE}
                       onClick={() => {
-                        const panel = document.querySelector('[data-blank-panel]');
-                        if (panel) panel.scrollIntoView({ behavior: 'smooth' });
+                        router.push(`/spaces/${slug}/blank`);
                       }}
                       onContextMenu={(e) => e.preventDefault()}
                     />
