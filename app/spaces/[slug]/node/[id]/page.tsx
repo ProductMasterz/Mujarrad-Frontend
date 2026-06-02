@@ -1,5 +1,6 @@
 'use client';
 
+import { spaceService } from '@/services/api';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -56,6 +57,11 @@ export default function NodeDetailPage() {
   const nodeId = params.id as string;
 
   const { data: space, isLoading: spaceLoading } = useSpace(slug);
+
+  const { data: allSpaces = [] } = useQuery({
+    queryKey: ['spaces'],
+    queryFn: () => spaceService.getSpaces(),
+  });
 
   const { data: node, isLoading: nodeLoading, error: nodeError } = useQuery({
     queryKey: nodeKeys.detail(slug, nodeId),
@@ -179,6 +185,17 @@ export default function NodeDetailPage() {
 
     return basePath;
   }, [space, slug, contextNode, nodeContextSlug, node, nodeId]);
+
+  const chatAvailableSpaces = useMemo(
+    () =>
+      (Array.isArray(allSpaces) ? allSpaces : []).map((spaceItem) => ({
+        id: spaceItem.id,
+        name: spaceItem.name,
+        slug: spaceItem.slug,
+      })),
+    [allSpaces]
+  );
+
 
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
@@ -376,6 +393,14 @@ export default function NodeDetailPage() {
           onTabClick={handleTabClick}
           onTabClose={handleTabClose}
           onNewTab={handleNewTab}
+          chatAvailableSpaces={chatAvailableSpaces}
+          onChatChangeSpace={(nextSpaceSlug) => {
+            router.push(`/spaces/${nextSpaceSlug}`);
+          }}
+          chatSpaceId={space?.id}
+          chatIsSpaceLocked={!!space?.isLocked}
+          chatActiveContextSlug={nodeContextSlug}
+          chatActiveContextId={contextNode?.id}
         />
 
      

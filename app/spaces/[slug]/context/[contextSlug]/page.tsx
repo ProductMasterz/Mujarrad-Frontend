@@ -17,6 +17,7 @@ import type { Node } from '@/types/backend-dtos';
 import { spaceService } from '@/services/api';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { nodeService } from '@/services/api/node.service';
 import { useContextNodes, useChildContexts } from '@/hooks/api/useContextNodes';
 import {
   FolderOpen,
@@ -134,6 +135,25 @@ export default function ContextDetailPage() {
   const { data: nodes = [], isLoading: nodesLoading } = useContextNodes(spaceSlug, contextSlug);
   const { data: childContexts = [], isLoading: childContextsLoading } = useChildContexts(spaceSlug, contextSlug);
   
+  const { data: currentContextNode, isLoading: currentContextLoading } = useQuery({
+    queryKey: ['context-page-current-context', spaceSlug, contextSlug],
+    queryFn: async () => {
+      const allNodes = await nodeService.getNodes(spaceSlug, {
+        page: 0,
+        size: 1000,
+      });
+
+      return (
+        allNodes.find(
+          (node) =>
+            node.nodeType === NodeType.CONTEXT &&
+            node.slug === contextSlug
+        ) || null
+      );
+    },
+    enabled: !!spaceSlug && !!contextSlug,
+  });
+
   const { data: allSpaces = [] } = useQuery({
     queryKey: ['spaces'],
     queryFn: () => spaceService.getSpaces(),
@@ -175,8 +195,10 @@ export default function ContextDetailPage() {
   }, [nodes]);
 
   const contextName = useMemo(() => {
+    if (currentContextNode?.title) return currentContextNode.title;
+
     return getContextName(contextSlug, childContexts, nodes);
-  }, [contextSlug, childContexts, nodes]);
+  }, [currentContextNode, contextSlug, childContexts, nodes]);
 
   useEffect(() => {
     setTabs((prevTabs) =>
@@ -266,7 +288,11 @@ export default function ContextDetailPage() {
     ];
   }, [space, spaceSlug, contextSlug, contextName]);
 
-  const isLoading = spaceLoading || nodesLoading || childContextsLoading;
+  const isLoading =
+    spaceLoading ||
+    nodesLoading ||
+    childContextsLoading ||
+    currentContextLoading;
 
   const toggleSidebar = () => {};
 
@@ -385,6 +411,7 @@ export default function ContextDetailPage() {
           chatSpaceId={space?.id}
           chatIsSpaceLocked={!!space?.isLocked}
           chatActiveContextSlug={contextSlug}
+          chatActiveContextId={currentContextNode?.id}
         />
 
         <Sidebar

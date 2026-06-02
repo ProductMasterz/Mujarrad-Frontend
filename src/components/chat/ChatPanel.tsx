@@ -14,7 +14,7 @@ import { attributeService } from '@/services/api/attribute.service';
 import { Button } from '@/components/ui/button';
 import { AttributeTypeMode, NodeType, type Node as BackendNode } from '@/types/backend-dtos';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nodeKeys } from '@/hooks/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notificationStore';
@@ -322,6 +322,8 @@ function ChatPanelShell({
   isRunning,
   title,
   spaceSlug,
+  activeContextName,
+  activeContextSlug,
   embedded,
   onClose,
   messageCount,
@@ -343,6 +345,8 @@ function ChatPanelShell({
   isRunning: boolean;
   title: string;
   spaceSlug?: string;
+  activeContextName?: string;
+  activeContextSlug?: string;
   embedded: boolean;
   onClose?: () => void;
   messageCount: number;
@@ -384,6 +388,12 @@ function ChatPanelShell({
   const currentSpaceName =
     availableSpaces.find((space) => space.slug === spaceSlug)?.name ||
     (spaceSlug?.trim() ? spaceSlug : 'No space selected');
+
+  const currentContextLabel = activeContextName?.trim()
+    ? activeContextName
+    : activeContextSlug?.trim()
+    ? activeContextSlug
+    : 'The Blank / Unassigned';
 
 
   const openRenameModal = (session: ChatSession) => {
@@ -716,6 +726,16 @@ function ChatPanelShell({
                   </div>
                 )}
               </div>
+
+              {hasActiveSpace && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Context:{' '}
+                  <span className="font-medium text-foreground">
+                    {currentContextLabel}
+                  </span>
+                </div>
+              )}
+
             </div>
           </div>
 
@@ -970,6 +990,41 @@ export function ChatPanel({
   ]);
   const [isRunning, setIsRunning] = useState(false);
 
+
+  const { data: resolvedActiveContextNode } = useQuery({
+    queryKey: ['chat-active-context-node', spaceSlug, activeContextSlug],
+    queryFn: async () => {
+      if (!spaceSlug || !activeContextSlug) return null;
+
+      const allNodes = await nodeService.getNodes(spaceSlug, {
+        page: 0,
+        size: 1000,
+      });
+
+      return (
+        allNodes.find((node) => {
+          const details = parseNodeDetails(node);
+
+          return (
+            node.nodeType === NodeType.CONTEXT &&
+            node.slug === activeContextSlug &&
+            details?.systemContext !== 'chat'
+          );
+        }) || null
+      );
+    },
+    enabled: !!spaceSlug && !!activeContextSlug,
+  });
+
+  const resolvedActiveContextId =
+    activeContextId || resolvedActiveContextNode?.id || null;
+
+  const resolvedActiveContextSlug =
+    activeContextSlug || resolvedActiveContextNode?.slug || null;
+
+  const resolvedActiveContextName =
+    resolvedActiveContextNode?.title || resolvedActiveContextSlug || null;
+    
   const conversationNodeIdRef = useRef<string | null>(null);
   const messageOrderRef = useRef<number>(1);
 
@@ -1647,7 +1702,12 @@ export function ChatPanel({
           const inputMessageNode = await persistMessageNode(
             conversationNodeId,
             'user',
-            userText
+            userText,
+            {
+              targetContextId: resolvedActiveContextId,
+              targetContextSlug: resolvedActiveContextSlug,
+              targetContextName: resolvedActiveContextName,
+            }
           );
 
           const assistantPlaceholderNode = await persistMessageNode(
@@ -1657,6 +1717,9 @@ export function ChatPanel({
             {
               status: 'pending',
               responseToMessageNodeId: inputMessageNode.id,
+              targetContextId: resolvedActiveContextId,
+              targetContextSlug: resolvedActiveContextSlug,
+              targetContextName: resolvedActiveContextName,
             }
           );
 
@@ -1691,8 +1754,9 @@ export function ChatPanel({
                 space_slug: spaceSlug,
                 space_id: spaceId,
 
-                context_slug: activeContextSlug,
-                context_id: activeContextId,
+                context_slug: resolvedActiveContextSlug,
+                context_id: resolvedActiveContextId,
+                context_name: resolvedActiveContextName,
 
                 chat_context_slug: CHAT_CONTEXT_SLUG,
                 message_id: inputMessageNode.id,
@@ -1776,6 +1840,9 @@ export function ChatPanel({
               chatContextSlug: CHAT_CONTEXT_SLUG,
               status: 'completed',
               responseToMessageNodeId: inputMessageNode.id,
+              targetContextId: resolvedActiveContextId,
+              targetContextSlug: resolvedActiveContextSlug,
+              targetContextName: resolvedActiveContextName,
             },
           });
         } catch (error) {
@@ -1817,6 +1884,8 @@ export function ChatPanel({
         isRunning={isRunning}
         title={title}
         spaceSlug={spaceSlug}
+        activeContextName={resolvedActiveContextName || undefined}
+        activeContextSlug={resolvedActiveContextSlug || undefined}
         embedded={embedded}
         onClose={onClose}
         messageCount={messages.length}
