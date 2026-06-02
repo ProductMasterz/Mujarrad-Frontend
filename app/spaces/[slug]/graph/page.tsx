@@ -7,7 +7,7 @@ import { GraphVisualization } from '@/components/graph/GraphVisualization';
 import { useSpace } from '@/hooks/api';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { spaceService } from '@/services/api';
 import { Header } from '@/shell/components/Header';
@@ -15,9 +15,7 @@ import { Tab } from '@/shell/components/TabsBar';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { getNodeEntityType } from '@/lib/entity-types';
 import { useEntityTypeStore } from '@/stores/entityType.store';
-import { useSearchParams } from 'next/navigation';
-import { useContextNodes } from '@/hooks/api/useContextNodes';
-import { useNotificationStore } from '@/stores/notificationStore';
+
 function parseNodeDetails(node: { nodeDetails?: unknown }): Record<string, unknown> | undefined {
   if (!node.nodeDetails) return undefined;
 
@@ -80,8 +78,6 @@ export default function SpaceGraphPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
-  const searchParams = useSearchParams();
-  const contextSlug = searchParams.get('context');
   const getEntityType = useEntityTypeStore((state) => state.getType);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -98,46 +94,20 @@ export default function SpaceGraphPage() {
 
   const { data: space, isLoading: spaceLoading } = useSpace(slug);
 
-
-  const { data: graphContextNode } = useQuery({
-    queryKey: ['graph-context-node', slug, contextSlug],
-    queryFn: async () => {
-      if (!contextSlug) return null;
-
-      const allNodes = await nodeService.getNodes(slug, { page: 0, size: 1000 });
-
-      return (
-        allNodes.find(
-          (node) => node.nodeType === 'CONTEXT' && node.slug === contextSlug
-        ) || null
-      );
-    },
-    enabled: !!slug && !!contextSlug,
-  });
-
   useEffect(() => {
     if (space) {
       setTabs((prevTabs) =>
         prevTabs.map((tab) =>
-          tab.id === 'tab-1'
-            ? {
-                ...tab,
-                title: contextSlug
-                  ? `${graphContextNode?.title || contextSlug} Graph`
-                  : `${space.name} Graph`,
-              }
-            : tab
+          tab.id === 'tab-1' ? { ...tab, title: `${space.name} Graph` } : tab
         )
       );
     }
-  }, [space, contextSlug, graphContextNode]);
+  }, [space]);
 
   const { data: spaces = [] } = useQuery({
     queryKey: ['spaces'],
     queryFn: () => spaceService.getSpaces(),
   });
-
-  
 
   const chatAvailableSpaces = Array.isArray(spaces)
     ? spaces.map((space) => ({
@@ -147,33 +117,19 @@ export default function SpaceGraphPage() {
       }))
     : [];
 
-  const { data: spaceNodes = [], isLoading: spaceNodesLoading } = useQuery({
+  const { data: nodes = [], isLoading: nodesLoading } = useQuery({
     queryKey: ['spaces', slug, 'graph-page', 'nodes'],
     queryFn: () => nodeService.getNodes(slug, { page: 0, size: 1000 }),
-    enabled: !!slug && !contextSlug,
+    enabled: !!slug,
   });
 
-  const { data: contextNodes = [], isLoading: contextNodesLoading } = useContextNodes(
-    slug,
-    contextSlug || ''
-  );
-
-  const visibleGraphNodes = useMemo(() => {
-    return contextSlug ? contextNodes : spaceNodes;
-  }, [contextSlug, contextNodes, spaceNodes]);
-
-  const nodes = visibleGraphNodes;
-
-  const nodesLoading = contextSlug ? contextNodesLoading : spaceNodesLoading;
-
-
   const { data: attributes = [], isLoading: attributesLoading } = useQuery({
-    queryKey: ['spaces', slug, 'graph-page', 'node-attributes', visibleGraphNodes.map((n) => n.id).join(',')],
+    queryKey: ['spaces', slug, 'graph-page', 'node-attributes', nodes.map((n) => n.id).join(',')],
     queryFn: async () => {
-      if (!visibleGraphNodes.length) return [];
+      if (!nodes.length) return [];
 
       const attributeGroups = await Promise.all(
-        visibleGraphNodes.map((node) => attributeService.getNodeAttributes(node.id))
+        nodes.map((node) => attributeService.getNodeAttributes(node.id))
       );
 
       const merged = attributeGroups.flat();
@@ -184,7 +140,7 @@ export default function SpaceGraphPage() {
 
       return deduped;
     },
-    enabled: visibleGraphNodes.length > 0,
+    enabled: nodes.length > 0,
   });
 
   const { data: selectedNode } = useQuery({
@@ -198,25 +154,6 @@ export default function SpaceGraphPage() {
     queryFn: () => attributeService.getNodeAttributes(selectedNodeId as string),
     enabled: !!selectedNodeId,
   });
-
-  const selectedNodeRelationshipAttributes = useMemo(() => {
-    if (!selectedNodeId) return [];
-
-    const allKnownAttributes = [...attributes, ...selectedNodeAttributes];
-
-    return allKnownAttributes
-      .filter(
-        (attr, index, self) =>
-          attr &&
-          attr.id &&
-          index === self.findIndex((item) => item.id === attr.id)
-      )
-      .filter(
-        (attr) =>
-          attr.sourceNodeId === selectedNodeId ||
-          attr.targetNodeId === selectedNodeId
-      );
-  }, [attributes, selectedNodeAttributes, selectedNodeId]);
 
   const nodeMap = new Map(nodes.map((node) => [node.id, node]));
   const isLoading = spaceLoading || nodesLoading || attributesLoading;
@@ -373,48 +310,28 @@ export default function SpaceGraphPage() {
   };
 
   const handleBackClick = () => {
-    if (contextSlug) {
-      router.push(`/spaces/${slug}/context/${contextSlug}`);
-      return;
-    }
-
     router.push(`/spaces/${slug}`);
   };
 
-
   const breadcrumbPath = [
-    { id: 'home', title: 'Home' },
     { id: 'spaces', title: 'Spaces' },
     { id: space?.id || slug, title: space?.name || 'Space' },
-    ...(contextSlug
-      ? [
-          {
-            id: graphContextNode?.id || contextSlug,
-            title: graphContextNode?.title || contextSlug,
-          },
-        ]
-      : []),
     { id: 'graph', title: 'Graph' },
   ];
 
   const handleBreadcrumbClick = (index: number) => {
-    if (index === -1 || index === 0) {
+    if (index === -1) {
       router.push('/');
       return;
     }
 
-    if (index === 1) {
+    if (index === 0) {
       router.push('/spaces');
       return;
     }
 
-    if (index === 2) {
+    if (index === 1) {
       router.push(`/spaces/${slug}`);
-      return;
-    }
-
-    if (index === 3 && contextSlug) {
-      router.push(`/spaces/${slug}/context/${contextSlug}`);
     }
   };
 
@@ -442,9 +359,6 @@ export default function SpaceGraphPage() {
     setActiveTabId(newTab.id);
   };
 
-  
-
-
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background text-foreground">
@@ -463,10 +377,7 @@ export default function SpaceGraphPage() {
           chatAvailableSpaces={chatAvailableSpaces}
           onChatChangeSpace={(nextSpaceSlug) => {
             router.push(`/spaces/${nextSpaceSlug}/graph`);
-          
           }}
-          chatSpaceId={space?.id}
-          chatIsSpaceLocked={!!space?.isLocked}
         />
 
         <div className="pt-[126px]">
@@ -483,7 +394,7 @@ export default function SpaceGraphPage() {
                 </div>
               ) : (
                 <GraphVisualization
-                  nodes={visibleGraphNodes}
+                  nodes={nodes}
                   attributes={attributes}
                   onNodeClick={(nodeId) => {
                     setChatOpen(false);
@@ -620,10 +531,10 @@ export default function SpaceGraphPage() {
                 <div className="rounded-2xl border border-border bg-background p-4 shadow-sm">
                   <h3 className="mb-3 text-sm font-semibold text-foreground">Relationships</h3>
                   <div className="space-y-3">
-                    {selectedNodeRelationshipAttributes.length === 0 ? (
+                    {selectedNodeAttributes.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No relationships</p>
                     ) : (
-                      selectedNodeRelationshipAttributes.map((attr) => {
+                      selectedNodeAttributes.map((attr) => {
                         const otherNodeId =
                           attr.sourceNodeId === selectedNodeId
                             ? attr.targetNodeId
@@ -671,8 +582,6 @@ export default function SpaceGraphPage() {
             <div className="fixed right-0 top-[126px] z-[80] h-[calc(100vh-126px)] w-[620px] overflow-hidden rounded-l-[24px] border-l border-border bg-background shadow-2xl">
               <ChatPanel
                 spaceSlug={slug}
-                spaceId={space?.id}
-                isSpaceLocked={!!space?.isLocked}
                 title="Chat"
                 embedded={true}
                 onClose={() => setChatOpen(false)}

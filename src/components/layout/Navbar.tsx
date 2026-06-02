@@ -1,8 +1,8 @@
 'use client';
 
-import React, { Suspense, useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Home, FolderKanban, Network, Bell, Settings, ChevronRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -12,37 +12,13 @@ import { MoreMenuDropdown } from '@/shell/components/MoreMenuDropdown';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { spaceService } from '@/services/api';
 import { nodeService } from '@/services/api/node.service';
-import { NodeType } from '@/types/backend-dtos';
 
 interface NavbarProps {
   className?: string;
 }
 
-export function Navbar(props: NavbarProps) {
-  return (
-    <Suspense fallback={null}>
-      <NavbarInner {...props} />
-    </Suspense>
-  );
-}
-
-function getNodeDetails(node: any): Record<string, unknown> {
-  if (!node?.nodeDetails) return {};
-
-  if (typeof node.nodeDetails === 'string') {
-    try {
-      return JSON.parse(node.nodeDetails);
-    } catch {
-      return {};
-    }
-  }
-
-  return node.nodeDetails as Record<string, unknown>;
-}
-
-function NavbarInner({ className }: NavbarProps) {
+export function Navbar({ className }: NavbarProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const authPages = ['/login', '/register'];
   const isAuthPage = authPages.includes(pathname);
@@ -63,18 +39,8 @@ function NavbarInner({ className }: NavbarProps) {
 
   const isSpacesRoute = pathParts[0] === 'spaces';
   const currentSpaceSlug = isSpacesRoute && pathParts[1] ? pathParts[1] : undefined;
-
-  const currentContextSlug =
-    isSpacesRoute && pathParts[2] === 'context' && pathParts[3]
-      ? pathParts[3]
-      : isSpacesRoute && pathParts[2] === 'graph'
-        ? searchParams.get('context') || undefined
-        : undefined;
-
   const currentNodeId =
     isSpacesRoute && pathParts[2] === 'node' && pathParts[3] ? pathParts[3] : undefined;
-
-  const isGraphPage = isSpacesRoute && pathParts[2] === 'graph';
 
   const { data: currentSpace } = useQuery({
     queryKey: ['navbar', 'space', currentSpaceSlug],
@@ -86,34 +52,6 @@ function NavbarInner({ className }: NavbarProps) {
     queryKey: ['navbar', 'space', currentSpaceSlug, 'node', currentNodeId],
     queryFn: () => nodeService.getNode(currentSpaceSlug as string, currentNodeId as string),
     enabled: !!currentSpaceSlug && !!currentNodeId,
-  });
-
-  const nodeDetails = useMemo(() => getNodeDetails(currentNode), [currentNode]);
-
-  const nodeContextSlug =
-    typeof nodeDetails.contextSlug === 'string' ? nodeDetails.contextSlug : undefined;
-
-  const effectiveContextSlug = currentContextSlug || nodeContextSlug;
-
-  const { data: currentContext } = useQuery({
-    queryKey: ['navbar', 'space', currentSpaceSlug, 'context', effectiveContextSlug],
-    queryFn: async () => {
-      if (!currentSpaceSlug || !effectiveContextSlug) return null;
-
-      const allNodes = await nodeService.getNodes(currentSpaceSlug, {
-        page: 0,
-        size: 1000,
-      });
-
-      return (
-        allNodes.find(
-          (node) =>
-            node.nodeType === NodeType.CONTEXT &&
-            node.slug === effectiveContextSlug
-        ) || null
-      );
-    },
-    enabled: !!currentSpaceSlug && !!effectiveContextSlug,
   });
 
   useEffect(() => {
@@ -182,7 +120,11 @@ function NavbarInner({ className }: NavbarProps) {
 
         <div className="flex min-w-0 flex-1 items-center gap-1">
           <Link href="/">
-            <Button variant={isActive('/') ? 'secondary' : 'ghost'} size="sm" className="gap-2">
+            <Button
+              variant={isActive('/') ? 'secondary' : 'ghost'}
+              size="sm"
+              className="gap-2"
+            >
               <Home className="h-4 w-4" />
               Home
             </Button>
@@ -191,7 +133,11 @@ function NavbarInner({ className }: NavbarProps) {
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
 
           <Link href="/spaces">
-            <Button variant={isActive('/spaces') ? 'secondary' : 'ghost'} size="sm" className="gap-2">
+            <Button
+              variant={isActive('/spaces') ? 'secondary' : 'ghost'}
+              size="sm"
+              className="gap-2"
+            >
               <FolderKanban className="h-4 w-4" />
               Spaces
             </Button>
@@ -201,50 +147,19 @@ function NavbarInner({ className }: NavbarProps) {
             <>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
 
-              <Link href={`/spaces/${currentSpaceSlug}`} className="min-w-0">
+              <Link
+                href={`/spaces/${currentSpaceSlug}`}
+                className="min-w-0"
+              >
                 <Button
-                  variant={!effectiveContextSlug && !currentNodeId && !isGraphPage ? 'secondary' : 'ghost'}
+                  variant={!currentNodeId ? 'secondary' : 'ghost'}
                   size="sm"
                   className="max-w-[220px] gap-2 truncate"
                   title={currentSpace?.name || currentSpaceSlug}
                 >
-                  <span className="truncate">{currentSpace?.name || currentSpaceSlug}</span>
-                </Button>
-              </Link>
-            </>
-          )}
-
-          {effectiveContextSlug && (
-            <>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
-
-              <Link href={`/spaces/${currentSpaceSlug}/context/${effectiveContextSlug}`} className="min-w-0">
-                <Button
-                  variant={!currentNodeId && !isGraphPage ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="max-w-[220px] truncate"
-                  title={currentContext?.title || effectiveContextSlug}
-                >
-                  <span className="truncate">{currentContext?.title || effectiveContextSlug}</span>
-                </Button>
-              </Link>
-            </>
-          )}
-
-          {isGraphPage && (
-            <>
-              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
-
-              <Link
-                href={
-                  effectiveContextSlug
-                    ? `/spaces/${currentSpaceSlug}/graph?context=${effectiveContextSlug}`
-                    : `/spaces/${currentSpaceSlug}/graph`
-                }
-                className="min-w-0"
-              >
-                <Button variant="secondary" size="sm" className="max-w-[180px] truncate">
-                  Graph
+                  <span className="truncate">
+                    {currentSpace?.name || currentSpaceSlug}
+                  </span>
                 </Button>
               </Link>
             </>
@@ -254,14 +169,19 @@ function NavbarInner({ className }: NavbarProps) {
             <>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
 
-              <Link href={`/spaces/${currentSpaceSlug}/node/${currentNodeId}`} className="min-w-0">
+              <Link
+                href={`/spaces/${currentSpaceSlug}/node/${currentNodeId}`}
+                className="min-w-0"
+              >
                 <Button
                   variant="secondary"
                   size="sm"
                   className="max-w-[260px] truncate"
                   title={currentNode?.title || 'Node'}
                 >
-                  <span className="truncate">{currentNode?.title || 'Node'}</span>
+                  <span className="truncate">
+                    {currentNode?.title || 'Node'}
+                  </span>
                 </Button>
               </Link>
             </>

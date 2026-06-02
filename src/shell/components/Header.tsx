@@ -29,10 +29,6 @@ type HeaderProps = {
   showChatButton?: boolean;
   showUtilityActions?: boolean;
   onCreateNode?: () => void;
-  chatSpaceId?: string;
-  chatIsSpaceLocked?: boolean;
-  chatActiveContextSlug?: string;
-  chatActiveContextId?: string;
 };
 
 export function Header({
@@ -50,10 +46,6 @@ export function Header({
   onNewTab,
   chatAvailableSpaces = [],
   onChatChangeSpace,
-  chatSpaceId,
-  chatIsSpaceLocked = false,
-  chatActiveContextSlug,
-  chatActiveContextId,
   showChatButton = true,
   showUtilityActions = false,
   onCreateNode,
@@ -272,10 +264,6 @@ export function Header({
         >
           <ChatPanel
             spaceSlug={currentSlug}
-            spaceId={chatSpaceId}
-            activeContextSlug={chatActiveContextSlug}
-            activeContextId={chatActiveContextId}
-            isSpaceLocked={chatIsSpaceLocked}
             title="Chat"
             embedded={true}
             onClose={() => setChatOpen(false)}
