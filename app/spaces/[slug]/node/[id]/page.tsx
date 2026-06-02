@@ -1,9 +1,8 @@
 'use client';
 
-import { spaceService } from '@/services/api';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Header } from '@/shell/components/Header';
@@ -18,35 +17,19 @@ import { BlockEditor, BlockEditorRef } from '@/components/blocks/BlockEditor';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Block } from '@/components/blocks/types';
-import { NodeType, type UpdateNodeRequest, type Attribute } from '@/types/backend-dtos';
+import type { UpdateNodeRequest, Attribute } from '@/types/backend-dtos';
 import { getNodeEntityType, withUpdatedEntityType } from '@/lib/entity-types';
 import { useEntityTypeStore } from '@/stores/entityType.store';
-import { LayoutTemplate, Info, ArrowRightLeft } from 'lucide-react';
+import { LayoutTemplate, Info } from 'lucide-react';
 import { NodeTemplateModal } from '@/components/templates/NodeTemplateModal';
 import { LockToggle } from '@/components/locking/LockToggle';
 import { MigrateNodeDialog } from '@/components/migration/MigrateNodeDialog';
 import type { NodeTemplate } from '@/components/templates/nodeTemplates';
-
-function getNodeDetails(node: any): Record<string, unknown> {
-  if (!node?.nodeDetails) return {};
-
-  if (typeof node.nodeDetails === 'string') {
-    try {
-      return JSON.parse(node.nodeDetails);
-    } catch {
-      return {};
-    }
-  }
-
-  return node.nodeDetails as Record<string, unknown>;
-}
-
+import { ArrowRightLeft } from 'lucide-react';
 
 export default function NodeDetailPage() {
-  
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const navigateToNode = useNavigationStore((state) => state.navigateToNode);
   const entityTypeMap = useEntityTypeStore((state) => state.types);
@@ -58,46 +41,10 @@ export default function NodeDetailPage() {
 
   const { data: space, isLoading: spaceLoading } = useSpace(slug);
 
-  const { data: allSpaces = [] } = useQuery({
-    queryKey: ['spaces'],
-    queryFn: () => spaceService.getSpaces(),
-  });
-
   const { data: node, isLoading: nodeLoading, error: nodeError } = useQuery({
     queryKey: nodeKeys.detail(slug, nodeId),
     queryFn: () => nodeService.getNode(slug, nodeId),
     enabled: !!space,
-  });
-
-
-  const nodeDetails = useMemo(() => getNodeDetails(node), [node]);
-
-  const contextSlugFromUrl = searchParams.get('context') || undefined;
-
-  const nodeContextSlug =
-  contextSlugFromUrl ||
-  (typeof nodeDetails.contextSlug === 'string'
-    ? nodeDetails.contextSlug
-    : typeof nodeDetails.parentContextSlug === 'string'
-      ? nodeDetails.parentContextSlug
-      : undefined);
-
-  const { data: contextNode } = useQuery({
-    queryKey: ['node-page-context', slug, nodeContextSlug],
-    queryFn: async () => {
-      if (!nodeContextSlug) return null;
-
-      const allNodes = await nodeService.getNodes(slug, { page: 0, size: 1000 });
-
-      return (
-        allNodes.find(
-          (item) =>
-            item.nodeType === NodeType.CONTEXT &&
-            item.slug === nodeContextSlug
-        ) || null
-      );
-    },
-    enabled: !!slug && !!nodeContextSlug,
   });
 
   useEffect(() => {
@@ -107,8 +54,8 @@ export default function NodeDetailPage() {
   }, [space, node, slug, navigateToNode]);
 
   const blockEditorRef = useRef<BlockEditorRef>(null);
-  const [, setBlocks] = useState<Block[]>([]);
-  const [, setFocusedBlockId] = useState<string | null>(null);
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
 
   const updateNodeMutation = useMutation({
     mutationFn: (data: UpdateNodeRequest) => nodeService.updateNode(slug, nodeId, data),
@@ -153,7 +100,7 @@ export default function NodeDetailPage() {
         )
       );
     }
-  }, [node, ensureEntityType]);
+  }, [node, ensureEntityType, slug]);
 
   const handleBlocksChange = useCallback((newBlocks: Block[]) => {
     setBlocks(newBlocks);
@@ -165,37 +112,15 @@ export default function NodeDetailPage() {
 
 
   const breadcrumbPath = useMemo(() => {
-    const basePath = [
+    return [
       { id: 'home', title: 'Home' },
       { id: 'spaces', title: 'Spaces' },
       { id: space?.id || slug, title: space?.name || slug },
+      { id: node?.id || nodeId, title: node?.title || 'Node' },
     ];
+  }, [space, node, slug, nodeId]);
 
-    if (nodeContextSlug) {
-      basePath.push({
-        id: contextNode?.id || nodeContextSlug,
-        title: contextNode?.title || nodeContextSlug,
-      });
-    }
-
-    basePath.push({
-      id: node?.id || nodeId,
-      title: node?.title || 'Node',
-    });
-
-    return basePath;
-  }, [space, slug, contextNode, nodeContextSlug, node, nodeId]);
-
-  const chatAvailableSpaces = useMemo(
-    () =>
-      (Array.isArray(allSpaces) ? allSpaces : []).map((spaceItem) => ({
-        id: spaceItem.id,
-        name: spaceItem.name,
-        slug: spaceItem.slug,
-      })),
-    [allSpaces]
-  );
-
+  const isLoading = spaceLoading || nodeLoading;
 
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
@@ -255,11 +180,6 @@ export default function NodeDetailPage() {
   };
 
   const handleBackClick = () => {
-    if (nodeContextSlug) {
-      router.push(`/spaces/${slug}/context/${nodeContextSlug}`);
-      return;
-    }
-
     router.push(`/spaces/${slug}`);
   };
 
@@ -279,12 +199,9 @@ export default function NodeDetailPage() {
       return;
     }
 
-    if (index === 3 && nodeContextSlug) {
-      router.push(`/spaces/${slug}/context/${nodeContextSlug}`);
-      return;
+    if (index === 3) {
+      router.push(`/spaces/${slug}/node/${nodeId}`);
     }
-
-    router.push(`/spaces/${slug}/node/${nodeId}`);
   };
 
   const handleShareClick = () => {
@@ -345,7 +262,6 @@ export default function NodeDetailPage() {
     queryFn: () => nodeService.getNode(slug, originNodeId as string),
     enabled: !!originNodeId,
   });
-  const isLoading = spaceLoading || nodeLoading;
 
   if (nodeError) {
     return (
@@ -393,14 +309,6 @@ export default function NodeDetailPage() {
           onTabClick={handleTabClick}
           onTabClose={handleTabClose}
           onNewTab={handleNewTab}
-          chatAvailableSpaces={chatAvailableSpaces}
-          onChatChangeSpace={(nextSpaceSlug) => {
-            router.push(`/spaces/${nextSpaceSlug}`);
-          }}
-          chatSpaceId={space?.id}
-          chatIsSpaceLocked={!!space?.isLocked}
-          chatActiveContextSlug={nodeContextSlug}
-          chatActiveContextId={contextNode?.id}
         />
 
      
