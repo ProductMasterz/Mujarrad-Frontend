@@ -17,6 +17,7 @@ import { spaceService } from '@/services/api';
 import { useNotificationStore } from '@/stores/notificationStore';
 import type { Node } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
+import { AssignToContextDialog } from '@/components/blank/AssignToContextDialog';
 
 interface SpaceShellProps {
   title: string;
@@ -71,6 +72,7 @@ export function SpaceShell({
   const [nodeToDelete, setNodeToDelete] = useState<Node | null>(null);
   const [nodeToRename, setNodeToRename] = useState<Node | null>(null);
   const [selectedCardId, setSelectedCardId] = useState('');
+  const [moveToNodeId, setMoveToNodeId] = useState<string | null>(null);
 
   // Tabs state
   const [tabs, setTabs] = useState<Tab[]>([
@@ -130,6 +132,9 @@ export function SpaceShell({
       case 'share':
         setSelectedCardId(contextMenuNode.id);
         setShowShareModal(true);
+        break;
+      case 'assign':
+        setMoveToNodeId(contextMenuNode.id);
         break;
       case 'delete':
         setNodeToDelete(contextMenuNode);
@@ -303,6 +308,7 @@ export function SpaceShell({
             onOpenNewTab={() => handleContextMenuActionInternal('openNewTab')}
             onOpenAsNode={() => handleContextMenuActionInternal('openAsNode')}
             openAsLabel="Open Node"
+            onMoveTo={spaceSlug ? () => handleContextMenuActionInternal('assign') : undefined}
             onRename={() => handleContextMenuActionInternal('rename')}
             onDuplicate={() => handleContextMenuActionInternal('duplicate')}
             onShare={() => handleContextMenuActionInternal('share')}
@@ -344,6 +350,16 @@ export function SpaceShell({
             currentName={nodeToRename.title}
             onRename={handleRename}
             entityLabel={nodeToRename.nodeType === NodeType.CONTEXT ? 'Context' : 'Node'}
+          />
+        )}
+        {/* Move To Dialog */}
+        {moveToNodeId && spaceSlug && (
+          <AssignToContextDialog
+            spaceSlug={spaceSlug}
+            nodeIds={[moveToNodeId]}
+            open={!!moveToNodeId}
+            onOpenChange={(open) => { if (!open) setMoveToNodeId(null); }}
+            onAssigned={() => { setMoveToNodeId(null); onDeleteSuccess?.(); }}
           />
         )}
       </div>

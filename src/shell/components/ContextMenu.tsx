@@ -11,6 +11,7 @@ type ContextMenuProps = {
   onDuplicate: () => void;
   onShare: () => void;
   onDelete: () => void;
+  onMoveTo?: () => void;
 };
 
 export function ContextMenu({
@@ -24,6 +25,7 @@ export function ContextMenu({
   onDuplicate,
   onShare,
   onDelete,
+  onMoveTo,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +54,7 @@ export function ContextMenu({
   const menuItems = [
     { label: "Open in New Tab", onClick: onOpenNewTab },
     { label: openAsLabel, onClick: onOpenAsNode },
+    ...(onMoveTo ? [{ label: "Move To", onClick: onMoveTo }] : []),
     { label: "Rename", onClick: onRename },
     { label: "Duplicate", onClick: onDuplicate },
     { label: "Share", onClick: onShare },

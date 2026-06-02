@@ -599,6 +599,7 @@ export default function SpacesPage() {
             onClose={() => setContextMenu(null)}
             onOpenNewTab={() => handleContextMenuAction('openNewTab')}
             onOpenAsNode={() => handleContextMenuAction('openAsNode')}
+            openAsLabel="Open Space"
             onRename={() => handleContextMenuAction('rename')}
             onDuplicate={() => handleContextMenuAction('duplicate')}
             onShare={() => handleContextMenuAction('share')}
