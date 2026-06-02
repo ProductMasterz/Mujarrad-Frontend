@@ -529,7 +529,7 @@ export default function SpacesPage() {
               <ProjectCard
                 title="The Void"
                 color="#525252"
-                type={CardType.EMPTY_CONTEXT}
+                type={CardType.FULFILLED_CONTEXT}
                 onClick={() => router.push('/void')}
                 onContextMenu={(e) => e.preventDefault()}
               />

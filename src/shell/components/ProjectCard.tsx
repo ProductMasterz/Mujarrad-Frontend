@@ -109,9 +109,6 @@ export function ProjectCard({
     <div className="flex h-full flex-col justify-between px-5 py-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#94a3b8] dark:text-[#9ca3af]">
-            Workspace
-          </div>
           <p className="line-clamp-2 text-[17px] font-semibold leading-6 text-[#0f172a] dark:text-white">
             {title}
           </p>
@@ -123,7 +120,7 @@ export function ProjectCard({
       </div>
 
       <div className="text-[12px] leading-5 text-[#64748b] dark:text-[#9ca3af]">
-        Open this workspace to explore nodes, graph, and whiteboard.
+        Open to explore nodes, graph, and whiteboard.
       </div>
     </div>
   </button>

@@ -654,7 +654,7 @@ export default function SpaceDetailPage() {
                     <ProjectCard
                       title="The Blank"
                       color="#9ca3af"
-                      type={CardType.EMPTY_CONTEXT}
+                      type={CardType.FULFILLED_CONTEXT}
                       onClick={() => {
                         router.push(`/spaces/${slug}/blank`);
                       }}
@@ -677,7 +677,7 @@ export default function SpaceDetailPage() {
                     <ProjectCard
                       title="The Blank"
                       color="#9ca3af"
-                      type={CardType.EMPTY_CONTEXT}
+                      type={CardType.FULFILLED_CONTEXT}
                       onClick={() => {
                         router.push(`/spaces/${slug}/blank`);
                       }}
