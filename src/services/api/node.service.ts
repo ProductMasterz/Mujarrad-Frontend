@@ -162,7 +162,7 @@ export const nodeService = {
   ): Promise<Node[]> {
     const paginationParams = { page: params?.page ?? 0, size: params?.size ?? 100, ...params };
     const response = await apiClient.get<PageResponse<Node>>(
-      `/spaces/${spaceSlug}/blank/nodes`,
+      `/spaces/${spaceSlug}/blank`,
       { params: paginationParams }
     );
     return extractPage<Node>(response.data);
@@ -181,8 +181,8 @@ export const nodeService = {
     contextSlug: string
   ): Promise<Node> {
     const response = await apiClient.post<Node>(
-      `/spaces/${spaceSlug}/blank/assign`,
-      { nodeId, contextSlug }
+      `/spaces/${spaceSlug}/blank/${nodeId}/assign`,
+      { contextSlug }
     );
     return response.data;
   },
