@@ -37,7 +37,14 @@ export function NodeGrid({
   renderCardWrapper,
 }: NodeGridProps) {
   const filteredAndSorted = useMemo(() => {
-    let result = [...nodes];
+    // Filter out blocks and hidden nodes — they only appear inside their parent page editor
+    let result = nodes.filter((n) => {
+      const details = n.nodeDetails as Record<string, unknown> | undefined;
+      if (details?.showInSpaceList === false) return false;
+      if (details?.blockType) return false;
+      if (n.isBuiltin) return false;
+      return true;
+    });
 
     // Filter by search
     const term = (searchTerm || '').trim().toLowerCase();
