@@ -1,226 +1,160 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { useContextNodes, useChildContexts, useCreateNodeInContext } from '@/hooks/api/useContextNodes';
-import { useSpace } from '@/hooks/api';
+import { useQueryClient } from '@tanstack/react-query';
+import { SpaceShell } from '@/shell/components/SpaceShell';
+import { NodeGrid } from '@/shell/components/NodeGrid';
+import { useContextNodes, useChildContexts } from '@/hooks/api/useContextNodes';
+import { useSpace, nodeKeys, useRenameNodeSimple } from '@/hooks/api';
 import { NodeType } from '@/types/backend-dtos';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { NodeCard } from '@/shell/components/NodeCard';
 import { CardType } from '@/shell/data/projects';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  ChevronRight,
-  Home,
-  FolderOpen,
-  FileText,
-  Plus,
-  ArrowLeft,
-  Lock,
-} from 'lucide-react';
 import { ProjectCard } from '@/shell/components/ProjectCard';
+import { FolderOpen, FileText } from 'lucide-react';
 import type { Node } from '@/types/backend-dtos';
 
 export default function ContextDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const spaceSlug = params.slug as string;
   const contextSlug = params.contextSlug as string;
 
   const { data: space } = useSpace(spaceSlug);
   const { data: nodes = [], isLoading } = useContextNodes(spaceSlug, contextSlug);
   const { data: childContexts = [] } = useChildContexts(spaceSlug, contextSlug);
-  const createNode = useCreateNodeInContext();
+  const { rename: renameNode } = useRenameNodeSimple(spaceSlug);
 
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [newNodeTitle, setNewNodeTitle] = useState('');
+  // Search and sort
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
 
-  const regularNodes = nodes.filter((n: Node) => n.nodeType !== NodeType.CONTEXT && !n.isBuiltin);
-  const contextName = contextSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  // Context menu state
+  const [contextMenuNode, setContextMenuNode] = useState<Node | null>(null);
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
 
-  const handleCreateNode = () => {
-    if (!newNodeTitle.trim()) return;
-    createNode.mutate(
-      {
-        spaceSlug,
-        contextSlug,
-        data: {
-          title: newNodeTitle.trim(),
-          nodeType: NodeType.REGULAR,
-          content: '',
-          nodeDetails: { editorMode: 'blocks', isPage: true },
-        },
-      },
-      {
-        onSuccess: (node) => {
-          setShowCreateDialog(false);
-          setNewNodeTitle('');
-          router.push(`/spaces/${spaceSlug}/node/${node.id}`);
-        },
-      }
-    );
-  };
+  const regularNodes = useMemo(
+    () => nodes.filter((n: Node) => n.nodeType !== NodeType.CONTEXT && !n.isBuiltin),
+    [nodes]
+  );
+
+  const contextName = contextSlug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+
+  const breadcrumbPath = useMemo(
+    () => [
+      { id: 'home', title: 'Home' },
+      { id: 'spaces', title: 'Spaces' },
+      { id: space?.id || spaceSlug, title: space?.name || spaceSlug },
+      { id: contextSlug, title: contextName },
+    ],
+    [space, spaceSlug, contextSlug, contextName]
+  );
+
+  const handleCardClick = useCallback(
+    (node: Node) => {
+      router.push(`/spaces/${spaceSlug}/node/${node.id}`);
+    },
+    [router, spaceSlug]
+  );
+
+  const handleCardContextMenu = useCallback((e: React.MouseEvent, node: Node) => {
+    e.preventDefault();
+    setContextMenuNode(node);
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  const handleRename = useCallback(
+    async (nodeId: string, newName: string) => {
+      return renameNode(nodeId, newName);
+    },
+    [renameNode]
+  );
+
+  const invalidateNodes = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: nodeKeys.list(spaceSlug, { page: 0, size: 1000 }) });
+  }, [queryClient, spaceSlug]);
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <div className="border-b bg-card/50 px-6 py-4">
-          {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
-            <button onClick={() => router.push('/')} className="hover:text-foreground transition-colors">
-              <Home className="h-3.5 w-3.5" />
-            </button>
-            <ChevronRight className="h-3 w-3" />
-            <button onClick={() => router.push('/spaces')} className="hover:text-foreground transition-colors">
-              Spaces
-            </button>
-            <ChevronRight className="h-3 w-3" />
-            <button onClick={() => router.push(`/spaces/${spaceSlug}`)} className="hover:text-foreground transition-colors">
-              {space?.name || spaceSlug}
-            </button>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-foreground font-medium">{contextName}</span>
-          </nav>
-
-          {/* Title row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push(`/spaces/${spaceSlug}`)}
-                className="p-1.5 rounded-md hover:bg-muted transition-colors"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/40">
-                <FolderOpen className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold">{contextName}</h1>
-                <p className="text-xs text-muted-foreground">
-                  {regularNodes.length} {regularNodes.length === 1 ? 'node' : 'nodes'}
-                  {childContexts.length > 0 && ` · ${childContexts.length} sub-contexts`}
-                </p>
-              </div>
-            </div>
-
-            <Button onClick={() => setShowCreateDialog(true)} size="sm" className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" />
-              Create Node
-            </Button>
+    <SpaceShell
+      title={contextName}
+      spaceSlug={spaceSlug}
+      breadcrumbPath={breadcrumbPath}
+      contextMenuNode={contextMenuNode}
+      contextMenuPosition={contextMenuPos}
+      onContextMenuClose={() => {
+        setContextMenuNode(null);
+        setContextMenuPos(null);
+      }}
+      newNodeModalDefaultType="node"
+      newNodeModalAvailableTypes={['node']}
+      deleteSpaceSlug={spaceSlug}
+      onDeleteSuccess={invalidateNodes}
+      onRenameSuccess={() => invalidateNodes()}
+      onRename={handleRename}
+    >
+      {/* Search and Sort bar */}
+      <div className="mb-5 rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search nodes..."
+            className="h-[42px] w-full sm:flex-1 rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition placeholder:text-muted-foreground/80 focus:border-primary focus:ring-2 focus:ring-primary/15"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
+              className="h-[42px] min-w-[180px] rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+            >
+              <option value="updatedAt">Date modified</option>
+              <option value="createdAt">Date created</option>
+              <option value="name">Name</option>
+            </select>
           </div>
         </div>
-
-        {/* Content */}
-        <div className="px-6 py-6 max-w-6xl">
-          {/* Child contexts */}
-          {childContexts.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground mb-3">
-                Sub-Contexts ({childContexts.length})
-              </h2>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
-                {childContexts.map((ctx: Node) => (
-                  <ProjectCard
-                    key={ctx.id}
-                    title={ctx.title}
-                    color="#9333ea"
-                    type={CardType.FULFILLED_CONTEXT}
-                    onClick={() => router.push(`/spaces/${spaceSlug}/context/${ctx.slug}`)}
-                    onContextMenu={(e) => e.preventDefault()}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Nodes */}
-          <div className="mb-3">
-            <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-              Nodes ({regularNodes.length})
-            </h2>
-          </div>
-
-          {isLoading ? (
-            <div className="flex items-center justify-center h-[300px]">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
-          ) : regularNodes.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-12 text-center">
-              <FileText className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-sm text-muted-foreground">No nodes in this context</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3 gap-1.5"
-                onClick={() => setShowCreateDialog(true)}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Create first node
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-              {regularNodes.map((node: Node) => {
-                const preview = (node.content || '').trim().slice(0, 120) || undefined;
-                const meta = node.updatedAt
-                  ? `Updated ${new Date(node.updatedAt).toLocaleDateString()}`
-                  : `Created ${new Date(node.createdAt).toLocaleDateString()}`;
-
-                return (
-                  <NodeCard
-                    key={node.id}
-                    title={node.title}
-                    preview={preview}
-                    meta={meta}
-                    type={CardType.NODE}
-                    nodeKindLabel={node.nodeType === 'ATTRIBUTE' ? 'Attribute' : 'Regular'}
-                    onClick={() => router.push(`/spaces/${spaceSlug}/node/${node.id}`)}
-                    onContextMenu={(e) => e.preventDefault()}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Create Node Dialog */}
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent className="sm:max-w-[400px]">
-            <DialogHeader>
-              <DialogTitle>Create Node in {contextName}</DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              <Input
-                placeholder="Node title"
-                value={newNodeTitle}
-                onChange={(e) => setNewNodeTitle(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreateNode()}
-                autoFocus
-              />
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreateNode}
-                disabled={!newNodeTitle.trim() || createNode.isPending}
-              >
-                {createNode.isPending ? 'Creating...' : 'Create'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
-    </ProtectedRoute>
+
+      {/* Child Contexts */}
+      {childContexts.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground mb-3">
+            Sub-Contexts ({childContexts.length})
+          </h2>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
+            {childContexts.map((ctx: Node) => (
+              <ProjectCard
+                key={ctx.id}
+                title={ctx.title}
+                color="#9333ea"
+                type={CardType.FULFILLED_CONTEXT}
+                onClick={() => router.push(`/spaces/${spaceSlug}/context/${ctx.slug}`)}
+                onContextMenu={(e) => handleCardContextMenu(e, ctx)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Nodes */}
+      <div className="mb-3">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          Nodes ({regularNodes.length})
+        </h2>
+      </div>
+
+      <NodeGrid
+        nodes={regularNodes}
+        isLoading={isLoading}
+        emptyIcon={<FileText className="h-8 w-8 text-muted-foreground/50" />}
+        emptyTitle="No nodes in this context"
+        searchTerm={searchTerm}
+        sortBy={sortBy}
+        onCardClick={handleCardClick}
+        onCardContextMenu={handleCardContextMenu}
+      />
+    </SpaceShell>
   );
 }

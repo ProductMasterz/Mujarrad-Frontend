@@ -1,155 +1,193 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useQueryClient } from '@tanstack/react-query';
+import { SpaceShell } from '@/shell/components/SpaceShell';
+import { NodeGrid } from '@/shell/components/NodeGrid';
 import { useBlankNodes, useBlankCount } from '@/hooks/api/useBlankNodes';
-import { useSpace } from '@/hooks/api';
-import { NodeCard } from '@/shell/components/NodeCard';
-import { CardType } from '@/shell/data/projects';
-import { Button } from '@/components/ui/button';
+import { useSpace, nodeKeys, useRenameNodeSimple } from '@/hooks/api';
 import { AssignToContextDialog } from '@/components/blank/AssignToContextDialog';
-import {
-  ChevronRight,
-  Home,
-  Inbox,
-  ArrowLeft,
-} from 'lucide-react';
+import { Inbox } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { Node } from '@/types/backend-dtos';
 
 export default function BlankPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const spaceSlug = params.slug as string;
 
   const { data: space } = useSpace(spaceSlug);
   const { data: nodes = [], isLoading } = useBlankNodes(spaceSlug);
   const { data: count = 0 } = useBlankCount(spaceSlug);
+  const { rename: renameNode } = useRenameNodeSimple(spaceSlug);
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
+
+  // Assign to context
   const [assignNodeIds, setAssignNodeIds] = useState<string[]>([]);
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const blankNodes = Array.isArray(nodes) ? nodes : [];
+  // Context menu state
+  const [contextMenuNode, setContextMenuNode] = useState<Node | null>(null);
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+  const blankNodes = useMemo(() => (Array.isArray(nodes) ? nodes : []), [nodes]);
+
+  const breadcrumbPath = useMemo(
+    () => [
+      { id: 'home', title: 'Home' },
+      { id: 'spaces', title: 'Spaces' },
+      { id: space?.id || spaceSlug, title: space?.name || spaceSlug },
+      { id: 'blank', title: 'The Blank' },
+    ],
+    [space, spaceSlug]
+  );
+
+  const handleCardClick = useCallback(
+    (node: Node) => {
+      router.push(`/spaces/${spaceSlug}/node/${node.id}`);
+    },
+    [router, spaceSlug]
+  );
+
+  const handleCardContextMenu = useCallback((e: React.MouseEvent, node: Node) => {
+    e.preventDefault();
+    setContextMenuNode(node);
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  const handleContextMenuAction = useCallback(
+    (action: string, node: Node) => {
+      if (action === 'assign' || action === 'duplicate') {
+        setAssignNodeIds([node.id]);
+        setAssignOpen(true);
+      }
+    },
+    []
+  );
+
+  const handleRename = useCallback(
+    async (nodeId: string, newName: string) => {
+      return renameNode(nodeId, newName);
+    },
+    [renameNode]
+  );
+
+  const invalidateNodes = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: nodeKeys.list(spaceSlug, { page: 0, size: 1000 }) });
+  }, [queryClient, spaceSlug]);
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-background">
-        <div className="border-b bg-card/50 px-6 py-4">
-          <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
-            <button onClick={() => router.push('/')} className="hover:text-foreground transition-colors">
-              <Home className="h-3.5 w-3.5" />
-            </button>
-            <ChevronRight className="h-3 w-3" />
-            <button onClick={() => router.push('/spaces')} className="hover:text-foreground transition-colors">
-              Spaces
-            </button>
-            <ChevronRight className="h-3 w-3" />
-            <button onClick={() => router.push(`/spaces/${spaceSlug}`)} className="hover:text-foreground transition-colors">
-              {space?.name || spaceSlug}
-            </button>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-foreground font-medium">The Blank</span>
-          </nav>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push(`/spaces/${spaceSlug}`)}
-                className="p-1.5 rounded-md hover:bg-muted transition-colors"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-200 dark:bg-gray-800">
-                <Inbox className="h-5 w-5 text-gray-500" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-700 dark:text-gray-300">The Blank</h1>
-                <p className="text-xs text-muted-foreground">
-                  {count} unorganized {count === 1 ? 'node' : 'nodes'}
-                </p>
-              </div>
-            </div>
-
-            {selectedIds.size > 0 && (
-              <Button
-                size="sm"
-                onClick={() => {
-                  setAssignNodeIds(Array.from(selectedIds));
-                  setAssignOpen(true);
-                }}
-              >
-                Assign {selectedIds.size} to Context
-              </Button>
-            )}
+    <SpaceShell
+      title="The Blank"
+      spaceSlug={spaceSlug}
+      breadcrumbPath={breadcrumbPath}
+      contextMenuNode={contextMenuNode}
+      contextMenuPosition={contextMenuPos}
+      onContextMenuClose={() => {
+        setContextMenuNode(null);
+        setContextMenuPos(null);
+      }}
+      onContextMenuAction={handleContextMenuAction}
+      newNodeModalDefaultType="node"
+      newNodeModalAvailableTypes={['node']}
+      deleteSpaceSlug={spaceSlug}
+      onDeleteSuccess={invalidateNodes}
+      onRenameSuccess={() => invalidateNodes()}
+      onRename={handleRename}
+    >
+      {/* Title area */}
+      <div className="mb-4 rounded-[22px] border border-border bg-background px-5 py-5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[28px] font-semibold leading-tight text-foreground">The Blank</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {count} unorganized {count === 1 ? 'node' : 'nodes'}
+            </p>
           </div>
-        </div>
-
-        <div className="px-6 py-6 max-w-6xl">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-[300px]">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
-          ) : blankNodes.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-12 text-center">
-              <Inbox className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-              <p className="text-sm text-muted-foreground">No unorganized nodes</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">All nodes in this space are assigned to a context</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-              {blankNodes.map((node: Node) => {
-                const preview = (node.content || '').trim().slice(0, 120) || undefined;
-                const meta = node.updatedAt
-                  ? `Updated ${new Date(node.updatedAt).toLocaleDateString()}`
-                  : `Created ${new Date(node.createdAt).toLocaleDateString()}`;
-
-                return (
-                  <div key={node.id} className="relative">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(node.id)}
-                      onChange={() => {
-                        setSelectedIds(prev => {
-                          const next = new Set(prev);
-                          if (next.has(node.id)) next.delete(node.id);
-                          else next.add(node.id);
-                          return next;
-                        });
-                      }}
-                      className="absolute top-2 left-2 z-10"
-                    />
-                    <NodeCard
-                      title={node.title}
-                      preview={preview}
-                      meta={meta}
-                      type={CardType.NODE}
-                      nodeKindLabel={node.nodeType === 'ATTRIBUTE' ? 'Attribute' : 'Regular'}
-                      onClick={() => router.push(`/spaces/${spaceSlug}/node/${node.id}`)}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        setAssignNodeIds([node.id]);
-                        setAssignOpen(true);
-                      }}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+          {selectedIds.size > 0 && (
+            <Button
+              size="sm"
+              onClick={() => {
+                setAssignNodeIds(Array.from(selectedIds));
+                setAssignOpen(true);
+              }}
+            >
+              Assign {selectedIds.size} to Context
+            </Button>
           )}
         </div>
-
-        <AssignToContextDialog
-          spaceSlug={spaceSlug}
-          nodeIds={assignNodeIds}
-          open={assignOpen}
-          onOpenChange={setAssignOpen}
-          onAssigned={() => {
-            setSelectedIds(new Set());
-            setAssignNodeIds([]);
-          }}
-        />
       </div>
-    </ProtectedRoute>
+
+      {/* Search and Sort bar */}
+      <div className="mb-5 rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search blank nodes..."
+            className="h-[42px] w-full sm:flex-1 rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition placeholder:text-muted-foreground/80 focus:border-primary focus:ring-2 focus:ring-primary/15"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
+              className="h-[42px] min-w-[180px] rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+            >
+              <option value="updatedAt">Date modified</option>
+              <option value="createdAt">Date created</option>
+              <option value="name">Name</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <NodeGrid
+        nodes={blankNodes}
+        isLoading={isLoading}
+        emptyIcon={<Inbox className="h-8 w-8 text-gray-400" />}
+        emptyTitle="No unorganized nodes"
+        emptySubtitle="All nodes in this space are assigned to a context"
+        searchTerm={searchTerm}
+        sortBy={sortBy}
+        onCardClick={handleCardClick}
+        onCardContextMenu={handleCardContextMenu}
+        renderCardWrapper={(node, card) => (
+          <div className="relative">
+            <input
+              type="checkbox"
+              checked={selectedIds.has(node.id)}
+              onChange={() => {
+                setSelectedIds((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(node.id)) next.delete(node.id);
+                  else next.add(node.id);
+                  return next;
+                });
+              }}
+              className="absolute top-2 left-2 z-10"
+            />
+            {card}
+          </div>
+        )}
+      />
+
+      <AssignToContextDialog
+        spaceSlug={spaceSlug}
+        nodeIds={assignNodeIds}
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        onAssigned={() => {
+          setSelectedIds(new Set());
+          setAssignNodeIds([]);
+        }}
+      />
+    </SpaceShell>
   );
 }

@@ -1,14 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { CloudOff, Trash2, ArrowRightCircle, Home, ChevronRight } from 'lucide-react';
+import { SpaceShell } from '@/shell/components/SpaceShell';
+import { NodeGrid } from '@/shell/components/NodeGrid';
 import { useVoidNodes, useDeleteVoidNode } from '@/hooks/api/useVoidNodes';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { AssignVoidDialog } from '@/components/void/AssignVoidDialog';
-import { NodeCard } from '@/shell/components/NodeCard';
-import { CardType } from '@/shell/data/projects';
+import { CloudOff, ArrowRightCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Node } from '@/types/backend-dtos';
 
@@ -17,111 +16,149 @@ export default function VoidPage() {
   const { data: nodes, isLoading } = useVoidNodes();
   const deleteMutation = useDeleteVoidNode();
   const addNotification = useNotificationStore((s) => s.addNotification);
+
   const [assignNodeId, setAssignNodeId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
 
-  const handleDelete = (nodeId: string) => {
-    deleteMutation.mutate(nodeId, {
-      onSuccess: () => {
-        addNotification({ type: 'success', source: 'node', title: 'Note deleted' });
-      },
-    });
-  };
+  // Context menu state
+  const [contextMenuNode, setContextMenuNode] = useState<Node | null>(null);
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
 
-  const voidNodes: Node[] = Array.isArray(nodes) ? nodes : [];
+  const voidNodes: Node[] = useMemo(() => (Array.isArray(nodes) ? nodes : []), [nodes]);
+
+  const breadcrumbPath = useMemo(
+    () => [
+      { id: 'home', title: 'Home' },
+      { id: 'spaces', title: 'Spaces' },
+      { id: 'void', title: 'The Void' },
+    ],
+    []
+  );
+
+  const handleDelete = useCallback(
+    (nodeId: string) => {
+      deleteMutation.mutate(nodeId, {
+        onSuccess: () => {
+          addNotification({ type: 'success', source: 'node', title: 'Note deleted' });
+        },
+      });
+    },
+    [deleteMutation, addNotification]
+  );
+
+  const handleCardClick = useCallback(
+    (node: Node) => {
+      setAssignNodeId(node.id);
+    },
+    []
+  );
+
+  const handleCardContextMenu = useCallback((e: React.MouseEvent, node: Node) => {
+    e.preventDefault();
+    setContextMenuNode(node);
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  const handleContextMenuAction = useCallback(
+    (action: string, node: Node) => {
+      if (action === 'assign') {
+        setAssignNodeId(node.id);
+      }
+    },
+    []
+  );
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-background">
-        <div className="border-b bg-card/50 px-6 py-4">
-          <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
-            <button onClick={() => router.push('/')} className="hover:text-foreground transition-colors">
-              <Home className="h-3.5 w-3.5" />
-            </button>
-            <ChevronRight className="h-3 w-3" />
-            <button onClick={() => router.push('/spaces')} className="hover:text-foreground transition-colors">
-              Spaces
-            </button>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-foreground font-medium">The Void</span>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-200 dark:bg-neutral-800">
-              <CloudOff className="h-5 w-5 text-neutral-500" />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-neutral-700 dark:text-neutral-300">The Void</h1>
-              <p className="text-xs text-muted-foreground">
-                {voidNodes.length} quick {voidNodes.length === 1 ? 'note' : 'notes'} — assign to a space when ready
-              </p>
-            </div>
+    <SpaceShell
+      title="The Void"
+      breadcrumbPath={breadcrumbPath}
+      contextMenuNode={contextMenuNode}
+      contextMenuPosition={contextMenuPos}
+      onContextMenuClose={() => {
+        setContextMenuNode(null);
+        setContextMenuPos(null);
+      }}
+      onContextMenuAction={handleContextMenuAction}
+      newNodeModalDefaultType="node"
+      newNodeModalAvailableTypes={['node']}
+    >
+      {/* Search and Sort bar */}
+      <div className="mb-5 rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search void notes..."
+            className="h-[42px] w-full sm:flex-1 rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition placeholder:text-muted-foreground/80 focus:border-primary focus:ring-2 focus:ring-primary/15"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-medium text-muted-foreground">Sort by</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
+              className="h-[42px] min-w-[180px] rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+            >
+              <option value="updatedAt">Date modified</option>
+              <option value="createdAt">Date created</option>
+              <option value="name">Name</option>
+            </select>
           </div>
         </div>
-
-        <div className="px-6 py-6 max-w-6xl">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-[300px]">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
-          ) : voidNodes.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700 p-12 text-center">
-              <CloudOff className="h-8 w-8 mx-auto text-neutral-400 mb-2" />
-              <p className="text-sm text-muted-foreground">No quick notes yet</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">Use the New button to capture ideas fast</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-              {voidNodes.map((node: Node) => {
-                const preview = (node.content || '').trim().slice(0, 120) || undefined;
-                const meta = `Created ${new Date(node.createdAt).toLocaleDateString()}`;
-
-                return (
-                  <div key={node.id} className="relative group">
-                    <NodeCard
-                      title={node.title}
-                      preview={preview}
-                      meta={meta}
-                      type={CardType.NODE}
-                      nodeKindLabel="Void Note"
-                      onClick={() => setAssignNodeId(node.id)}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        handleDelete(node.id);
-                      }}
-                    />
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 bg-background/80"
-                        onClick={(e) => { e.stopPropagation(); setAssignNodeId(node.id); }}
-                      >
-                        <ArrowRightCircle className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 bg-background/80 text-destructive hover:text-destructive"
-                        onClick={(e) => { e.stopPropagation(); handleDelete(node.id); }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {assignNodeId && (
-          <AssignVoidDialog
-            nodeId={assignNodeId}
-            open={!!assignNodeId}
-            onOpenChange={(open) => { if (!open) setAssignNodeId(null); }}
-          />
-        )}
       </div>
-    </ProtectedRoute>
+
+      <NodeGrid
+        nodes={voidNodes}
+        isLoading={isLoading}
+        emptyIcon={<CloudOff className="h-8 w-8 text-neutral-400" />}
+        emptyTitle="No quick notes yet"
+        emptySubtitle="Use the New button to capture ideas fast"
+        searchTerm={searchTerm}
+        sortBy={sortBy}
+        onCardClick={handleCardClick}
+        onCardContextMenu={handleCardContextMenu}
+        getNodeKindLabel={() => 'Void Note'}
+        renderCardWrapper={(node, card) => (
+          <div className="relative group">
+            {card}
+            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 bg-background/80"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAssignNodeId(node.id);
+                }}
+              >
+                <ArrowRightCircle className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 bg-background/80 text-destructive hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(node.id);
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
+      />
+
+      {assignNodeId && (
+        <AssignVoidDialog
+          nodeId={assignNodeId}
+          open={!!assignNodeId}
+          onOpenChange={(open) => {
+            if (!open) setAssignNodeId(null);
+          }}
+        />
+      )}
+    </SpaceShell>
   );
 }
