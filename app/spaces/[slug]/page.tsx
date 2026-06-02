@@ -12,7 +12,12 @@ import { Tab } from '@/shell/components/TabsBar';
 import { CardType, Card } from '@/shell/data/projects';
 import { DeleteNodeDialog } from '@/components/nodes/DeleteNodeDialog';
 import { RenameModal } from '@/shell/components/RenameModal';
-import { useSpace, nodeKeys, useRenameNodeSimple } from '@/hooks/api';
+import {
+  useSpace,
+  nodeKeys,
+  useRenameNodeSimple,
+  useVirtualContextsForSpace,
+} from '@/hooks/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
 import { useNavigationStore } from '@/stores/navigationStore';
@@ -25,7 +30,6 @@ import { FolderOpen } from 'lucide-react';
 import { LockedBanner } from '@/components/locking/LockedBanner';
 import { SpaceLockToggle } from '@/components/locking/SpaceLockToggle';
 import { SpaceModeToggle } from '@/components/locking/SpaceModeToggle';
-import { BlankBadge } from '@/components/blank/BlankBadge';
 import { BlankNodesPanel } from '@/components/blank/BlankNodesPanel';
 import { VCPanel } from '@/components/virtual-contexts/VCPanel';
 import { ContextList } from '@/components/contexts/ContextList';
@@ -84,11 +88,46 @@ function getNodeDetails(node: Node): Record<string, unknown> | undefined {
   return node.nodeDetails as Record<string, unknown> | undefined;
 }
 
-function isDisplayableNode(node: Node): boolean {
+function getContextCardColor(node: Node): string {
   const details = getNodeDetails(node);
 
+  if (typeof details?.contextColor === "string") {
+    return details.contextColor;
+  }
+
+  if (typeof details?.entityColor === "string") {
+    return details.entityColor;
+  }
+
+  return "#9333ea";
+}
+
+function isDisplayableNode(node: Node): boolean {
+  const details = getNodeDetails(node);
+  const title = String(node.title || '').toLowerCase();
+  const slugValue = String(node.slug || '').toLowerCase();
+
+  if (node.isBuiltin) return false;
   if (details?.showInSpaceList === false) return false;
   if (details?.blockType) return false;
+
+  // Hide system/chat infrastructure nodes
+  if (details?.systemContext === 'chat') return false;
+  if (details?.chatNodeType) return false;
+  if (details?.createdFrom === 'chat') return false;
+  if (details?.createdFrom === 'assistant-ui') return false;
+
+  // Hide stored chat messages/conversations
+  if (details?.role === 'conversation') return false;
+  if (details?.role === 'user') return false;
+  if (details?.role === 'assistant') return false;
+
+  // Hide known system containers / infrastructure by title or slug
+  if (title === 'mujarrad chat') return false;
+  if (slugValue === 'mujarrad-chat') return false;
+  if (title.includes('conversation')) return false;
+  if (title.includes('assistant message')) return false;
+  if (title.includes('user message')) return false;
 
   return true;
 }
@@ -123,7 +162,7 @@ export default function SpaceDetailPage() {
     queryKey: ['spaces'],
     queryFn: () => spaceService.getSpaces(),
   });
-
+  const { data: spaceConnections = [] } = useVirtualContextsForSpace(space?.id || '');
   // UI State
   const [showNewNodeModal, setShowNewNodeModal] = useState(false);
   const [modalDefaultType, setModalDefaultType] = useState<EntityType>('node');
@@ -136,6 +175,7 @@ export default function SpaceDetailPage() {
   const [nodeToRename, setNodeToRename] = useState<Node | null>(null);
   const [selectedCardId, setSelectedCardId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showBlankPanel, setShowBlankPanel] = useState(true);
   const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -191,18 +231,25 @@ export default function SpaceDetailPage() {
     });
   }, [contexts, searchTerm, sortBy]);
 
-  const totalNodeCount = allDisplayableNodes.length;
+ const regularNodes = useMemo(() => {
+    return allDisplayableNodes.filter((node) => node.nodeType !== NodeType.CONTEXT);
+  }, [allDisplayableNodes]);
+
+  const totalNodeCount = regularNodes.length;
 
   const aiNodeCount = useMemo(
-    () => allDisplayableNodes.filter((node) => isAgentCreatedNode(node)).length,
-    [allDisplayableNodes]
+    () => regularNodes.filter((node) => isAgentCreatedNode(node)).length,
+    [regularNodes]
   );
 
   const contextCount = useMemo(
-    () => allDisplayableNodes.filter((node) => node.nodeType === NodeType.CONTEXT).length,
-    [allDisplayableNodes]
+    () => contexts.length,
+    [contexts]
   );
-
+  const connectionCount = useMemo(
+    () => Array.isArray(spaceConnections) ? spaceConnections.length : 0,
+    [spaceConnections]
+  );
   const sidebarData = useMemo(() => allDisplayableNodes.map(nodeToCard), [allDisplayableNodes]);
 
   const chatAvailableSpaces = useMemo(
@@ -412,7 +459,7 @@ export default function SpaceDetailPage() {
 
 
   const handleConfirmClearSpace = async () => {
-    if (!nodes || nodes.length === 0) {
+    if (regularNodes.length === 0) {
       setShowClearSpaceDialog(false);
       return;
     }
@@ -420,8 +467,8 @@ export default function SpaceDetailPage() {
     setIsClearingSpace(true);
 
     try {
-      await Promise.all(nodes.map((node) => nodeService.deleteNode(slug, node.id)));
-
+      await Promise.all(regularNodes.map((node) => nodeService.deleteNode(slug, node.id)));
+      
       addNotification({
         type: 'warning',
         source: 'node',
@@ -498,7 +545,8 @@ export default function SpaceDetailPage() {
           onChatChangeSpace={(nextSpaceSlug) => {
             router.push(`/spaces/${nextSpaceSlug}`);
           }}
-          onCreateNode={() => setShowNewNodeModal(true)}
+          chatSpaceId={space?.id}
+          chatIsSpaceLocked={!!space?.isLocked}
         />
 
         <Sidebar
@@ -522,45 +570,44 @@ export default function SpaceDetailPage() {
             </div>
           )}
 
-          <div className="mb-4 rounded-[22px] border border-border bg-background px-5 py-5 shadow-sm">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="mb-3 rounded-[18px] border border-border bg-background px-4 py-3 shadow-sm">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-[28px] font-semibold leading-tight text-foreground">
+                  <h1 className="text-[24px] font-semibold leading-tight text-foreground">
                     {space?.name || 'Space'}
                   </h1>
-                  <BlankBadge spaceSlug={slug} />
                   {space?.isLocked && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-200">
                       Locked
                     </span>
                   )}
                 </div>
-                <p className="mt-1 max-w-[680px] text-sm leading-5 text-muted-foreground">
+                <p className="mt-0.5 max-w-[680px] text-[13px] leading-5 text-muted-foreground">
                   Review, create, and organize structured nodes and contexts in this space.
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 <button
                   onClick={handleAddNode}
-                  className="inline-flex h-9 items-center rounded-xl bg-foreground px-3.5 text-sm font-medium text-background transition hover:opacity-90"
+                  className="inline-flex h-8 items-center rounded-xl bg-foreground px-3.5 text-sm font-medium text-background transition hover:opacity-90"
                   type="button"
                 >
                   New Node
                 </button>
 
                 <button
-                  onClick={() => setShowNewNodeModal(true)}
-                  className="inline-flex h-9 items-center rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground transition hover:bg-muted"
+                  onClick={handleAddContext}
+                  className="inline-flex h-8 items-center rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground transition hover:bg-muted"
                   type="button"
                 >
-                  New
+                  New Context
                 </button>
 
                 <button
                   onClick={handleGraphClick}
-                  className="inline-flex h-9 items-center rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground transition hover:bg-muted"
+                  className="inline-flex h-8 items-center rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground transition hover:bg-muted"
                   type="button"
                 >
                   Graph
@@ -568,7 +615,7 @@ export default function SpaceDetailPage() {
 
                 <button
                   onClick={handleWhiteboardClick}
-                  className="inline-flex h-9 items-center rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground transition hover:bg-muted"
+                  className="inline-flex h-8 items-center rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground transition hover:bg-muted"
                   type="button"
                 >
                   Whiteboard
@@ -584,32 +631,53 @@ export default function SpaceDetailPage() {
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2.5">
-              <div className="min-w-[120px] rounded-2xl border border-border/60 bg-muted/20 px-4 py-3">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Nodes</div>
-                <div className="mt-1 text-xl font-semibold leading-none text-foreground">{totalNodeCount}</div>
+            <div className="mt-3 flex flex-wrap gap-2.5">
+              <div className="min-w-[120px] rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Nodes
+                </div>
+                <div className="mt-0.5 text-lg font-semibold leading-none text-foreground">
+                  {totalNodeCount}
+                </div>
               </div>
 
-              <div className="min-w-[120px] rounded-2xl border border-border/60 bg-muted/20 px-4 py-3">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">AI Created</div>
-                <div className="mt-1 text-xl font-semibold leading-none text-foreground">{aiNodeCount}</div>
-
+              <div className="min-w-[120px] rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  AI Created
+                </div>
+                <div className="mt-0.5 text-lg font-semibold leading-none text-foreground">
+                  {aiNodeCount}
+                </div>
               </div>
 
-              <div className="min-w-[120px] rounded-2xl border border-border/60 bg-muted/20 px-4 py-3">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Contexts</div>
-                <div className="mt-1 text-xl font-semibold leading-none text-foreground">{contextCount}</div>
+              <div className="min-w-[120px] rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Contexts
+                </div>
+                <div className="mt-0.5 text-lg font-semibold leading-none text-foreground">
+                  {contextCount}
+                </div>
+              </div>
+
+              <div className="min-w-[120px] rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Connections
+                </div>
+                <div className="mt-0.5 text-lg font-semibold leading-none text-foreground">
+                  {connectionCount}
+                </div>
               </div>
             </div>
+
           </div>
-          <div className="mb-5 rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
+          <div className="mb-3 rounded-[16px] border border-border/60 bg-background px-3 py-3 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search contexts by name..."
-                className="h-[42px] w-full sm:flex-1 rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition placeholder:text-muted-foreground/80 focus:border-primary focus:ring-2 focus:ring-primary/15"
+                className="h-9 w-full sm:flex-1 rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition placeholder:text-muted-foreground/80 focus:border-primary focus:ring-2 focus:ring-primary/15"
               />
 
               <div className="flex items-center gap-2">
@@ -617,7 +685,7 @@ export default function SpaceDetailPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'name' | 'createdAt' | 'updatedAt')}
-                  className="h-[42px] min-w-[180px] rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  className="h-9 min-w-[180px] rounded-xl border border-border/70 bg-background px-4 text-[14px] text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                 >
                   <option value="updatedAt">Date modified</option>
                   <option value="createdAt">Date created</option>
@@ -629,11 +697,11 @@ export default function SpaceDetailPage() {
 
           {/* Context filter and Connections */}
           {space && (
-            <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-[240px_1fr]">
-              <div className="rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
+            <div className="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-[220px_1fr]">
+              <div className="rounded-[16px] border border-border/60 bg-background px-3 py-3 shadow-sm">
                 <ContextList spaceSlug={slug} onSelectContext={(ctx) => setSearchTerm(ctx ? `context:${ctx}` : '')} />
               </div>
-              <div className="rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
+              <div className="rounded-[16px] border border-border/60 bg-background px-3 py-3 shadow-sm">
                 <VCPanel spaceSlug={slug} spaceId={space.id} />
               </div>
             </div>
@@ -664,9 +732,14 @@ export default function SpaceDetailPage() {
                       title="The Blank"
                       color="#9ca3af"
                       type={CardType.NODE}
+                      eyebrowLabelOverride="UNORGANIZED"
+                      descriptionTextOverride="Open The Blank to view nodes that are not assigned to any context."
                       onClick={() => {
-                        const panel = document.querySelector('[data-blank-panel]');
-                        if (panel) panel.scrollIntoView({ behavior: 'smooth' });
+                        setShowBlankPanel(true);
+                        setTimeout(() => {
+                          const panel = document.querySelector('[data-blank-panel]');
+                          if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
                       }}
                       onContextMenu={(e) => e.preventDefault()}
                     />
@@ -677,7 +750,7 @@ export default function SpaceDetailPage() {
                       <ProjectCard
                         key={ctx.id}
                         title={ctx.title}
-                        color="#9333ea"
+                        color={getContextCardColor(ctx)}
                         type={CardType.FULFILLED_CONTEXT}
                         onClick={() => router.push(`/spaces/${slug}/context/${ctx.slug}`)}
                         onContextMenu={(e) => handleCardContextMenu(e, ctx.id)}
@@ -688,9 +761,14 @@ export default function SpaceDetailPage() {
                       title="The Blank"
                       color="#9ca3af"
                       type={CardType.NODE}
+                      eyebrowLabelOverride="UNORGANIZED"
+                      descriptionTextOverride="Open The Blank to view nodes that are not assigned to any context."
                       onClick={() => {
-                        const panel = document.querySelector('[data-blank-panel]');
-                        if (panel) panel.scrollIntoView({ behavior: 'smooth' });
+                        setShowBlankPanel(true);
+                        setTimeout(() => {
+                          const panel = document.querySelector('[data-blank-panel]');
+                          if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
                       }}
                       onContextMenu={(e) => e.preventDefault()}
                     />
@@ -699,9 +777,11 @@ export default function SpaceDetailPage() {
               </div>
 
               {/* Expanded Blank panel */}
-              <div className="mb-6" data-blank-panel>
-                <BlankNodesPanel spaceSlug={slug} />
-              </div>
+              {showBlankPanel && (
+                <div className="mb-6" data-blank-panel>
+                  <BlankNodesPanel spaceSlug={slug} />
+                </div>
+              )}
             </>
           )}
         </div>
@@ -785,7 +865,7 @@ export default function SpaceDetailPage() {
                 className="text-[14px] font-['Roboto:Regular',sans-serif] font-normal text-muted-foreground mb-[24px]"
                 style={{ fontVariationSettings: "'wdth' 100" }}
               >
-                Are you sure you want to delete all {nodes?.length || 0} nodes in this space? This action cannot be undone.
+                Are you sure you want to delete all {regularNodes.length} visible nodes in this space?
               </p>
               <div className="flex justify-end gap-[12px]">
                 <button

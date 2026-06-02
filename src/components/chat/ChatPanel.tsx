@@ -60,8 +60,16 @@ type ChatSession = {
   updatedAt: string;
 };
 
+const CHAT_CONTEXT_SLUG = 'mujarrad-chat';
+const CHAT_CONTEXT_TITLE = 'Mujarrad Chat';
+
+
 interface ChatPanelProps {
   spaceSlug?: string;
+  spaceId?: string;
+  activeContextSlug?: string;
+  activeContextId?: string;
+  isSpaceLocked?: boolean;
   title?: string;
   embedded?: boolean;
   onClose?: () => void;
@@ -929,12 +937,17 @@ function ChatPanelShell({
 
 export function ChatPanel({
   spaceSlug,
+  spaceId,
+  activeContextSlug,
+  activeContextId,
+  isSpaceLocked = false,
   title = 'Chat',
   embedded = false,
   onClose,
   onChangeSpace,
   availableSpaces = [],
 }: ChatPanelProps) {
+
   const addNotification = useNotificationStore((state) => state.addNotification);
   const token = useAuthStore((state) => state.token);
   const hasActiveSpace = !!spaceSlug?.trim();
@@ -1061,9 +1074,51 @@ export function ChatPanel({
     }
   };
 
+
+  const ensureChatContext = async (): Promise<string> => {
+    if (!spaceSlug) throw new Error('spaceSlug is required');
+
+    const allNodes = await nodeService.getNodes(spaceSlug, { page: 0, size: 1000 });
+
+    const existingChatContext = allNodes.find((node) => {
+      const details = parseNodeDetails(node);
+
+      return (
+        node.nodeType === NodeType.CONTEXT &&
+        node.slug === CHAT_CONTEXT_SLUG &&
+        details?.systemContext === 'chat'
+      );
+    });
+
+    if (existingChatContext) {
+      return existingChatContext.slug;
+    }
+
+    if (isSpaceLocked) {
+      throw new Error('Space is locked and chat context does not exist.');
+    }
+
+    const createdContext = await nodeService.createNode(spaceSlug, {
+      title: CHAT_CONTEXT_TITLE,
+      slug: CHAT_CONTEXT_SLUG,
+      nodeType: NodeType.CONTEXT,
+      content: 'System context for Mujarrad chat conversations.',
+      nodeDetails: {
+        showInSpaceList: false,
+        createdFrom: 'frontend',
+        systemContext: 'chat',
+        chatNodeType: 'chat-context',
+      },
+    });
+
+    return createdContext.slug || CHAT_CONTEXT_SLUG;
+  };
+
   const createConversationSession = async (): Promise<string> => {
     if (!spaceSlug) throw new Error('spaceSlug is required');
-    const createdConversation = await nodeService.createNode(spaceSlug, {
+    if (isSpaceLocked) throw new Error('Space is locked');
+    const chatContextSlug = await ensureChatContext();
+    const createdConversation = await nodeService.createNodeInContext(spaceSlug, chatContextSlug, {
       title: `Conversation ${new Date().toLocaleString()} - ${Date.now()}`,
       nodeType: NodeType.REGULAR,
       content: '',
@@ -1075,6 +1130,7 @@ export function ChatPanel({
         sessionType: 'default',
         scope: 'account-space',
         spaceSlug,
+        chatContextSlug,
       },
     });
 
@@ -1124,8 +1180,9 @@ export function ChatPanel({
     extraDetails: Record<string, unknown> = {}
   ): Promise<BackendNode> => {
     if (!spaceSlug) throw new Error('spaceSlug is required');
-
-    const createdMessage = await nodeService.createNode(spaceSlug, {
+    if (isSpaceLocked) throw new Error('Space is locked');
+    const chatContextSlug = await ensureChatContext();
+    const createdMessage = await nodeService.createNodeInContext(spaceSlug, chatContextSlug, {
       title: `${role === 'user' ? 'User' : 'Assistant'} Message ${Date.now()}`,
       nodeType: NodeType.REGULAR,
       content: text,
@@ -1136,6 +1193,7 @@ export function ChatPanel({
         role,
         conversationNodeId,
         messageType: role,
+        chatContextSlug,
         ...extraDetails,
       },
     });
@@ -1227,7 +1285,18 @@ export function ChatPanel({
 
 
         try {
-          const allNodes = await nodeService.getNodes(spaceSlug, { page: 0, size: 1000 });
+          let allNodes: BackendNode[] = [];
+
+          try {
+            const chatContextSlug = await ensureChatContext();
+            allNodes = await nodeService.getNodesInContext(spaceSlug, chatContextSlug, {
+              page: 0,
+              size: 1000,
+            });
+          } catch (error) {
+            console.warn('[ChatPanel] Could not load chat context sessions:', error);
+            allNodes = [];
+          }
 
           const conversationNodes = allNodes
             .filter((node) => isConversationNode(node))
@@ -1393,7 +1462,7 @@ export function ChatPanel({
     setIsBootstrapping(true);
 
     bootstrapSessions();
-  }, [spaceSlug, hasActiveSpace]);
+  }, [spaceSlug, hasActiveSpace, isSpaceLocked]);
 
   const deleteSession = async (sessionId: string) => {
     if (!spaceSlug) return;
@@ -1539,7 +1608,26 @@ export function ChatPanel({
         setIsRunning(false);
         return;
       }
+      if (isSpaceLocked) {
+        const assistantMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          text: 'This space is locked. Chat cannot create messages or modify nodes until the space is unlocked.',
+          createdAt: new Date().toISOString(),
+        };
 
+        setMessages((current) => [...current, assistantMessage]);
+        setIsRunning(false);
+
+        addNotification({
+          type: 'warning',
+          source: 'chat',
+          title: 'Space locked',
+          description: 'Unlock this space before using chat to create or modify nodes.',
+        });
+
+        return;
+      }
       const userMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'user',
@@ -1599,7 +1687,14 @@ export function ChatPanel({
               },
               body: JSON.stringify({
                 text: userText,
+
                 space_slug: spaceSlug,
+                space_id: spaceId,
+
+                context_slug: activeContextSlug,
+                context_id: activeContextId,
+
+                chat_context_slug: CHAT_CONTEXT_SLUG,
                 message_id: inputMessageNode.id,
                 conversation_node_id: conversationNodeId,
                 conversation_title: conversationTitle,
@@ -1678,6 +1773,7 @@ export function ChatPanel({
               role: 'assistant',
               conversationNodeId,
               messageType: 'assistant',
+              chatContextSlug: CHAT_CONTEXT_SLUG,
               status: 'completed',
               responseToMessageNodeId: inputMessageNode.id,
             },

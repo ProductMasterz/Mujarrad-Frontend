@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { X, Maximize2, ChevronDown, FolderPlus, FilePlus, Box, Tag, Sparkles, LayoutTemplate } from "lucide-react";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { nodeService } from "@/services/api/node.service";
 import { spaceService } from "@/services/api/space.service";
 import { nodeKeys } from "@/hooks/api/useNodes";
@@ -24,6 +24,7 @@ export type EntityType = "space" | "node" | "context";
 
 type ManualSystemNodeType = "REGULAR" | "CONTEXT" | "ATTRIBUTE";
 type ManualEntityType = string;
+
 // Icons for each entity type
 const ENTITY_ICONS: Record<EntityType, React.ReactNode> = {
   space: <FolderPlus className="size-4" />,
@@ -54,7 +55,17 @@ type NewNodeModalProps = {
   spaceSlug?: string;
   defaultType?: EntityType;
   availableTypes?: EntityType[];
+
+  // Optional: used when opening the modal from inside a context page.
+  // If provided, new regular nodes are created directly inside this context.
+  defaultContextSlug?: string;
+
+  // Optional: hides the context selector UI when we already know the target context.
+  hideContextSelector?: boolean;
 };
+
+
+
 
 export function NewNodeModal({
   isOpen,
@@ -62,6 +73,8 @@ export function NewNodeModal({
   spaceSlug,
   defaultType = "node",
   availableTypes,
+  defaultContextSlug,
+  hideContextSelector = false,
 }: NewNodeModalProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -94,6 +107,7 @@ export function NewNodeModal({
   const [initialContent, setInitialContent] = useState("");
   const [manualEntityType, setManualEntityType] = useState<ManualEntityType>("");
   const [manualEntityColor, setManualEntityColor] = useState("#94a3b8");
+  const [manualContextColor, setManualContextColor] = useState("#9333ea");
   const [manualSystemNodeType, setManualSystemNodeType] =
   useState<ManualSystemNodeType>(
     defaultType === "context" ? "CONTEXT" : "REGULAR"
@@ -103,8 +117,8 @@ export function NewNodeModal({
   const [isCreating, setIsCreating] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<NodeTemplate | null>(null);
-
-
+  const [selectedContextSlug, setSelectedContextSlug] = useState("");
+  const [newContextTitle, setNewContextTitle] = useState("");
   // Duplicate detection state
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateNode, setDuplicateNode] = useState<NodeDTO | null>(null);
@@ -120,6 +134,40 @@ export function NewNodeModal({
   // Check if we're creating a space (no block editor needed)
   const isSpaceMode = entityType === "space";
 
+
+  const { data: availableContexts = [] } = useQuery({
+    queryKey: ["new-node-modal", "contexts", spaceSlug],
+    queryFn: async () => {
+      if (!spaceSlug) return [];
+
+      const nodes = await nodeService.getNodes(spaceSlug, { page: 0, size: 1000 });
+
+      return nodes.filter((node) => {
+        if (node.nodeType !== BackendNodeType.CONTEXT) return false;
+        if (node.isBuiltin) return false;
+
+        const details =
+          typeof node.nodeDetails === "string"
+            ? (() => {
+                try {
+                  return JSON.parse(node.nodeDetails);
+                } catch {
+                  return undefined;
+                }
+              })()
+            : node.nodeDetails;
+
+        if (details?.showInSpaceList === false) return false;
+        if (details?.systemContext === "chat") return false;
+        if (details?.chatNodeType) return false;
+
+        return true;
+      });
+    },
+    enabled: !!spaceSlug && isOpen && !isSpaceMode,
+  });
+
+
   // Create node mutation
     const createNodeMutation = useMutation({
       mutationFn: async (data: {
@@ -127,7 +175,9 @@ export function NewNodeModal({
         nodeType: BackendNodeType;
         content: string;
         entityType?: string;
+        contextColor?: string;
         createdFrom: "manual";
+        contextSlug?: string;
       }) => {
         if (!spaceSlug) {
           // No space selected — create in The Void
@@ -142,20 +192,30 @@ export function NewNodeModal({
           });
         }
 
-        return nodeService.createNode(spaceSlug, {
+        const payload = {
           title: data.title || "Untitled",
           nodeType: data.nodeType,
           content: data.content || "",
           nodeDetails: {
             createdFrom: data.createdFrom,
             ...(data.entityType ? { entityType: data.entityType } : {}),
+            ...(data.contextColor ? { contextColor: data.contextColor } : {}),
+            ...(data.contextSlug ? { contextSlug: data.contextSlug } : {}),
           },
-        });
+        };
+
+        if (data.contextSlug) {
+          return nodeService.createNodeInContext(spaceSlug, data.contextSlug, payload);
+        }
+
+        return nodeService.createNode(spaceSlug, payload);
       },
       onSuccess: (node) => {
         setCreatedEntityId(node.id);
         queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
-
+        queryClient.invalidateQueries({ queryKey: ["context-nodes"] });
+        queryClient.invalidateQueries({ queryKey: ["context-children"] });
+        queryClient.invalidateQueries({ queryKey: ["new-node-modal", "contexts", spaceSlug] });
         const createdKind =
           node.nodeType === BackendNodeType.CONTEXT ? "Context" : "Node";
 
@@ -222,6 +282,9 @@ export function NewNodeModal({
       setManualSystemNodeType(defaultType === "context" ? "CONTEXT" : "REGULAR");
       setShowTemplateModal(false);
       setSelectedTemplate(null);
+      setSelectedContextSlug(defaultContextSlug || "");
+      setNewContextTitle("");
+      setManualContextColor("#9333ea");
     } else {
       // Reset everything when modal closes
       setTitle("");
@@ -237,8 +300,11 @@ export function NewNodeModal({
       setManualSystemNodeType(defaultType === "context" ? "CONTEXT" : "REGULAR");
       setShowTemplateModal(false);
       setSelectedTemplate(null);
+      setSelectedContextSlug(defaultContextSlug || "");
+      setNewContextTitle("");
+      setManualContextColor("#9333ea");
     }
-  }, [isOpen, defaultType]);
+  }, [isOpen, defaultType, defaultContextSlug]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -276,6 +342,72 @@ export function NewNodeModal({
     [upsertEntityType]
   );
 
+  const slugifyContextTitle = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  const resolveTargetContextSlug = useCallback(async () => {
+    if (!spaceSlug) return undefined;
+    if (hideContextSelector && defaultContextSlug) {
+      return defaultContextSlug;
+    }
+
+    const typedContextTitle = newContextTitle.trim();
+
+    if (!typedContextTitle) {
+      return selectedContextSlug || undefined;
+    }
+
+    const typedSlug = slugifyContextTitle(typedContextTitle);
+
+    const existingContext = availableContexts.find(
+      (context) =>
+        context.slug === typedSlug ||
+        context.title.trim().toLowerCase() === typedContextTitle.toLowerCase()
+    );
+
+    if (existingContext) {
+      return existingContext.slug;
+    }
+
+    const createdContext = await nodeService.createNode(spaceSlug, {
+      title: typedContextTitle,
+      slug: typedSlug,
+      nodeType: BackendNodeType.CONTEXT,
+      content: "",
+      nodeDetails: {
+        createdFrom: "manual",
+        showInSpaceList: true,
+        contextSource: "manual",
+      },
+    });
+
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["new-node-modal", "contexts", spaceSlug],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: nodeKeys.list(spaceSlug, { page: 0, size: 1000 }),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: nodeKeys.lists(),
+      }),
+    ]);
+
+    return createdContext.slug;
+  }, [
+    spaceSlug,
+    newContextTitle,
+    selectedContextSlug,
+    availableContexts,
+    queryClient,
+    hideContextSelector,
+    defaultContextSlug,
+  ]);
+
 
   // Create entity only when user explicitly confirms creation
   const ensureEntityCreated = useCallback(
@@ -299,9 +431,13 @@ export function NewNodeModal({
           return space.id;
         }
 
-        const normalizedEntityType = manualEntityType.trim().toLowerCase().replace(/\s+/g, "_");
+        const normalizedEntityType = manualEntityType
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_");
 
-        if (normalizedEntityType) {
+
+        if (entityType === "node" && normalizedEntityType) {
           upsertEntityType({
             key: normalizedEntityType,
             label: normalizedEntityType.replace(/_/g, " "),
@@ -309,14 +445,26 @@ export function NewNodeModal({
           });
         }
 
-        const backendType = manualSystemNodeType as BackendNodeType;
+        const backendType =
+          entityType === "context"
+            ? BackendNodeType.CONTEXT
+            : (manualSystemNodeType as BackendNodeType);
+
+        const targetContextSlug =
+          backendType === BackendNodeType.REGULAR
+            ? await resolveTargetContextSlug()
+            : undefined;
 
         const node = await createNodeMutation.mutateAsync({
           title: titleToUse,
           nodeType: backendType,
           content: initialContent.trim(),
-          entityType: normalizedEntityType || undefined,
+          entityType:
+            entityType === "node" ? normalizedEntityType || undefined : undefined,
+          contextColor:
+            entityType === "context" ? manualContextColor : undefined,
           createdFrom,
+          contextSlug: targetContextSlug,
         });
 
         if (selectedTemplate && spaceSlug) {
@@ -330,7 +478,12 @@ export function NewNodeModal({
 
         if (options?.openAfterCreate && spaceSlug) {
           onClose();
-          router.push(`/spaces/${spaceSlug}/node/${node.id}`);
+
+          if (node.nodeType === BackendNodeType.CONTEXT) {
+            router.push(`/spaces/${spaceSlug}/context/${node.slug}`);
+          } else {
+            router.push(`/spaces/${spaceSlug}/node/${node.id}`);
+          }
         }
 
         return node.id;
@@ -349,6 +502,7 @@ export function NewNodeModal({
       initialContent,
       manualEntityType,
       manualEntityColor,
+      manualContextColor,
       manualSystemNodeType,
       createdFrom,
       selectedTemplate,
@@ -358,6 +512,7 @@ export function NewNodeModal({
       createSpaceMutation,
       onClose,
       router,
+      resolveTargetContextSlug,
     ]
   );
 
@@ -391,6 +546,7 @@ export function NewNodeModal({
 
       setDuplicateNode(null);
       setPendingTitle("");
+      
     },
     [duplicateNode, spaceSlug, onClose, router, ensureEntityCreated]
   );
@@ -636,33 +792,6 @@ export function NewNodeModal({
               </p>
 
 
-              <div className="mb-6 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowTemplateModal(true)}
-                  className="inline-flex h-[40px] items-center gap-2 rounded-[14px] border border-[#dbe3ee] bg-white px-4 text-[14px] font-semibold text-[#374151] transition hover:bg-[#f8fafc] dark:border-[#374151] dark:bg-[#111827] dark:text-[#e5e7eb] dark:hover:bg-[#1f2937]"
-                >
-                  <LayoutTemplate className="h-4 w-4" />
-                  {selectedTemplate ? "Change template" : "Start from template"}
-                </button>
-
-                {selectedTemplate && (
-                  <div className="flex items-center gap-2 rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[13px] text-[#4b5563] dark:border-[#374151] dark:bg-[#111827] dark:text-[#d1d5db]">
-                    <span className="font-medium">Template:</span>
-                    <span>{selectedTemplate.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTemplate(null)}
-                      className="ml-1 text-[#9ca3af] hover:text-[#ef4444]"
-                      title="Remove template"
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
-              </div>
-
-
               <div className="grid grid-cols-12 gap-6">
                 <div className="col-span-7 space-y-5">
                   <div>
@@ -690,82 +819,134 @@ export function NewNodeModal({
                     </div>
 
                     <div className="space-y-4">
-                      <div>
-                        <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151] dark:text-[#e5e7eb]">
-                          <Box className="h-4 w-4 text-[#94a3b8] dark:text-[#9ca3af]" />
-                          System type
-                        </label>
-                        <select
-                          value={manualSystemNodeType}
-                          onChange={(e) =>
-                            setManualSystemNodeType(e.target.value as ManualSystemNodeType)
-                          }
-                          className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe] dark:border-[#374151] dark:bg-[#111827] dark:text-white dark:focus:border-[#60a5fa] dark:focus:ring-[#1d4ed8]/30"
-                        >
-                          {MANUAL_SYSTEM_NODE_TYPE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {spaceSlug && entityType === "node" && !hideContextSelector && (
+                        <div>
+                          <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151] dark:text-[#e5e7eb]">
+                            <FolderPlus className="h-4 w-4 text-[#94a3b8] dark:text-[#9ca3af]" />
+                            Context
+                          </label>
 
-                      <div>
-                        <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151] dark:text-[#e5e7eb]">
-                          <Tag className="h-4 w-4 text-[#94a3b8] dark:text-[#9ca3af]" />
-                          Entity type
-                        </label>
-                        <div className="space-y-2">
                           <select
-                            value={manualEntityType}
+                            value={selectedContextSlug}
                             onChange={(e) => {
-                              const selectedValue = e.target.value;
-                              setManualEntityType(selectedValue);
-
-                              if (selectedValue) {
-                                const selected = getEntityType(selectedValue);
-                                setManualEntityColor(selected.color);
-                              } else {
-                                setManualEntityColor("#94a3b8");
+                              setSelectedContextSlug(e.target.value);
+                              if (e.target.value) {
+                                setNewContextTitle("");
                               }
                             }}
-                            className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe] dark:border-[#374151] dark:bg-[#111827] dark:text-white dark:focus:border-[#60a5fa] dark:focus:ring-[#1d4ed8]/30"
+                            disabled={!!newContextTitle.trim()}
+                            className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe] disabled:cursor-not-allowed disabled:opacity-60 dark:border-[#374151] dark:bg-[#111827] dark:text-white dark:focus:border-[#60a5fa] dark:focus:ring-[#1d4ed8]/30"
                           >
-                            <option value="">None</option>
-                            {entityTypeOptions.map((option) => (
-                              <option key={option.key} value={option.key}>
-                                {option.label}
+                            <option value="">The Blank / no context</option>
+
+                            {availableContexts.map((context) => (
+                              <option key={context.id} value={context.slug}>
+                                {context.title}
                               </option>
                             ))}
                           </select>
 
-                          <input
-                            value={manualEntityType}
-                            onChange={(e) => setManualEntityType(e.target.value)}
-                            placeholder="Or write new type: supplier, device, risk..."
+                          <div className="mt-3">
+                            <label className="mb-2 block text-[12px] font-medium text-[#6b7280] dark:text-[#9ca3af]">
+                              Or create new context
+                            </label>
+
+                            <input
+                              value={newContextTitle}
+                              onChange={(e) => {
+                                setNewContextTitle(e.target.value);
+                                if (e.target.value.trim()) {
+                                  setSelectedContextSlug("");
+                                }
+                              }}
+                              placeholder="Write new context name..."
+                              className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe] dark:border-[#374151] dark:bg-[#111827] dark:text-white dark:focus:border-[#60a5fa] dark:focus:ring-[#1d4ed8]/30"
+                            />
+                          </div>
+
+                          <p className="mt-1 text-[11px] text-[#9ca3af] dark:text-[#6b7280]">
+                            Leave both empty to create this node in The Blank.
+                          </p>
+                        </div>
+                      )}
+                      
+                      
+                      {entityType !== "context" && (
+                        <div>
+                          <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151] dark:text-[#e5e7eb]">
+                            <Box className="h-4 w-4 text-[#94a3b8] dark:text-[#9ca3af]" />
+                            System type
+                          </label>
+                          <select
+                            value={manualSystemNodeType}
+                            onChange={(e) =>
+                              setManualSystemNodeType(e.target.value as ManualSystemNodeType)
+                            }
                             className="h-[42px] w-full rounded-[14px] border border-[#e5e7eb] bg-white px-3 text-[14px] text-[#111827] outline-none transition focus:border-[#bfdbfe] focus:ring-2 focus:ring-[#dbeafe] dark:border-[#374151] dark:bg-[#111827] dark:text-white dark:focus:border-[#60a5fa] dark:focus:ring-[#1d4ed8]/30"
-                          />
+                          >
+                            {MANUAL_SYSTEM_NODE_TYPE_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {entityType === "node" && (
+                        <div className="mb-6 flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setShowTemplateModal(true)}
+                            className="inline-flex h-[40px] items-center gap-2 rounded-[14px] border border-[#dbe3ee] bg-white px-4 text-[14px] font-semibold text-[#374151] transition hover:bg-[#f8fafc] dark:border-[#374151] dark:bg-[#111827] dark:text-[#e5e7eb] dark:hover:bg-[#1f2937]"
+                          >
+                            <LayoutTemplate className="h-4 w-4" />
+                            {selectedTemplate ? "Change template" : "Start from template"}
+                          </button>
+                          {selectedTemplate && (
+                            <div className="flex items-center gap-2 rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 text-[13px] text-[#4b5563] dark:border-[#374151] dark:bg-[#111827] dark:text-[#d1d5db]">
+                              <span className="font-medium">Template:</span>
+                              <span>{selectedTemplate.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedTemplate(null)}
+                                className="ml-1 text-[#9ca3af] hover:text-[#ef4444]"
+                                title="Remove template"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {entityType === "context" && (
+                        <div>
+                          <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151] dark:text-[#e5e7eb]">
+                            <Tag className="h-4 w-4 text-[#94a3b8] dark:text-[#9ca3af]" />
+                            Context color
+                          </label>
 
                           <div className="flex items-center gap-3">
                             <input
                               type="color"
-                              value={manualEntityColor}
-                              onChange={(e) => setManualEntityColor(e.target.value)}
+                              value={manualContextColor}
+                              onChange={(e) => setManualContextColor(e.target.value)}
                               className="h-[36px] w-[52px] rounded-[10px] border border-[#e5e7eb] bg-white p-1 dark:border-[#374151] dark:bg-[#111827]"
                             />
 
                             <span
                               className="rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide"
                               style={{
-                                backgroundColor: `${manualEntityColor}22`,
-                                color: manualEntityColor,
+                                backgroundColor: `${manualContextColor}22`,
+                                color: manualContextColor,
                               }}
                             >
-                              {manualEntityType.trim() || "No semantic type"}
+                              Context color
                             </span>
                           </div>
                         </div>
-                      </div>
+                      )}
 
                       <div>
                         <label className="mb-2 flex items-center gap-2 text-[13px] font-medium text-[#374151] dark:text-[#e5e7eb]">
@@ -776,7 +957,7 @@ export function NewNodeModal({
                           Manual
                         </div>
                       </div>
-
+                    
                     </div>
 
                     <div className="mt-6 flex flex-wrap gap-3">
