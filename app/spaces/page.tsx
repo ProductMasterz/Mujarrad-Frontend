@@ -384,7 +384,6 @@ export default function SpacesPage() {
           onChatChangeSpace={(nextSpaceSlug) => {
             router.push(`/spaces/${nextSpaceSlug}`);
           }}
-          onCreateNode={() => setShowNewNodeModal(true)}
         />
 
         <Sidebar
@@ -521,6 +520,8 @@ export default function SpacesPage() {
                   title={card.title}
                   color={card.color}
                   type={card.type}
+                  eyebrowLabelOverride="SPACE"
+                  descriptionTextOverride="Open this space to explore its nodes, contexts, graph, and structure."
                   onClick={() => handleCardClick(card.id)}
                   onContextMenu={(e) => handleCardContextMenu(e, card.id)}
                 />
@@ -530,6 +531,8 @@ export default function SpacesPage() {
                 title="The Void"
                 color="#525252"
                 type={CardType.NODE}
+                eyebrowLabelOverride="WORKSPACE"
+                descriptionTextOverride="Open The Void to view nodes that are not assigned to any space."
                 onClick={() => router.push('/void')}
                 onContextMenu={(e) => e.preventDefault()}
               />

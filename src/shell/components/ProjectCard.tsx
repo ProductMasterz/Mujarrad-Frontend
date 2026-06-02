@@ -10,6 +10,8 @@ type ProjectCardProps = {
   onContextMenu: (e: React.MouseEvent) => void;
   type?: CardType;
   showInfo?: boolean;
+  eyebrowLabelOverride?: string;
+  descriptionTextOverride?: string;
 };
 
 export function ProjectCard({
@@ -19,6 +21,8 @@ export function ProjectCard({
   onContextMenu,
   type = CardType.EMPTY_CONTEXT,
   showInfo = false,
+  eyebrowLabelOverride,
+  descriptionTextOverride,
 }: ProjectCardProps) {
   const renderIcon = () => {
     switch (type) {
@@ -89,6 +93,32 @@ export function ProjectCard({
     }
   };
 
+  const isContextCard =
+    type === CardType.FULFILLED_CONTEXT ||
+    type === CardType.EMPTY_CONTEXT ||
+    type === CardType.GRAPH_CONTEXT;
+
+  const isBlankCard = title === 'The Blank';
+
+  const eyebrowLabel =
+    eyebrowLabelOverride ??
+    (isBlankCard
+      ? 'WORKSPACE'
+      : isContextCard
+        ? 'CONTEXT'
+        : type === CardType.NODE
+          ? 'NODE'
+          : 'WORKSPACE');
+
+  const descriptionText =
+    descriptionTextOverride ??
+    (isBlankCard
+      ? 'Open this workspace to explore unorganized nodes.'
+      : isContextCard
+        ? 'Open this context to explore its nodes, graph, and structure.'
+        : 'Open this node to view and edit its content.');
+
+
   return (
   <button
     onClick={onClick}
@@ -110,7 +140,7 @@ export function ProjectCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#94a3b8] dark:text-[#9ca3af]">
-            Workspace
+            {eyebrowLabel}
           </div>
           <p className="line-clamp-2 text-[17px] font-semibold leading-6 text-[#0f172a] dark:text-white">
             {title}
@@ -123,7 +153,7 @@ export function ProjectCard({
       </div>
 
       <div className="text-[12px] leading-5 text-[#64748b] dark:text-[#9ca3af]">
-        Open this workspace to explore nodes, graph, and whiteboard.
+        {descriptionText}
       </div>
     </div>
   </button>

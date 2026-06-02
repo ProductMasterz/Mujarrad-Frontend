@@ -279,10 +279,15 @@ export interface CreateNodeRequest {
   title: string;
   /** Node type (required) */
   nodeType: NodeType;
+  /** Slug  (optional) */
+  slug?: string;
+  /** Context type (optional) */
+  contextTypeId?: string;
   /** Markdown content (optional) */
   content?: string;
   /** Additional metadata (optional) */
   nodeDetails?: Record<string, unknown>;
+
 }
 
 /**
