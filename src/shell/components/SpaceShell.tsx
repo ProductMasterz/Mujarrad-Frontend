@@ -302,6 +302,7 @@ export function SpaceShell({
             onClose={() => onContextMenuClose?.()}
             onOpenNewTab={() => handleContextMenuActionInternal('openNewTab')}
             onOpenAsNode={() => handleContextMenuActionInternal('openAsNode')}
+            openAsLabel="Open Node"
             onRename={() => handleContextMenuActionInternal('rename')}
             onDuplicate={() => handleContextMenuActionInternal('duplicate')}
             onShare={() => handleContextMenuActionInternal('share')}

@@ -11,6 +11,7 @@ import { NodeType } from '@/types/backend-dtos';
 import { CardType } from '@/shell/data/projects';
 import { ProjectCard } from '@/shell/components/ProjectCard';
 import { FolderOpen, FileText } from 'lucide-react';
+import { VCPanel } from '@/components/virtual-contexts/VCPanel';
 import type { Node } from '@/types/backend-dtos';
 
 export default function ContextDetailPage() {
@@ -116,6 +117,13 @@ export default function ContextDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Connections */}
+      {space?.id && (
+        <div className="mb-5 rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
+          <VCPanel spaceSlug={spaceSlug} spaceId={space.id} />
+        </div>
+      )}
 
       {/* Child Contexts */}
       {childContexts.length > 0 && (

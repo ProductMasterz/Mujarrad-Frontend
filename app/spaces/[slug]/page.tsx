@@ -26,8 +26,6 @@ import { LockedBanner } from '@/components/locking/LockedBanner';
 import { SpaceLockToggle } from '@/components/locking/SpaceLockToggle';
 import { SpaceModeToggle } from '@/components/locking/SpaceModeToggle';
 import { BlankBadge } from '@/components/blank/BlankBadge';
-import { VCPanel } from '@/components/virtual-contexts/VCPanel';
-import { ContextList } from '@/components/contexts/ContextList';
 
 function isAgentCreatedNode(node: Node): boolean {
   let details: Record<string, unknown> | undefined;
@@ -294,14 +292,20 @@ export default function SpaceDetailPage() {
     switch (action) {
       case 'openNewTab':
         if (node) {
-          window.open(`/spaces/${slug}/node/${node.id}`, '_blank');
-
+          if (node.nodeType === NodeType.CONTEXT && node.slug) {
+            window.open(`/spaces/${slug}/context/${node.slug}`, '_blank');
+          } else {
+            window.open(`/spaces/${slug}/node/${node.id}`, '_blank');
+          }
         }
         break;
       case 'openAsNode':
         if (node) {
-          router.push(`/spaces/${slug}/node/${node.id}`);
-
+          if (node.nodeType === NodeType.CONTEXT && node.slug) {
+            router.push(`/spaces/${slug}/context/${node.slug}`);
+          } else {
+            router.push(`/spaces/${slug}/node/${node.id}`);
+          }
         }
         break;
       case 'rename':
@@ -626,18 +630,6 @@ export default function SpaceDetailPage() {
             </div>
           </div>
 
-          {/* Context filter and Connections */}
-          {space && (
-            <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-[240px_1fr]">
-              <div className="rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
-                <ContextList spaceSlug={slug} onSelectContext={(ctx) => setSearchTerm(ctx ? `context:${ctx}` : '')} />
-              </div>
-              <div className="rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
-                <VCPanel spaceSlug={slug} spaceId={space.id} />
-              </div>
-            </div>
-          )}
-
           {isLoading ? (
             <div className="flex items-center justify-center h-[400px]">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -718,6 +710,7 @@ export default function SpaceDetailPage() {
             onClose={() => setContextMenu(null)}
             onOpenNewTab={() => handleContextMenuAction('openNewTab')}
             onOpenAsNode={() => handleContextMenuAction('openAsNode')}
+            openAsLabel="Open Context"
             onRename={() => handleContextMenuAction('rename')}
             onDuplicate={() => handleContextMenuAction('duplicate')}
             onShare={() => handleContextMenuAction('share')}

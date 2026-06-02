@@ -6,6 +6,7 @@ type ContextMenuProps = {
   onClose: () => void;
   onOpenNewTab: () => void;
   onOpenAsNode: () => void;
+  openAsLabel?: string;
   onRename: () => void;
   onDuplicate: () => void;
   onShare: () => void;
@@ -18,6 +19,7 @@ export function ContextMenu({
   onClose,
   onOpenNewTab,
   onOpenAsNode,
+  openAsLabel = 'Open',
   onRename,
   onDuplicate,
   onShare,
@@ -49,7 +51,7 @@ export function ContextMenu({
 
   const menuItems = [
     { label: "Open in New Tab", onClick: onOpenNewTab },
-    { label: "Open Space", onClick: onOpenAsNode },
+    { label: openAsLabel, onClick: onOpenAsNode },
     { label: "Rename", onClick: onRename },
     { label: "Duplicate", onClick: onDuplicate },
     { label: "Share", onClick: onShare },
