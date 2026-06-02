@@ -615,6 +615,7 @@ export default function ContextDetailPage() {
             </>
           )}
         </div>
+      )}
 
 
         {space && (
@@ -629,6 +630,17 @@ export default function ContextDetailPage() {
           />
 )}
       </div>
-    </ProtectedRoute>
+
+      <NodeGrid
+        nodes={regularNodes}
+        isLoading={isLoading}
+        emptyIcon={<FileText className="h-8 w-8 text-muted-foreground/50" />}
+        emptyTitle="No nodes in this context"
+        searchTerm={searchTerm}
+        sortBy={sortBy}
+        onCardClick={handleCardClick}
+        onCardContextMenu={handleCardContextMenu}
+      />
+    </SpaceShell>
   );
 }
