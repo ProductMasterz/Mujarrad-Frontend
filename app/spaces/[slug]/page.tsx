@@ -26,7 +26,6 @@ import { LockedBanner } from '@/components/locking/LockedBanner';
 import { SpaceLockToggle } from '@/components/locking/SpaceLockToggle';
 import { SpaceModeToggle } from '@/components/locking/SpaceModeToggle';
 import { BlankBadge } from '@/components/blank/BlankBadge';
-import { BlankNodesPanel } from '@/components/blank/BlankNodesPanel';
 import { VCPanel } from '@/components/virtual-contexts/VCPanel';
 import { ContextList } from '@/components/contexts/ContextList';
 
@@ -663,7 +662,7 @@ export default function SpaceDetailPage() {
                     <ProjectCard
                       title="The Blank"
                       color="#9ca3af"
-                      type={CardType.NODE}
+                      type={CardType.EMPTY_CONTEXT}
                       onClick={() => {
                         router.push(`/spaces/${slug}/blank`);
                       }}
@@ -686,7 +685,7 @@ export default function SpaceDetailPage() {
                     <ProjectCard
                       title="The Blank"
                       color="#9ca3af"
-                      type={CardType.NODE}
+                      type={CardType.EMPTY_CONTEXT}
                       onClick={() => {
                         router.push(`/spaces/${slug}/blank`);
                       }}
@@ -696,10 +695,6 @@ export default function SpaceDetailPage() {
                 )}
               </div>
 
-              {/* Expanded Blank panel */}
-              <div className="mb-6" data-blank-panel>
-                <BlankNodesPanel spaceSlug={slug} />
-              </div>
             </>
           )}
         </div>
