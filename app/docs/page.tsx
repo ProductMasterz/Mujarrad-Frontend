@@ -2,572 +2,568 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ChevronRight, ChevronDown, Book, Rocket, Layout, Code, Layers, Shield } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ChevronDown, Book, Rocket, Code, Layers, Shield, Lock, Menu, X } from 'lucide-react';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { SwaggerEmbed } from '@/components/docs/SwaggerEmbed';
 import { cn } from '@/lib/utils';
 
 // Documentation content organized by sections
 const docsContent: Record<string, string> = {
-  // Introduction
   'introduction': `# Mujarrad Developer Documentation
 
-Welcome to the Mujarrad Backend documentation. This guide covers everything you need to know to develop, deploy, and integrate with the Mujarrad platform.
+Welcome to the Mujarrad documentation. This guide covers everything you need to know to build on the Mujarrad platform.
 
 ## What is Mujarrad?
 
-Mujarrad is a **knowledge graph platform** that enables applications to store, connect, and query information as a graph of nodes and relationships. It follows the principle of **"Node Supremacy"** - everything is a node, and relationships define the architecture.
+Mujarrad is a **knowledge graph backend** — a universal data platform where everything is a **node** and every relationship is an **attribute**. It can be used in two modes:
 
-## Key Features
+- **CONSUMER mode** — organize information freely (notes, documents, tasks, ideas)
+- **BACKEND mode** — define structured data schemas (like building a database with classes and instances)
 
-- **Multi-tenant Spaces** - Isolated data containers for different projects/users
-- **Flexible Schema** - CONSUMER mode for flexibility, BACKEND mode for schema enforcement
-- **Graph Relationships** - Rich attribute system connecting nodes
-- **Version History** - Track changes to nodes over time
-- **Multiple Auth Methods** - JWT, API Keys, OAuth2
+## The Hierarchy
 
-## Technology Stack
+Every piece of data in Mujarrad follows this hierarchy:
 
-| Layer | Technology |
-|-------|------------|
-| Language | Java 21 (OpenJDK) |
-| Framework | Spring Boot 3.4.1 |
-| Database | PostgreSQL 17.6 |
-| Migrations | Flyway |
-| Auth | JWT (jjwt 0.12.5), BCrypt, OAuth2 |
-| API Docs | SpringDoc OpenAPI 2.7.0 |
-| Mapping | MapStruct 1.5.5 |
-| Caching | Caffeine 3.1.8 |
-| Deployment | Docker, Render |
+\`\`\`
+Organization
+  └── Space
+        └── Context
+              └── Node
+                    └── Block (child node)
+\`\`\`
+
+- **Organization** — who owns this data (your account or your team)
+- **Space** — a container for related content (like a database or project)
+- **Context** — an organizer inside a space (like a table or folder)
+- **Node** — a piece of content (a note, a record, a document)
+- **Block** — a child element inside a node (a paragraph, a heading, a code block)
+
+Nothing exists outside this hierarchy. If you create something without specifying where it goes, the system places it automatically:
+- No space → goes to **The Void** (your personal holding area)
+- No context → goes to **The Blank** (the space's default catch-all context)
 
 ## Quick Start
 
 \`\`\`bash
-# Clone the repository
-git clone https://github.com/your-org/mujarrad-backend.git
-cd mujarrad-backend
+# 1. Register
+curl -X POST https://mujarrad.onrender.com/api/users/register \\
+  -H "Content-Type: application/json" \\
+  -d '{ "email": "dev@example.com", "username": "dev", "password": "SecurePass123!" }'
 
-# Start PostgreSQL (Docker)
-docker-compose up -d postgres
+# 2. Login
+curl -X POST https://mujarrad.onrender.com/api/users/login \\
+  -H "Content-Type: application/json" \\
+  -d '{ "email": "dev@example.com", "password": "SecurePass123!" }'
+# Save the token:
+export TOKEN="eyJhbGciOiJIUzI1NiJ9..."
 
-# Run the application
-cd Backend
-./gradlew bootRun
+# 3. Create a space
+curl -X POST https://mujarrad.onrender.com/api/spaces \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "name": "My CRM", "projectType": "BACKEND" }'
 
-# Access Swagger UI
+# 4. Create a node
+curl -X POST "https://mujarrad.onrender.com/api/spaces/my-crm/nodes" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "title": "First Record", "nodeType": "REGULAR" }'
+
+# 5. Swagger UI
 open https://mujarrad.onrender.com/swagger-ui/index.html
 \`\`\`
 `,
 
+  'organizations': `# Organizations
 
+An organization is the top-level owner of everything in Mujarrad. Think of it like a GitHub account.
 
-  // Getting Started - First API Call
-  'first-api-call': `# First API Call
+## Organization Types
 
-This guide walks you through making your first API calls to verify your setup is working correctly.
+| Type | Description |
+|------|-------------|
+| **INDIVIDUAL** | Auto-created for every user at signup. One person. Your personal workspace. |
+| **TEAM** | Created manually. Multiple members with roles. For collaboration. |
 
-## 1. Health Check
+You always have your INDIVIDUAL organization. You can also create or join TEAM organizations.
 
-Verify the application is running:
+## Organization Roles
 
-\`\`\`bash
-curl https://mujarrad.onrender.com/api/health
-\`\`\`
+| Role | What you can do |
+|------|----------------|
+| **OWNER** | Everything — manage members, manage spaces, delete the organization |
+| **ADMIN** | Manage members + spaces, but cannot delete the organization |
+| **MEMBER** | Use spaces according to their space-level permissions |
 
-Expected response:
-\`\`\`json
-{
-  "status": "UP",
-  "database": "Connected",
-  "timestamp": "2025-02-12T10:00:00Z"
-}
-\`\`\`
-
-## 2. Register a User
-
-Create a new user account:
-
-\`\`\`bash
-curl -X POST https://mujarrad.onrender.com/api/users/register \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "email": "developer@example.com",
-    "username": "developer",
-    "password": "SecurePassword123!"
-  }'
-\`\`\`
-
-## 3. Login and Get JWT Token
-
-\`\`\`bash
-curl -X POST https://mujarrad.onrender.com/api/users/login \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "email": "developer@example.com",
-    "password": "SecurePassword123!"
-  }'
-\`\`\`
-
-**Save the token** for subsequent requests:
-\`\`\`bash
-export TOKEN="eyJhbGciOiJIUzI1NiJ9..."
-\`\`\`
-
-## 4. Create a Space
-
-\`\`\`bash
-curl -X POST https://mujarrad.onrender.com/api/spaces \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer $TOKEN" \\
-  -d '{
-    "name": "My First Space",
-    "description": "A test space for development"
-  }'
-\`\`\`
-
-## 5. Create a Node
-
-\`\`\`bash
-export SPACE_SLUG="my-first-space"
-
-curl -X POST "https://mujarrad.onrender.com/api/spaces/$SPACE_SLUG/nodes" \\
-  -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer $TOKEN" \\
-  -d '{
-    "title": "My First Node",
-    "content": "This is the content of my first node.",
-    "nodeType": "REGULAR",
-    "nodeDetails": {
-      "customField": "custom value"
-    }
-  }'
-\`\`\`
-
-## 6. List Nodes
-
-\`\`\`bash
-curl "https://mujarrad.onrender.com/api/spaces/$SPACE_SLUG/nodes" \\
-  -H "Authorization: Bearer $TOKEN"
-\`\`\`
-
-## 7. View Swagger Documentation
-
-Open your browser and navigate to:
+## How It Works
 
 \`\`\`
-https://mujarrad.onrender.com/swagger-ui/index.html
+You sign up
+  → INDIVIDUAL organization auto-created (you are the OWNER)
+  → A hidden meta-space is created (for system data)
+  → You can now create spaces under your organization
+
+You create a team
+  → POST /api/organizations { "name": "My Team" }
+  → TEAM organization created (you are the OWNER)
+  → Invite members: POST /api/organizations/{id}/members
 \`\`\`
 
-This provides interactive API documentation where you can:
-- Explore all endpoints
-- Try API calls directly
-- View request/response schemas
+## Auto-Creation on Signup
 
-> **Note:** All API examples in this documentation use the production URL \`https://mujarrad.onrender.com\`. For local development, replace with \`https://mujarrad.onrender.com\`.
+When a user registers:
+1. An INDIVIDUAL organization is automatically created
+2. The user becomes the OWNER
+3. A hidden meta-space is created for system infrastructure
+4. The user can immediately start creating spaces
 `,
 
-  // Architecture Overview
-  'architecture': `# Architecture Overview
-
-Mujarrad is a knowledge graph platform built on Spring Boot that enables applications to store, connect, and query information as a graph of nodes and relationships.
-
-## High-Level Architecture
-
-\`\`\`
-┌─────────────────────────────────────────────────────────────────┐
-│                         Clients                                  │
-│   (Web App, Mobile App, CLI, External Services)                 │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      API Gateway Layer                           │
-│  ┌─────────────┐ ┌──────────────┐ ┌───────────────────────────┐ │
-│  │ CORS Filter │ │ Trace Filter │ │ Rate Limit Interceptor    │ │
-│  └─────────────┘ └──────────────┘ └───────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   Authentication Layer                           │
-│  ┌─────────────┐ ┌─────────────────┐ ┌───────────────────────┐  │
-│  │ JWT Filter  │ │ API Key Filter  │ │ OAuth2 (Google)       │  │
-│  └─────────────┘ └─────────────────┘ └───────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      PostgreSQL                                  │
-│  ┌──────────┐ ┌──────────┐ ┌───────────┐ ┌──────────────────┐   │
-│  │ spaces   │ │ nodes    │ │ attributes│ │ context_types    │   │
-│  └──────────┘ └──────────┘ └───────────┘ └──────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-\`\`\`
-
-## Key Architectural Decisions
-
-### 1. Node Supremacy
-
-Everything is stored in a single \`nodes\` table with a \`node_type\` discriminator:
-- Simplifies queries and relationships
-- Single source of truth for all content
-- JSONB \`node_details\` for flexible schema
-
-### 2. Multi-Tenancy via Spaces
-
-- Each space is an isolated data container
-- Spaces have owners and optional collaborators
-- All queries are scoped to a space
-
-### 3. Dual Project Types
-
-- **CONSUMER**: No restrictions, flexible schema
-- **BACKEND**: Schema governance with modes:
-  - CONFIGURATION: Edit schema (developers)
-  - PRODUCTION: Schema locked (end-users)
-
-### 4. Attribute-Based Relationships
-
-- Relationships are first-class entities (not just foreign keys)
-- Support for typed and schemaless relationships
-- Rich metadata via JSONB properties
-
-### 5. Stateless Authentication
-
-- JWT for session-based auth (24-hour validity)
-- API Keys for B2B/programmatic access
-- OAuth2 for social login (Google)
-- No server-side sessions
-
-## Technology Choices
-
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Language | Java 21 | Modern features, performance, ecosystem |
-| Framework | Spring Boot 3.4 | Mature, well-documented, extensive ecosystem |
-| Database | PostgreSQL | JSONB support, reliability, performance |
-| Auth | JWT + BCrypt | Stateless, secure, industry standard |
-| Migrations | Flyway | Version control for schema, repeatable |
-| Mapping | MapStruct | Compile-time safety, performance |
-`,
-
-  // Core Concepts - Spaces
   'spaces': `# Spaces
 
-Spaces are the fundamental multi-tenancy unit in Mujarrad. Each space is an isolated container for nodes, attributes, and configurations.
+A space is a container for your data — like a database or a project workspace. Every space belongs to an organization.
 
-## Overview
+## Space Types
 
-A space is like a project or workspace that contains:
-- Nodes (content)
-- Attributes (relationships)
-- Context Types (schema definitions, for BACKEND spaces)
-- Members (collaborators)
-
-## Space Properties
-
-| Property | Description |
-|----------|-------------|
-| \`id\` | Unique identifier (UUID) |
-| \`name\` | Display name |
-| \`slug\` | URL-friendly identifier (auto-generated) |
-| \`description\` | Optional description |
-| \`owner\` | User who created the space |
-| \`projectType\` | CONSUMER or BACKEND |
-| \`mode\` | CONFIGURATION or PRODUCTION (BACKEND only) |
-
-## Project Types
-
-### CONSUMER (Default)
-
-For personal use, note-taking, knowledge bases:
-
-- No schema restrictions
-- Full flexibility to create any nodes/relationships
-- Ideal for end-users
-
-\`\`\`bash
-curl -X POST https://mujarrad.onrender.com/api/spaces \\
-  -H "Authorization: Bearer $TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "My Notes",
-    "projectType": "CONSUMER"
-  }'
-\`\`\`
-
-### BACKEND
-
-For applications using Mujarrad as their backend:
-
-- Requires space modes (CONFIGURATION/PRODUCTION)
-- Schema governance via Context Types
-- Ideal for developers building on Mujarrad
-
-\`\`\`bash
-curl -X POST https://mujarrad.onrender.com/api/spaces \\
-  -H "Authorization: Bearer $TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "My App",
-    "projectType": "BACKEND"
-  }'
-\`\`\`
+| Type | Purpose | Schema enforcement |
+|------|---------|-------------------|
+| **CONSUMER** | Free-form content — notes, documents, ideas | None — contexts are organizational only |
+| **BACKEND** | Structured data — like a database with schemas | Yes — contexts define schemas for their nodes |
 
 ## Space Modes (BACKEND only)
 
-### CONFIGURATION Mode
+| Mode | What it means |
+|------|--------------|
+| **CONFIGURATION** | You're building the schema — editing context types, defining fields |
+| **PRODUCTION** | Schema is frozen — you can only create/edit data instances, not change the structure |
 
-**Who uses it:** Developers, administrators
+## Creating a Space
 
-- Create, update, delete Context Types
-- Define attribute schemas
-- All CRUD operations on nodes/attributes
+\`\`\`bash
+curl -X POST https://mujarrad.onrender.com/api/spaces \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "name": "My CRM", "projectType": "BACKEND" }'
+\`\`\`
 
-### PRODUCTION Mode
+The system auto-creates a **Context-Less** context (The Blank) inside every space.
 
-**Who uses it:** End-users of applications
+If you don't specify an \`organizationId\`, the space goes to your INDIVIDUAL organization.
 
-- Create nodes following defined schemas
-- Schema-defined relationships get cardinality validation
-- Cannot create/modify/delete Context Types
+## System Spaces (hidden, automatic)
+
+| Space | Purpose | Visible? |
+|-------|---------|----------|
+| **Void space** | Your personal quick-notes area | No — accessed via \`/api/void/nodes\` |
+| **Meta-space** | System infrastructure (virtual contexts) | No — never shown |
+| **Regular spaces** | Your data | Yes |
 
 ## Switching Modes
 
-### Switch to PRODUCTION (Lock Schema)
-
 \`\`\`bash
+# Switch to PRODUCTION (lock schema)
 curl -X PATCH "https://mujarrad.onrender.com/api/spaces/{spaceId}" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
-  -d '{
-    "mode": "PRODUCTION"
-  }'
-\`\`\`
+  -d '{ "mode": "PRODUCTION" }'
 
-### Switch to CONFIGURATION (Unlock Schema)
-
-\`\`\`bash
+# Switch to CONFIGURATION (unlock schema)
 curl -X PATCH "https://mujarrad.onrender.com/api/spaces/{spaceId}" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
-  -d '{
-    "mode": "CONFIGURATION"
-  }'
-\`\`\`
-
-### Response
-
-\`\`\`json
-{
-  "id": "uuid",
-  "name": "My App",
-  "projectType": "BACKEND",
-  "mode": "PRODUCTION",
-  "updatedAt": "2025-02-12T12:00:00Z"
-}
+  -d '{ "mode": "CONFIGURATION" }'
 \`\`\`
 
 > **Note:** Only the space owner can switch modes.
-
-## Space Membership
-
-| Role | Read | Write | Admin | Manage Members |
-|------|------|-------|-------|----------------|
-| OWNER | ✓ | ✓ | ✓ | ✓ |
-| ADMIN | ✓ | ✓ | ✓ | ✓ |
-| EDITOR | ✓ | ✓ | ✗ | ✗ |
-| VIEWER | ✓ | ✗ | ✗ | ✗ |
 `,
 
-  // Core Concepts - Nodes
+  'contexts': `# Contexts
+
+A context is a node of type \`CONTEXT\` that organizes other nodes inside a space.
+
+## Contexts by Mode
+
+- In **CONSUMER** mode: a folder or category
+- In **BACKEND** mode: a database table / class definition
+
+## The Blank (Context-Less Context)
+
+Every space has a hidden, built-in context called **Context-Less** (The Blank). It's the catch-all:
+- When you create a node without specifying a context → it goes to The Blank
+- When you remove a node from all its contexts → it goes back to The Blank
+- The Blank cannot be deleted, renamed, or modified
+
+## Context as a Class (BACKEND mode)
+
+In a BACKEND space, a CONTEXT node IS your class definition:
+
+\`\`\`
+CONTEXT "Organization" (= the class)
+  ├── Block: "name"       → STRING, required
+  ├── Block: "email"      → STRING, format: email
+  ├── Block: "industry"   → ENUM: tech/finance/health
+  └── Block: "founded"    → DATE
+
+REGULAR nodes inside → instances of the class
+  ├── "Acme Corp"   → {name: "Acme", email: "info@acme.com"}
+  ├── "Beta Inc"    → {name: "Beta", email: "hi@beta.io"}
+  └── "Gamma LLC"   → {name: "Gamma", email: "g@gamma.com"}
+\`\`\`
+
+## Schema Enforcement
+
+Each context type has an \`enforcement_mode\`:
+
+| Mode | What happens when you create/update a node |
+|------|---------------------------------------------|
+| **NONE** | No validation — context is organizational only |
+| **WARN** | Validates data against schema, logs warnings but allows |
+| **STRICT** | Validates and rejects non-conforming data with 400 |
+
+## Nested Contexts
+
+Contexts can contain other contexts:
+
+\`\`\`
+CONTEXT "Projects"
+  └── CONTEXT "Q4 Deliverables"
+        └── CONTEXT "Sprint 12"
+              └── Node: "Implement login"
+\`\`\`
+
+Create nested contexts via:
+\`\`\`bash
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{slug}/contexts/{parentContextSlug}/contexts" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "title": "Sprint 12", "nodeType": "CONTEXT" }'
+\`\`\`
+
+## Creating Nodes in a Context (Recommended)
+
+\`\`\`bash
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{slug}/contexts/{contextSlug}/nodes" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "title": "My Task", "nodeType": "REGULAR", "nodeDetails": { "priority": 5 } }'
+\`\`\`
+
+This is the recommended way. The system automatically:
+- Creates a CONTAINS relationship from the context to the node
+- Validates data against the context's schema (if BACKEND + STRICT)
+- The node does NOT appear in The Blank
+`,
+
   'nodes': `# Nodes
 
-Nodes are the fundamental building blocks of Mujarrad. Following the **Node Supremacy** principle, everything is stored as a node.
-
-## Overview
-
-A node represents any piece of content or concept:
-- Documents, notes, ideas
-- Categories, tags, contexts
-- Assumptions, hypotheses
-- Promoted relationships
-
-## Node Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
-| \`id\` | UUID | Unique identifier |
-| \`spaceId\` | UUID | Parent space |
-| \`title\` | String | Display title (max 500 chars) |
-| \`slug\` | String | URL-friendly identifier |
-| \`content\` | String | Main text content |
-| \`nodeType\` | Enum | REGULAR, CONTEXT, ATTRIBUTE, TEMPLATE |
-| \`nodeDetails\` | JSONB | Flexible custom properties |
-| \`contextTypeId\` | UUID | Schema reference (BACKEND spaces) |
-| \`visibility\` | Enum | VISIBLE, INTERNAL, HIDDEN |
-| \`currentVersion\` | Integer | Current version number |
+A node is the fundamental unit of data in Mujarrad. Everything — notes, tasks, records, pages, contexts — is a node.
 
 ## Node Types
 
-### REGULAR
+| Type | Purpose |
+|------|---------|
+| **REGULAR** | Data — a note, a task, a record, a page |
+| **CONTEXT** | An organizer — a folder, a table, a class definition |
+| **ATTRIBUTE** | A promoted relationship (advanced — created via attribute promotion API) |
 
-Standard content nodes:
+## Node Fields
+
+| Field | Description |
+|-------|-------------|
+| \`id\` | UUID — unique identifier |
+| \`title\` | Human-readable name |
+| \`slug\` | URL-friendly identifier |
+| \`content\` | Markdown text content |
+| \`nodeDetails\` | JSON object for custom metadata |
+| \`nodeType\` | REGULAR, CONTEXT, or ATTRIBUTE |
+| \`lockLevel\` | UNLOCKED, CONTENT_LOCKED, or FULLY_LOCKED |
+| \`isBuiltin\` | True for system nodes (like The Blank) |
+| \`parentNodeId\` | If this is a block inside another node |
+| \`effectiveLockLevel\` | Computed lock considering space, schema, parent |
+
+## 4 Creation Paths
+
+| Path | What happens |
+|------|-------------|
+| \`POST /spaces/{slug}/contexts/{ctx}/nodes\` | Node created in the specified context (**recommended**) |
+| \`POST /spaces/{slug}/nodes\` | Node created in The Blank (catch-all) |
+| \`POST /void/nodes\` | Node created in The Void (personal, spaceless) |
+| \`POST /spaces/{slug}/nodes/{parentId}/children\` | Block created inside a parent node |
+
+## Creating a Node
 
 \`\`\`bash
-curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceSlug}/nodes" \\
+# In a specific context (recommended)
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{slug}/contexts/{ctx}/nodes" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
     "title": "My Document",
-    "content": "This is the content of my document.",
-    "nodeType": "REGULAR"
+    "content": "Document content here.",
+    "nodeType": "REGULAR",
+    "nodeDetails": {
+      "status": "draft",
+      "priority": "high"
+    }
   }'
 \`\`\`
-
-### CONTEXT
-
-Category or grouping nodes:
-
-\`\`\`bash
-curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceSlug}/nodes" \\
-  -H "Authorization: Bearer $TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "title": "Projects",
-    "nodeType": "CONTEXT"
-  }'
-\`\`\`
-
-### ATTRIBUTE
-
-Promoted relationship nodes (cannot be created directly, use attribute promotion).
 
 ## Using nodeDetails
 
 The \`nodeDetails\` JSONB field allows flexible custom properties:
 
+\`\`\`json
+{
+  "nodeDetails": {
+    "status": "in-progress",
+    "priority": "high",
+    "tags": ["urgent", "client-facing"],
+    "dueDate": "2025-03-15"
+  }
+}
+\`\`\`
+`,
+
+  'blocks': `# Blocks (Child Nodes)
+
+A block is a node that lives inside another node. Think of a page with paragraphs, headings, code blocks — each is a block node.
+
+## Block Rules
+
+- Blocks can ONLY be created via \`POST /nodes/{parentId}/children\`
+- Blocks NEVER appear in space listings, context listings, graph views, or search
+- Blocks ONLY appear when you list a parent's children: \`GET /nodes/{parentId}/children\`
+- Blocks inherit their parent's lock level
+- Blocks cannot have cross-space connections
+- Blocks migrate atomically with their parent
+
+## Block Types
+
+Stored in \`nodeDetails.blockType\`:
+
+| Block Type | Description |
+|-----------|-------------|
+| \`text\` | Paragraph |
+| \`heading1\`, \`heading2\`, \`heading3\` | Headings |
+| \`bulletList\`, \`numberedList\` | Lists |
+| \`todo\` | Checkbox item |
+| \`quote\` | Blockquote |
+| \`code\` | Code block |
+| \`divider\` | Horizontal rule |
+
+## Creating a Block
+
 \`\`\`bash
-curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceSlug}/nodes" \\
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{slug}/nodes/{pageId}/children" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "title": "Project Alpha",
+    "title": "Block 1",
     "nodeType": "REGULAR",
-    "nodeDetails": {
-      "status": "in-progress",
-      "priority": "high",
-      "tags": ["urgent", "client-facing"],
-      "dueDate": "2025-03-15"
-    }
+    "content": "Hello world",
+    "nodeDetails": { "blockType": "text" }
   }'
 \`\`\`
 
-## Version History
-
-Each update creates a version:
+## Reordering Blocks
 
 \`\`\`bash
-curl "https://mujarrad.onrender.com/api/nodes/{nodeId}/versions" \\
+curl -X PATCH "https://mujarrad.onrender.com/api/spaces/{slug}/nodes/{pageId}/children/reorder" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "orderedChildIds": ["uuid-1", "uuid-3", "uuid-2"] }'
+\`\`\`
+
+## Listing Blocks
+
+\`\`\`bash
+curl "https://mujarrad.onrender.com/api/nodes/{parentId}/children" \\
   -H "Authorization: Bearer $TOKEN"
 \`\`\`
 `,
 
-  // Core Concepts - Attributes
-  'attributes': `# Attributes
+  'the-void': `# The Void
 
-Attributes define relationships between nodes. They are the "wiring" that creates the graph structure.
+The Void is your personal, private holding area for notes that don't belong to any space yet. Think of it as your inbox or scratchpad.
 
-## Overview
+## Void Rules
 
-An attribute connects a **source node** to a **target node** with a typed relationship.
+- Every user has their own Void (private, no one else can see it)
+- Notes in The Void cannot have relationships
+- Notes can be moved to a space later via "assign"
+- Only REGULAR and CONTEXT nodes allowed (no ATTRIBUTE)
+
+## Using The Void
+
+\`\`\`bash
+# Create a quick note
+curl -X POST https://mujarrad.onrender.com/api/void/nodes \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "title": "Quick thought" }'
+
+# List your void notes
+curl "https://mujarrad.onrender.com/api/void/nodes?page=0&size=20" \\
+  -H "Authorization: Bearer $TOKEN"
+
+# Assign to a space + context
+curl -X POST "https://mujarrad.onrender.com/api/void/nodes/{nodeId}/assign" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "spaceId": "uuid", "contextId": "uuid" }'
+\`\`\`
+`,
+
+  'the-blank': `# The Blank (Context-Less)
+
+The Blank is the default context in every space. When a node is created without specifying a context, it lands in The Blank.
+
+## Blank Rules
+
+- Every space has exactly one Blank (auto-created, cannot be deleted)
+- Nodes in The Blank can be assigned to a proper context later
+- The Blank is a safety net — no node is ever truly orphaned
+
+## Managing Blank Nodes
+
+\`\`\`bash
+# List unorganized nodes
+curl "https://mujarrad.onrender.com/api/spaces/{slug}/blank/nodes?page=0&size=20" \\
+  -H "Authorization: Bearer $TOKEN"
+
+# Count unorganized nodes
+curl "https://mujarrad.onrender.com/api/spaces/{slug}/blank/count" \\
+  -H "Authorization: Bearer $TOKEN"
+
+# Assign a node to a context
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{slug}/blank/assign" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "nodeId": "uuid", "contextSlug": "tasks" }'
+
+# Bulk assign
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{slug}/blank/assign-bulk" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "nodeIds": ["uuid-1", "uuid-2"], "contextSlug": "tasks" }'
+\`\`\`
+`,
+
+  'locking': `# Locking
+
+Mujarrad has a 4-level lock hierarchy that controls what can be edited.
+
+## The 4-Level Lock Hierarchy
 
 \`\`\`
-┌──────────────┐                    ┌──────────────┐
-│  Source Node │───── attribute ───▶│  Target Node │
-│  (Document)  │    (REFERENCES)    │   (Link)     │
-└──────────────┘                    └──────────────┘
+Level 1: Space Lock    → EVERYTHING frozen
+Level 2: Schema Lock   → CONTEXT nodes frozen, data free (BACKEND+PRODUCTION)
+Level 3: Node Lock     → Individual node frozen
+Level 4: Attribute Lock → Individual relationship frozen
 \`\`\`
 
-## Attribute Properties
+Each level overrides the ones below it. Read operations always work at every level.
 
-| Property | Type | Description |
-|----------|------|-------------|
-| \`id\` | UUID | Unique identifier |
-| \`sourceNodeId\` | UUID | Source node |
-| \`targetNodeId\` | UUID | Target node |
-| \`attributeName\` | String | Display name |
-| \`attributeType\` | Enum | CONTAINS, REFERENCES, DEPENDS_ON, etc. |
-| \`attributeValue\` | JSONB | Value data |
-| \`properties\` | JSONB | Custom metadata |
+## Node Lock Levels
+
+| Level | Title/Content | Relationships | Move/Delete |
+|-------|--------------|---------------|-------------|
+| **UNLOCKED** | Editable | Modifiable | Allowed |
+| **CONTENT_LOCKED** | Frozen | Modifiable | Blocked |
+| **FULLY_LOCKED** | Frozen | Frozen | Blocked |
+
+## Schema Lock (BACKEND spaces)
+
+When a BACKEND space is in PRODUCTION mode:
+- **CONTEXT nodes are frozen** — you cannot edit, delete, or create new contexts
+- **Blocks inside CONTEXT nodes are frozen** — no schema field changes
+- **REGULAR nodes are free** — create, edit, delete data instances normally
+- To edit the schema, switch to CONFIGURATION mode
+
+## Effective Lock Level
+
+Every node response includes:
+- \`lockLevel\` — the node's own explicit lock
+- \`effectiveLockLevel\` — the computed lock considering space, schema, and parent
+- \`lockInherited\` — true if the lock comes from somewhere above
+- \`lockSource\` — where: "space", "schema", "parent", or "self"
+
+## Locking Endpoints
+
+\`\`\`bash
+# Lock a node
+curl -X PATCH "https://mujarrad.onrender.com/api/spaces/{slug}/nodes/{id}/lock" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "lockLevel": "CONTENT_LOCKED" }'
+
+# Unlock a node
+curl -X PATCH "https://mujarrad.onrender.com/api/spaces/{slug}/nodes/{id}/unlock" \\
+  -H "Authorization: Bearer $TOKEN"
+
+# Lock entire space
+curl -X PATCH "https://mujarrad.onrender.com/api/spaces/{slug}/lock" \\
+  -H "Authorization: Bearer $TOKEN"
+
+# Unlock space
+curl -X PATCH "https://mujarrad.onrender.com/api/spaces/{slug}/unlock" \\
+  -H "Authorization: Bearer $TOKEN"
+\`\`\`
+`,
+
+  'relationships': `# Relationships (Attributes)
+
+An attribute is a relationship between two nodes.
 
 ## Attribute Types
 
-### CONTAINS
+| Type | Meaning |
+|------|---------|
+| **CONTAINS** | Parent-child containment (Context→Node, Page→Block) |
+| **REFERENCES** | Cross-reference (Node→Node) |
+| **RELATES_TO** | Generic relationship |
+| **DEPENDS_ON** | Dependency |
 
-Hierarchical containment (parent-child). Creates a DAG (Directed Acyclic Graph). Cycles are prevented.
+## Creating Attributes
 
 \`\`\`bash
-curl -X POST "https://mujarrad.onrender.com/api/nodes/{documentId}/attributes" \\
+curl -X POST "https://mujarrad.onrender.com/api/nodes/{sourceId}/attributes" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "targetNodeId": "'$SECTION_ID'",
-    "attributeName": "contains",
-    "attributeType": "CONTAINS"
-  }'
-\`\`\`
-
-### REFERENCES
-
-Soft link or citation:
-
-\`\`\`bash
-curl -X POST "https://mujarrad.onrender.com/api/nodes/{nodeId}/attributes" \\
-  -H "Authorization: Bearer $TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "targetNodeId": "'$TARGET_ID'",
+    "targetNodeId": "target-uuid",
     "attributeName": "references",
     "attributeType": "REFERENCES"
   }'
 \`\`\`
 
-### DEPENDS_ON
+## Cross-Space Connections (Virtual Contexts)
 
-Dependency relationship for tasks or prerequisites.
-
-### RELATES_TO
-
-Generic connection between nodes.
-
-## Attribute Values
-
-Attributes can store values:
+Nodes in different spaces can be connected via Virtual Contexts:
 
 \`\`\`bash
-curl -X POST "https://mujarrad.onrender.com/api/nodes/{nodeId}/attributes" \\
+# Create a virtual context (bridge between spaces)
+curl -X POST https://mujarrad.onrender.com/api/virtual-contexts \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "name": "CRM <> Finance", "ownerSpaceId": "uuid" }'
+
+# Add the other space
+curl -X POST "https://mujarrad.onrender.com/api/virtual-contexts/{id}/members" \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "spaceId": "other-space-uuid", "role": "CONTRIBUTOR" }'
+
+# Create cross-space connection
+curl -X POST "https://mujarrad.onrender.com/api/virtual-contexts/{id}/attributes" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "targetNodeId": "'$TARGET_ID'",
-    "attributeName": "weight",
-    "attributeType": "RELATES_TO",
-    "attributeDataType": "NUMBER",
-    "attributeValue": {
-      "value": 0.85
-    }
+    "sourceNodeId": "node-in-space-A",
+    "targetNodeId": "node-in-space-B",
+    "attributeName": "relates_to",
+    "attributeType": "RELATES_TO"
   }'
 \`\`\`
-
-### Data Types
-
-| Type | Example Value |
-|------|---------------|
-| TEXT | \`{"value": "description"}\` |
-| NUMBER | \`{"value": 42}\` |
-| BOOLEAN | \`{"value": true}\` |
-| DATE | \`{"value": "2025-02-12"}\` |
 
 ## Attribute Promotion
 
@@ -578,631 +574,135 @@ curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceSlug}/attributes/{a
   -H "Authorization: Bearer $TOKEN"
 \`\`\`
 
-The promoted node:
-- Has \`nodeType: ATTRIBUTE\`
-- Can participate in graph traversal
-- Can have its own attributes
+The promoted node has \`nodeType: ATTRIBUTE\` and can participate in graph traversal with its own attributes.
 `,
 
-  // Core Concepts - Context Types
-  'context-types': `# Context Types
+  'migration': `# Node Migration
 
-Context Types define schemas for nodes in BACKEND spaces. They enable structured data with validation.
+Migration copies a node to another space. The original stays in place. The copy gets a fresh ID.
 
-## Overview
-
-A Context Type specifies:
-- **Attribute Schema**: Required and optional fields with types
-- **Schema Relationships**: Official relationship types with cardinality
-
-## When to Use
-
-Context Types are only available for **BACKEND** project type spaces and are typically created in **CONFIGURATION** mode.
-
-## Creating a Context Type
+## Migrate a Node
 
 \`\`\`bash
-curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceId}/context-types" \\
+curl -X POST "https://mujarrad.onrender.com/api/spaces/{slug}/nodes/{nodeId}/migrate" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "name": "Task",
-    "attributeSchema": {
-      "title": {
-        "type": "STRING",
-        "required": true,
-        "maxLength": 200
-      },
-      "dueDate": {
-        "type": "DATE",
-        "required": false
-      },
-      "priority": {
-        "type": "ENUM",
-        "required": false,
-        "values": ["LOW", "MEDIUM", "HIGH"]
-      },
-      "completed": {
-        "type": "BOOLEAN",
-        "required": false,
-        "default": false
-      }
-    },
-    "schemaRelationships": [
-      {
-        "type": "DEPENDS_ON",
-        "targetContextType": "task",
-        "cardinality": "MANY_TO_MANY"
-      }
-    ]
+    "targetSpaceId": "uuid",
+    "targetContextId": "uuid",
+    "includeReference": true
   }'
 \`\`\`
 
-## Supported Types
-
-| Type | Description | Options |
-|------|-------------|---------|
-| \`STRING\` | Text value | \`minLength\`, \`maxLength\` |
-| \`NUMBER\` | Numeric value | \`min\`, \`max\` |
-| \`BOOLEAN\` | True/false | \`default\` |
-| \`DATE\` | Date (ISO 8601) | - |
-| \`DATETIME\` | Date and time | - |
-| \`ENUM\` | Predefined values | \`values\` (array) |
-| \`ARRAY\` | Array of values | \`itemType\` |
-| \`JSON\` | Arbitrary JSON | - |
-
-## Cardinality Options
-
-| Cardinality | Description | Example |
-|-------------|-------------|---------|
-| \`ONE_TO_ONE\` | One source, one target | Task ↔ Owner |
-| \`ONE_TO_MANY\` | One source, many targets | Project → Tasks |
-| \`MANY_TO_ONE\` | Many sources, one target | Tasks → Assignee |
-| \`MANY_TO_MANY\` | Many to many | Tasks ↔ Tags |
-
-## Built-in REGULAR Type
-
-Every BACKEND space has a built-in \`REGULAR\` context type that cannot be modified or deleted. It serves as an escape hatch for unstructured content.
-
-## Context Type Error Codes
-
-| Code | HTTP | When |
-|------|------|------|
-| \`MODE_RESTRICTION\` | 403 | Schema mutation attempted in PRODUCTION mode |
-| \`INVALID_HEADER\` | 400 | Invalid \`X-Space-Mode\` header value |
-| \`BUILTIN_IMMUTABLE\` | 400 | Attempt to modify/delete the REGULAR type |
-| \`CONTEXT_TYPE_IN_USE\` | 409 | Delete attempted while nodes reference the type |
-| \`DUPLICATE_SLUG\` | 409 | Context type slug already exists in this space |
-| \`INVALID_PROJECT_TYPE\` | 400 | Context type API called on a CONSUMER space |
-`,
-
-  // Core Concepts - Space Modes
-  'space-modes': `# Space Modes
-
-Space Modes control what operations are permitted on a **BACKEND** space. CONSUMER spaces are always in full-flexibility mode — Modes only apply to BACKEND spaces.
-
-## Two Modes
-
-### CONFIGURATION Mode
-
-The space is open for schema changes. Use this while setting up your application's data model.
-
-**What you can do:**
-- Create, update, and delete Context Types
-- Define attribute schemas (field types, validation rules)
-- Define schema relationships between context types
-- Create any nodes and relationships freely
-
-### PRODUCTION Mode
-
-The schema is locked. End-users of your application interact with the space in this mode.
-
-**What you can do:**
-- Create nodes following the defined schema
-- Create relationships using **any** relationship type (full neuroplasticity preserved)
-- Add custom properties via \`nodeDetails\` JSONB
-
-**What is blocked:**
-- Cannot create, update, or delete Context Types (returns \`403 MODE_RESTRICTION\`)
-- Cannot modify attribute schemas
-- Cannot modify schema relationship definitions
-
-> **Key principle:** You can CREATE relationships freely in Production. You just can't modify the SCHEMA that documents them.
-
-## Switching Modes
-
-Only the space owner can switch modes.
-
-\`\`\`bash
-PATCH https://mujarrad.onrender.com/api/spaces/{spaceId}
-Authorization: Bearer $TOKEN
-Content-Type: application/json
-
-{
-  "mode": "PRODUCTION"
-}
-\`\`\`
-
-## X-Space-Mode Header Override
-
-For CI/CD pipelines or one-off admin tasks, temporarily override the persisted mode **without changing it**:
-
-\`\`\`bash
-curl -X POST "https://mujarrad.onrender.com/api/spaces/{spaceId}/context-types" \\
-  -H "Authorization: Bearer $TOKEN" \\
-  -H "X-Space-Mode: CONFIGURATION" \\
-  -H "Content-Type: application/json" \\
-  -d '{ "name": "NewType", "attributeSchema": {} }'
-\`\`\`
-
-- Requires **owner** authentication
-- The space's persisted mode is **not** changed
-- Invalid header values return \`400 INVALID_HEADER\`
-
-## Recommended Workflow
-
-1. Create a BACKEND space → automatically starts in CONFIGURATION mode
-2. Design your Context Types and relationships
-3. Test with real data
-4. Switch to PRODUCTION mode when ready for end-users
-5. Use \`X-Space-Mode: CONFIGURATION\` for future schema migrations
-`,
-
-  // Core Concepts - Project Types
-  'project-types': `# Project Types
-
-Every Mujarrad space has a **Project Type** that determines how it behaves.
-
-## CONSUMER (Default)
-
-The default type for all new spaces. Full flexibility — no schema enforcement.
-
-**Ideal for:**
-- Personal knowledge management
-- Note-taking applications
-- Exploratory research
-- Any use case where structure emerges organically
-
-**Characteristics:**
-- No modes (always full flexibility)
-- No Context Types
-- Free-form nodes and relationships
-
-\`\`\`bash
-# Create a CONSUMER space (default)
-curl -X POST "https://mujarrad.onrender.com/api/spaces" \\
-  -H "Authorization: Bearer $TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{ "name": "My Notes" }'
-\`\`\`
-
-## BACKEND
-
-Designed for applications that use Mujarrad as their backend database.
-
-**Ideal for:**
-- SaaS applications
-- Structured knowledge bases
-- Multi-tenant apps where schema consistency matters
-- APIs serving end-users
-
-**Characteristics:**
-- Starts in CONFIGURATION mode automatically
-- Supports Context Types with schema validation
-- Built-in \`REGULAR\` type created automatically
-- Switches between CONFIGURATION and PRODUCTION modes
-
-\`\`\`bash
-# Create a BACKEND space
-curl -X POST "https://mujarrad.onrender.com/api/spaces" \\
-  -H "Authorization: Bearer $TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "My App",
-    "projectType": "BACKEND"
-  }'
-\`\`\`
-
-## Converting CONSUMER → BACKEND
-
-Existing CONSUMER spaces can be converted to BACKEND:
-
-\`\`\`bash
-PATCH https://mujarrad.onrender.com/api/spaces/{spaceId}
-Authorization: Bearer $TOKEN
-Content-Type: application/json
-
-{
-  "projectType": "BACKEND"
-}
-\`\`\`
-
-The space will automatically:
-- Switch to CONFIGURATION mode
-- Get the built-in \`REGULAR\` context type created
-
-## Space Response
-
-Both \`projectType\` and \`mode\` are included in all space API responses:
+## Response
 
 \`\`\`json
 {
-  "id": "uuid",
-  "name": "My App",
-  "slug": "my-app",
-  "projectType": "BACKEND",
-  "mode": "CONFIGURATION",
-  "ownerId": "uuid",
-  "createdAt": "2026-03-14T10:00:00Z"
+  "original": { "...unchanged node..." },
+  "copy": { "...new node in target space..." },
+  "referenceAttributeId": "uuid (link from copy to original)"
 }
 \`\`\`
+
+## Migration Rules
+
+- Original node stays untouched with all its relationships
+- Copy gets a new UUID (standard creation flow)
+- All child blocks are copied atomically with the parent
+- Blocks cannot be migrated independently
+- Cross-organization migration is blocked
+
+> **Note:** Migration replaces the old move functionality. \`POST /spaces/{slug}/nodes/{id}/move\` is deprecated — use \`/migrate\` instead.
 `,
 
-  // Authentication Overview
-  'auth-overview': `# Authentication Overview
+  'pagination': `# Pagination
 
-Mujarrad supports three authentication mechanisms to accommodate different use cases.
+Every list endpoint returns paginated responses.
 
-## Authentication Methods
-
-| Method | Use Case | Header Format |
-|--------|----------|---------------|
-| JWT | Web/Mobile apps, user sessions | \`Authorization: Bearer <token>\` |
-| API Key | B2B integrations, scripts, automation | \`X-API-Key: <public>\` + \`X-API-Secret: <secret>\` |
-| OAuth2 | Social login (Google) | Handled via \`/api/auth/oauth/google\` |
-
-## Quick Comparison
-
-| Feature | JWT | API Key | OAuth2 |
-|---------|-----|---------|--------|
-| Expiration | 24 hours (default) | Configurable or never | N/A (returns JWT) |
-| Rate Limit | 10 batch/min | 1000 req/min | N/A |
-| Use Case | Human users | Automated systems | Social login |
-
-## JWT Authentication
-
-\`\`\`bash
-# 1. Login
-curl -X POST https://mujarrad.onrender.com/api/users/login \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "email": "user@example.com",
-    "password": "password123"
-  }'
-
-# 2. Use token
-curl -X GET https://mujarrad.onrender.com/api/spaces \\
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9..."
-\`\`\`
-
-## API Key Authentication
-
-\`\`\`bash
-curl -X GET https://mujarrad.onrender.com/api/spaces \\
-  -H "X-API-Key: pk_live_abc123..." \\
-  -H "X-API-Secret: sk_live_xyz789..."
-\`\`\`
-
-## Public Endpoints
-
-These endpoints do not require authentication:
-
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| \`/api/health\` | GET | Health check |
-| \`/api/users/register\` | POST | User registration |
-| \`/api/users/login\` | POST | Login (get JWT) |
-| \`/api/auth/oauth/google\` | POST | Google OAuth |
-| \`/swagger-ui.html\` | GET | API documentation |
-
-## Error Responses
-
-### 401 Unauthorized
+## PageResponse Shape
 
 \`\`\`json
 {
-  "error": "UNAUTHORIZED",
-  "message": "Invalid or missing authentication"
+  "content": [ "...items..." ],
+  "totalElements": 150,
+  "totalPages": 8,
+  "page": 0,
+  "size": 20
 }
 \`\`\`
 
-Causes:
-- Missing Authorization header
-- Expired JWT token
-- Invalid or revoked API key
+## Parameters
+
+| Parameter | Default | Max | Description |
+|-----------|---------|-----|-------------|
+| \`page\` | 0 | — | Page number (0-indexed) |
+| \`size\` | 20 | 100 | Items per page |
+
+## Example
+
+\`\`\`bash
+curl "https://mujarrad.onrender.com/api/spaces/my-space/nodes?page=0&size=50" \\
+  -H "Authorization: Bearer $TOKEN"
+\`\`\`
+
+> **Breaking change:** All list endpoints now return the \`PageResponse\` wrapper object, not raw arrays.
 `,
 
-  // API Keys
-  'api-keys': `# API Key Authentication
+  'release-notes': `# Release Notes — v1.0
 
-API keys provide programmatic access for B2B integrations, automation scripts, and CI/CD pipelines.
+Features 014 + Batch 015 + Batch 016
 
-## Overview
+## New Features
 
-- **Format**: Stripe-style keys (\`pk_live_...\` / \`sk_live_...\`)
-- **Security**: BCrypt-hashed secrets
-- **Rate Limit**: 1000 requests/minute (vs. 10 for JWT)
-- **Scope**: User-level or space-scoped
+- **Organizations** — INDIVIDUAL (auto) + TEAM (manual) with OWNER/ADMIN/MEMBER roles
+- **The Void** — personal spaceless holding area for quick notes
+- **The Blank** — per-space default context for unorganized nodes
+- **Context-Scoped Access** — create/read nodes through their parent context
+- **Block Architecture** — parent-child nodes with \`parent_node_id\`, atomic creation
+- **Node Migration** — copy nodes between spaces (replaces move)
+- **Schema Lock** — 4-level cascade: space → schema → node → attribute
+- **Virtual Contexts** — cross-space connections stored as CONTEXT nodes
+- **Nested Contexts** — contexts inside contexts
+- **Schema Enforcement** — NONE/WARN/STRICT on context types
+- **Pagination** — ALL list endpoints return PageResponse
 
-## Key Format
+## Infrastructure
 
-| Key Type | Prefix | Length | Example |
-|----------|--------|--------|---------|
-| Public | \`pk_live_\` | 40 chars | \`pk_live_abc123def456ghi789jkl012mno345\` |
-| Secret | \`sk_live_\` | 72 chars | \`sk_live_...\` |
+- 7 database migrations (V031-V039)
+- Centralized ResponseMapper — consistent 18-field NodeResponse across all endpoints
+- SlugUtils — Unicode-aware slug generation
+- JWT issuer validation — federation-ready token security
+- 923 tests passing, 0 failures
 
-## Creating an API Key
+## Breaking Changes
 
-Requires JWT authentication:
+- \`ASSUMPTION\` node type removed → use \`REGULAR\`
+- All list endpoints return \`{ content: [...], totalElements, ... }\` not raw arrays
+- Flat \`POST /spaces/{slug}/nodes\` creates in The Blank (not orphaned)
+- Blocks (\`nodeDetails.blockType\`) rejected on flat endpoint — use \`/nodes/{parentId}/children\`
 
-\`\`\`bash
-curl -X POST https://mujarrad.onrender.com/api/api-keys \\
-  -H "Authorization: Bearer $JWT_TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "Production API Key",
-    "description": "For B2B integration with Partner X",
-    "spaceId": null,
-    "expiresAt": null
-  }'
-\`\`\`
+## Deprecations
 
-Response:
-\`\`\`json
-{
-  "id": "660e8400-e29b-41d4-a716-446655440001",
-  "name": "Production API Key",
-  "publicKey": "pk_live_abc123def456ghi789jkl012mno345pqr",
-  "secretKey": "sk_live_xyz789...",
-  "expiresAt": null,
-  "createdAt": "2025-02-12T10:00:00Z"
-}
-\`\`\`
-
-> **Important:** The \`secretKey\` is only returned once. Store it securely immediately.
-
-## Using API Keys
-
-### Option 1: Separate Headers (Recommended)
-
-\`\`\`bash
-curl -X GET https://mujarrad.onrender.com/api/spaces \\
-  -H "X-API-Key: pk_live_abc123def456ghi789jkl012mno345pqr" \\
-  -H "X-API-Secret: sk_live_xyz789..."
-\`\`\`
-
-### Option 2: Combined Authorization Header
-
-\`\`\`bash
-curl -X GET https://mujarrad.onrender.com/api/spaces \\
-  -H "Authorization: ApiKey pk_live_abc123...:sk_live_xyz789..."
-\`\`\`
-
-## Managing API Keys
-
-### List Keys
-
-\`\`\`bash
-curl -X GET https://mujarrad.onrender.com/api/api-keys \\
-  -H "Authorization: Bearer $JWT_TOKEN"
-\`\`\`
-
-### Rotate Secret Key
-
-Zero-downtime rotation:
-
-\`\`\`bash
-curl -X POST https://mujarrad.onrender.com/api/api-keys/{keyId}/rotate \\
-  -H "Authorization: Bearer $JWT_TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "currentSecretKey": "sk_live_old..."
-  }'
-\`\`\`
-
-### Revoke Key
-
-\`\`\`bash
-curl -X DELETE https://mujarrad.onrender.com/api/api-keys/{keyId} \\
-  -H "Authorization: Bearer $JWT_TOKEN"
-\`\`\`
-
-## Space-Scoped Keys
-
-API keys can be scoped to a specific space:
-
-\`\`\`bash
-curl -X POST https://mujarrad.onrender.com/api/api-keys \\
-  -H "Authorization: Bearer $JWT_TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "Partner Integration",
-    "spaceId": "770e8400-e29b-41d4-a716-446655440002"
-  }'
-\`\`\`
-
-## Rate Limiting
-
-| Auth Method | Rate Limit | Window |
-|-------------|------------|--------|
-| API Key | 1000 requests | 1 minute |
-| JWT | 10 requests | 1 minute (batch endpoints) |
-
-## Limits
-
-| Limit | Value |
-|-------|-------|
-| Keys per user | 10 maximum |
-| Public key length | 40 characters |
-| Secret key length | 72 characters |
-
-## Security Best Practices
-
-1. **Never commit keys**: Use environment variables
-2. **Rotate regularly**: Schedule rotation (e.g., quarterly)
-3. **Scope minimally**: Use space-scoped keys when possible
-4. **Set expiration**: For temporary access, use expiring keys
-5. **Monitor usage**: Check \`lastUsedAt\` for anomalies
-`,
-
-  // API Reference Overview
-  'api-reference': `# API Reference Overview
-
-This section provides comprehensive documentation for the Mujarrad REST API.
-
-## Base URL
-
-| Environment | URL |
-|-------------|-----|
-| Production | \`https://mujarrad.onrender.com/api\` |
-| Local Dev | \`http://localhost:3000/api\` |
-
-## Authentication
-
-All endpoints (except public ones) require authentication via one of:
-
-| Method | Header |
-|--------|--------|
-| JWT | \`Authorization: Bearer <token>\` |
-| API Key | \`X-API-Key: <public>\` + \`X-API-Secret: <secret>\` |
-
-## Content Type
-
-All requests should use:
-\`\`\`
-Content-Type: application/json
-\`\`\`
-
-## HTTP Status Codes
-
-| Code | Meaning |
-|------|---------|
-| 200 | Success |
-| 201 | Created |
-| 204 | No Content (successful delete) |
-| 400 | Bad Request (validation error) |
-| 401 | Unauthorized (auth required) |
-| 403 | Forbidden (no permission) |
-| 404 | Not Found |
-| 409 | Conflict (duplicate, cycle) |
-| 429 | Too Many Requests |
-| 500 | Internal Server Error |
-
-## Error Codes
-
-| Code | Description |
-|------|-------------|
-| \`VALIDATION_ERROR\` | Request validation failed |
-| \`RESOURCE_NOT_FOUND\` | Entity not found |
-| \`DUPLICATE_RESOURCE\` | Unique constraint violation |
-| \`UNAUTHORIZED\` | Authentication required/failed |
-| \`FORBIDDEN\` | Insufficient permissions |
-| \`MODE_RESTRICTION\` | Operation blocked by space mode |
-| \`CYCLIC_DEPENDENCY\` | Would create a cycle |
-| \`TOO_MANY_REQUESTS\` | Rate limit exceeded |
-
-## Pagination
-
-Most list endpoints support pagination:
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| \`page\` | 0 | Page number (0-indexed) |
-| \`size\` | 20 | Items per page (max 100) |
-| \`sort\` | varies | Sort field |
-| \`direction\` | ASC | ASC or DESC |
-
-Example:
-\`\`\`bash
-curl "https://mujarrad.onrender.com/api/spaces/my-space/nodes?page=1&size=50&sort=createdAt&direction=DESC"
-\`\`\`
-
-## Rate Limiting
-
-| Auth Type | Limit | Window |
-|-----------|-------|--------|
-| JWT | 10 requests | 1 minute (batch) |
-| API Key | 1000 requests | 1 minute |
-
-Rate limit headers:
-\`\`\`
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 950
-X-RateLimit-Reset: 1739536800
-\`\`\`
-
-## API Endpoints Summary
-
-### Spaces
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | \`/spaces\` | Create space |
-| GET | \`/spaces\` | List spaces |
-| GET | \`/spaces/{id}\` | Get space by ID |
-| GET | \`/spaces/slug/{slug}\` | Get space by slug |
-| PATCH | \`/spaces/{id}\` | Update space |
-| DELETE | \`/spaces/{id}\` | Delete space |
-
-### Nodes
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | \`/spaces/{slug}/nodes\` | Create node |
-| GET | \`/spaces/{slug}/nodes\` | List nodes |
-| GET | \`/spaces/{slug}/nodes/{id}\` | Get node |
-| PUT | \`/spaces/{slug}/nodes/{id}\` | Update node |
-| DELETE | \`/spaces/{slug}/nodes/{id}\` | Delete node |
-
-### Attributes
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | \`/nodes/{id}/attributes\` | Create attribute |
-| GET | \`/nodes/{id}/attributes\` | List attributes |
-| PUT | \`/nodes/{id}/attributes/{attrId}\` | Update attribute |
-| DELETE | \`/nodes/{id}/attributes/{attrId}\` | Delete attribute |
-
-### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | \`/users/register\` | Register user |
-| POST | \`/users/login\` | Login (get JWT) |
-| POST | \`/auth/oauth/google\` | Google OAuth |
-
-### API Keys
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | \`/api-keys\` | Create API key |
-| GET | \`/api-keys\` | List API keys |
-| DELETE | \`/api-keys/{id}\` | Revoke API key |
-| POST | \`/api-keys/{id}/rotate\` | Rotate secret |
-
-## Interactive Documentation
-
-Swagger UI is available at:
-\`\`\`
-https://mujarrad.onrender.com/swagger-ui/index.html
-\`\`\`
+- \`POST /spaces/{slug}/nodes/{id}/move\` → use \`/migrate\` instead
+- \`NodeMoveService\` marked \`@Deprecated(forRemoval = true)\`
 `,
 };
 
 // Swagger tags mapping for each documentation section
 const swaggerTags: Record<string, { tag: string; title: string }[]> = {
+  'organizations': [{ tag: 'organization', title: 'Organization' }],
   'spaces': [{ tag: 'space', title: 'Space' }],
+  'contexts': [{ tag: 'context', title: 'Context' }],
   'nodes': [{ tag: 'node', title: 'Node' }],
-  'attributes': [{ tag: 'attribute', title: 'Attribute' }],
-  'auth-overview': [
-    { tag: 'authentication', title: 'Authentication' },
-    { tag: 'oauth', title: 'OAuth2' },
-  ],
-  'api-keys': [{ tag: 'api-key', title: 'API Key' }],
-  'api-reference': [
-    { tag: 'space', title: 'Space' },
-    { tag: 'node', title: 'Node' },
+  'blocks': [{ tag: 'node', title: 'Node (Blocks)' }],
+  'the-void': [{ tag: 'void', title: 'Void' }],
+  'the-blank': [{ tag: 'blank', title: 'Blank' }],
+  'locking': [{ tag: 'node', title: 'Node (Locking)' }],
+  'relationships': [
     { tag: 'attribute', title: 'Attribute' },
-    { tag: 'authentication', title: 'Authentication' },
-    { tag: 'api-key', title: 'API Key' },
-    { tag: 'health', title: 'Health' },
-    { tag: 'template', title: 'Templates' },
+    { tag: 'virtual-context', title: 'Virtual Context' },
   ],
+  'migration': [{ tag: 'node', title: 'Node (Migration)' }],
 };
 
 // Navigation structure
@@ -1213,15 +713,6 @@ const navSections = [
     icon: Rocket,
     items: [
       { id: 'introduction', title: 'Introduction' },
-      { id: 'first-api-call', title: 'First API Call' },
-    ],
-  },
-  {
-    id: 'architecture',
-    title: 'Architecture',
-    icon: Layout,
-    items: [
-      { id: 'architecture', title: 'Overview' },
     ],
   },
   {
@@ -1229,29 +720,39 @@ const navSections = [
     title: 'Core Concepts',
     icon: Layers,
     items: [
+      { id: 'organizations', title: 'Organizations' },
       { id: 'spaces', title: 'Spaces' },
+      { id: 'contexts', title: 'Contexts' },
       { id: 'nodes', title: 'Nodes' },
-      { id: 'attributes', title: 'Attributes' },
-      { id: 'project-types', title: 'Project Types' },
-      { id: 'context-types', title: 'Context Types' },
-      { id: 'space-modes', title: 'Space Modes' },
+      { id: 'blocks', title: 'Blocks' },
     ],
   },
   {
-    id: 'authentication',
-    title: 'Authentication',
+    id: 'special-areas',
+    title: 'Special Areas',
     icon: Shield,
     items: [
-      { id: 'auth-overview', title: 'Overview' },
-      { id: 'api-keys', title: 'API Keys' },
+      { id: 'the-void', title: 'The Void' },
+      { id: 'the-blank', title: 'The Blank' },
     ],
   },
   {
-    id: 'api-reference',
-    title: 'API Reference',
+    id: 'advanced',
+    title: 'Advanced',
+    icon: Lock,
+    items: [
+      { id: 'locking', title: 'Locking' },
+      { id: 'relationships', title: 'Relationships' },
+      { id: 'migration', title: 'Migration' },
+    ],
+  },
+  {
+    id: 'reference',
+    title: 'Reference',
     icon: Code,
     items: [
-      { id: 'api-reference', title: 'Overview' },
+      { id: 'pagination', title: 'Pagination' },
+      { id: 'release-notes', title: 'Release Notes' },
     ],
   },
 ];
@@ -1260,6 +761,7 @@ export default function DocsPage() {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState('introduction');
   const [expandedSections, setExpandedSections] = useState<string[]>(['getting-started']);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>
@@ -1274,12 +776,40 @@ export default function DocsPage() {
     if (!expandedSections.includes(sectionId)) {
       setExpandedSections([...expandedSections, sectionId]);
     }
+    setSidebarOpen(false);
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen bg-white flex flex-col md:flex-row">
+      {/* Mobile header */}
+      <div className="md:hidden sticky top-0 z-30 flex items-center gap-3 border-b border-[#e5e5e5] bg-[#fafafa] px-4 py-3">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-1 rounded-md hover:bg-[#f0f0f0] transition-colors"
+        >
+          {sidebarOpen ? <X className="size-5 text-[#4f4f4f]" /> : <Menu className="size-5 text-[#4f4f4f]" />}
+        </button>
+        <Book className="size-4 text-[#4f4f4f]" />
+        <span className="font-['Roboto:Medium',sans-serif] font-medium text-[14px] text-[#333]">Documentation</span>
+      </div>
+
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-20 bg-black/30"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar Navigation */}
-      <aside className="w-[280px] border-r border-[#e5e5e5] h-screen sticky top-0 overflow-y-auto bg-[#fafafa]">
+      <aside
+        className={cn(
+          "w-[280px] border-r border-[#e5e5e5] overflow-y-auto bg-[#fafafa] z-20",
+          "md:sticky md:top-0 md:h-screen md:block",
+          "fixed top-0 left-0 h-full transition-transform duration-200",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+      >
         <div className="p-4 border-b border-[#e5e5e5]">
           <button
             onClick={() => router.back()}
@@ -1351,7 +881,7 @@ export default function DocsPage() {
 
       {/* Main Content */}
       <main className="flex-1 min-h-screen">
-        <div className="max-w-[850px] mx-auto px-8 py-10">
+        <div className="max-w-[850px] mx-auto px-4 py-6 md:px-8 md:py-10">
           <MarkdownRenderer
             content={docsContent[activeSection] || '# Page not found\n\nThis documentation page does not exist.'}
             className="docs-content"
