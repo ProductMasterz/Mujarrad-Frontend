@@ -198,6 +198,16 @@ export const nodeService = {
     );
   },
 
+  async removeFromContext(
+    spaceSlug: string,
+    contextSlug: string,
+    nodeId: string
+  ): Promise<void> {
+    await apiClient.delete(
+      `/spaces/${spaceSlug}/contexts/${contextSlug}/nodes/${nodeId}`
+    );
+  },
+
   // ---------------------------------------------------------------------------
   // Child Nodes (blocks inside pages)
   // ---------------------------------------------------------------------------

@@ -18,6 +18,8 @@ interface NodeGridProps {
   // Search and sort
   searchTerm?: string;
   sortBy?: 'name' | 'createdAt' | 'updatedAt';
+  // Optional badge per node (e.g. parent count for multi-parent nodes)
+  getNodeBadge?: (node: Node) => string | undefined;
   // Render extra content per card (e.g. checkboxes, overlay buttons)
   renderCardWrapper?: (node: Node, cardElement: React.ReactNode) => React.ReactNode;
 }
@@ -34,6 +36,7 @@ export function NodeGrid({
   getNodeKindLabel,
   searchTerm,
   sortBy = 'updatedAt',
+  getNodeBadge,
   renderCardWrapper,
 }: NodeGridProps) {
   const filteredAndSorted = useMemo(() => {
@@ -107,6 +110,7 @@ export function NodeGrid({
             preview={preview}
             meta={meta}
             type={cardType}
+            badge={getNodeBadge?.(node)}
             nodeKindLabel={kindLabel}
             onClick={() => onCardClick(node)}
             onContextMenu={(e) => onCardContextMenu(e, node)}

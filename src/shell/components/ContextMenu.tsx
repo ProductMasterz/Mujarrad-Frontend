@@ -12,6 +12,9 @@ type ContextMenuProps = {
   onShare: () => void;
   onDelete: () => void;
   onMoveTo?: () => void;
+  onMakeChildOf?: () => void;
+  onRemoveFromContext?: () => void;
+  contextName?: string;
 };
 
 export function ContextMenu({
@@ -26,6 +29,9 @@ export function ContextMenu({
   onShare,
   onDelete,
   onMoveTo,
+  onMakeChildOf,
+  onRemoveFromContext,
+  contextName,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -51,15 +57,31 @@ export function ContextMenu({
     };
   }, [onClose]);
 
-  const menuItems = [
+  const menuItems: Array<{ label: string; onClick: () => void; destructive?: boolean }> = [
     { label: "Open in New Tab", onClick: onOpenNewTab },
     { label: openAsLabel, onClick: onOpenAsNode },
-    ...(onMoveTo ? [{ label: "Move To", onClick: onMoveTo }] : []),
+  ];
+
+  if (onMakeChildOf) {
+    menuItems.push({ label: "Make a Child Of...", onClick: onMakeChildOf });
+  } else if (onMoveTo) {
+    menuItems.push({ label: "Move To", onClick: onMoveTo });
+  }
+
+  if (onRemoveFromContext && contextName) {
+    menuItems.push({
+      label: `Remove from ${contextName}`,
+      onClick: onRemoveFromContext,
+      destructive: true,
+    });
+  }
+
+  menuItems.push(
     { label: "Rename", onClick: onRename },
     { label: "Duplicate", onClick: onDuplicate },
     { label: "Share", onClick: onShare },
     { label: "Delete", onClick: onDelete, destructive: true },
-  ];
+  );
 
   const menuWidth = 205;
   const menuHeight = 280;

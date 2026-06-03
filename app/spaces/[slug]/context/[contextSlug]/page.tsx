@@ -5,13 +5,17 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { SpaceShell } from '@/shell/components/SpaceShell';
 import { NodeGrid } from '@/shell/components/NodeGrid';
-import { useContextNodes, useChildContexts } from '@/hooks/api/useContextNodes';
+import { useContextNodes, useChildContexts, useRemoveFromContext } from '@/hooks/api/useContextNodes';
 import { useSpace, nodeKeys, useRenameNodeSimple } from '@/hooks/api';
+import { useContextTypes } from '@/hooks/api/useContextTypes';
 import { NodeType } from '@/types/backend-dtos';
 import { CardType } from '@/shell/data/projects';
 import { ProjectCard } from '@/shell/components/ProjectCard';
-import { FolderOpen, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { VCPanel } from '@/components/virtual-contexts/VCPanel';
+import { ContextSchemaSection } from '@/components/schemas/ContextSchemaSection';
+import { useNotificationStore } from '@/stores/notificationStore';
+import { useParentCounts } from '@/hooks/api/useParentCounts';
 import type { Node } from '@/types/backend-dtos';
 
 export default function ContextDetailPage() {
@@ -20,23 +24,44 @@ export default function ContextDetailPage() {
   const queryClient = useQueryClient();
   const spaceSlug = params.slug as string;
   const contextSlug = params.contextSlug as string;
+  const addNotification = useNotificationStore((state) => state.addNotification);
 
   const { data: space } = useSpace(spaceSlug);
   const { data: nodes = [], isLoading } = useContextNodes(spaceSlug, contextSlug);
   const { data: childContexts = [] } = useChildContexts(spaceSlug, contextSlug);
   const { rename: renameNode } = useRenameNodeSimple(spaceSlug);
+  const removeFromContext = useRemoveFromContext();
 
-  // Search and sort
+  const isBackend = space?.projectType === 'BACKEND';
+  const isProduction = space?.mode === 'PRODUCTION';
+
+  const { data: contextTypes = [] } = useContextTypes(space?.id || '');
+  const contextType = useMemo(
+    () => contextTypes.find((ct) => ct.slug === contextSlug) ?? null,
+    [contextTypes, contextSlug]
+  );
+
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'updatedAt'>('updatedAt');
 
-  // Context menu state
   const [contextMenuNode, setContextMenuNode] = useState<Node | null>(null);
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
 
   const regularNodes = useMemo(
     () => nodes.filter((n: Node) => n.nodeType !== NodeType.CONTEXT && !n.isBuiltin),
     [nodes]
+  );
+
+  const allNodeIds = useMemo(() => nodes.map((n: Node) => n.id), [nodes]);
+  const parentCounts = useParentCounts(allNodeIds);
+
+  const getNodeBadge = useCallback(
+    (node: Node) => {
+      const count = parentCounts.get(node.id);
+      if (count && count > 1) return `${count} contexts`;
+      return undefined;
+    },
+    [parentCounts]
   );
 
   const contextName = contextSlug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
@@ -75,6 +100,39 @@ export default function ContextDetailPage() {
     queryClient.invalidateQueries({ queryKey: nodeKeys.list(spaceSlug, { page: 0, size: 1000 }) });
   }, [queryClient, spaceSlug]);
 
+  const handleRemoveFromContext = useCallback(
+    async (node: Node) => {
+      try {
+        await removeFromContext.mutateAsync({
+          spaceSlug,
+          contextSlug,
+          nodeId: node.id,
+        });
+        addNotification({
+          type: 'success',
+          source: 'node',
+          title: `"${node.title}" removed from context`,
+        });
+      } catch {
+        addNotification({
+          type: 'error',
+          source: 'node',
+          title: 'Failed to remove node from context',
+        });
+      }
+    },
+    [removeFromContext, spaceSlug, contextSlug, addNotification]
+  );
+
+  const handleContextMenuAction = useCallback(
+    (action: string, node: Node) => {
+      if (action === 'removeFromContext') {
+        handleRemoveFromContext(node);
+      }
+    },
+    [handleRemoveFromContext]
+  );
+
   return (
     <SpaceShell
       title={contextName}
@@ -86,6 +144,8 @@ export default function ContextDetailPage() {
         setContextMenuNode(null);
         setContextMenuPos(null);
       }}
+      onContextMenuAction={handleContextMenuAction}
+      contextSlug={contextSlug}
       newNodeModalDefaultType="node"
       newNodeModalAvailableTypes={['node']}
       deleteSpaceSlug={spaceSlug}
@@ -93,6 +153,16 @@ export default function ContextDetailPage() {
       onRenameSuccess={() => invalidateNodes()}
       onRename={handleRename}
     >
+      {/* Schema Section — only for BACKEND spaces */}
+      {isBackend && (
+        <div className="mb-5">
+          <ContextSchemaSection
+            contextType={contextType}
+            isLocked={isProduction}
+          />
+        </div>
+      )}
+
       {/* Search and Sort bar */}
       <div className="mb-5 rounded-[18px] border border-border/60 bg-background px-4 py-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -160,6 +230,7 @@ export default function ContextDetailPage() {
         emptyTitle="No nodes in this context"
         searchTerm={searchTerm}
         sortBy={sortBy}
+        getNodeBadge={getNodeBadge}
         onCardClick={handleCardClick}
         onCardContextMenu={handleCardContextMenu}
       />

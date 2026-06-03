@@ -21,6 +21,21 @@ export const attributeService = {
   },
 
   /**
+   * Get all incoming attributes (edges) for a node (where node is the target)
+   * API Contract: GET /api/nodes/{id}/incoming-attributes
+   */
+  async getIncomingAttributes(
+    nodeId: string,
+    params?: { attributeType?: string }
+  ): Promise<Attribute[]> {
+    const response = await apiClient.get<any>(
+      `/nodes/${nodeId}/incoming-attributes`,
+      { params }
+    );
+    return extractPage<Attribute>(response.data);
+  },
+
+  /**
    * Create new attribute (edge/relationship)
    * API Contract: POST /api/nodes/{id}/attributes
    */

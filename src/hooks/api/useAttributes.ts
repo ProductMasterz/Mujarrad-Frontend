@@ -24,6 +24,22 @@ export const useAttributes = (
   });
 };
 
+export const useIncomingAttributes = (
+  nodeId: string | null,
+  params?: { attributeType?: string }
+) => {
+  return useQuery({
+    queryKey: ['incomingAttributes', nodeId, params],
+    queryFn: async () => {
+      if (!nodeId) throw new Error('Node ID is required');
+      return await attributeService.getIncomingAttributes(nodeId, params);
+    },
+    enabled: !!nodeId,
+    staleTime: 3 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+};
+
 /**
  * useSpaceAttributes Hook
  *

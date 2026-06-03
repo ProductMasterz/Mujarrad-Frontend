@@ -17,7 +17,7 @@ import { spaceService } from '@/services/api';
 import { useNotificationStore } from '@/stores/notificationStore';
 import type { Node } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
-import { AssignToContextDialog } from '@/components/blank/AssignToContextDialog';
+import { MakeChildOfDialog } from '@/components/contexts/MakeChildOfDialog';
 
 interface SpaceShellProps {
   title: string;
@@ -40,6 +40,8 @@ interface SpaceShellProps {
   onRenameSuccess?: (newName: string) => void;
   // Rename hook — caller provides since it may differ per page
   onRename?: (nodeId: string, newName: string) => Promise<{ success: boolean; error?: string }>;
+  // Context slug — when viewing inside a context, enables "Remove from Context" and "Make a Child Of"
+  contextSlug?: string;
 }
 
 export function SpaceShell({
@@ -58,6 +60,7 @@ export function SpaceShell({
   onDeleteSuccess,
   onRenameSuccess,
   onRename,
+  contextSlug,
 }: SpaceShellProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -72,7 +75,7 @@ export function SpaceShell({
   const [nodeToDelete, setNodeToDelete] = useState<Node | null>(null);
   const [nodeToRename, setNodeToRename] = useState<Node | null>(null);
   const [selectedCardId, setSelectedCardId] = useState('');
-  const [moveToNodeId, setMoveToNodeId] = useState<string | null>(null);
+  const [makeChildOfNode, setMakeChildOfNode] = useState<Node | null>(null);
 
   // Tabs state
   const [tabs, setTabs] = useState<Tab[]>([
@@ -134,7 +137,7 @@ export function SpaceShell({
         setShowShareModal(true);
         break;
       case 'assign':
-        setMoveToNodeId(contextMenuNode.id);
+        setMakeChildOfNode(contextMenuNode);
         break;
       case 'delete':
         setNodeToDelete(contextMenuNode);
@@ -308,7 +311,12 @@ export function SpaceShell({
             onOpenNewTab={() => handleContextMenuActionInternal('openNewTab')}
             onOpenAsNode={() => handleContextMenuActionInternal('openAsNode')}
             openAsLabel="Open Node"
-            onMoveTo={spaceSlug ? () => handleContextMenuActionInternal('assign') : undefined}
+            onMakeChildOf={spaceSlug ? () => handleContextMenuActionInternal('assign') : undefined}
+            onRemoveFromContext={contextSlug ? () => {
+              if (contextMenuNode) onContextMenuAction?.('removeFromContext', contextMenuNode);
+              onContextMenuClose?.();
+            } : undefined}
+            contextName={contextSlug ? contextSlug.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) : undefined}
             onRename={() => handleContextMenuActionInternal('rename')}
             onDuplicate={() => handleContextMenuActionInternal('duplicate')}
             onShare={() => handleContextMenuActionInternal('share')}
@@ -352,14 +360,14 @@ export function SpaceShell({
             entityLabel={nodeToRename.nodeType === NodeType.CONTEXT ? 'Context' : 'Node'}
           />
         )}
-        {/* Move To Dialog */}
-        {moveToNodeId && spaceSlug && (
-          <AssignToContextDialog
+        {/* Make a Child Of Dialog */}
+        {makeChildOfNode && spaceSlug && (
+          <MakeChildOfDialog
             spaceSlug={spaceSlug}
-            nodeIds={[moveToNodeId]}
-            open={!!moveToNodeId}
-            onOpenChange={(open) => { if (!open) setMoveToNodeId(null); }}
-            onAssigned={() => { setMoveToNodeId(null); onDeleteSuccess?.(); }}
+            node={makeChildOfNode}
+            open={!!makeChildOfNode}
+            onOpenChange={(open) => { if (!open) setMakeChildOfNode(null); }}
+            onSuccess={() => { setMakeChildOfNode(null); onDeleteSuccess?.(); }}
           />
         )}
       </div>
