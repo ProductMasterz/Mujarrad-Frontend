@@ -108,7 +108,7 @@ export function MakeChildOfDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            Make "{node.title}" a child of...
+            Make &ldquo;{node.title}&rdquo; a child of...
           </DialogTitle>
         </DialogHeader>
 
