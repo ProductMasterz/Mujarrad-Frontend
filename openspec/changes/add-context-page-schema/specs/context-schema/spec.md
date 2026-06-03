@@ -256,6 +256,25 @@ Then a CONTAINS attribute is created from Context B to this context
 And the context's existing parent relationships are preserved
 ```
 
+#### Scenario: Context card on space page shows Make a Child Of
+```gherkin
+Given I am on the space page viewing context cards
+When I right-click on a context card
+Then I see "Make a Child Of..." in the context menu
+When I click "Make a Child Of..."
+Then a picker appears showing available contexts only
+```
+
+#### Scenario: Context card within parent context shows Remove from Context
+```gherkin
+Given Context B is a child of Context A
+When I am viewing Context A's page and right-click on Context B's card
+Then I see "Remove from Context A" in the context menu
+When I click "Remove from Context A"
+Then Context B is removed from Context A's children
+And Context B still exists in the space
+```
+
 #### Scenario: Make a Child Of is additive
 ```gherkin
 Given Node 1 is already a child of Context A

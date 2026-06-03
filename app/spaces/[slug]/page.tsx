@@ -26,6 +26,7 @@ import { LockedBanner } from '@/components/locking/LockedBanner';
 import { SpaceLockToggle } from '@/components/locking/SpaceLockToggle';
 import { SpaceModeToggle } from '@/components/locking/SpaceModeToggle';
 import { BlankBadge } from '@/components/blank/BlankBadge';
+import { MakeChildOfDialog } from '@/components/contexts/MakeChildOfDialog';
 
 function isAgentCreatedNode(node: Node): boolean {
   let details: Record<string, unknown> | undefined;
@@ -139,6 +140,7 @@ export default function SpaceDetailPage() {
     y: number;
     cardId: string;
   } | null>(null);
+  const [makeChildOfNode, setMakeChildOfNode] = useState<Node | null>(null);
 
   // Navigation state
   const addNotification = useNotificationStore((state) => state.addNotification);
@@ -317,6 +319,11 @@ export default function SpaceDetailPage() {
       case 'share':
         setSelectedCardId(contextMenu.cardId);
         setShowShareModal(true);
+        break;
+      case 'assign':
+        if (node) {
+          setMakeChildOfNode(node);
+        }
         break;
       case 'delete':
         if (node) {
@@ -711,10 +718,25 @@ export default function SpaceDetailPage() {
             onOpenNewTab={() => handleContextMenuAction('openNewTab')}
             onOpenAsNode={() => handleContextMenuAction('openAsNode')}
             openAsLabel="Open Context"
+            onMakeChildOf={() => handleContextMenuAction('assign')}
             onRename={() => handleContextMenuAction('rename')}
             onDuplicate={() => handleContextMenuAction('duplicate')}
             onShare={() => handleContextMenuAction('share')}
             onDelete={() => handleContextMenuAction('delete')}
+          />
+        )}
+
+        {/* Make a Child Of Dialog */}
+        {makeChildOfNode && (
+          <MakeChildOfDialog
+            spaceSlug={slug}
+            node={makeChildOfNode}
+            open={!!makeChildOfNode}
+            onOpenChange={(open) => { if (!open) setMakeChildOfNode(null); }}
+            onSuccess={() => {
+              setMakeChildOfNode(null);
+              queryClient.invalidateQueries({ queryKey: nodeKeys.list(slug, { page: 0, size: 1000 }) });
+            }}
           />
         )}
 
