@@ -27,7 +27,7 @@ export default function ContextDetailPage() {
   const addNotification = useNotificationStore((state) => state.addNotification);
 
   const { data: space } = useSpace(spaceSlug);
-  const { data: nodes = [], isLoading } = useContextNodes(spaceSlug, contextSlug);
+  const { data: nodes = [], isLoading, isFetching, isError } = useContextNodes(spaceSlug, contextSlug);
   const { data: childContexts = [] } = useChildContexts(spaceSlug, contextSlug);
   const { rename: renameNode } = useRenameNodeSimple(spaceSlug);
   const removeFromContext = useRemoveFromContext();
@@ -217,23 +217,40 @@ export default function ContextDetailPage() {
       )}
 
       {/* Nodes */}
-      <div className="mb-3">
+      <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
           Nodes ({regularNodes.length})
         </h2>
+        {isFetching && !isLoading && (
+          <span className="text-xs text-muted-foreground animate-pulse">Refreshing…</span>
+        )}
       </div>
 
-      <NodeGrid
-        nodes={regularNodes}
-        isLoading={isLoading}
-        emptyIcon={<FileText className="h-8 w-8 text-muted-foreground/50" />}
-        emptyTitle="No nodes in this context"
-        searchTerm={searchTerm}
-        sortBy={sortBy}
-        getNodeBadge={getNodeBadge}
-        onCardClick={handleCardClick}
-        onCardContextMenu={handleCardContextMenu}
-      />
+      {isError ? (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-5 py-8 text-center">
+          <p className="text-sm font-medium text-destructive">Failed to load nodes</p>
+          <p className="mt-1 text-xs text-muted-foreground">The context may not exist or the server is unavailable.</p>
+          <button
+            type="button"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['context-nodes', spaceSlug, contextSlug] })}
+            className="mt-3 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition"
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
+        <NodeGrid
+          nodes={regularNodes}
+          isLoading={isLoading}
+          emptyIcon={<FileText className="h-8 w-8 text-muted-foreground/50" />}
+          emptyTitle="No nodes in this context"
+          searchTerm={searchTerm}
+          sortBy={sortBy}
+          getNodeBadge={getNodeBadge}
+          onCardClick={handleCardClick}
+          onCardContextMenu={handleCardContextMenu}
+        />
+      )}
     </SpaceShell>
   );
 }
