@@ -14,7 +14,7 @@ export const versionService = {
   async getVersion(
     spaceSlug: string,
     nodeId: string,
-    versionId: number
+    versionId: string
   ): Promise<NodeVersion> {
     const response = await apiClient.get<NodeVersion>(
       `/spaces/${spaceSlug}/nodes/${nodeId}/versions/${versionId}`
@@ -25,7 +25,7 @@ export const versionService = {
   async restoreVersion(
     spaceSlug: string,
     nodeId: string,
-    versionId: number
+    versionId: string
   ): Promise<Node> {
     const response = await apiClient.post<Node>(
       `/spaces/${spaceSlug}/nodes/${nodeId}/versions/${versionId}/restore`
@@ -36,7 +36,7 @@ export const versionService = {
   async deleteVersion(
     spaceSlug: string,
     nodeId: string,
-    versionId: number
+    versionId: string
   ): Promise<void> {
     await apiClient.delete(
       `/spaces/${spaceSlug}/nodes/${nodeId}/versions/${versionId}`

@@ -59,9 +59,9 @@ export function EditNodeDialog({ spaceSlug, nodeId, open, onOpenChange }: EditNo
     if (node) {
       setValue('title', node.title);
       setValue('nodeType', node.nodeType);
-      setValue('content', node.content);
+      setValue('content', node.content ?? '');
       // Parse version number from currentVersionId (e.g., "v1" -> 1)
-      const versionNum = parseInt(node.currentVersionId.replace(/^v/, ''), 10);
+      const versionNum = parseInt((node.currentVersionId ?? '').replace(/^v/, ''), 10);
       setValue('version', isNaN(versionNum) ? 1 : versionNum);
     }
   }, [node, setValue]);

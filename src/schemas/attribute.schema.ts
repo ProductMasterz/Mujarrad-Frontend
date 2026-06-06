@@ -32,9 +32,8 @@ export const attributeKeyLabels: Record<AttributeKey, string> = {
   [AttributeKey.CONTAINS]: 'Contains',
   [AttributeKey.DEPENDS_ON]: 'Depends On',
   [AttributeKey.REFERENCES]: 'References',
-  [AttributeKey.TRIGGERS]: 'Triggers',
-  [AttributeKey.NEXT]: 'Next',
-  [AttributeKey.CALLS]: 'Calls',
+  [AttributeKey.PARENT_OF]: 'Parent Of',
+  [AttributeKey.RELATES_TO]: 'Relates To',
 };
 
 /**
@@ -44,7 +43,6 @@ export const attributeKeyDescriptions: Record<AttributeKey, string> = {
   [AttributeKey.CONTAINS]: 'Hierarchical containment (parent-child relationship, must be acyclic)',
   [AttributeKey.DEPENDS_ON]: 'Dependency relationship (can form cycles)',
   [AttributeKey.REFERENCES]: 'Cross-reference or citation (can form cycles)',
-  [AttributeKey.TRIGGERS]: 'Workflow trigger connection (can form cycles)',
-  [AttributeKey.NEXT]: 'Sequential flow (can form cycles for iteration)',
-  [AttributeKey.CALLS]: 'Function/process invocation (can form cycles for recursion)',
+  [AttributeKey.PARENT_OF]: 'Parent-child relationship between nodes',
+  [AttributeKey.RELATES_TO]: 'General association between nodes (can form cycles)',
 };

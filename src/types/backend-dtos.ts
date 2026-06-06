@@ -128,11 +128,11 @@ export interface Node {
   /** URL-friendly slug (unique within space) */
   slug: string;
   /** Markdown content */
-  content: string;
+  content: string | null;
   /** Additional metadata (JSON object) */
   nodeDetails: NodeDetails;
   /** Current version ID (UUID v4) */
-  currentVersionId: string;
+  currentVersionId: string | null;
   /** Creator user ID (UUID v4) */
   createdBy: string;
   /** Last modifier user ID (UUID v4) */
@@ -163,9 +163,8 @@ export enum AttributeKey {
   CONTAINS = 'contains',
   DEPENDS_ON = 'depends_on',
   REFERENCES = 'references',
-  TRIGGERS = 'triggers',
-  NEXT = 'next',
-  CALLS = 'calls',
+  PARENT_OF = 'parent_of',
+  RELATES_TO = 'relates_to',
 }
 
 /**
@@ -193,15 +192,15 @@ export interface Attribute {
  * Node version entity from backend
  */
 export interface NodeVersion {
-  id: number;
-  nodeId: number;
-  version: number;
+  id: string;
+  nodeId: string;
+  versionNumber: number;
   title: string;
   nodeType: NodeType;
   content: string;
-  nodeDetails?: Record<string, unknown>;
+  nodeDetailsSnapshot?: Record<string, unknown>;
   createdAt: string;
-  createdBy?: number;
+  createdBy?: string;
 }
 
 /**

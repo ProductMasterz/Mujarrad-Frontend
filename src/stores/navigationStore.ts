@@ -20,7 +20,7 @@ import { DEFAULT_GRAPH_VIEW_MODE } from '@/lib/graph-utils';
 // Navigation Scope Types & Configuration
 // ============================================================================
 
-export type NavigationScope = 'spaces' | 'space' | 'node' | 'whiteboard';
+export type NavigationScope = 'spaces' | 'space' | 'node' | 'whiteboard' | 'context';
 
 // Actions available in the Add menu
 export type AddAction = 'create_space' | 'create_node' | 'create_context';
@@ -66,6 +66,11 @@ const SCOPE_CONFIGS: Record<NavigationScope, ScopeConfig> = {
     addActions: ['create_node', 'create_context'],
     moreActions: ['share', 'open_new_tab', 'clear_space'],
     addButtonTooltip: 'Create new node',
+  },
+  context: {
+    addActions: ['create_node', 'create_context'],
+    moreActions: ['share', 'open_new_tab', 'open_as_node', 'delete'],
+    addButtonTooltip: 'Create new node in context',
   },
 };
 
@@ -134,6 +139,7 @@ interface NavigationState {
   navigateToSpace: (spaceSlug: string, spaceId: string) => void;
   navigateToNode: (spaceSlug: string, spaceId: string, nodeId: string) => void;
   navigateToWhiteboard: (spaceSlug: string, spaceId: string) => void;
+  navigateToContext: (spaceSlug: string, spaceId: string, contextSlug: string) => void;
 
   // Utility
   isActionAvailable: (action: AddAction | MoreAction) => boolean;
@@ -283,6 +289,18 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
       addActions: SCOPE_CONFIGS.whiteboard.addActions,
       moreActions: SCOPE_CONFIGS.whiteboard.moreActions,
       addButtonTooltip: SCOPE_CONFIGS.whiteboard.addButtonTooltip,
+    });
+  },
+
+  navigateToContext: (spaceSlug: string, spaceId: string, _contextSlug: string) => {
+    set({
+      scope: 'context',
+      spaceSlug,
+      spaceId,
+      selectedNodeId: null,
+      addActions: SCOPE_CONFIGS.context.addActions,
+      moreActions: SCOPE_CONFIGS.context.moreActions,
+      addButtonTooltip: SCOPE_CONFIGS.context.addButtonTooltip,
     });
   },
 

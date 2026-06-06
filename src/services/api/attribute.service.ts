@@ -52,14 +52,14 @@ export const attributeService = {
 
   /**
    * Delete attribute (edge/relationship)
-   * API Contract: DELETE /api/nodes/{nodeId}/attributes/{attrId}
+   * API Contract: DELETE /api/attributes/{attributeId}
    */
   async deleteAttribute(
-    nodeId: string,
+    _nodeId: string,
     attributeId: string
   ): Promise<void> {
     await apiClient.delete(
-      `/nodes/${nodeId}/attributes/${attributeId}`
+      `/attributes/${attributeId}`
     );
   },
 

@@ -181,9 +181,8 @@ export function CreateAttributeFormExample() {
           <option value={AttributeKey.CONTAINS}>Contains</option>
           <option value={AttributeKey.DEPENDS_ON}>Depends On</option>
           <option value={AttributeKey.REFERENCES}>References</option>
-          <option value={AttributeKey.TRIGGERS}>Triggers</option>
-          <option value={AttributeKey.NEXT}>Next</option>
-          <option value={AttributeKey.CALLS}>Calls</option>
+          <option value={AttributeKey.PARENT_OF}>Parent Of</option>
+          <option value={AttributeKey.RELATES_TO}>Relates To</option>
         </select>
         {errors.attributeKey && <span>{errors.attributeKey.message}</span>}
       </div>

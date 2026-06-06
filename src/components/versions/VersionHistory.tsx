@@ -22,7 +22,7 @@ export function VersionHistory({ spaceSlug, nodeId, currentVersion }: VersionHis
   });
 
   const { mutate: restoreVersion, isPending: isRestoring } = useMutation({
-    mutationFn: (versionId: number) =>
+    mutationFn: (versionId: string) =>
       versionService.restoreVersion(spaceSlug, nodeId, versionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spaces', spaceSlug, 'nodes', nodeId] });
@@ -53,8 +53,8 @@ export function VersionHistory({ spaceSlug, nodeId, currentVersion }: VersionHis
         >
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium">Version {version.version}</span>
-              {version.version === currentVersion && (
+              <span className="font-medium">Version {version.versionNumber}</span>
+              {version.versionNumber === currentVersion && (
                 <Badge variant="secondary">Current</Badge>
               )}
             </div>
@@ -63,7 +63,7 @@ export function VersionHistory({ spaceSlug, nodeId, currentVersion }: VersionHis
             </p>
             <p className="text-sm mt-2 line-clamp-2">{version.title}</p>
           </div>
-          {version.version !== currentVersion && (
+          {version.versionNumber !== currentVersion && (
             <Button
               size="sm"
               variant="outline"

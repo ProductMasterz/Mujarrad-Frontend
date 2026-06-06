@@ -22,6 +22,7 @@ import { ProjectCard } from '@/shell/components/ProjectCard';
 import { spaceService } from '@/services/api';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { FolderOpen } from 'lucide-react';
+import { getNodeRoute } from '@/lib/routing';
 import { LockedBanner } from '@/components/locking/LockedBanner';
 import { SpaceLockToggle } from '@/components/locking/SpaceLockToggle';
 import { SpaceModeToggle } from '@/components/locking/SpaceModeToggle';
@@ -238,8 +239,12 @@ export default function SpaceDetailPage() {
   const handleSidebarNavigate = (path: string[]) => {
     if (path.length > 0) {
       const nodeId = path[path.length - 1];
-      router.push(`/spaces/${slug}/node/${nodeId}`);
-
+      const node = nodes?.find((n) => n.id === nodeId);
+      if (node) {
+        router.push(getNodeRoute(slug, node));
+      } else {
+        router.push(`/spaces/${slug}/node/${nodeId}`);
+      }
     }
   };
 

@@ -18,6 +18,7 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import type { Node } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
 import { MakeChildOfDialog } from '@/components/contexts/MakeChildOfDialog';
+import { getNodeRoute } from '@/lib/routing';
 
 interface SpaceShellProps {
   title: string;
@@ -42,6 +43,8 @@ interface SpaceShellProps {
   onRename?: (nodeId: string, newName: string) => Promise<{ success: boolean; error?: string }>;
   // Context slug — when viewing inside a context, enables "Remove from Context" and "Make a Child Of"
   contextSlug?: string;
+  // Override internal sidebar navigation with type-aware routing from the caller
+  onSidebarNavigate?: (path: string[]) => void;
 }
 
 export function SpaceShell({
@@ -61,6 +64,7 @@ export function SpaceShell({
   onRenameSuccess,
   onRename,
   contextSlug,
+  onSidebarNavigate,
 }: SpaceShellProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -120,12 +124,12 @@ export function SpaceShell({
     switch (action) {
       case 'openNewTab':
         if (spaceSlug) {
-          window.open(`/spaces/${spaceSlug}/node/${contextMenuNode.id}`, '_blank');
+          window.open(getNodeRoute(spaceSlug, contextMenuNode), '_blank');
         }
         break;
       case 'openAsNode':
         if (spaceSlug) {
-          router.push(`/spaces/${spaceSlug}/node/${contextMenuNode.id}`);
+          router.push(getNodeRoute(spaceSlug, contextMenuNode));
         }
         break;
       case 'rename':
@@ -177,6 +181,10 @@ export function SpaceShell({
   };
 
   const handleSidebarNavigate = (path: string[]) => {
+    if (onSidebarNavigate) {
+      onSidebarNavigate(path);
+      return;
+    }
     if (path.length > 0 && spaceSlug) {
       const nodeId = path[path.length - 1];
       router.push(`/spaces/${spaceSlug}/node/${nodeId}`);
@@ -300,6 +308,7 @@ export function SpaceShell({
           spaceSlug={spaceSlug}
           defaultType={modalDefaultType}
           availableTypes={newNodeModalAvailableTypes}
+          contextSlug={contextSlug}
         />
 
         {/* Context Menu */}
@@ -310,7 +319,7 @@ export function SpaceShell({
             onClose={() => onContextMenuClose?.()}
             onOpenNewTab={() => handleContextMenuActionInternal('openNewTab')}
             onOpenAsNode={() => handleContextMenuActionInternal('openAsNode')}
-            openAsLabel="Open Node"
+            openAsLabel={contextMenuNode?.nodeType === NodeType.CONTEXT ? 'Open Context' : 'Open Node'}
             onMakeChildOf={spaceSlug ? () => handleContextMenuActionInternal('assign') : undefined}
             onRemoveFromContext={contextSlug ? () => {
               if (contextMenuNode) onContextMenuAction?.('removeFromContext', contextMenuNode);

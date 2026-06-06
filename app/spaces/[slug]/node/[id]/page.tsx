@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Header } from '@/shell/components/Header';
@@ -27,7 +27,7 @@ import { MigrateNodeDialog } from '@/components/migration/MigrateNodeDialog';
 import type { NodeTemplate } from '@/components/templates/nodeTemplates';
 import { ArrowRightLeft } from 'lucide-react';
 
-export default function NodeDetailPage() {
+function NodeDetailPageInner() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -38,6 +38,8 @@ export default function NodeDetailPage() {
   const upsertEntityType = useEntityTypeStore((state) => state.upsertType);
   const slug = params.slug as string;
   const nodeId = params.id as string;
+  const searchParams = useSearchParams();
+  const fromContext = searchParams.get('fromContext');
 
   const { data: space, isLoading: spaceLoading } = useSpace(slug);
 
@@ -112,13 +114,20 @@ export default function NodeDetailPage() {
 
 
   const breadcrumbPath = useMemo(() => {
-    return [
+    const base = [
       { id: 'home', title: 'Home' },
       { id: 'spaces', title: 'Spaces' },
       { id: space?.id || slug, title: space?.name || slug },
-      { id: node?.id || nodeId, title: node?.title || 'Node' },
     ];
-  }, [space, node, slug, nodeId]);
+    if (fromContext) {
+      base.push({
+        id: fromContext,
+        title: fromContext.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+      });
+    }
+    base.push({ id: node?.id || nodeId, title: node?.title || 'Node' });
+    return base;
+  }, [space, node, slug, nodeId, fromContext]);
 
   const isLoading = spaceLoading || nodeLoading;
 
@@ -180,7 +189,11 @@ export default function NodeDetailPage() {
   };
 
   const handleBackClick = () => {
-    router.push(`/spaces/${slug}`);
+    if (fromContext) {
+      router.push(`/spaces/${slug}/context/${fromContext}`);
+    } else {
+      router.push(`/spaces/${slug}`);
+    }
   };
 
   const handleBreadcrumbClick = (index: number) => {
@@ -551,5 +564,17 @@ export default function NodeDetailPage() {
 
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function NodeDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    }>
+      <NodeDetailPageInner />
+    </Suspense>
   );
 }

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SpaceShell } from '@/shell/components/SpaceShell';
 import { NodeGrid } from '@/shell/components/NodeGrid';
-import { useContextNodes, useChildContexts, useRemoveFromContext } from '@/hooks/api/useContextNodes';
+import { useContextNodes, useChildContexts, useRemoveFromContext, contextNodeKeys } from '@/hooks/api/useContextNodes';
 import { useSpace, nodeKeys, useRenameNodeSimple } from '@/hooks/api';
+import { nodeService } from '@/services/api/node.service';
 import { useContextTypes } from '@/hooks/api/useContextTypes';
 import { NodeType } from '@/types/backend-dtos';
 import { CardType } from '@/shell/data/projects';
@@ -16,6 +17,7 @@ import { VCPanel } from '@/components/virtual-contexts/VCPanel';
 import { ContextSchemaSection } from '@/components/schemas/ContextSchemaSection';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useParentCounts } from '@/hooks/api/useParentCounts';
+import { useNavigationStore } from '@/stores/navigationStore';
 import type { Node } from '@/types/backend-dtos';
 
 export default function ContextDetailPage() {
@@ -26,7 +28,15 @@ export default function ContextDetailPage() {
   const contextSlug = params.contextSlug as string;
   const addNotification = useNotificationStore((state) => state.addNotification);
 
+  const navigateToContext = useNavigationStore((state) => state.navigateToContext);
+
   const { data: space } = useSpace(spaceSlug);
+
+  useEffect(() => {
+    if (space) {
+      navigateToContext(spaceSlug, space.id, contextSlug);
+    }
+  }, [space, spaceSlug, contextSlug, navigateToContext]);
   const { data: nodes = [], isLoading, isFetching, isError } = useContextNodes(spaceSlug, contextSlug);
   const { data: childContexts = [] } = useChildContexts(spaceSlug, contextSlug);
   const { rename: renameNode } = useRenameNodeSimple(spaceSlug);
@@ -39,6 +49,16 @@ export default function ContextDetailPage() {
   const contextType = useMemo(
     () => contextTypes.find((ct) => ct.slug === contextSlug) ?? null,
     [contextTypes, contextSlug]
+  );
+
+  const { data: allSpaceNodes = [] } = useQuery({
+    queryKey: nodeKeys.list(spaceSlug, { page: 0, size: 100 }),
+    queryFn: () => nodeService.getNodes(spaceSlug),
+    enabled: !!spaceSlug,
+  });
+  const contextNode = useMemo(
+    () => allSpaceNodes.find((n: Node) => n.slug === contextSlug && n.nodeType === NodeType.CONTEXT),
+    [allSpaceNodes, contextSlug]
   );
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -147,12 +167,28 @@ export default function ContextDetailPage() {
       onContextMenuAction={handleContextMenuAction}
       contextSlug={contextSlug}
       newNodeModalDefaultType="node"
-      newNodeModalAvailableTypes={['node']}
+      newNodeModalAvailableTypes={['node', 'context']}
       deleteSpaceSlug={spaceSlug}
       onDeleteSuccess={invalidateNodes}
       onRenameSuccess={() => invalidateNodes()}
       onRename={handleRename}
     >
+      {/* View Context Content button — navigates to block editor for this context node */}
+      {contextNode && (
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={() =>
+              router.push(
+                `/spaces/${spaceSlug}/node/${contextNode.id}?fromContext=${encodeURIComponent(contextSlug)}`
+              )
+            }
+            className="text-sm text-muted-foreground hover:text-foreground underline"
+          >
+            View Context Content
+          </button>
+        </div>
+      )}
+
       {/* Schema Section — only for BACKEND spaces */}
       {isBackend && (
         <div className="mb-5">
@@ -232,7 +268,7 @@ export default function ContextDetailPage() {
           <p className="mt-1 text-xs text-muted-foreground">The context may not exist or the server is unavailable.</p>
           <button
             type="button"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['context-nodes', spaceSlug, contextSlug] })}
+            onClick={() => queryClient.invalidateQueries({ queryKey: contextNodeKeys.nodes(spaceSlug, contextSlug) })}
             className="mt-3 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition"
           >
             Retry

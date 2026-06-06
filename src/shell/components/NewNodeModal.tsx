@@ -8,6 +8,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { nodeService } from "@/services/api/node.service";
 import { spaceService } from "@/services/api/space.service";
 import { nodeKeys } from "@/hooks/api/useNodes";
+import { contextNodeKeys } from "@/hooks/api/useContextNodes";
+import { blankKeys } from "@/hooks/api/useBlankNodes";
+import { getNodeRoute } from "@/lib/routing";
 import { spaceKeys } from "@/hooks/api/useSpaces";
 import { useDuplicateCheck, type DuplicateAction } from "@/hooks/api/useDuplicateCheck";
 import { NodeType as BackendNodeType, type Node as NodeDTO } from "@/types/backend-dtos";
@@ -54,6 +57,7 @@ type NewNodeModalProps = {
   spaceSlug?: string;
   defaultType?: EntityType;
   availableTypes?: EntityType[];
+  contextSlug?: string;
 };
 
 export function NewNodeModal({
@@ -62,6 +66,7 @@ export function NewNodeModal({
   spaceSlug,
   defaultType = "node",
   availableTypes,
+  contextSlug,
 }: NewNodeModalProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -142,6 +147,29 @@ export function NewNodeModal({
           });
         }
 
+        if (contextSlug && data.nodeType === BackendNodeType.CONTEXT) {
+          return nodeService.createNestedContext(spaceSlug, contextSlug, {
+            title: data.title || "Untitled",
+            nodeType: data.nodeType,
+            nodeDetails: {
+              createdFrom: data.createdFrom,
+              ...(data.entityType ? { entityType: data.entityType } : {}),
+            },
+          });
+        }
+
+        if (contextSlug) {
+          return nodeService.createNodeInContext(spaceSlug, contextSlug, {
+            title: data.title || "Untitled",
+            nodeType: data.nodeType,
+            content: data.content || "",
+            nodeDetails: {
+              createdFrom: data.createdFrom,
+              ...(data.entityType ? { entityType: data.entityType } : {}),
+            },
+          });
+        }
+
         return nodeService.createNode(spaceSlug, {
           title: data.title || "Untitled",
           nodeType: data.nodeType,
@@ -155,6 +183,12 @@ export function NewNodeModal({
       onSuccess: (node) => {
         setCreatedEntityId(node.id);
         queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
+        if (contextSlug && spaceSlug) {
+          queryClient.invalidateQueries({ queryKey: contextNodeKeys.nodes(spaceSlug, contextSlug) });
+        }
+        if (spaceSlug) {
+          queryClient.invalidateQueries({ queryKey: blankKeys.count(spaceSlug) });
+        }
 
         const createdKind =
           node.nodeType === BackendNodeType.CONTEXT ? "Context" : "Node";
@@ -330,7 +364,7 @@ export function NewNodeModal({
 
         if (options?.openAfterCreate && spaceSlug) {
           onClose();
-          router.push(`/spaces/${spaceSlug}/node/${node.id}`);
+          router.push(getNodeRoute(spaceSlug, node, { fromContext: contextSlug }));
         }
 
         return node.id;
@@ -354,6 +388,7 @@ export function NewNodeModal({
       selectedTemplate,
       upsertEntityType,
       spaceSlug,
+      contextSlug,
       createNodeMutation,
       createSpaceMutation,
       onClose,
@@ -370,7 +405,7 @@ export function NewNodeModal({
         case "merge":
           if (duplicateNode && spaceSlug) {
             onClose();
-            router.push(`/spaces/${spaceSlug}/node/${duplicateNode.id}`);
+            router.push(getNodeRoute(spaceSlug, duplicateNode, { fromContext: contextSlug }));
           }
           break;
 

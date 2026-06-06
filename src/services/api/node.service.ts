@@ -244,7 +244,7 @@ export const nodeService = {
   ): Promise<void> {
     await apiClient.patch(
       `/spaces/${spaceSlug}/nodes/${parentNodeId}/children/reorder`,
-      { nodeIds }
+      { orderedChildIds: nodeIds }
     );
   },
 
