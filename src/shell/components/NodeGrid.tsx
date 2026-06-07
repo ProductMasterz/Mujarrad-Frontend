@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { NodeCard } from '@/shell/components/NodeCard';
 import { CardType } from '@/shell/data/projects';
 import type { Node } from '@/types/backend-dtos';
+import { getNodeEntityType } from '@/lib/entity-types';
 
 interface NodeGridProps {
   nodes: Node[];
@@ -15,13 +16,37 @@ interface NodeGridProps {
   onCardContextMenu: (e: React.MouseEvent, node: Node) => void;
   cardType?: CardType;
   getNodeKindLabel?: (node: Node) => string;
-  // Search and sort
   searchTerm?: string;
   sortBy?: 'name' | 'createdAt' | 'updatedAt';
-  // Optional badge per node (e.g. parent count for multi-parent nodes)
   getNodeBadge?: (node: Node) => string | undefined;
-  // Render extra content per card (e.g. checkboxes, overlay buttons)
   renderCardWrapper?: (node: Node, cardElement: React.ReactNode) => React.ReactNode;
+}
+
+function parseNodeDetails(node: Node): Record<string, unknown> {
+  if (!node.nodeDetails) return {};
+
+  if (typeof node.nodeDetails === 'string') {
+    try {
+      const parsed = JSON.parse(node.nodeDetails);
+      return parsed && typeof parsed === 'object'
+        ? (parsed as Record<string, unknown>)
+        : {};
+    } catch {
+      return {};
+    }
+  }
+
+  return node.nodeDetails as Record<string, unknown>;
+}
+
+function shouldShowNodeInGrid(node: Node): boolean {
+  const details = parseNodeDetails(node);
+
+  if (details.showInSpaceList === false) return false;
+  if (details.blockType) return false;
+  if (node.isBuiltin) return false;
+
+  return true;
 }
 
 export function NodeGrid({
@@ -40,26 +65,43 @@ export function NodeGrid({
   renderCardWrapper,
 }: NodeGridProps) {
   const filteredAndSorted = useMemo(() => {
-    // Filter out blocks and hidden nodes — they only appear inside their parent page editor
-    let result = nodes.filter((n) => {
-      const details = n.nodeDetails as Record<string, unknown> | undefined;
-      if (details?.showInSpaceList === false) return false;
-      if (details?.blockType) return false;
-      if (n.isBuiltin) return false;
-      return true;
-    });
+    let result = nodes.filter(shouldShowNodeInGrid);
 
-    // Filter by search
     const term = (searchTerm || '').trim().toLowerCase();
     if (term) {
-      result = result.filter((n) => n.title.toLowerCase().includes(term));
+      result = result.filter((node) => {
+        const details = parseNodeDetails(node);
+
+        const searchableText = [
+          node.title,
+          node.content,
+          node.semanticType,
+          node.entityType,
+          details.semanticType,
+          details.entityType,
+          details.createdFrom,
+          details.generatedBy,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return searchableText.includes(term);
+      });
     }
 
-    // Sort
     result.sort((a, b) => {
-      if (sortBy === 'name') return a.title.localeCompare(b.title);
-      if (sortBy === 'createdAt')
-        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      if (sortBy === 'name') {
+        return a.title.localeCompare(b.title);
+      }
+
+      if (sortBy === 'createdAt') {
+        return (
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime()
+        );
+      }
+
       return (
         new Date(b.updatedAt || b.createdAt || 0).getTime() -
         new Date(a.updatedAt || a.createdAt || 0).getTime()
@@ -71,7 +113,7 @@ export function NodeGrid({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[400px]">
+      <div className="flex h-[400px] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
@@ -83,7 +125,7 @@ export function NodeGrid({
         {emptyIcon && <div className="mx-auto mb-2">{emptyIcon}</div>}
         <p className="text-sm text-muted-foreground">{emptyTitle}</p>
         {emptySubtitle && (
-          <p className="text-xs text-muted-foreground/70 mt-1">{emptySubtitle}</p>
+          <p className="mt-1 text-xs text-muted-foreground/70">{emptySubtitle}</p>
         )}
       </div>
     );
@@ -93,6 +135,7 @@ export function NodeGrid({
     <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
       {filteredAndSorted.map((node) => {
         const preview = (node.content || '').trim().slice(0, 120) || undefined;
+
         const meta = node.updatedAt
           ? `Updated ${new Date(node.updatedAt).toLocaleDateString()}`
           : `Created ${new Date(node.createdAt).toLocaleDateString()}`;
@@ -101,28 +144,30 @@ export function NodeGrid({
           ? getNodeKindLabel(node)
           : node.nodeType === 'ATTRIBUTE'
             ? 'Attribute'
-            : 'Regular';
+            : node.nodeType === 'CONTEXT'
+              ? 'Context'
+              : 'Regular';
+
+        const entityType = getNodeEntityType(node);
 
         const card = (
           <NodeCard
             key={node.id}
+            node={node}
             title={node.title}
             preview={preview}
             meta={meta}
             type={cardType}
             badge={getNodeBadge?.(node)}
             nodeKindLabel={kindLabel}
+            entityType={entityType}
             onClick={() => onCardClick(node)}
             onContextMenu={(e) => onCardContextMenu(e, node)}
           />
         );
 
         if (renderCardWrapper) {
-          return (
-            <div key={node.id}>
-              {renderCardWrapper(node, card)}
-            </div>
-          );
+          return <div key={node.id}>{renderCardWrapper(node, card)}</div>;
         }
 
         return <div key={node.id}>{card}</div>;
