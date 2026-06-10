@@ -4,30 +4,17 @@
 
 This document defines the professional implementation plan and architecture for the **Mujarrad System Design** frontend work.
 
-The goal of this branch is to build a new, well-structured System Design workflow without breaking or changing the existing frontend behavior. Current frontend features, routes, shell components, spaces, nodes, chat, docs, whiteboard, graph, and backend integrations must remain stable.
+The goal of this branch is to build a new, well-structured System Design workflow without breaking or changing the existing frontend behavior. Current frontend features, routes, shell components, spaces, nodes, chat, docs, whiteboard, graph, backend API services, and existing System Builder/Draw.io integration must remain stable.
 
-This document should be used by all contributors as the main technical and product reference before implementing any task related to the System Design project.
-
----
-
-# Table of Contents
-
-```text
-Part 1 — Product Vision, Scope, Core Rules, and Data Input Pipeline
-Part 2 — Frontend Architecture, Folder Structure, Types, and State Design
-Part 3 — AI Orchestration, API Design, Draw.io, Markdown Spec, and Export Flow
-Part 4 — Six Implementation Tasks, Testing, Contribution Rules, and Definition of Done
-```
+This document is the main reference for contributors before implementing any task related to the System Design project.
 
 ---
 
-# Part 1 of 4 — Product Vision, Scope, Core Rules, and Data Input Pipeline
+## 1. Executive Summary
 
-## 1. High-Level Vision
+Mujarrad System Design is the first implemented layer of a larger three-layer Mujarrad orchestration system.
 
-Mujarrad System Design is intended to become a professional AI-assisted system design workflow that helps users move from a natural-language idea into a structured system architecture.
-
-The long-term architecture has three layers:
+The long-term vision is:
 
 ```text
 Layer 1: System Design
@@ -35,19 +22,114 @@ Layer 2: Abstract Logic
 Layer 3: Code Machine
 ```
 
-For the current implementation phase, only **Layer 1: System Design** will be functionally implemented.
+For the current phase:
 
-Layer 2 and Layer 3 must appear in the UI as locked future stages, but their full functionality must not be implemented yet.
+```text
+Layer 1 will be implemented.
+Layer 2 will be visible but locked.
+Layer 3 will be visible but locked.
+```
 
-However, the architecture must already prepare for Layer 2 and Layer 3 by producing a clean handoff package and by using a LangGraph-ready orchestration design.
+Layer 1 must take user input, process it safely, ask constructive AI clarification questions, build a structured understanding, generate a Markdown system specification, generate a Draw.io diagram, allow review/refinement, and export a machine-readable handoff package for future Layer 2.
+
+This project is not only a Draw.io page. It is the first foundation of a larger AI orchestration workflow.
 
 ---
 
-## 2. Three-Layer Product Architecture
+## 2. Current Branch Strategy
+
+This work happens inside the current branch:
+
+```text
+feat/system-builder
+```
+
+The branch already contains an initial `/system-builder` route and a working simple Draw.io integration.
+
+The branch must continue independently. Contributors must not merge unrelated work from `main` unless explicitly requested by the project owner.
+
+---
+
+## 3. Non-Breaking Rule
+
+The current frontend already contains many working areas:
+
+```text
+Authentication
+Chat
+Docs
+Spaces
+Nodes
+Graph
+Whiteboard
+Markdown rendering
+Shell components
+Navigation stores
+Backend API services
+System Builder route
+Draw.io iframe integration
+```
+
+The new System Design work must be built professionally without breaking the existing frontend.
+
+The required approach is:
+
+```text
+Keep existing frontend behavior stable.
+Create new feature folders for System Design.
+Use compatibility wrappers where needed.
+Avoid destructive refactors.
+Avoid modifying unrelated components.
+Avoid changing existing backend API variables.
+Keep the current /system-builder route stable for now.
+```
+
+Existing files should only be touched when needed for routing, compatibility, or integration.
+
+---
+
+## 4. Existing System Builder Baseline
+
+The current branch already includes:
+
+```text
+app/system-builder/page.tsx
+src/components/system-builder/SystemBuilder.tsx
+src/components/system-builder/DiagramLayer.tsx
+src/components/system-builder/DrawioEmbed.tsx
+app/api/system-builder/generate-diagram/route.ts
+```
+
+Current simplified behavior:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant API as Next.js API Route
+    participant AI as OpenRouter
+    participant Drawio as Draw.io Iframe
+
+    User->>Frontend: Writes prompt
+    Frontend->>API: POST /api/system-builder/generate-diagram
+    API->>AI: Ask for Draw.io XML
+    AI-->>API: XML response
+    API-->>Frontend: Return XML
+    Frontend->>Drawio: Load XML into iframe
+```
+
+This is useful as a prototype, but the professional workflow must not generate the diagram immediately from the first user message.
+
+The new Layer 1 workflow must process input, clarify requirements, build structured understanding, generate a specification, and then generate the diagram from the full context.
+
+---
+
+## 5. Three-Layer Product Architecture
 
 ```mermaid
 flowchart TD
     A[User Idea / Requirement] --> B[Layer 1: System Design]
+
     B --> B1[Input Processing]
     B1 --> B2[AI Clarification Loop]
     B2 --> B3[System Understanding]
@@ -71,113 +153,28 @@ flowchart TD
 Current phase:
 
 ```text
-Layer 1 = implemented
-Layer 2 = visible but locked
-Layer 3 = visible but locked
+Layer 1 = real implementation
+Layer 2 = locked placeholder
+Layer 3 = locked placeholder
 ```
 
 Future phase:
 
 ```text
-Layer 1 output → Layer 2 input
-Layer 2 output → Layer 3 input
+Layer 1 output becomes Layer 2 input.
+Layer 2 output becomes Layer 3 input.
 ```
-
----
-
-## 3. Current Branch Strategy
-
-This work happens only inside the current branch:
-
-```text
-feat/system-builder
-```
-
-The branch already contains an initial `/system-builder` route and a working simple Draw.io integration.
-
-The current branch must continue independently. Contributors must not merge unrelated work from `main` unless explicitly requested by the project owner.
-
----
-
-## 4. Very Important Rule: Do Not Break Existing Frontend Work
-
-The current frontend already contains many working parts, including:
-
-```text
-Authentication
-Chat
-Docs
-Spaces
-Nodes
-Graph
-Whiteboard
-Markdown rendering
-Shell components
-Navigation stores
-Backend API services
-System Builder route
-Draw.io iframe integration
-```
-
-The new System Design work must be built professionally in new feature folders where possible.
-
-Existing files should only be touched when required for clean routing or integration.
-
-The preferred approach is:
-
-```text
-Keep existing frontend stable
-Create new feature folder for System Design
-Use wrappers/adapters around existing System Builder components
-Avoid large destructive refactors
-Avoid changing unrelated components
-```
-
----
-
-## 5. Existing System Builder Baseline
-
-The branch currently includes:
-
-```text
-app/system-builder/page.tsx
-src/components/system-builder/SystemBuilder.tsx
-src/components/system-builder/DiagramLayer.tsx
-src/components/system-builder/DrawioEmbed.tsx
-app/api/system-builder/generate-diagram/route.ts
-```
-
-The current behavior is roughly:
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant API as Next API Route
-    participant AI as OpenRouter
-    participant Drawio as Draw.io Iframe
-
-    User->>Frontend: Writes prompt
-    Frontend->>API: POST /api/system-builder/generate-diagram
-    API->>AI: Request Draw.io XML
-    AI-->>API: XML response
-    API-->>Frontend: Return XML
-    Frontend->>Drawio: Load XML
-```
-
-This is a good prototype, but the professional System Design workflow must become more structured.
-
-The future Layer 1 flow should not generate the diagram immediately from the first user message. It must first process the input, normalize it, clarify the requirements, build structured understanding, generate a specification, and only then generate the Draw.io diagram.
 
 ---
 
 ## 6. Final Layer 1 User Flow
 
-Layer 1 must follow this flow:
+Layer 1 must follow this complete flow:
 
 ```mermaid
 flowchart TD
     A[User opens System Design] --> B[Input Step]
+
     B --> C{Input Source}
     C --> C1[Typed / Pasted Text]
     C --> C2[Future Voice Message]
@@ -190,6 +187,7 @@ flowchart TD
     D --> E{Is input long?}
     E -->|No| G[Use normalized text directly]
     E -->|Yes| H[Chunk Text]
+
     H --> I[Summarize / Compress Chunks]
     I --> J[Processed Input Context]
     G --> J
@@ -199,93 +197,88 @@ flowchart TD
     L --> M[User Answers]
     M --> N[Update Understanding]
     N --> O[Check Completeness]
+
     O -->|Incomplete| L
     O -->|Ready| P[Generate Markdown Specification]
 
     P --> Q[User Reviews / Edits Spec]
     Q --> R[Generate Draw.io Diagram]
     R --> S[User Reviews Diagram]
+
     S --> U{Approved?}
     U -->|No| V[Manual Edit or AI Refinement]
     V --> S
     U -->|Yes| W[Export Layer 1 Artifacts]
+
     W --> X[Layer 1 Handoff JSON]
-    X --> Y[Layer 2 Locked / Future Input]
+    X --> Y[Future Layer 2 Input]
 ```
 
-Detailed textual flow:
+Detailed flow:
 
 ```text
 1. User provides the system idea.
 
-2. The input can come from:
+2. Input can come from:
    - typed text
    - pasted long text
-   - uploaded text-like content in the future
-   - voice message in the future
+   - future voice transcript
+   - future extracted file text
 
 3. Input is normalized into clean text.
 
-4. If the input is long, the system prepares it through a data management pipeline:
-   - clean text
-   - split/chunk if needed
-   - summarize chunks if needed
+4. If the input is long, it goes through the data management pipeline:
+   - normalize
+   - estimate size
+   - chunk if needed
+   - compress/summarize if needed
    - preserve traceability
-   - produce a compact initial context for AI
+   - create ProcessedInputContext
 
-5. User clicks Next.
+5. User proceeds to clarification.
 
-6. AI analyzes the normalized initial context.
+6. AI asks one constructive question.
 
-7. AI asks one constructive question.
+7. User answers.
 
-8. User answers.
+8. AI updates the current structured understanding.
 
-9. AI updates the current understanding.
+9. Completeness is recalculated.
 
-10. AI asks the next constructive question based on:
-    - the original user description
-    - normalized/chunked input
-    - previous questions
-    - previous answers
-    - current understanding
-    - missing information
-    - completeness gaps
+10. If more details are needed, the AI asks another constructive question.
 
-11. This loop continues until the system is sufficiently understood.
+11. When enough information exists, AI generates a Markdown system specification.
 
-12. AI generates a structured Markdown system specification.
+12. User reviews and edits the specification.
 
-13. User reviews and edits the Markdown specification.
+13. AI generates a Draw.io diagram from the full Layer 1 context.
 
-14. AI generates a Draw.io diagram from the full Layer 1 context.
+14. User reviews the diagram.
 
-15. User reviews the diagram.
+15. User can manually edit the diagram.
 
-16. User can manually edit the diagram inside Draw.io.
+16. User can ask AI to refine the current diagram.
 
-17. User can give text instructions to AI to refine the diagram.
+17. AI refines the existing Draw.io XML, not a new blank diagram.
 
-18. AI refines the existing XML instead of starting from zero.
+18. User approves the final diagram.
 
-19. User approves the final diagram.
+19. Layer 1 exports:
+    - final-system-spec.md
+    - system-diagram.drawio.xml
+    - system-diagram-summary.md
+    - layer1-handoff.json
 
-20. Layer 1 exports:
-    - final Markdown specification
-    - Draw.io XML
-    - diagram summary
-    - Layer 1 handoff JSON
-
-21. Layer 2 remains locked for now, but the Layer 1 output must already be structured for future Layer 2 usage.
+20. Layer 2 remains locked, but the exported JSON must already be ready as Layer 2 input.
 ```
 
 ---
 
-## 7. Input and Text Box Structure
+## 7. Input and Text Box Architecture
 
-The System Design input area is not just a simple prompt box.
+The System Design input box is not a simple prompt box.
 
-It should be treated as the first part of the Layer 1 data pipeline.
+It is the first step in the Layer 1 data management pipeline.
 
 The initial input UI should support:
 
@@ -297,8 +290,8 @@ Input quality hints
 Clear button
 Save draft behavior if possible
 Next button
-Future voice input button placeholder
-Future file input button placeholder
+Future voice input placeholder
+Future file input placeholder
 ```
 
 Recommended component:
@@ -307,9 +300,25 @@ Recommended component:
 src/features/system-design/components/Layer1InputPanel.tsx
 ```
 
-The input panel should not directly send raw text to diagram generation.
+The input panel must not directly generate diagrams.
 
-It should send the text into the input processing pipeline first.
+Correct flow:
+
+```text
+Text input
+→ input processing pipeline
+→ processed context
+→ clarification loop
+→ understanding/spec
+→ diagram generation
+```
+
+Wrong flow:
+
+```text
+Text input
+→ diagram generation directly
+```
 
 ---
 
@@ -341,26 +350,28 @@ Action buttons
 
 ---
 
-## 9. Data Management Pipeline for Long Text
+## 9. Long Text Data Management Pipeline
 
-Users may paste a very long description.
+Users may paste a very long system description. The system must not assume that all input can be passed to AI in one go.
 
-The system must not assume that every input can be passed to the AI in one go.
-
-The frontend should prepare for a pipeline like this:
+The frontend must prepare for this pipeline:
 
 ```mermaid
 flowchart TD
     A[Raw User Input] --> B[Normalize Text]
     B --> C[Estimate Size]
     C --> D{Can pass directly?}
-    D -->|Yes| E[Processed Context with 1 Block]
+
+    D -->|Yes| E[Processed Context with One Block]
     D -->|No| F[Split into Chunks]
+
     F --> G[Create Chunk Metadata]
     G --> H[Summarize / Compress Chunks]
     H --> I[Merge Compressed Summary]
+
     I --> J[ProcessedInputContext]
     E --> J
+
     J --> K[Clarification Loop]
 ```
 
@@ -384,7 +395,7 @@ export interface RawInputPayload {
 
 export interface ProcessedInputContext {
   id: string;
-  sourceInputId: string;
+  sourceInputIds: string[];
   normalizedText: string;
   chunks: TextChunk[];
   compressedSummary: string;
@@ -407,32 +418,28 @@ export interface TextChunk {
 }
 ```
 
-This is important because Layer 1 should be able to handle both short ideas and long requirement documents.
-
 ---
 
 ## 10. Should Long Text Be Passed to AI in One Go?
 
 Short text can be passed directly.
 
-Long text should not always be passed as one huge prompt.
+Long text should not always be sent as one huge prompt.
 
 The implementation should use this rule:
 
 ```text
 If text is small:
-  pass normalized text directly to the AI.
+  pass normalized text directly to AI.
 
 If text is medium:
-  pass normalized text with a warning/size estimate.
+  pass normalized text with a size warning.
 
 If text is large:
-  chunk first, summarize chunks, then send compressed context plus traceability.
+  chunk first, summarize/compress chunks, then send compressed context plus traceability.
 ```
 
-Exact token limits depend on the selected AI model and backend, so the frontend should not hardcode model-specific limits too deeply.
-
-Instead, use configurable thresholds.
+The exact thresholds depend on the selected model and backend, so the frontend should use configurable limits rather than hardcoded model assumptions.
 
 Example config:
 
@@ -466,13 +473,13 @@ sequenceDiagram
     participant UI as Voice UI
     participant Transcriber as Transcription Client
     participant Pipeline as Input Pipeline
-    participant Layer1 as Layer 1 Store
+    participant Store as Layer 1 Store
 
     User->>UI: Records or uploads voice
     UI->>Transcriber: Send audio blob/file
     Transcriber-->>UI: Transcript text
-    UI->>Pipeline: Create RawInputPayload with sourceType voice_transcript
-    Pipeline-->>Layer1: ProcessedInputContext
+    UI->>Pipeline: Create RawInputPayload sourceType=voice_transcript
+    Pipeline-->>Store: ProcessedInputContext
 ```
 
 Recommended future components/files:
@@ -546,7 +553,14 @@ The next AI question should build on that:
 "Should the matching score treat all of these fields equally, or should some fields such as required services and location have higher weight than budget?"
 ```
 
-This is the expected behavior.
+Expected rule:
+
+```text
+Only one question at a time.
+Every question must be based on accumulated context.
+Every question must have a reason.
+Every answer must be traceable.
+```
 
 ---
 
@@ -567,18 +581,9 @@ flowchart TD
     J -->|Yes| K[Generate Markdown Specification]
 ```
 
-Key rule:
-
-```text
-Only one question at a time.
-Every next question must depend on previous context.
-Every question must explain why it is being asked.
-Every answer must be traceable.
-```
-
 ---
 
-## 14. Layer 1 Must Be LangGraph-Ready
+## 14. LangGraph-Ready Requirement
 
 Even if the first frontend implementation uses local frontend orchestration or Next.js API routes, the architecture must be ready for a real LangGraph backend.
 
@@ -608,7 +613,18 @@ stateDiagram-v2
     PrepareLayer2Handoff --> [*]
 ```
 
-The frontend must prepare for this by using typed state, services, adapters, and clear workflow stages.
+The frontend must prepare for this by using:
+
+```text
+Typed state
+Central store
+Service interfaces
+Adapter pattern
+Zod schemas
+Clear workflow stages
+AI output validation
+Machine-readable handoff JSON
+```
 
 ---
 
@@ -654,16 +670,16 @@ flowchart TD
 For this phase:
 
 ```text
-Layer 1 graph output must be real.
+Layer 1 output must be real.
 Layer 2 graph is locked but expected input must be clear.
 Layer 3 graph is locked but future connection must be considered.
 ```
 
 ---
 
-## 16. What Is In Scope Now
+## 16. Scope for This Phase
 
-The current phase includes:
+In scope:
 
 ```text
 Layer 1 System Design workflow
@@ -689,11 +705,7 @@ Tests for important utilities
 Deployment/env readiness
 ```
 
----
-
-## 17. What Is Out of Scope Now
-
-The current phase does not include:
+Out of scope:
 
 ```text
 Real Layer 2 Abstract Logic implementation
@@ -714,7 +726,7 @@ Layer 2 and Layer 3 should only exist as locked visual placeholders.
 
 ---
 
-## 18. Environment Rules
+## 17. Environment Rules
 
 Local environment variables must stay in:
 
@@ -777,10 +789,6 @@ NEXT_PUBLIC_SYSTEM_DESIGN_ORCHESTRATOR_URL=
 
 Deployment environments such as Vercel, Render, or another server must define real values in the platform settings.
 
----
-
-## 19. Server-Side AI Rule
-
 AI provider keys must stay server-side.
 
 Correct:
@@ -797,17 +805,13 @@ NEXT_PUBLIC_OPENROUTER_API_KEY
 
 Any variable starting with `NEXT_PUBLIC_` is exposed to the browser.
 
-Therefore, OpenRouter or other AI provider secrets must never use `NEXT_PUBLIC_`.
-
 ---
 
-# Part 2 of 4 — Frontend Architecture, Folder Structure, Types, and State Design
-
-## 20. Architecture Goal
+## 18. Frontend Architecture Goal
 
 The System Design implementation should be built as a professional feature module.
 
-The recommended feature path is:
+Recommended feature path:
 
 ```text
 src/features/system-design/
@@ -827,7 +831,7 @@ The goal is not to destroy the current structure. The goal is to add a clean new
 
 ---
 
-## 21. Frontend Architecture Overview
+## 19. Frontend Architecture Overview
 
 ```mermaid
 flowchart TD
@@ -858,7 +862,7 @@ flowchart TD
 
 ---
 
-## 22. Recommended Folder Structure
+## 20. Recommended Folder Structure
 
 Create this structure:
 
@@ -950,7 +954,7 @@ src/features/system-design/
 
 ---
 
-## 23. Route Strategy
+## 21. Route Strategy
 
 The current route is:
 
@@ -960,7 +964,7 @@ The current route is:
 
 For now, keep this route to avoid breaking the branch.
 
-The page title and UI should use the name:
+The page title and UI should use:
 
 ```text
 System Design
@@ -972,7 +976,7 @@ The route file should stay:
 app/system-builder/page.tsx
 ```
 
-It should render:
+Recommended implementation:
 
 ```tsx
 import { SystemBuilder } from '@/components/system-builder/SystemBuilder';
@@ -986,7 +990,7 @@ export default function SystemBuilderPage() {
 }
 ```
 
-Then `SystemBuilder.tsx` should become a small wrapper:
+Then `SystemBuilder.tsx` should become a compatibility wrapper:
 
 ```tsx
 'use client';
@@ -1002,7 +1006,7 @@ This keeps backward compatibility while moving new implementation into the featu
 
 ---
 
-## 24. Layer Shell Architecture
+## 22. Layer Shell Architecture
 
 The System Design page should visually contain three layers:
 
@@ -1026,7 +1030,7 @@ The shell should make it clear that Layer 1 produces the handoff package used la
 
 ---
 
-## 25. Layer Shell UI Concept
+## 23. Layer Shell UI Concept
 
 ```mermaid
 flowchart LR
@@ -1052,7 +1056,7 @@ Side area: optional progress, current state, completeness, or export readiness
 
 ---
 
-## 26. Layer 1 Workflow Stages
+## 24. Layer 1 Workflow Stages
 
 Layer 1 should be controlled by explicit workflow stages.
 
@@ -1086,7 +1090,7 @@ Recommended UI stepper:
 
 The UI should not allow users to jump to later stages before required data exists.
 
-Example:
+Examples:
 
 ```text
 Cannot open Clarification before input is processed.
@@ -1096,7 +1100,7 @@ Cannot export before diagram is approved.
 
 ---
 
-## 27. Layer 1 Workflow State Machine
+## 25. Layer 1 Workflow State Machine
 
 ```mermaid
 stateDiagram-v2
@@ -1109,7 +1113,7 @@ stateDiagram-v2
     understanding --> specification: enough details
     specification --> diagram: spec approved
     diagram --> diagram_review: XML generated
-    diagram_review --> diagram: regenerate
+    diagram_review --> diagram: regenerate/refine
     diagram_review --> diagram_review: manual edit
     diagram_review --> export: diagram approved
     export --> [*]
@@ -1117,9 +1121,9 @@ stateDiagram-v2
 
 ---
 
-## 28. Core State Model
+## 26. Core State Model
 
-Layer 1 should use a central store instead of scattered local state.
+Layer 1 should use a central store instead of scattered local component state.
 
 Recommended store file:
 
@@ -1160,11 +1164,11 @@ export interface Layer1Run {
 }
 ```
 
-The exact type can evolve during implementation, but the idea must remain stable.
+The exact type can evolve during implementation, but the concept must remain stable.
 
 ---
 
-## 29. Input Types
+## 27. Input Types
 
 Recommended file:
 
@@ -1222,7 +1226,7 @@ export interface TextChunk {
 
 ---
 
-## 30. Input Processing State
+## 28. Input Processing State
 
 The input processing pipeline should be visible to the user when needed.
 
@@ -1248,7 +1252,7 @@ The user should understand what is happening if a long input is being prepared.
 
 ---
 
-## 31. System Understanding Model
+## 29. System Understanding Model
 
 The system understanding should become a structured object.
 
@@ -1286,7 +1290,7 @@ This model is important because Layer 2 will eventually need structured input, n
 
 ---
 
-## 32. System Understanding Concept
+## 30. System Understanding Concept
 
 ```mermaid
 flowchart TD
@@ -1306,7 +1310,7 @@ flowchart TD
 
 ---
 
-## 33. Constructive Question Model
+## 31. Constructive Question Model
 
 Every AI question should be traceable.
 
@@ -1347,7 +1351,7 @@ This prevents the AI loop from becoming random.
 
 ---
 
-## 34. Question Categories
+## 32. Question Categories
 
 Recommended categories:
 
@@ -1375,7 +1379,7 @@ export type QuestionCategory =
 
 ---
 
-## 35. Completeness Model
+## 33. Completeness Model
 
 The system should calculate whether the current understanding is ready for the next stage.
 
@@ -1405,7 +1409,7 @@ export type CompletenessStatus =
 
 ---
 
-## 36. Completeness Decision Diagram
+## 34. Completeness Decision Diagram
 
 ```mermaid
 flowchart TD
@@ -1420,7 +1424,7 @@ flowchart TD
 
 ---
 
-## 37. Layer 2 and Layer 3 Type Placeholders
+## 35. Layer 2 and Layer 3 Type Placeholders
 
 Layer 2 and Layer 3 are locked in this phase, but their future handoff types should exist.
 
@@ -1460,7 +1464,7 @@ These placeholders help contributors understand the future pipeline without impl
 
 ---
 
-## 38. Handoff Package Model
+## 36. Handoff Package Model
 
 Layer 1 should produce a handoff JSON package.
 
@@ -1502,7 +1506,7 @@ export interface Layer1HandoffPackage {
 
 ---
 
-## 39. Handoff Traceability Diagram
+## 37. Handoff Traceability Diagram
 
 ```mermaid
 flowchart TD
@@ -1526,7 +1530,7 @@ flowchart TD
 
 ---
 
-## 40. Zod Schema Rules
+## 38. Zod Schema Rules
 
 Zod schemas should validate critical structures.
 
@@ -1552,11 +1556,10 @@ DiagramGenerationResponse
 
 The purpose is to prevent invalid AI output or broken handoff packages from moving through the workflow.
 
+
 ---
 
-# Part 3 of 4 — AI Orchestration, API Design, Draw.io, Markdown Spec, and Export Flow
-
-## 41. Orchestration Design
+## 39. Orchestration Design
 
 Layer 1 should be implemented through a service interface.
 
@@ -1599,7 +1602,7 @@ mock/local adapter for development
 
 ---
 
-## 42. Orchestration Adapter Pattern
+## 40. Orchestration Adapter Pattern
 
 ```mermaid
 flowchart TD
@@ -1630,7 +1633,7 @@ API routes handle server-side AI calls.
 
 ---
 
-## 43. Local and LangGraph Adapters
+## 41. Local and LangGraph Adapters
 
 Create:
 
@@ -1667,7 +1670,7 @@ For now, Layer 2 and Layer 3 endpoints are future integration points only.
 
 ---
 
-## 44. Master Orchestration Concept
+## 42. Master Orchestration Concept
 
 The architecture should be ready for a master orchestrator.
 
@@ -1701,7 +1704,7 @@ The frontend UI should show that they are locked, but the architecture should no
 
 ---
 
-## 45. Input Processing Service
+## 43. Input Processing Service
 
 Recommended file:
 
@@ -1742,7 +1745,7 @@ The first implementation may use simple deterministic summarization or send summ
 
 ---
 
-## 46. Input Processing Sequence
+## 44. Input Processing Sequence
 
 ```mermaid
 sequenceDiagram
@@ -1763,7 +1766,7 @@ sequenceDiagram
 
 ---
 
-## 47. Transcription Client
+## 45. Transcription Client
 
 Recommended file:
 
@@ -1797,7 +1800,7 @@ The UI can show voice input as disabled or “Coming soon”.
 
 ---
 
-## 48. AI Prompt Files
+## 46. AI Prompt Files
 
 Prompts should be stored separately so contributors do not hide prompt logic inside components.
 
@@ -1842,7 +1845,7 @@ Return structured JSON only.
 
 ---
 
-## 49. AI Output Validation Flow
+## 47. AI Output Validation Flow
 
 ```mermaid
 flowchart TD
@@ -1860,7 +1863,7 @@ AI output should never be blindly trusted.
 
 ---
 
-## 50. API Route Strategy
+## 48. API Route Strategy
 
 The existing route is:
 
@@ -1889,7 +1892,7 @@ This keeps the current route namespace stable while improving architecture.
 
 ---
 
-## 51. Diagram API Payload
+## 49. Diagram API Payload
 
 Current API accepts:
 
@@ -1931,7 +1934,7 @@ export interface DiagramGenerationResponse {
 
 ---
 
-## 52. Server-Side AI Rule
+## 50. Server-Side AI Rule
 
 AI provider keys must stay server-side.
 
@@ -1953,7 +1956,7 @@ Therefore, OpenRouter or other AI provider secrets must never use `NEXT_PUBLIC_`
 
 ---
 
-## 53. Draw.io Integration Rules
+## 51. Draw.io Integration Rules
 
 The existing Draw.io embed should be preserved unless a tested replacement is implemented.
 
@@ -1988,7 +1991,7 @@ Approval before export
 
 ---
 
-## 54. Draw.io Workflow Diagram
+## 52. Draw.io Workflow Diagram
 
 ```mermaid
 flowchart TD
@@ -2009,7 +2012,7 @@ flowchart TD
 
 ---
 
-## 55. Draw.io XML Utilities
+## 53. Draw.io XML Utilities
 
 Create:
 
@@ -2031,7 +2034,7 @@ These utilities should protect the app from broken AI XML output.
 
 ---
 
-## 56. Markdown Specification Generation
+## 54. Markdown Specification Generation
 
 Create:
 
@@ -2098,7 +2101,7 @@ src/components/markdown/MarkdownRenderer.tsx
 
 ---
 
-## 57. Specification to Diagram Flow
+## 55. Specification to Diagram Flow
 
 ```mermaid
 flowchart TD
@@ -2114,7 +2117,7 @@ flowchart TD
 
 ---
 
-## 58. Export Requirements
+## 56. Export Requirements
 
 Layer 1 must export four artifacts:
 
@@ -2152,7 +2155,7 @@ That button must be disabled for now.
 
 ---
 
-## 59. Traceability Requirements
+## 57. Traceability Requirements
 
 The exported handoff JSON must preserve traceability.
 
@@ -2175,7 +2178,7 @@ This is important because future Layer 2 logic will depend on explainable struct
 
 ---
 
-## 60. Layer 1 to Layer 2 Handoff Readiness
+## 58. Layer 1 to Layer 2 Handoff Readiness
 
 Even though Layer 2 is locked, the Layer 1 handoff JSON must be useful for Layer 2.
 
@@ -2199,7 +2202,7 @@ Therefore, Layer 1 export should not only be human-readable. It must also be mac
 
 ---
 
-## 61. Export Package Diagram
+## 59. Export Package Diagram
 
 ```mermaid
 flowchart TD
@@ -2214,15 +2217,14 @@ flowchart TD
     D --> G
 ```
 
+
 ---
 
-# Part 4 of 4 — Six Implementation Tasks, Testing, Contribution Rules, and Definition of Done
+## 60. Layer 1 Implementation Tasks
 
-## 62. Six Main GitHub Project Tasks
+Layer 1 should be divided into **six major implementation tasks**.
 
-The implementation should be divided into six major tasks.
-
-Each task can be assigned to one contributor.
+The first two tasks are intentionally the biggest because they define the foundation and data pipeline that everything else depends on.
 
 The six tasks are:
 
@@ -2235,13 +2237,9 @@ Task 5: Markdown specification, Draw.io generation, review, editing, and AI refi
 Task 6: Export, handoff JSON, tests, docs, deployment readiness, and cleanup
 ```
 
-This division is more practical than treating each layer as one big task.
-
-Layer 1 itself is divided into multiple implementation tasks because it contains many internal systems.
-
 ---
 
-## 63. Six-Task Implementation Roadmap
+## 61. Six-Task Implementation Roadmap
 
 ```mermaid
 flowchart TD
@@ -2258,7 +2256,7 @@ flowchart TD
     T4 --> T5
     T5 --> T6
 
-    T1 -. enables .-> T5
+    T1 -. enables early Draw.io review .-> T5
     T3 -. enables test skeleton .-> T6
 ```
 
@@ -2280,6 +2278,12 @@ Task 6 can start docs and test skeleton early but final export depends on Task 5
 ## Goal
 
 Create the professional System Design foundation without breaking the current frontend.
+
+## Why This Task Is Critical
+
+This task creates the safe structure for all later work.
+
+It prevents contributors from modifying random existing frontend files and forces new work into a clean feature module.
 
 ## Scope
 
@@ -2460,6 +2464,12 @@ Can text be passed to AI in one go?
 What if the user uses voice?
 Where does transcription happen?
 ```
+
+## Why This Task Is Critical
+
+The AI workflow depends on clean, safe, traceable input.
+
+Without this task, the system risks sending huge raw text directly to AI, losing traceability, or mixing voice/file logic into random UI components.
 
 ## Scope
 
@@ -3377,7 +3387,7 @@ npm run test passes or known unrelated failures are documented
 
 ---
 
-# 64. Recommended Task Dependency Order
+## 62. Recommended Task Dependency Order
 
 ```text
 Task 1 must start first.
@@ -3421,7 +3431,7 @@ Task 6 can start docs and test skeleton early, but final export depends on Task 
 
 ---
 
-# 65. Contribution Rules
+## 63. Contribution Rules
 
 All contributors must follow these rules:
 
@@ -3465,7 +3475,7 @@ All contributors must follow these rules:
 
 ---
 
-# 66. Testing Checklist
+## 64. Testing Checklist
 
 Each contributor should run:
 
@@ -3491,7 +3501,7 @@ Existing lint warnings are not part of this System Design task unless they are c
 
 ---
 
-# 67. Git Hygiene
+## 65. Git Hygiene
 
 Before committing, check:
 
@@ -3523,7 +3533,7 @@ rm -rf branch-inspection branch-inspection-content branch-inspection.zip branch-
 
 ---
 
-# 68. Suggested GitHub Project Columns
+## 66. Suggested GitHub Project Columns
 
 Use:
 
@@ -3556,7 +3566,7 @@ blocked-by-task-3
 
 ---
 
-# 69. Final Definition of Done for This Phase
+## 67. Final Definition of Done
 
 This phase is complete when:
 
@@ -3587,7 +3597,7 @@ npm run build passes
 
 ---
 
-# 70. Summary
+## 68. Summary
 
 This project is not only a Draw.io page.
 
