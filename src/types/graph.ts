@@ -15,6 +15,11 @@ export interface GraphNode extends ReactFlowNode {
     isSelected: boolean;
     nodeType: Node['nodeType'];
     entityType?: string;
+    isAiCreated?: boolean;
+    createdFrom?: string;
+    semanticTypeSource?: string;
+    isLocked?: boolean;
+    isBuiltin?: boolean;
   };
   position: { x: number; y: number };
 }
@@ -71,6 +76,10 @@ export interface GraphViewMode {
   showContext: boolean;
   showAttribute: boolean;
   showBlocks: boolean;
+
+  // AI / Manual filter
+  showAiCreated: boolean;
+  showManualCreated: boolean;
 
   // Legacy / generic relations if still needed
   showReferences: boolean;

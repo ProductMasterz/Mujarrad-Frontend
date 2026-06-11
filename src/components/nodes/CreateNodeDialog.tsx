@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCreateNode, useSpaceNodes, useCreateAttribute } from '@/hooks/api';
 import { NodeType, AttributeKey, AttributeTypeMode } from '@/types/backend-dtos';
+import { getNodeRoute } from '@/lib/routing';
 import {
   Dialog,
   DialogContent,
@@ -86,7 +87,7 @@ export function CreateNodeDialog({ spaceSlug }: CreateNodeDialogProps) {
         setOpen(false);
         reset();
         setSelectedParentId(null);
-        router.push(`/spaces/${spaceSlug}/node/${newNode.id}`);
+        router.push(getNodeRoute(spaceSlug, newNode));
       },
       onError: (error) => {
         if (isApiError(error)) {

@@ -8,6 +8,7 @@ import { useSearchNodes } from '@/hooks/api';
 import { useSpaces } from '@/hooks/api';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { getNodeRoute } from '@/lib/routing';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -38,9 +39,9 @@ export function CommandPalette({ open, onOpenChange, currentSpaceSlug }: Command
   );
   const searchResults = searchResponse?.content || [];
 
-  const handleSelectNode = useCallback((nodeId: string) => {
+  const handleSelectNode = useCallback((node: { nodeType: string; slug?: string | null; id: string }) => {
     if (selectedSpace) {
-      router.push(`/spaces/${selectedSpace}/node/${nodeId}`);
+      router.push(getNodeRoute(selectedSpace, node));
       onOpenChange(false);
       setSearch('');
     }
@@ -113,7 +114,7 @@ export function CommandPalette({ open, onOpenChange, currentSpaceSlug }: Command
                   <Command.Item
                     key={node.id}
                     value={`node-${node.id}`}
-                    onSelect={() => handleSelectNode(node.id.toString())}
+                    onSelect={() => handleSelectNode(node)}
                     className="flex items-center gap-2 rounded-sm px-2 py-2 text-sm cursor-pointer hover:bg-accent"
                   >
                     <FileText className="h-4 w-4 text-muted-foreground" />

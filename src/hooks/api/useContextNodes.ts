@@ -41,9 +41,10 @@ export function useRemoveFromContext() {
   return useMutation({
     mutationFn: ({ spaceSlug, contextSlug, nodeId }: { spaceSlug: string; contextSlug: string; nodeId: string }) =>
       nodeService.removeFromContext(spaceSlug, contextSlug, nodeId),
-    onSuccess: (_, { spaceSlug, contextSlug }) => {
+    onSuccess: (_, { spaceSlug, contextSlug, nodeId }) => {
       queryClient.invalidateQueries({ queryKey: contextNodeKeys.nodes(spaceSlug, contextSlug) });
       queryClient.invalidateQueries({ queryKey: nodeKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['incomingAttributes', nodeId] });
     },
   });
 }

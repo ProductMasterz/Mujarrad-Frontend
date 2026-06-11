@@ -5,6 +5,7 @@
 
 import type { Node, Attribute } from '@/types/backend-dtos';
 import { getNodeEntityType } from '@/lib/entity-types';
+import { isAiCreatedNode, parseNodeDetails } from '@/lib/node-utils';
 import {
   GraphNode,
   GraphEdge,
@@ -102,9 +103,7 @@ const isAnyMessage = isUserMessage || isAssistantMessage;
 const entityType = getNodeEntityType(node);
 const isEntity = entityType !== 'unknown';
 
-const isBlock =
-  !!details?.blockType ||
-  String(node.title || '').startsWith('Block ');
+const isBlock = !!details?.blockType;
 
 const nodeTypeStr = node.nodeType.toString().toUpperCase();
 
@@ -134,6 +133,11 @@ if (isRegular && !isEntity && !isConversation && !isAnyMessage && (!viewMode.sho
 if (isContext && (!viewMode.showSystem || !viewMode.showContext)) return false;
 if (isAttribute && (!viewMode.showSystem || !viewMode.showAttribute)) return false;
 if (isBlock && (!viewMode.showSystem || !viewMode.showBlocks)) return false;
+
+// AI / Manual filter
+const nodeIsAiCreated = isAiCreatedNode(node);
+if (nodeIsAiCreated && !viewMode.showAiCreated) return false;
+if (!nodeIsAiCreated && !viewMode.showManualCreated) return false;
 
 return true;
   });
@@ -226,7 +230,7 @@ return true;
   // Transform nodes to GraphNodes
   const graphNodes: GraphNode[] = filteredNodes.map((node, index) => {
   const entityType = getNodeEntityType(node);
-
+  const details = parseNodeDetails(node);
 
     return {
       id: node.id.toString(),
@@ -237,6 +241,11 @@ return true;
         isSelected: node.id.toString() === selectedNodeId,
         nodeType: node.nodeType,
         entityType,
+        isAiCreated: isAiCreatedNode(node),
+        createdFrom: details.createdFrom as string | undefined,
+        semanticTypeSource: details.semanticTypeSource as string | undefined,
+        isLocked: node.lockLevel !== 'UNLOCKED',
+        isBuiltin: !!node.isBuiltin,
       },
       position: calculateNodePosition(index, filteredNodes.length),
     };
@@ -342,6 +351,10 @@ export const DEFAULT_GRAPH_VIEW_MODE: GraphViewMode = {
   showContext: true,
   showAttribute: true,
   showBlocks: false,
+
+  // AI / Manual
+  showAiCreated: true,
+  showManualCreated: true,
 
   // Other
   showReferences: true,

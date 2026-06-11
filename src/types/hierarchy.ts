@@ -15,7 +15,7 @@ export interface TreeNode {
   level: number;
   isExpanded: boolean;
   isSelected: boolean;
-  parentId: string | null;
+  parentIds: string[];
 }
 
 /**

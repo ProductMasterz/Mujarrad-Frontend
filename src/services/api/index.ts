@@ -14,3 +14,4 @@ export * from './locking.service';
 export * from './virtual-context.service';
 export * from './node-move.service';
 export * from './context-type.service';
+export * from './bulk.service';

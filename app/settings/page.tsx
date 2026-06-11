@@ -276,17 +276,6 @@ export default function SettingsPage() {
                         />
                       </label>
 
-                      <label className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3 md:col-span-2">
-                        <span className="text-sm text-foreground">Show chat nodes in graph-related views</span>
-                        <input
-                          type="checkbox"
-                          checked={preferences.showChatNodesInGraph}
-                          onChange={(e) =>
-                            updatePreferences({ showChatNodesInGraph: e.target.checked })
-                          }
-                          className="h-4 w-4"
-                        />
-                      </label>
                     </div>
                   </div>
 

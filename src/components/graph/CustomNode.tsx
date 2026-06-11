@@ -6,7 +6,7 @@ import { NodeType, type Node as BackendNode } from '@/types/backend-dtos';
 import { cn } from '@/lib/utils';
 import { useEntityTypeStore } from '@/stores/entityType.store';
 import { getNodeEntityType } from '@/lib/entity-types';
-import { Lock, Shield } from 'lucide-react';
+import { Lock, Shield, Sparkles } from 'lucide-react';
 
 const nodeTypeStyles: Record<
   NodeType,
@@ -47,11 +47,12 @@ const nodeTypeStyles: Record<
 
 
 export const CustomNode = memo(({ data, selected }: NodeProps) => {
-  const { label, nodeType, entityType, node } = data as {
+  const { label, nodeType, entityType, node, isAiCreated } = data as {
     label: string;
     nodeType: NodeType;
     entityType?: string;
     node?: BackendNode;
+    isAiCreated?: boolean;
   };
 
   const isLocked = node?.lockLevel && node.lockLevel !== 'UNLOCKED';
@@ -133,7 +134,13 @@ export const CustomNode = memo(({ data, selected }: NodeProps) => {
           </span>
         </div>
 
-        <div className="text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          {isAiCreated && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold uppercase text-blue-700 dark:bg-blue-950/70 dark:text-blue-200">
+              <Sparkles className="h-2.5 w-2.5" />
+              AI
+            </span>
+          )}
           {isBuiltin
             ? 'Built-in'
             : isLocked

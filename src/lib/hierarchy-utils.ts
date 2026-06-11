@@ -37,7 +37,7 @@ export function buildHierarchyTree(
 
   // Build parent-child relationship map using 'contains' attributes
   const childrenMap = new Map<string, string[]>(); // parentId -> childIds[]
-  const parentMap = new Map<string, string>(); // childId -> parentId
+  const parentMap = new Map<string, string[]>(); // childId -> parentIds[]
 
   // Filter for 'contains' relationships only (check both attributeName and attributeType)
   const containsRelations = attributes.filter(
@@ -56,7 +56,10 @@ export function buildHierarchyTree(
       childrenMap.set(parentId, []);
     }
     childrenMap.get(parentId)!.push(childId);
-    parentMap.set(childId, parentId);
+    if (!parentMap.has(childId)) {
+      parentMap.set(childId, []);
+    }
+    parentMap.get(childId)!.push(parentId);
   }
 
   // Create node lookup map (only for visible nodes)
@@ -78,16 +81,16 @@ export function buildHierarchyTree(
       level,
       isExpanded: expandedNodeIds.includes(nodeIdStr),
       isSelected: nodeIdStr === selectedNodeId,
-      parentId: parentMap.get(nodeIdStr) || null,
+      parentIds: parentMap.get(nodeIdStr) || [],
     };
   };
 
   // Find root nodes (visible nodes without parents OR nodes whose parents don't exist in visible nodes)
   const rootNodes: TreeNode[] = [];
   for (const node of visibleNodes) {
-    const parentId = parentMap.get(node.id.toString());
-    // Node is a root if: no parent OR parent doesn't exist in visible nodes
-    if (!parentId || !nodeMap.has(parentId)) {
+    const parentIds = parentMap.get(node.id.toString()) || [];
+    // Node is a root if: no parents OR none of its parents exist in visible nodes
+    if (parentIds.length === 0 || !parentIds.some(pid => nodeMap.has(pid))) {
       rootNodes.push(buildTreeNode(node, 0));
     }
   }
@@ -113,10 +116,8 @@ export function buildHierarchyTree(
  * @returns Array of ancestor node IDs (immediate parent to root)
  */
 export function findAncestors(nodeId: string, attributes: Attribute[]): string[] {
-  const ancestors: string[] = [];
-  const parentMap = new Map<string, string>();
+  const parentMap = new Map<string, string[]>();
 
-  // Build parent map from contains relationships
   attributes
     .filter(attr => {
       const name = (attr.attributeName || '').toString().toLowerCase();
@@ -124,17 +125,23 @@ export function findAncestors(nodeId: string, attributes: Attribute[]): string[]
       return name === 'contains' || type === 'contains';
     })
     .forEach(attr => {
-      parentMap.set(attr.targetNodeId.toString(), attr.sourceNodeId.toString());
+      const childId = attr.targetNodeId.toString();
+      const parentId = attr.sourceNodeId.toString();
+      if (!parentMap.has(childId)) parentMap.set(childId, []);
+      parentMap.get(childId)!.push(parentId);
     });
 
-  let currentId: string | undefined = nodeId;
-  while (currentId && parentMap.has(currentId)) {
-    const parentId: string = parentMap.get(currentId)!;
-    ancestors.push(parentId);
-    currentId = parentId;
+  const ancestors = new Set<string>();
+  const queue = parentMap.get(nodeId) || [];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (ancestors.has(current)) continue;
+    ancestors.add(current);
+    const parents = parentMap.get(current) || [];
+    queue.push(...parents);
   }
 
-  return ancestors;
+  return Array.from(ancestors);
 }
 
 /**

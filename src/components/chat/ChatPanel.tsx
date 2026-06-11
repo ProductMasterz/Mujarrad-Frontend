@@ -11,54 +11,23 @@ import {
 import { Copy, Check, SendHorizontal, X, Pencil, Trash2, PanelLeftClose, PanelLeftOpen, SquarePen, Search } from 'lucide-react';
 import { nodeService } from '@/services/api/node.service';
 import { attributeService } from '@/services/api/attribute.service';
+import { agentService } from '@/services/api/agent.service';
+import { bulkService } from '@/services/api/bulk.service';
 import { Button } from '@/components/ui/button';
-import { AttributeTypeMode, NodeType, type Node as BackendNode } from '@/types/backend-dtos';
+import {
+  AttributeTypeMode,
+  NodeType,
+  type Node as BackendNode,
+  type AgentProcessResponse,
+  type ChatMessage,
+  type ChatSession,
+} from '@/types/backend-dtos';
 import { MarkdownRenderer } from '@/components/markdown/MarkdownRenderer';
 import { useQueryClient } from '@tanstack/react-query';
 import { nodeKeys } from '@/hooks/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notificationStore';
-
-type AgentProcessNode = Record<string, unknown>;
-
-type AgentProcessRelationship = {
-  source_id?: string;
-  target_id?: string;
-  type?: string;
-  name?: string;
-  description?: string;
-  level?: number;
-  source_title?: string;
-  target_title?: string;
-};
-
-type AgentProcessResponse = {
-  message_id?: string;
-  input_node_id?: string;
-  assistant_node_id?: string;
-  nodes?: AgentProcessNode[];
-  relationships?: AgentProcessRelationship[];
-  stats?: Record<string, unknown>;
-  report?: string;
-  error?: boolean;
-  message?: string;
-  code?: string;
-};
-
-
-type ChatMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  text: string;
-  createdAt: string;
-};
-
-type ChatSession = {
-  id: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-};
+import { parseNodeDetails } from '@/lib/node-utils';
 
 interface ChatPanelProps {
   spaceSlug?: string;
@@ -67,20 +36,6 @@ interface ChatPanelProps {
   onClose?: () => void;
   onChangeSpace?: (nextSpaceSlug: string) => void;
   availableSpaces?: Array<{ id: string; name: string; slug: string }>;
-}
-
-function parseNodeDetails(node: BackendNode): Record<string, unknown> | undefined {
-  if (!node.nodeDetails) return undefined;
-
-  if (typeof node.nodeDetails === 'string') {
-    try {
-      return JSON.parse(node.nodeDetails);
-    } catch {
-      return undefined;
-    }
-  }
-
-  return node.nodeDetails as Record<string, unknown>;
 }
 
 function isConversationNode(node: BackendNode): boolean {
@@ -938,8 +893,6 @@ export function ChatPanel({
   const addNotification = useNotificationStore((state) => state.addNotification);
   const token = useAuthStore((state) => state.token);
   const hasActiveSpace = !!spaceSlug?.trim();
-  const agentServiceUrl = process.env.NEXT_PUBLIC_AGENT_SERVICE_URL;
-  const agentApiKey = process.env.NEXT_PUBLIC_AGENT_API_KEY;
   const queryClient = useQueryClient();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -1584,77 +1537,114 @@ export function ChatPanel({
         
         let assistantText = '';
 
-        if (!agentServiceUrl) {
-          assistantText = 'Agent service is not available yet. Squad B backend is not connected.';
-        } else {
-          try {
-            console.log('CHAT TOKEN FROM STORE:', token);
-            console.log('AUTH STORE SNAPSHOT:', useAuthStore.getState());
-            const response = await fetch(`${agentServiceUrl}/api/agents/process`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                ...(agentApiKey ? { 'X-API-Key': agentApiKey } : {}),
+        try {
+          const data = await agentService.process({
+            text: userText,
+            space_slug: spaceSlug!,
+            message_id: inputMessageNode.id,
+            conversation_node_id: conversationNodeId,
+            conversation_title: conversationTitle,
+            assistant_node_id: assistantPlaceholderNode.id,
+          }, token);
+
+          const { nodes: agentNodes, relationships: agentRels, report } = getAgentSummary(data);
+
+          let nodeSuccessCount = 0;
+          let relSuccessCount = 0;
+
+          if (agentNodes.length > 0 || agentRels.length > 0) {
+            // Build bulk import — nodes with inline contains links to conversation
+            const bulkNodes = agentNodes.map((agentNode, i) => ({
+              title: agentNode.title || 'Untitled',
+              nodeType: NodeType.REGULAR as const,
+              nodeDetails: {
+                createdFrom: 'agent',
+                semanticType: agentNode.semanticType || agentNode.entityType || undefined,
+                chatNodeType: 'entity',
+                source: 'agent',
+                generatedBy: 'agent',
               },
-              body: JSON.stringify({
-                text: userText,
-                space_slug: spaceSlug,
-                message_id: inputMessageNode.id,
-                conversation_node_id: conversationNodeId,
-                conversation_title: conversationTitle,
-                assistant_node_id: assistantPlaceholderNode.id,
-              }),
-            });
-            let data: AgentProcessResponse | null = null;
+              attributes: [{
+                attributeName: 'contains',
+                attributeType: 'CONTAINS',
+                attributeValue: { order: i },
+                targetNodeRef: conversationNodeId,
+              }],
+            }));
+
+            // Build $ref relationships using agent-returned source/target indices
+            // Agent returns source_id/target_id which may be real UUIDs or index-based
+            const nodeIndexByTitle = new Map(agentNodes.map((n, i) => [n.title?.toLowerCase(), i]));
+            const bulkRelationships = agentRels
+              .filter(rel => rel.source_id && rel.target_id)
+              .map(rel => {
+                // Try to resolve source_title/target_title to $ref if the nodes are in this batch
+                const sourceIdx = rel.source_title ? nodeIndexByTitle.get(rel.source_title.toLowerCase()) : undefined;
+                const targetIdx = rel.target_title ? nodeIndexByTitle.get(rel.target_title.toLowerCase()) : undefined;
+
+                return {
+                  sourceNodeId: sourceIdx !== undefined ? `$ref:nodes[${sourceIdx}]` : rel.source_id!,
+                  targetNodeId: targetIdx !== undefined ? `$ref:nodes[${targetIdx}]` : rel.target_id!,
+                  attributeName: rel.name || rel.type || 'related_to',
+                  attributeType: rel.type || 'RELATES_TO',
+                  attributeValue: { description: rel.description || '' },
+                };
+              });
 
             try {
-              data = await response.json();
-            } catch {
-              data = null;
-            }
-
-            const { nodes, relationships, report, message, code } = getAgentSummary(data);
-
-            console.log('Agent /process response:', {
-              ok: response.ok,
-              status: response.status,
-              code,
-              nodesCount: nodes.length,
-              relationshipsCount: relationships.length,
-              data,
-            });
-
-            if (!response.ok || data?.error) {
-              assistantText = message || 'The agent service returned an error.';
-
-            } else {
-              assistantText =
-                report ||
-                `Processed successfully. Returned ${nodes.length} nodes and ${relationships.length} relationships.`;
-            }
-            if (response.ok && !data?.error) {
-              addNotification({
-                type: 'success',
-                source: 'chat',
-                title: 'Chat analyzed',
-                description:
-                  nodes.length > 0 || relationships.length > 0
-                    ? `${nodes.length} candidate node${nodes.length === 1 ? '' : 's'} and ${relationships.length} candidate relationship${relationships.length === 1 ? '' : 's'} returned by the agent.`
-                    : 'The agent finished processing your message.',
+              const importResult = await bulkService.import(spaceSlug!, {
+                nodes: bulkNodes,
+                relationships: bulkRelationships.length > 0 ? bulkRelationships : undefined,
               });
-            }
-          } catch (error) {
-            console.error('Could not reach the agent service:', error);
-            assistantText = 'Could not reach the agent service. Please try again.';
 
-            addNotification({
-              type: 'error',
-              source: 'chat',
-              title: 'Agent unavailable',
-              description: 'Could not reach the agent service.',
-            });
+              nodeSuccessCount = importResult.nodes?.successCount ?? 0;
+              relSuccessCount = importResult.relationships?.successCount ?? 0;
+
+              const rolledBack = importResult.status === 'ROLLED_BACK';
+              if (rolledBack) {
+                const errors = [
+                  ...(importResult.nodes?.errors ?? []),
+                  ...(importResult.relationships?.errors ?? []),
+                ].map(e => e.message).join('; ');
+                console.error('Bulk import rolled back:', errors);
+                assistantText = report || `Agent processed but import failed: ${errors}`;
+              } else {
+                queryClient.invalidateQueries({ queryKey: nodeKeys.all });
+                queryClient.invalidateQueries({ queryKey: ['spaceAttributes'] });
+                queryClient.invalidateQueries({ queryKey: ['context-nodes', spaceSlug] });
+
+                assistantText =
+                  report ||
+                  `Processed successfully. Created ${nodeSuccessCount} nodes and ${relSuccessCount} relationships in a single transaction.`;
+              }
+            } catch (importError) {
+              console.error('Bulk import failed:', importError);
+              assistantText = report || 'Agent processed your message but failed to persist entities.';
+            }
+          } else {
+            assistantText = report || 'The agent finished processing your message.';
           }
+
+          addNotification({
+            type: 'success',
+            source: 'chat',
+            title: 'Chat analyzed',
+            description:
+              nodeSuccessCount > 0 || relSuccessCount > 0
+                ? `${nodeSuccessCount} node${nodeSuccessCount === 1 ? '' : 's'} and ${relSuccessCount} relationship${relSuccessCount === 1 ? '' : 's'} created atomically.`
+                : 'The agent finished processing your message.',
+          });
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'Could not reach the agent service.';
+          console.error('Agent processing failed:', error);
+          assistantText = errorMsg;
+
+          addNotification({
+            type: 'error',
+            source: 'chat',
+            title: 'Agent unavailable',
+            description: errorMsg,
+          });
         }
 
         const assistantMessage: ChatMessage = {

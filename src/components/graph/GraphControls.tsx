@@ -86,7 +86,7 @@ export function GraphControls({
   onViewModeChange,
 }: GraphControlsProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [openSection, setOpenSection] = useState<'chat' | 'entities' | 'system' | null>(null);
+  const [openSection, setOpenSection] = useState<'chat' | 'entities' | 'system' | 'source' | null>(null);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -105,7 +105,7 @@ export function GraphControls({
     };
   }, []);
 
-  const toggleSection = (section: 'chat' | 'entities' | 'system') => {
+  const toggleSection = (section: 'chat' | 'entities' | 'system' | 'source') => {
     setOpenSection((prev) => (prev === section ? null : section));
   };
 
@@ -226,6 +226,23 @@ export function GraphControls({
               onChange={(checked) => onViewModeChange({ showEntityRelations: checked })}
             />
           </div>
+        </DropdownSection>
+
+        <DropdownSection
+          title="Source"
+          open={openSection === 'source'}
+          onToggle={() => toggleSection('source')}
+        >
+          <Toggle
+            label="AI Created"
+            checked={viewMode.showAiCreated}
+            onChange={(checked) => onViewModeChange({ showAiCreated: checked })}
+          />
+          <Toggle
+            label="Manual"
+            checked={viewMode.showManualCreated}
+            onChange={(checked) => onViewModeChange({ showManualCreated: checked })}
+          />
         </DropdownSection>
 
         <DropdownSection

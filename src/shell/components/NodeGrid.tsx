@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import { NodeCard } from '@/shell/components/NodeCard';
 import { CardType } from '@/shell/data/projects';
 import type { Node } from '@/types/backend-dtos';
+import { getNodeEntityType } from '@/lib/entity-types';
+import { parseNodeDetails } from '@/lib/node-utils';
 
 interface NodeGridProps {
   nodes: Node[];
@@ -15,13 +17,20 @@ interface NodeGridProps {
   onCardContextMenu: (e: React.MouseEvent, node: Node) => void;
   cardType?: CardType;
   getNodeKindLabel?: (node: Node) => string;
-  // Search and sort
   searchTerm?: string;
   sortBy?: 'name' | 'createdAt' | 'updatedAt';
-  // Optional badge per node (e.g. parent count for multi-parent nodes)
   getNodeBadge?: (node: Node) => string | undefined;
-  // Render extra content per card (e.g. checkboxes, overlay buttons)
   renderCardWrapper?: (node: Node, cardElement: React.ReactNode) => React.ReactNode;
+}
+
+function shouldShowNodeInGrid(node: Node): boolean {
+  const details = parseNodeDetails(node);
+
+  if (details.showInSpaceList === false) return false;
+  if (details.blockType) return false;
+  if (node.isBuiltin) return false;
+
+  return true;
 }
 
 export function NodeGrid({
@@ -40,19 +49,29 @@ export function NodeGrid({
   renderCardWrapper,
 }: NodeGridProps) {
   const filteredAndSorted = useMemo(() => {
-    // Filter out blocks and hidden nodes — they only appear inside their parent page editor
-    let result = nodes.filter((n) => {
-      const details = n.nodeDetails as Record<string, unknown> | undefined;
-      if (details?.showInSpaceList === false) return false;
-      if (details?.blockType) return false;
-      if (n.isBuiltin) return false;
-      return true;
-    });
+    let result = nodes.filter(shouldShowNodeInGrid);
 
-    // Filter by search
     const term = (searchTerm || '').trim().toLowerCase();
     if (term) {
-      result = result.filter((n) => n.title.toLowerCase().includes(term));
+      result = result.filter((node) => {
+        const details = parseNodeDetails(node);
+
+        const searchableText = [
+          node.title,
+          node.content,
+          node.semanticType,
+          node.entityType,
+          details.semanticType,
+          details.entityType,
+          details.createdFrom,
+          details.generatedBy,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return searchableText.includes(term);
+      });
     }
 
     // Sort
@@ -101,17 +120,23 @@ export function NodeGrid({
           ? getNodeKindLabel(node)
           : node.nodeType === 'ATTRIBUTE'
             ? 'Attribute'
-            : 'Regular';
+            : node.nodeType === 'CONTEXT'
+              ? 'Context'
+              : 'Regular';
+
+        const entityType = getNodeEntityType(node);
 
         const card = (
           <NodeCard
             key={node.id}
+            node={node}
             title={node.title}
             preview={preview}
             meta={meta}
             type={cardType}
             badge={getNodeBadge?.(node)}
             nodeKindLabel={kindLabel}
+            entityType={entityType}
             onClick={() => onCardClick(node)}
             onContextMenu={(e) => onCardContextMenu(e, node)}
           />

@@ -106,9 +106,26 @@ export interface NodeDetails {
     last_modified?: string;
   };
 
-  /**
-   * Additional metadata fields (extensible)
-   */
+  /** How this node was created */
+  createdFrom?: 'manual' | 'chat' | 'agent' | 'wiki-link' | 'assistant-ui' | string;
+  /** Which system generated this node */
+  generatedBy?: 'agent' | 'manual' | string;
+  /** Creation source identifier */
+  source?: string;
+  /** Chat node classification */
+  chatNodeType?: 'conversation' | 'message' | 'entity' | string;
+  /** Chat message role */
+  role?: 'user' | 'assistant' | 'conversation' | string;
+  /** Whether this is a placeholder node (e.g. from wiki-link) */
+  isPlaceholder?: boolean;
+  /** Chat session type */
+  sessionType?: string;
+  /** Scope of the node */
+  scope?: string;
+  /** Processing status for agent-created nodes */
+  status?: 'pending' | 'completed' | string;
+
+  /** Additional metadata fields (extensible) */
   [key: string]: unknown;
 }
 
@@ -153,6 +170,10 @@ export interface Node {
   parentNodeId?: string | null;
   /** Last update timestamp (ISO 8601) */
   updatedAt: string;
+  /** Semantic type assigned by agent or user (e.g. "person", "location") */
+  semanticType?: string | null;
+  /** Entity type classification */
+  entityType?: string | null;
 }
 
 /**
@@ -707,4 +728,154 @@ export interface ContextTypeUpdateRequest {
   name?: string;
   attributeSchema?: Record<string, FieldSchema>;
   schemaRelationships?: SchemaRelationshipDefinition[];
+}
+
+// ── Agent / Chat Types ──────────────────────────────────────────────
+
+export interface AgentProcessNode {
+  title?: string;
+  nodeType?: string;
+  semanticType?: string;
+  entityType?: string;
+  content?: string;
+  [key: string]: unknown;
+}
+
+export interface AgentProcessRelationship {
+  source_id?: string;
+  target_id?: string;
+  type?: string;
+  name?: string;
+  description?: string;
+  level?: number;
+  source_title?: string;
+  target_title?: string;
+}
+
+export interface AgentProcessResponse {
+  message_id?: string;
+  input_node_id?: string;
+  assistant_node_id?: string;
+  nodes?: AgentProcessNode[];
+  relationships?: AgentProcessRelationship[];
+  stats?: Record<string, unknown>;
+  report?: string;
+  error?: boolean;
+  message?: string;
+  code?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  createdAt: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- Bulk Operations ---
+
+export type BulkItemStatus = 'CREATED' | 'UPDATED' | 'DELETED' | 'FOUND' | 'NOT_FOUND' | 'ERROR';
+export type BulkBatchStatus = 'SUCCESS' | 'ROLLED_BACK';
+
+export interface BulkItemError {
+  code: string;
+  message: string;
+}
+
+export interface BulkResultItem<T = unknown> {
+  index: number;
+  status: BulkItemStatus;
+  data: T | null;
+  error: BulkItemError | null;
+}
+
+export interface BulkResponse<T = unknown> {
+  batchCorrelationId: string;
+  status: BulkBatchStatus;
+  totalItems: number;
+  successCount: number;
+  errorCount: number;
+  results: BulkResultItem<T>[];
+  errors: BulkItemError[];
+}
+
+export interface BulkOptions {
+  dryRun?: boolean;
+}
+
+export interface BulkNodeCreateItem {
+  title: string;
+  nodeType: NodeType;
+  slug?: string;
+  content?: string;
+  nodeDetails?: Record<string, unknown>;
+  contextTypeId?: string;
+  parentNodeId?: string;
+  attributes?: BulkInlineAttribute[];
+}
+
+export interface BulkInlineAttribute {
+  attributeName: string;
+  attributeType: string;
+  attributeTypeMode?: string;
+  attributeDataType?: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'JSON';
+  attributeValue: Record<string, unknown>;
+  properties?: Record<string, unknown>;
+  targetNodeRef?: string;
+}
+
+export interface BulkNodeUpdateItem {
+  id: string;
+  title?: string;
+  slug?: string;
+  nodeType?: NodeType;
+  content?: string;
+  nodeDetails?: Record<string, unknown>;
+  parentNodeId?: string;
+  lockLevel?: 'UNLOCKED' | 'CONTENT_LOCKED' | 'FULLY_LOCKED';
+}
+
+export interface BulkAttributeCreateItem {
+  sourceNodeId: string;
+  targetNodeId?: string;
+  attributeName: string;
+  attributeType: string;
+  attributeTypeMode?: string;
+  attributeDataType?: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'JSON';
+  attributeValue: Record<string, unknown>;
+  properties?: Record<string, unknown>;
+}
+
+export interface BulkContextTypeCreateItem {
+  name: string;
+  slug?: string;
+  attributeSchema?: Record<string, unknown>;
+  schemaRelationships?: Array<{
+    name: string;
+    targetContextType: string;
+    cardinality: string;
+  }>;
+}
+
+export interface BulkImportRequest {
+  contextTypes?: BulkContextTypeCreateItem[];
+  nodes?: BulkNodeCreateItem[];
+  attributes?: BulkAttributeCreateItem[];
+  relationships?: BulkAttributeCreateItem[];
+}
+
+export interface BulkImportResponse {
+  batchCorrelationId: string;
+  status: BulkBatchStatus;
+  contextTypes?: BulkResponse;
+  nodes?: BulkResponse<Node>;
+  attributes?: BulkResponse<Attribute>;
+  relationships?: BulkResponse<Attribute>;
 }

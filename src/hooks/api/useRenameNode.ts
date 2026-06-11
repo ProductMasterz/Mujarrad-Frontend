@@ -12,6 +12,7 @@ import { spaceService } from '@/services/api/space.service';
 import { whiteboardSyncService } from '@/services/whiteboardSyncService';
 import { nodeKeys } from './useNodes';
 import { spaceKeys } from './useSpaces';
+import { contextNodeKeys } from './useContextNodes';
 import type { Node, Space } from '@/types/backend-dtos';
 
 export type EntityToRename = 'node' | 'space';
@@ -68,6 +69,8 @@ export const useRenameNode = ({
         // Invalidate node queries
         queryClient.invalidateQueries({ queryKey: nodeKeys.detail(spaceSlug, entityId) });
         queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
+        queryClient.invalidateQueries({ queryKey: ['searchNodes', spaceSlug] });
+        queryClient.invalidateQueries({ queryKey: ['context-nodes', spaceSlug] });
 
         // Notify whiteboard sync service
         if (data && 'title' in data) {

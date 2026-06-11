@@ -14,7 +14,10 @@ type ContextMenuProps = {
   onMoveTo?: () => void;
   onMakeChildOf?: () => void;
   onRemoveFromContext?: () => void;
+  onSetSemanticType?: (type: string) => void;
+  onViewAttributes?: () => void;
   contextName?: string;
+  currentSemanticType?: string;
 };
 
 export function ContextMenu({
@@ -31,7 +34,10 @@ export function ContextMenu({
   onMoveTo,
   onMakeChildOf,
   onRemoveFromContext,
+  onSetSemanticType,
+  onViewAttributes,
   contextName,
+  currentSemanticType,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -64,8 +70,9 @@ export function ContextMenu({
 
   if (onMakeChildOf) {
     menuItems.push({ label: "Make a Child Of...", onClick: onMakeChildOf });
-  } else if (onMoveTo) {
-    menuItems.push({ label: "Move To", onClick: onMoveTo });
+  }
+  if (onMoveTo) {
+    menuItems.push({ label: "Move To Space...", onClick: onMoveTo });
   }
 
   if (onRemoveFromContext && contextName) {
@@ -74,6 +81,21 @@ export function ContextMenu({
       onClick: onRemoveFromContext,
       destructive: true,
     });
+  }
+
+  if (onSetSemanticType) {
+    const semanticTypes = ['Person', 'Place', 'Action', 'Topic', 'Event'];
+    for (const type of semanticTypes) {
+      const isActive = currentSemanticType?.toLowerCase() === type.toLowerCase();
+      menuItems.push({
+        label: `${isActive ? '● ' : ''}Set as ${type}`,
+        onClick: () => onSetSemanticType(type.toLowerCase()),
+      });
+    }
+  }
+
+  if (onViewAttributes) {
+    menuItems.push({ label: "View Attributes", onClick: onViewAttributes });
   }
 
   menuItems.push(

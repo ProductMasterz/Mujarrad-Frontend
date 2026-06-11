@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api';
 import { nodeKeys } from './useNodes';
+import { contextNodeKeys } from './useContextNodes';
 
 export const blankKeys = {
   nodes: (spaceSlug: string) => ['blank-nodes', spaceSlug] as const,
@@ -28,10 +29,11 @@ export function useAssignFromBlank() {
   return useMutation({
     mutationFn: ({ spaceSlug, nodeId, contextSlug }: { spaceSlug: string; nodeId: string; contextSlug: string }) =>
       nodeService.assignFromBlank(spaceSlug, nodeId, contextSlug),
-    onSuccess: (_, { spaceSlug }) => {
+    onSuccess: (_, { spaceSlug, contextSlug }) => {
       queryClient.invalidateQueries({ queryKey: blankKeys.nodes(spaceSlug) });
       queryClient.invalidateQueries({ queryKey: blankKeys.count(spaceSlug) });
       queryClient.invalidateQueries({ queryKey: nodeKeys.all });
+      queryClient.invalidateQueries({ queryKey: contextNodeKeys.nodes(spaceSlug, contextSlug) });
     },
   });
 }
@@ -41,10 +43,11 @@ export function useBulkAssignFromBlank() {
   return useMutation({
     mutationFn: ({ spaceSlug, nodeIds, contextSlug }: { spaceSlug: string; nodeIds: string[]; contextSlug: string }) =>
       nodeService.bulkAssignFromBlank(spaceSlug, nodeIds, contextSlug),
-    onSuccess: (_, { spaceSlug }) => {
+    onSuccess: (_, { spaceSlug, contextSlug }) => {
       queryClient.invalidateQueries({ queryKey: blankKeys.nodes(spaceSlug) });
       queryClient.invalidateQueries({ queryKey: blankKeys.count(spaceSlug) });
       queryClient.invalidateQueries({ queryKey: nodeKeys.all });
+      queryClient.invalidateQueries({ queryKey: contextNodeKeys.nodes(spaceSlug, contextSlug) });
     },
   });
 }

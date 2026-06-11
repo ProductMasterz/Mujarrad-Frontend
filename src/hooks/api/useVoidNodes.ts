@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { voidService } from '@/services/api';
+import { nodeKeys } from './useNodes';
 import type { VoidNodeCreateRequest, VoidNodeUpdateRequest } from '@/types/backend-dtos';
 
 export const voidKeys = {
@@ -56,6 +57,9 @@ export function useAssignVoidToSpace() {
   return useMutation({
     mutationFn: ({ nodeId, spaceId, contextId }: { nodeId: string; spaceId: string; contextId?: string }) =>
       voidService.assignToSpace(nodeId, { spaceId, contextId }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: voidKeys.all }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: voidKeys.all });
+      queryClient.invalidateQueries({ queryKey: nodeKeys.lists() });
+    },
   });
 }

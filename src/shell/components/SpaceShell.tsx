@@ -18,6 +18,7 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import type { Node } from '@/types/backend-dtos';
 import { NodeType } from '@/types/backend-dtos';
 import { MakeChildOfDialog } from '@/components/contexts/MakeChildOfDialog';
+import { MigrateNodeDialog } from '@/components/migration/MigrateNodeDialog';
 import { getNodeRoute } from '@/lib/routing';
 
 interface SpaceShellProps {
@@ -80,6 +81,7 @@ export function SpaceShell({
   const [nodeToRename, setNodeToRename] = useState<Node | null>(null);
   const [selectedCardId, setSelectedCardId] = useState('');
   const [makeChildOfNode, setMakeChildOfNode] = useState<Node | null>(null);
+  const [migrateNode, setMigrateNode] = useState<Node | null>(null);
 
   // Tabs state
   const [tabs, setTabs] = useState<Tab[]>([
@@ -142,6 +144,9 @@ export function SpaceShell({
         break;
       case 'assign':
         setMakeChildOfNode(contextMenuNode);
+        break;
+      case 'moveTo':
+        setMigrateNode(contextMenuNode);
         break;
       case 'delete':
         setNodeToDelete(contextMenuNode);
@@ -321,6 +326,7 @@ export function SpaceShell({
             onOpenAsNode={() => handleContextMenuActionInternal('openAsNode')}
             openAsLabel={contextMenuNode?.nodeType === NodeType.CONTEXT ? 'Open Context' : 'Open Node'}
             onMakeChildOf={spaceSlug ? () => handleContextMenuActionInternal('assign') : undefined}
+            onMoveTo={spaceSlug ? () => handleContextMenuActionInternal('moveTo') : undefined}
             onRemoveFromContext={contextSlug ? () => {
               if (contextMenuNode) onContextMenuAction?.('removeFromContext', contextMenuNode);
               onContextMenuClose?.();
@@ -377,6 +383,17 @@ export function SpaceShell({
             open={!!makeChildOfNode}
             onOpenChange={(open) => { if (!open) setMakeChildOfNode(null); }}
             onSuccess={() => { setMakeChildOfNode(null); onDeleteSuccess?.(); }}
+          />
+        )}
+
+        {/* Migrate Node Dialog */}
+        {migrateNode && spaceSlug && (
+          <MigrateNodeDialog
+            spaceSlug={spaceSlug}
+            nodeId={migrateNode.id}
+            nodeTitle={migrateNode.title}
+            open={!!migrateNode}
+            onOpenChange={(open) => { if (!open) setMigrateNode(null); }}
           />
         )}
       </div>

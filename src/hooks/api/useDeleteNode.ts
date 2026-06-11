@@ -1,18 +1,16 @@
-/**
- * useDeleteNode Hook (React Query Mutation)
- *
- * Deletes a node with cache invalidation (space-scoped)
- */
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { nodeService } from '@/services/api/node.service';
 import { whiteboardSyncService } from '@/services/whiteboardSyncService';
 import { nodeKeys } from './useNodes';
+import { childNodeKeys } from './useChildNodes';
+import { contextNodeKeys } from './useContextNodes';
 
 export interface DeleteNodeVariables {
   spaceSlug: string;
   nodeId: string;
   force?: boolean;
+  parentNodeId?: string;
+  contextSlug?: string;
 }
 
 export const useDeleteNode = () => {
@@ -23,11 +21,17 @@ export const useDeleteNode = () => {
       return await nodeService.deleteNode(spaceSlug, nodeId, force);
     },
 
-    onSuccess: (_, { nodeId }) => {
-      // Invalidate all nodes queries to refresh the lists
+    onSuccess: (_, { spaceSlug, nodeId, parentNodeId, contextSlug }) => {
       queryClient.invalidateQueries({ queryKey: nodeKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['searchNodes', spaceSlug] });
 
-      // Notify sync service of node deletion (for Node→Frame sync)
+      if (parentNodeId) {
+        queryClient.invalidateQueries({ queryKey: childNodeKeys.children(spaceSlug, parentNodeId) });
+      }
+      if (contextSlug) {
+        queryClient.invalidateQueries({ queryKey: contextNodeKeys.nodes(spaceSlug, contextSlug) });
+      }
+
       whiteboardSyncService.onNodeDeleted(nodeId);
     },
   });

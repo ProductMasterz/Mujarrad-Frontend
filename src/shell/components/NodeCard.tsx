@@ -7,8 +7,12 @@ import {
   Zap,
   BookOpen,
   CalendarDays,
+  Sparkles,
+  Pencil,
 } from "lucide-react";
 import { useEntityTypeStore } from "@/stores/entityType.store";
+import type { Node as BackendNode } from "@/types/backend-dtos";
+import { isAiCreatedNode, getSemanticTypeFromNode } from "@/lib/node-utils";
 
 type NodeCardProps = {
   title: string;
@@ -20,6 +24,7 @@ type NodeCardProps = {
   badge?: string;
   entityType?: string;
   nodeKindLabel?: string;
+  node?: BackendNode;
 };
 
 function renderIcon(type?: CardType, entityType?: string) {
@@ -29,7 +34,7 @@ function renderIcon(type?: CardType, entityType?: string) {
     return <User className="h-4 w-4" strokeWidth={1.8} />;
   }
 
-  if (normalized === "place") {
+  if (normalized === "place" || normalized === "location") {
     return <MapPin className="h-4 w-4" strokeWidth={1.8} />;
   }
 
@@ -37,11 +42,20 @@ function renderIcon(type?: CardType, entityType?: string) {
     return <Zap className="h-4 w-4" strokeWidth={1.8} />;
   }
 
-  if (normalized === "topic") {
+  if (
+    normalized === "topic" ||
+    normalized === "concept" ||
+    normalized === "document"
+  ) {
     return <BookOpen className="h-4 w-4" strokeWidth={1.8} />;
   }
 
-  if (normalized === "event") {
+  if (
+    normalized === "event" ||
+    normalized === "date" ||
+    normalized === "date_time" ||
+    normalized === "time"
+  ) {
     return <CalendarDays className="h-4 w-4" strokeWidth={1.8} />;
   }
 
@@ -88,10 +102,11 @@ export function NodeCard({
   badge,
   entityType,
   nodeKindLabel,
+  node,
 }: NodeCardProps) {
   const getEntityType = useEntityTypeStore((state) => state.getType);
 
-  const normalizedEntityType = entityType?.toLowerCase().trim() || "unknown";
+  const normalizedEntityType = getSemanticTypeFromNode(node, entityType);
   const semanticConfig = getEntityType(normalizedEntityType);
   const hasSemanticType = normalizedEntityType !== "unknown";
 
@@ -103,6 +118,9 @@ export function NodeCard({
     (type === CardType.FULFILLED_CONTEXT || type === CardType.GRAPH_CONTEXT
       ? "Context"
       : "Node");
+
+  const isAiCreated = isAiCreatedNode(node);
+  const creationLabel = isAiCreated ? "AI Created" : "Manual";
 
   return (
     <button
@@ -116,7 +134,22 @@ export function NodeCard({
         style={{ backgroundColor: semanticColor }}
       />
 
-      <div className="flex h-[calc(100%-5px)] flex-col justify-between px-4 py-3">
+      <div
+        className={`absolute right-3 top-3 z-20 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-sm ${
+          isAiCreated
+            ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/70 dark:text-blue-200"
+            : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+        }`}
+      >
+        {isAiCreated ? (
+          <Sparkles className="h-3 w-3" aria-hidden="true" />
+        ) : (
+          <Pencil className="h-3 w-3" aria-hidden="true" />
+        )}
+        {isAiCreated ? "AI" : "Manual"}
+      </div>
+
+      <div className="flex h-[calc(100%-5px)] flex-col justify-between px-4 py-3 pt-8">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="line-clamp-2 text-[15px] font-semibold leading-[1.45] text-[#111827] dark:text-white">
@@ -154,6 +187,21 @@ export function NodeCard({
               }}
             >
               {semanticLabel}
+            </span>
+
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                isAiCreated
+                  ? "bg-blue-50 text-blue-700 dark:bg-blue-950/70 dark:text-blue-200"
+                  : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              }`}
+            >
+              {isAiCreated ? (
+                <Sparkles className="h-3 w-3" aria-hidden="true" />
+              ) : (
+                <Pencil className="h-3 w-3" aria-hidden="true" />
+              )}
+              {creationLabel}
             </span>
 
             {badge && (

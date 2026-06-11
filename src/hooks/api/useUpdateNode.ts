@@ -57,9 +57,15 @@ export const useUpdateNode = () => {
     },
 
     // On success, invalidate related queries
-    onSuccess: (data, { spaceSlug, nodeId }) => {
+    onSuccess: (data, { spaceSlug, nodeId, data: updateData }) => {
       queryClient.invalidateQueries({ queryKey: nodeKeys.detail(spaceSlug, nodeId) });
       queryClient.invalidateQueries({ queryKey: nodeKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['searchNodes', spaceSlug] });
+
+      if (updateData.nodeDetails) {
+        queryClient.invalidateQueries({ queryKey: ['nodeAttributes', nodeId] });
+        queryClient.invalidateQueries({ queryKey: ['spaceAttributes'] });
+      }
 
       // Notify sync service of node update (for Node→Frame sync)
       if (data?.id && data?.title) {

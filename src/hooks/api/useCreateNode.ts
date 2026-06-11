@@ -10,6 +10,8 @@ import { whiteboardSyncService } from '@/services/whiteboardSyncService';
 import type { CreateNodeRequest } from '@/types/backend-dtos';
 import { nodeKeys } from './useNodes';
 import { spaceKeys } from './useSpaces';
+import { contextNodeKeys } from './useContextNodes';
+import { blankKeys } from './useBlankNodes';
 
 export interface CreateNodeVariables {
   spaceSlug: string;
@@ -29,9 +31,13 @@ export const useCreateNode = () => {
     },
 
     // On success, invalidate all node queries to refetch
-    onSuccess: (data) => {
+    onSuccess: (data, { spaceSlug, contextSlug }) => {
       queryClient.invalidateQueries({ queryKey: nodeKeys.all });
       queryClient.invalidateQueries({ queryKey: spaceKeys.all });
+      queryClient.invalidateQueries({ queryKey: blankKeys.count(spaceSlug) });
+      if (contextSlug) {
+        queryClient.invalidateQueries({ queryKey: contextNodeKeys.nodes(spaceSlug, contextSlug) });
+      }
 
       // Notify sync service of node creation (for Node→Frame sync)
       if (data?.id && data?.title) {

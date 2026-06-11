@@ -19,7 +19,6 @@ export type AppPreferences = {
   showChatTimestamps: boolean;
   renderMarkdownInGraph: boolean;
   showTechnicalDetailsByDefault: boolean;
-  showChatNodesInGraph: boolean;
 };
 
 type AppPreferencesState = {
@@ -39,7 +38,6 @@ export const defaultAppPreferences: AppPreferences = {
   showChatTimestamps: true,
   renderMarkdownInGraph: true,
   showTechnicalDetailsByDefault: false,
-  showChatNodesInGraph: true,
 };
 
 export const useAppPreferencesStore = create<AppPreferencesState>()(

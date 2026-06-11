@@ -41,6 +41,10 @@ const DEFAULT_VIEW_MODE: GraphViewMode = {
   showAttribute: true,
   showBlocks: false,
 
+  // AI / Manual
+  showAiCreated: true,
+  showManualCreated: true,
+
   // Other
   showReferences: true,
 };

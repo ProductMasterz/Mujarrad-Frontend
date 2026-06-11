@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { truncate, formatRelativeTime } from '@/lib/utils';
 import { useDeleteNode } from '@/hooks/api';
+import { getNodeRoute } from '@/lib/routing';
 
 interface NodeCardProps {
   node: Node;
@@ -39,14 +40,14 @@ export function NodeCard({ node, spaceSlug, onDeleted }: NodeCardProps) {
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    router.push(`/spaces/${spaceSlug}/node/${node.id}`);
+    router.push(getNodeRoute(spaceSlug, node));
   };
 
   const handleClick = (e: React.MouseEvent) => {
     // Single click can also navigate, or we can disable it
     // For now, keeping single-click navigation as well
     if (e.detail === 1) {
-      router.push(`/spaces/${spaceSlug}/node/${node.id}`);
+      router.push(getNodeRoute(spaceSlug, node));
     }
   };
 
