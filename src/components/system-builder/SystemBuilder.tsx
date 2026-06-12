@@ -1,7 +1,7 @@
 'use client';
 
-import { DiagramLayer } from './DiagramLayer';
+import { SystemDesignShell } from '@/features/system-design/components/SystemDesignShell';
 
 export function SystemBuilder() {
-  return <DiagramLayer />;
+  return <SystemDesignShell />;
 }
