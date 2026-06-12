@@ -2191,245 +2191,107 @@ This is important because future Layer 2 logic will depend on understanding how 
 
 ## 54. Layer 1 Implementation Tasks
 
-Layer 1 should be divided into **six major implementation tasks**.
+Layer 1 is now divided into **seven implementation tasks**.
 
-The first two tasks are intentionally the biggest because they define the foundation and data pipeline that everything else depends on.
+Task 1 has already been completed and tested. It created the initial professional foundation, feature shell, folder structure, LangGraph dependency setup, and locked Layer 2 / Layer 3 placeholders.
 
-The six tasks are:
+Because Task 1 was intentionally focused on setup, the remaining implementation must be divided into **six stronger and more intensive professional tasks**.
+
+The updated task structure is:
 
 ```text
-Task 1: Foundation, environment, feature shell, and LangGraph layout
-Task 2: Input pipeline, text handling, and voice/transcription preparation
-Task 3: LangGraph state model, schemas, graph, nodes, tools, and store sync
-Task 4: Constructive question loop, understanding, and completeness
-Task 5: Markdown specification, Draw.io generation, review, editing, and AI refinement
-Task 6: Export, artifact bundle, tests, docs, deployment readiness, and cleanup
+Task 1: Completed — Foundation, environment, feature shell, and LangGraph layout
+
+Task 2: Input Pipeline, Text/Voice/File Ingestion, Processing UI, and Traceability
+
+Task 3: LangGraph Core Runtime, State Model, API Routes, Schemas, Nodes, Tools, and Store Sync
+
+Task 4: AI Clarification Engine, Constructive Question Loop, Understanding Model, and Completeness Logic
+
+Task 5: Markdown Specification Editor, Review Workflow, Validation, and Approval Gate
+
+Task 6: Draw.io Generation, Manual Editing, AI Refinement, XML Validation, Revision History, and Diagram Export
+
+Task 7: Final Export, Approved Artifact Bundle, Tests, Documentation, Deployment Readiness, and Cleanup
+```
+
+Important rule:
+
+```text
+Layer 2 must still remain locked until the approved Layer 1 artifact bundle exists.
+Layer 3 must still remain locked until future Layer 2 output exists.
 ```
 
 ---
 
-## 55. Six-Task Implementation Roadmap
+## 55. Seven-Task Implementation Roadmap
 
 ```mermaid
 flowchart TD
-    T1[Task 1: Foundation, Shell, LangGraph Setup]
-    T2[Task 2: Input Pipeline]
-    T3[Task 3: LangGraph State, Nodes, Tools]
-    T4[Task 4: Questions, Understanding, Completeness]
-    T5[Task 5: Spec, Draw.io, Refinement]
-    T6[Task 6: Export, Artifact Bundle, QA]
+    T1[Task 1 Completed: Foundation, Shell, LangGraph Layout]
+    T2[Task 2: Input Pipeline and Ingestion]
+    T3[Task 3: LangGraph Runtime, State, APIs, Schemas, Store]
+    T4[Task 4: Clarification, Understanding, Completeness]
+    T5[Task 5: Markdown Spec, Review, Approval]
+    T6[Task 6: Draw.io Generation, Editing, Refinement, Export]
+    T7[Task 7: Artifact Bundle, Tests, Docs, Deployment Readiness]
 
     T1 --> T2
     T2 --> T3
     T3 --> T4
     T4 --> T5
     T5 --> T6
+    T6 --> T7
 
-    T6 --> A[Approved Layer 1 Artifact Bundle]
-    A --> L2[Layer 2: Locked Placeholder]
-    L2 --> L3[Layer 3: Locked Placeholder]
+    T7 --> A[Approved Layer 1 Artifact Bundle]
+    A --> L2[Layer 2: Abstract Logic - Locked Placeholder]
+    L2 --> L3[Layer 3: Code Machine - Locked Placeholder]
 ```
 
 Parallel notes:
 
 ```text
-Task 1 should start first.
-Task 2 can start after the folder structure exists.
-Task 3 depends on Task 2 types.
-Task 4 depends on Task 3 graph, nodes, tools, store sync, and orchestrated state.
-Task 5 depends on Task 4 output but can plan Draw.io UI early.
-Task 6 can start docs and test skeleton early but final export depends on Task 5.
+Task 1 is completed and should not be expanded unless a foundation bug is found.
+Task 2 starts after the feature folder and shell exist.
+Task 3 depends on Task 2 types and input processing structures.
+Task 4 depends on Task 3 graph runtime, graph state, API routes, and store sync.
+Task 5 depends on Task 4 understanding and completeness output.
+Task 6 depends on Task 5 approved Markdown specification.
+Task 7 depends on Task 6 approved diagram and current XML state.
 Layer 2 appears only after the approved Layer 1 artifact bundle exists.
 Layer 3 appears only after Layer 2 in the future.
 ```
 
 ---
 
-# Task 1 — Foundation, Environment, Feature Shell, and LangGraph Layout
+# Task 1 — Completed: Foundation, Environment, Feature Shell, and LangGraph Layout
 
-## Goal
-
-Create the professional System Design foundation without breaking the existing frontend.
-
-## Why This Task Is Critical
-
-This task creates the safe structure for all later work.
-
-It prevents contributors from modifying random existing frontend files and forces new work into a clean feature module.
-
-It also establishes LangGraph as the required orchestration layer from the start.
-
-## Scope
+## Status
 
 ```text
-New feature folder
-System Design page shell
-Three-layer visual structure
-Layer 1 active
-Layer 2 locked
-Layer 3 locked
-Compatibility wrapper
-Environment documentation cleanup
-LangGraph dependency and folder preparation
-Server-side LangGraph execution path
+Completed
+Tested
+Merged into feat/system-builder
+Pushed to origin/feat/system-builder
 ```
 
-## Subtasks
-
-### 1.1 Confirm LangGraph dependencies
-
-Installed packages:
+## Completed Work
 
 ```text
-@langchain/langgraph
-@langchain/core
+LangGraph dependencies installed
+Feature folder created
+System Design shell created
+/system-builder route kept stable
+SystemBuilder converted into compatibility wrapper
+Layer 1 active card created
+Layer 2 locked placeholder created
+Layer 3 locked placeholder created
+System Design config created
+.env.example updated safely
+Existing frontend routes kept stable
 ```
 
-These are tracked in:
-
-```text
-package.json
-package-lock.json
-```
-
-These files must be committed so every contributor gets the same dependencies after running:
-
-```bash
-npm install
-```
-
-### 1.2 Create feature folder
-
-Create:
-
-```text
-src/features/system-design/
-src/features/system-design/components/
-src/features/system-design/config/
-src/features/system-design/graphs/
-src/features/system-design/nodes/
-src/features/system-design/tools/
-src/features/system-design/prompts/
-src/features/system-design/schemas/
-src/features/system-design/stores/
-src/features/system-design/types/
-src/features/system-design/utils/
-```
-
-### 1.3 Keep route stable
-
-Use:
-
-```text
-app/system-builder/page.tsx
-```
-
-Update title/UI to say:
-
-```text
-System Design
-```
-
-Do not rename the route unless separately requested.
-
-### 1.4 Convert SystemBuilder into wrapper
-
-Update:
-
-```text
-src/components/system-builder/SystemBuilder.tsx
-```
-
-It should import and render:
-
-```text
-SystemDesignShell
-```
-
-from the new feature folder.
-
-### 1.5 Create shell components
-
-Create:
-
-```text
-src/features/system-design/components/SystemDesignShell.tsx
-src/features/system-design/components/SystemDesignHeader.tsx
-src/features/system-design/components/LayerNavigation.tsx
-src/features/system-design/components/Layer1Shell.tsx
-src/features/system-design/components/Layer2Locked.tsx
-src/features/system-design/components/Layer3Locked.tsx
-```
-
-Important:
-
-```text
-Layer2Locked and Layer3Locked are visual placeholders only.
-They should not run real logic.
-Layer 2 should require the approved Layer 1 artifact bundle.
-Layer 3 should require future Layer 2 output.
-```
-
-### 1.6 Add feature config
-
-Create:
-
-```text
-src/features/system-design/config/systemDesignConfig.ts
-```
-
-Include:
-
-```text
-feature flags
-input size thresholds
-LangGraph execution mode
-locked layer settings
-export settings
-AI provider model settings
-```
-
-### 1.7 Update environment example carefully
-
-Update:
-
-```text
-.env.example
-```
-
-Important:
-
-```text
-Do not expose real backend values as if they are new System Design variables.
-Mention that existing frontend variables should stay as configured.
-Only add System Design-specific variables where needed.
-```
-
-Recommended:
-
-```env
-# Existing Mujarrad frontend variables
-# Keep these as configured in the original frontend/deployment environment.
-NEXT_PUBLIC_API_URL=
-NEXT_PUBLIC_AGENT_SERVICE_URL=
-
-# Server-side AI provider key for System Design
-OPENROUTER_API_KEY=
-
-# Optional model override for System Design
-SYSTEM_BUILDER_MODEL=google/gemini-2.0-flash-001
-
-# LangGraph execution mode
-# In this phase, LangGraph runs inside the Next.js server/runtime.
-SYSTEM_DESIGN_ORCHESTRATOR=langgraph
-
-# System Design feature flags
-NEXT_PUBLIC_SYSTEM_BUILDER_MODE=api
-NEXT_PUBLIC_ENABLE_LAYER_2=false
-NEXT_PUBLIC_ENABLE_LAYER_3=false
-```
-
-## Files
+## Completed Files
 
 ```text
 package.json
@@ -2443,30 +2305,53 @@ src/features/system-design/components/Layer1Shell.tsx
 src/features/system-design/components/Layer2Locked.tsx
 src/features/system-design/components/Layer3Locked.tsx
 src/features/system-design/config/systemDesignConfig.ts
+src/features/system-design/graphs/.gitkeep
+src/features/system-design/nodes/.gitkeep
+src/features/system-design/prompts/.gitkeep
+src/features/system-design/schemas/.gitkeep
+src/features/system-design/stores/.gitkeep
+src/features/system-design/tools/.gitkeep
+src/features/system-design/types/.gitkeep
+src/features/system-design/utils/.gitkeep
 .env.example
-.gitignore
 ```
 
-## Acceptance Criteria
+## Verification Completed
 
 ```text
-LangGraph dependencies are installed
-package.json and package-lock.json include LangGraph dependencies
-/system-builder loads
+/system-builder loads successfully
 UI says System Design
 Layer 1 is active
-Layer 2 and Layer 3 are locked
+Layer 2 is locked
+Layer 3 is locked
 Layer 2 requires the approved Layer 1 artifact bundle
-Existing frontend remains stable
-No secrets committed
-Existing frontend env variables are not removed or renamed
-npm run lint passes
+LangGraph server-side note is visible
+Existing routes still build
+npm run lint passes with existing warnings only
 npm run build passes
+git status is clean
+```
+
+## Acceptance Criteria Status
+
+```text
+LangGraph dependencies are installed: Done
+package.json and package-lock.json include LangGraph dependencies: Done
+/system-builder loads: Done
+UI says System Design: Done
+Layer 1 is active: Done
+Layer 2 and Layer 3 are locked: Done
+Layer 2 requires the approved Layer 1 artifact bundle: Done
+Existing frontend remains stable: Done
+No secrets committed: Done
+Existing frontend env variables are not removed or renamed: Done
+npm run lint passes: Done
+npm run build passes: Done
 ```
 
 ---
 
-# Task 2 — Input Pipeline, Text Handling, and Voice/Transcription Preparation
+# Task 2 — Input Pipeline, Text/Voice/File Ingestion, Processing UI, and Traceability
 
 ## Goal
 
@@ -2478,19 +2363,25 @@ The LangGraph workflow depends on clean, safe, traceable input.
 
 Without this task, the system risks sending raw input directly to AI, losing traceability, or mixing voice/file logic into random UI components.
 
+Task 2 must make input collection feel like the first real stage of a professional Layer 1 workflow, not a basic prompt box.
+
 ## Scope
 
 ```text
 Large text input panel
+Input source typing
 Input normalization
 Input size detection
 Estimated token count
 Chunking when needed
 Context compression preparation
 Voice input placeholder
+File input placeholder
 Transcription tool interface
 Input processing status UI
+Traceability IDs
 LangGraph input processing node
+Server-safe input processing tool
 ```
 
 ## Subtasks
@@ -2506,12 +2397,24 @@ src/features/system-design/types/input.types.ts
 Include:
 
 ```text
+SystemDesignInputSourceType
 RawInputPayload
 ProcessedInputContext
 TextChunk
 InputSize
 TranscriptionResult
 InputProcessingStatus
+InputProcessingWarning
+InputProcessingResult
+```
+
+Input source types must include:
+
+```text
+typed_text
+pasted_text
+voice_transcript
+file_text
 ```
 
 ### 2.2 Create input schemas
@@ -2528,8 +2431,12 @@ Validate:
 raw input
 processed input
 text chunks
+input size
 transcription result
+processing result
 ```
+
+The goal is to prevent invalid input payloads from entering the graph.
 
 ### 2.3 Create input panel
 
@@ -2545,14 +2452,52 @@ It should support:
 large multiline textbox
 character count
 estimated token count
-input warnings
-Next button
-clear/reset
-future voice button placeholder
-future file input placeholder
+input size label
+input quality hints
+empty input protection
+minimum useful input guidance
+Next / Process Input button
+clear/reset button
+future voice placeholder
+future file placeholder
 ```
 
-### 2.4 Create input processing status component
+### 2.4 Create voice placeholder
+
+Create:
+
+```text
+src/features/system-design/components/VoiceInputPlaceholder.tsx
+src/features/system-design/tools/transcriptionTool.ts
+```
+
+Voice does not need full implementation yet.
+
+For now, it should clearly show:
+
+```text
+Voice input coming soon
+Future transcripts will enter the same input processing pipeline
+```
+
+### 2.5 Create file input placeholder
+
+Create:
+
+```text
+src/features/system-design/components/FileInputPlaceholder.tsx
+```
+
+File upload does not need full implementation yet.
+
+For now, it should clearly show:
+
+```text
+File input coming soon
+Future extracted file text will enter the same input processing pipeline
+```
+
+### 2.6 Create input processing status UI
 
 Create:
 
@@ -2571,7 +2516,7 @@ ready
 failed
 ```
 
-### 2.5 Create input processing utilities and tool
+### 2.7 Create input utilities
 
 Create:
 
@@ -2579,6 +2524,28 @@ Create:
 src/features/system-design/utils/inputNormalization.ts
 src/features/system-design/utils/textChunking.ts
 src/features/system-design/utils/contextCompression.ts
+src/features/system-design/utils/id.ts
+```
+
+Responsibilities:
+
+```text
+normalize text
+trim unsafe whitespace
+preserve paragraph structure
+estimate token count
+detect when chunking is needed
+split text while preserving order
+preserve character start/end offsets
+prepare deterministic compressed summary placeholder
+generate stable local IDs
+```
+
+### 2.8 Create input processing tool and node
+
+Create:
+
+```text
 src/features/system-design/tools/inputProcessingTool.ts
 src/features/system-design/nodes/processInputNode.ts
 ```
@@ -2586,24 +2553,28 @@ src/features/system-design/nodes/processInputNode.ts
 Responsibilities:
 
 ```text
+accept RawInputPayload
 normalize text
-detect when chunking is needed
-split text while preserving order
-prepare compressed context when needed
+estimate size
+chunk if needed
+compress/summarize if needed
 preserve traceability
-return ProcessedInputContext to LangGraph state
+return ProcessedInputContext
+return controlled warnings
+return controlled errors
 ```
 
-### 2.6 Prepare voice transcription tool
+### 2.9 Wire Task 2 into Layer 1 shell
 
-Create:
+Update:
 
 ```text
-src/features/system-design/tools/transcriptionTool.ts
-src/features/system-design/components/VoiceInputPlaceholder.tsx
+src/features/system-design/components/Layer1Shell.tsx
 ```
 
-Voice can be disabled or marked coming soon for now.
+It should display the real input panel instead of only static workflow cards.
+
+The existing workflow cards can remain as a stage overview, but input should become the active first step.
 
 ## Files
 
@@ -2613,13 +2584,16 @@ src/features/system-design/schemas/input.schema.ts
 src/features/system-design/components/Layer1InputPanel.tsx
 src/features/system-design/components/InputProcessingStatus.tsx
 src/features/system-design/components/VoiceInputPlaceholder.tsx
+src/features/system-design/components/FileInputPlaceholder.tsx
 src/features/system-design/tools/inputProcessingTool.ts
 src/features/system-design/tools/transcriptionTool.ts
 src/features/system-design/nodes/processInputNode.ts
+src/features/system-design/utils/id.ts
 src/features/system-design/utils/inputNormalization.ts
 src/features/system-design/utils/textChunking.ts
 src/features/system-design/utils/contextCompression.ts
 src/features/system-design/config/systemDesignConfig.ts
+src/features/system-design/components/Layer1Shell.tsx
 ```
 
 ## Acceptance Criteria
@@ -2627,38 +2601,54 @@ src/features/system-design/config/systemDesignConfig.ts
 ```text
 User can enter text
 UI shows character count
-UI shows estimated input size
+UI shows estimated token count
+UI shows input size label
+UI blocks empty input
+UI gives helpful input quality hints
+User can clear input
 Small text can pass directly
-Large text is processed safely
+Large text is chunked safely
 ProcessedInputContext is created
+TextChunk objects preserve order and character offsets
 Voice input path is architecturally prepared
+File input path is architecturally prepared
 No real transcription implementation is required yet
+No real file extraction implementation is required yet
 No diagram generation happens from raw input
 Input processing is represented as a LangGraph node/tool
+Layer1Shell shows the real input panel
 npm run lint passes
 npm run build passes
 ```
 
 ---
 
-# Task 3 — LangGraph State Model, Schemas, Graph, Nodes, Tools, and Store Sync
+# Task 3 — LangGraph Core Runtime, State Model, API Routes, Schemas, Nodes, Tools, and Store Sync
 
 ## Goal
 
-Define the typed LangGraph state model and implement the Layer 1 graph foundation.
+Implement the typed LangGraph Layer 1 runtime foundation.
+
+## Why This Task Is Critical
+
+Task 3 is where the project becomes a real orchestrated system instead of a UI prototype.
+
+The graph state must become the source of truth for workflow stage, processed input, questions, understanding, completeness, Markdown spec, Draw.io XML, diagram approval, and export readiness.
 
 ## Scope
 
 ```text
-Layer 1 types
+Layer 1 type model
 Layer 2/3 placeholder types
+Graph state definition
+Graph event/result types
 Zod schemas
-LangGraph state
-LangGraph graph
-LangGraph nodes
-LangGraph tools
-Frontend store synchronization
-Server-side graph runner
+LangGraph graph skeleton
+Conditional edges
+Graph runner
+Initial API routes
+Frontend store sync
+Error handling pattern
 ```
 
 ## Subtasks
@@ -2678,14 +2668,31 @@ Layer1Stage
 Layer1Run
 ConstructiveQuestion
 QuestionAnswer
+QuestionCategory
 SystemUnderstanding
+WorkflowDescription
+SystemInput
+SystemOutput
+SystemEntity
+BusinessRule
+DecisionRule
+ValidationRule
+EdgeCase
+ErrorCase
+IntegrationPoint
+NotificationRule
+ReportingRequirement
+SecurityRequirement
 CompletenessReport
+CompletenessCategoryStatus
+CompletenessStatus
 DiagramRevision
 Layer1ArtifactBundle
+Layer1Error
 Layer1InternalStateForFutureUse
 ```
 
-### 3.2 Create graph types
+### 3.2 Create graph types and graph state
 
 Create:
 
@@ -2701,9 +2708,11 @@ Layer1GraphState
 Layer1GraphNextAction
 Layer1GraphEvent
 Layer1GraphResult
+Layer1GraphResumeInput
+Layer1GraphError
 ```
 
-### 3.3 Create Layer 2 and Layer 3 placeholders
+### 3.3 Create future Layer 2 and Layer 3 placeholders
 
 Create:
 
@@ -2712,7 +2721,9 @@ src/features/system-design/types/layer2.types.ts
 src/features/system-design/types/layer3.types.ts
 ```
 
-They should define expected future inputs, but not implement functionality.
+Layer 2 expected input must be the approved Layer 1 artifact bundle.
+
+Layer 3 expected input must come from future Layer 2 output.
 
 ### 3.4 Create schemas
 
@@ -2727,15 +2738,18 @@ Validate:
 
 ```text
 ConstructiveQuestion
+QuestionAnswer
 SystemUnderstanding
 CompletenessReport
 Layer1ArtifactBundle
 Layer1GraphState
+Layer1GraphEvent
+Layer1GraphResult
 DiagramGenerationRequest
 DiagramGenerationResponse
 ```
 
-### 3.5 Create LangGraph graph and runner
+### 3.5 Create LangGraph graph skeleton
 
 Create:
 
@@ -2745,17 +2759,53 @@ src/features/system-design/graphs/layer1GraphEdges.ts
 src/features/system-design/graphs/layer1GraphRunner.ts
 ```
 
+The graph must include planned nodes:
+
+```text
+receive_input
+process_input
+generate_question
+wait_for_user_answer
+update_understanding
+check_completeness
+generate_markdown_spec
+review_markdown_spec
+generate_drawio_xml
+review_diagram
+refine_diagram
+create_layer1_artifact_bundle
+```
+
 The graph must include:
 
 ```text
-nodes
 conditional edges
 human-in-the-loop pause points
 retry/error paths
 final artifact bundle path
 ```
 
-### 3.6 Create frontend store sync
+### 3.6 Create server API route foundation
+
+Create:
+
+```text
+app/api/system-builder/layer1/route.ts
+```
+
+This route should:
+
+```text
+validate request body
+invoke the graph runner
+return safe graph result
+never expose AI provider keys
+never run browser-side orchestration
+```
+
+Existing old API routes should not be destructively removed unless replaced safely.
+
+### 3.7 Create frontend store sync
 
 Create:
 
@@ -2776,6 +2826,7 @@ submitAnswer
 updateUnderstanding
 setCompleteness
 setMarkdownSpec
+approveMarkdownSpec
 setDrawioXml
 setDiagramImage
 addDiagramRevision
@@ -2784,9 +2835,21 @@ createLayer1ArtifactBundle
 resetRun
 ```
 
+### 3.8 Connect UI to the route/store carefully
+
+Update:
+
+```text
+src/features/system-design/components/Layer1InputPanel.tsx
+src/features/system-design/components/Layer1Shell.tsx
+```
+
+For this task, the UI may call the server route to process input and sync returned state.
+
 ## Files
 
 ```text
+app/api/system-builder/layer1/route.ts
 src/features/system-design/types/layer1.types.ts
 src/features/system-design/types/layer2.types.ts
 src/features/system-design/types/layer3.types.ts
@@ -2799,46 +2862,81 @@ src/features/system-design/graphs/layer1GraphEdges.ts
 src/features/system-design/graphs/layer1GraphRunner.ts
 src/features/system-design/stores/useLayer1Store.ts
 src/features/system-design/utils/id.ts
+src/features/system-design/components/Layer1InputPanel.tsx
+src/features/system-design/components/Layer1Shell.tsx
 ```
 
 ## Acceptance Criteria
 
 ```text
 Layer 1 state is strongly typed
-LangGraph graph exists
-LangGraph state is typed and validated
-Graph runner exists server-side
-Nodes and conditional edges are planned or implemented
+Layer 1 graph state exists
+Layer 1 graph runner exists server-side
+Layer 1 API route exists
+Request and response schemas exist
+Graph result is validated before returning to UI
 Store can sync from graph state
+Input panel can start a Layer 1 run through the API route
 Layer 2 expected input is the approved Layer 1 artifact bundle
-Components do not own main workflow logic
+Layer 3 depends on future Layer 2 output
+Components do not own main workflow orchestration logic
+Browser does not access OPENROUTER_API_KEY
 npm run lint passes
 npm run build passes
 ```
 
 ---
 
-# Task 4 — Constructive Question Loop, Understanding, and Completeness
+# Task 4 — AI Clarification Engine, Constructive Question Loop, Understanding Model, and Completeness Logic
 
 ## Goal
 
 Implement the intelligent requirement clarification workflow inside LangGraph.
 
+## Why This Task Is Critical
+
+This is the core intelligence of Layer 1.
+
+The system must not ask a static questionnaire. It must ask one cumulative, constructive question at a time based on the processed input, previous answers, current understanding, and missing details.
+
 ## Scope
 
 ```text
+AI provider server tool
+Constructive question prompt
 Question generation node
-Human-in-the-loop answer pause
-Answer submission route
+Question display UI
+Question history UI
+Human-in-the-loop answer submission
 Understanding update node
+Understanding panel
 Completeness scoring node
-Loop back when details are missing
-Continue to specification when ready
+Completeness panel
+Graph loop back when details are missing
+Graph continuation when ready
 ```
 
 ## Subtasks
 
-### 4.1 Create question loop components
+### 4.1 Create AI provider tool
+
+Create:
+
+```text
+src/features/system-design/tools/aiProviderTool.ts
+```
+
+Responsibilities:
+
+```text
+server-side OpenRouter wrapper
+model config handling
+controlled timeout/error handling
+JSON-mode style prompting where possible
+no browser exposure of provider key
+```
+
+### 4.2 Create question loop components
 
 Create:
 
@@ -2848,13 +2946,12 @@ src/features/system-design/components/QuestionCard.tsx
 src/features/system-design/components/QuestionHistory.tsx
 ```
 
-### 4.2 Create LangGraph question node and tool
+### 4.3 Create question generation node and prompt
 
 Create:
 
 ```text
 src/features/system-design/nodes/generateQuestionNode.ts
-src/features/system-design/tools/aiProviderTool.ts
 src/features/system-design/prompts/constructiveQuestionPrompt.ts
 src/features/system-design/utils/questionCategories.ts
 src/features/system-design/utils/questionSelection.ts
@@ -2867,12 +2964,13 @@ processed input summary
 current understanding
 previous Q&A
 missing categories
+previous questions
 LangGraph state
 ```
 
-### 4.3 Create answer submission path
+### 4.4 Create answer submission route
 
-Create or update:
+Create:
 
 ```text
 app/api/system-builder/layer1/answer/route.ts
@@ -2887,7 +2985,7 @@ resume or continue graph
 return updated graph state
 ```
 
-### 4.4 Create understanding node
+### 4.5 Create understanding update node
 
 Create:
 
@@ -2898,7 +2996,7 @@ src/features/system-design/components/Layer1UnderstandingPanel.tsx
 src/features/system-design/utils/updateUnderstanding.ts
 ```
 
-### 4.5 Create completeness node
+### 4.6 Create completeness node
 
 Create:
 
@@ -2907,6 +3005,30 @@ src/features/system-design/nodes/checkCompletenessNode.ts
 src/features/system-design/prompts/completenessPrompt.ts
 src/features/system-design/components/Layer1CompletenessPanel.tsx
 src/features/system-design/utils/completeness.ts
+```
+
+### 4.7 Wire graph loop
+
+Update:
+
+```text
+src/features/system-design/graphs/layer1Graph.ts
+src/features/system-design/graphs/layer1GraphEdges.ts
+src/features/system-design/graphs/layer1GraphRunner.ts
+src/features/system-design/stores/useLayer1Store.ts
+src/features/system-design/components/Layer1Shell.tsx
+```
+
+The graph must loop like this:
+
+```text
+processed input
+→ generate one question
+→ wait for user answer
+→ update understanding
+→ check completeness
+→ ask again if incomplete
+→ continue to Markdown spec when ready
 ```
 
 ## Files
@@ -2929,13 +3051,20 @@ src/features/system-design/utils/questionCategories.ts
 src/features/system-design/utils/questionSelection.ts
 src/features/system-design/utils/updateUnderstanding.ts
 src/features/system-design/utils/completeness.ts
+src/features/system-design/graphs/layer1Graph.ts
+src/features/system-design/graphs/layer1GraphEdges.ts
+src/features/system-design/graphs/layer1GraphRunner.ts
+src/features/system-design/stores/useLayer1Store.ts
+src/features/system-design/components/Layer1Shell.tsx
 ```
 
 ## Acceptance Criteria
 
 ```text
 User starts clarification after input processing
-LangGraph asks one constructive question
+LangGraph asks exactly one constructive question
+Question includes reason for asking
+Question includes traceability fields
 Graph waits for user answer
 User answer resumes/continues graph
 Next question uses previous context
@@ -2944,35 +3073,46 @@ Understanding updates after answers
 Completeness report is generated
 Missing critical items are shown
 Graph loops when more questions are needed
-Graph continues when ready
+Graph continues when ready for Markdown specification
+No static questionnaire behavior
 npm run lint passes
 npm run build passes
 ```
 
 ---
 
-# Task 5 — Markdown Specification, Draw.io Generation, Review, Manual Edit, and AI Refinement
+# Task 5 — Markdown Specification Editor, Review Workflow, Validation, and Approval Gate
 
 ## Goal
 
-Generate the final human-readable and visual Layer 1 artifacts through LangGraph.
+Generate the human-readable Layer 1 system specification and make it editable before diagram generation.
+
+## Why This Task Is Critical
+
+The Markdown specification is the main Layer 1 artifact.
+
+The Draw.io diagram must be generated from an approved Markdown specification, not directly from raw user input.
+
+This task creates the approval gate between understanding and diagram generation.
 
 ## Scope
 
 ```text
-Markdown specification node
-Editable spec review
-Draw.io generation node
-Diagram review
-Manual Draw.io editing
-LangGraph diagram refinement node
-Revision history
-Diagram approval
+Markdown generation node
+Markdown spec tool
+Spec generation prompt
+Markdown validation
+Editable spec UI
+Spec preview
+Spec approval
+Spec review API route
+Graph state update after approval
+Diagram generation gate
 ```
 
 ## Subtasks
 
-### 5.1 Create Markdown specification node
+### 5.1 Create Markdown spec generator
 
 Create:
 
@@ -2981,14 +3121,80 @@ src/features/system-design/nodes/generateSpecNode.ts
 src/features/system-design/tools/markdownSpecTool.ts
 src/features/system-design/utils/markdownSpec.ts
 src/features/system-design/prompts/specGenerationPrompt.ts
+```
+
+The spec must use:
+
+```text
+processed input
+Q&A history
+system understanding
+completeness report
+assumptions
+open questions
+future Layer 2 preparation notes
+```
+
+### 5.2 Create spec validation
+
+Update:
+
+```text
+src/features/system-design/utils/markdownSpec.ts
+src/features/system-design/schemas/layer1.schema.ts
+```
+
+Validate required Markdown sections:
+
+```text
+System Overview
+Source Input Summary
+Main Goal
+Users and Roles
+Core Workflow
+Alternative Workflows
+Inputs
+Outputs
+Data Objects / Entities
+Business Rules
+Decision Logic
+Validations
+Edge Cases
+Error Handling
+Integrations
+Security and Permissions
+Notifications
+Reporting / Logging
+Diagram Generation Notes
+Open Questions
+Future Layer 2 Preparation
+```
+
+### 5.3 Create spec UI
+
+Create:
+
+```text
 src/features/system-design/components/Layer1SpecStep.tsx
+```
+
+It should support:
+
+```text
+generated Markdown display
+editable Markdown textarea/editor
+preview mode
+edit mode
+validation warnings
+approve spec button
+regenerate/request revision placeholder
 ```
 
 Reuse existing markdown components where appropriate.
 
-### 5.2 Create specification review route
+### 5.4 Create specification review route
 
-Create or update:
+Create:
 
 ```text
 app/api/system-builder/layer1/spec-review/route.ts
@@ -2997,106 +3203,290 @@ app/api/system-builder/layer1/spec-review/route.ts
 This route should:
 
 ```text
-accept edited/approved Markdown spec
+accept edited Markdown spec
 validate it
+save approval state
 update graph state
-continue toward diagram generation
+allow diagram generation only after approval
 ```
 
-### 5.3 Create diagram generation node
+### 5.5 Wire approval gate
 
-Create:
+Update:
 
 ```text
-src/features/system-design/nodes/generateDiagramNode.ts
-src/features/system-design/tools/xmlValidationTool.ts
-src/features/system-design/components/Layer1DiagramStep.tsx
-src/features/system-design/prompts/diagramGenerationPrompt.ts
-src/features/system-design/utils/drawioXml.ts
+src/features/system-design/graphs/layer1Graph.ts
+src/features/system-design/graphs/layer1GraphEdges.ts
+src/features/system-design/graphs/layer1GraphRunner.ts
+src/features/system-design/stores/useLayer1Store.ts
+src/features/system-design/components/Layer1Shell.tsx
 ```
 
-### 5.4 Create diagram API route
-
-Create or update:
+The graph must enforce:
 
 ```text
-app/api/system-builder/layer1/generate-diagram/route.ts
-```
-
-The route should invoke the LangGraph diagram node, not directly generate diagram logic inside the route.
-
-### 5.5 Create or reuse DrawioEmbed
-
-Use:
-
-```text
-src/components/system-builder/DrawioEmbed.tsx
-```
-
-or create an equivalent low-level component if needed.
-
-### 5.6 Create diagram review/refinement UI and node
-
-Create:
-
-```text
-app/api/system-builder/layer1/refine-diagram/route.ts
-src/features/system-design/nodes/refineDiagramNode.ts
-src/features/system-design/components/Layer1DiagramReview.tsx
-src/features/system-design/components/Layer1DiagramRefinement.tsx
-src/features/system-design/components/DiagramRevisionHistory.tsx
-src/features/system-design/prompts/diagramRefinementPrompt.ts
+No diagram generation before Markdown spec exists.
+No diagram generation before Markdown spec is approved.
+Layer 1 artifact bundle cannot be created before diagram approval.
 ```
 
 ## Files
 
 ```text
 app/api/system-builder/layer1/spec-review/route.ts
-app/api/system-builder/layer1/generate-diagram/route.ts
-app/api/system-builder/layer1/refine-diagram/route.ts
 src/features/system-design/components/Layer1SpecStep.tsx
-src/features/system-design/components/Layer1DiagramStep.tsx
-src/features/system-design/components/Layer1DiagramReview.tsx
-src/features/system-design/components/Layer1DiagramRefinement.tsx
-src/features/system-design/components/DiagramRevisionHistory.tsx
 src/features/system-design/nodes/generateSpecNode.ts
-src/features/system-design/nodes/generateDiagramNode.ts
-src/features/system-design/nodes/refineDiagramNode.ts
 src/features/system-design/tools/markdownSpecTool.ts
-src/features/system-design/tools/xmlValidationTool.ts
 src/features/system-design/prompts/specGenerationPrompt.ts
-src/features/system-design/prompts/diagramGenerationPrompt.ts
-src/features/system-design/prompts/diagramRefinementPrompt.ts
 src/features/system-design/utils/markdownSpec.ts
-src/features/system-design/utils/drawioXml.ts
-src/components/system-builder/DrawioEmbed.tsx
+src/features/system-design/schemas/layer1.schema.ts
+src/features/system-design/graphs/layer1Graph.ts
+src/features/system-design/graphs/layer1GraphEdges.ts
+src/features/system-design/graphs/layer1GraphRunner.ts
+src/features/system-design/stores/useLayer1Store.ts
+src/features/system-design/components/Layer1Shell.tsx
 ```
 
 ## Acceptance Criteria
 
 ```text
 Markdown spec is generated from full Layer 1 graph state
+Markdown spec follows required structure
 Markdown spec is editable
-Edited Markdown spec can update graph state
-Diagram is generated from processed input, Q&A, understanding, and approved spec
-Draw.io loads generated XML
-Manual edits update current XML
-AI refinement goes through LangGraph refineDiagramNode
-Revision history is stored
-User can approve diagram
-Approved Layer 1 artifact bundle is created only after diagram approval
-Layer 2 does not appear as available before the artifact bundle exists
+Markdown spec can be previewed
+Edited Markdown spec is validated
+User can approve Markdown spec
+Graph records markdownApproved
+Diagram generation is blocked until spec approval
+No Draw.io generation happens directly from raw input
 npm run lint passes
 npm run build passes
 ```
 
 ---
 
-# Task 6 — Export, Artifact Bundle, Tests, Docs, Deployment Readiness, and Cleanup
+# Task 6 — Draw.io Generation, Manual Editing, AI Refinement, XML Validation, Revision History, and Diagram Export
+
+## Goal
+
+Generate and refine the visual Layer 1 architecture diagram.
+
+## Why This Task Is Critical
+
+The diagram is one of the required final Layer 1 outputs.
+
+It must be generated from the approved Markdown spec and validated before being loaded or exported.
+
+The user must be able to review it, manually edit it, request AI refinement, and approve it.
+
+## Scope
+
+```text
+Draw.io XML generation node
+Diagram generation prompt
+XML validation and repair utility
+Diagram API route
+Draw.io embed integration
+Manual XML sync
+AI refinement route
+AI refinement node
+Revision history
+Diagram approval
+Diagram image export preparation
+```
+
+## Subtasks
+
+### 6.1 Create Draw.io XML utilities
+
+Create:
+
+```text
+src/features/system-design/utils/drawioXml.ts
+src/features/system-design/tools/xmlValidationTool.ts
+```
+
+Recommended functions:
+
+```text
+extractMxGraphModel
+sanitizeDrawioXml
+validateDrawioXml
+ensureMxGraphRoot
+createEmptyDrawioXml
+repairDrawioXmlIfPossible
+```
+
+### 6.2 Create diagram generation node
+
+Create:
+
+```text
+src/features/system-design/nodes/generateDiagramNode.ts
+src/features/system-design/prompts/diagramGenerationPrompt.ts
+```
+
+The node must use:
+
+```text
+approved Markdown spec
+processed input
+Q&A history
+system understanding
+completeness report
+diagram generation notes
+```
+
+### 6.3 Create diagram generation route
+
+Create:
+
+```text
+app/api/system-builder/layer1/generate-diagram/route.ts
+```
+
+The route should invoke the LangGraph diagram path, not direct diagram logic inside UI components.
+
+### 6.4 Integrate DrawioEmbed
+
+Reuse:
+
+```text
+src/components/system-builder/DrawioEmbed.tsx
+```
+
+Create:
+
+```text
+src/features/system-design/components/Layer1DiagramStep.tsx
+src/features/system-design/components/Layer1DiagramReview.tsx
+```
+
+The UI should support:
+
+```text
+load generated XML
+manual editing
+current XML state
+validation warnings
+approve diagram button
+```
+
+### 6.5 Create AI refinement flow
+
+Create:
+
+```text
+app/api/system-builder/layer1/refine-diagram/route.ts
+src/features/system-design/nodes/refineDiagramNode.ts
+src/features/system-design/prompts/diagramRefinementPrompt.ts
+src/features/system-design/components/Layer1DiagramRefinement.tsx
+src/features/system-design/components/DiagramRevisionHistory.tsx
+```
+
+The refinement request must use:
+
+```text
+current XML
+user instruction
+revision history
+approved Markdown spec
+full Layer 1 context
+```
+
+### 6.6 Prepare diagram image export
+
+Create or update:
+
+```text
+src/features/system-design/tools/drawioExportTool.ts
+```
+
+The tool should prepare support for:
+
+```text
+system-diagram.png
+system-diagram.svg
+```
+
+If browser-assisted export is required, document the limitation clearly and keep the artifact bundle structure prepared.
+
+### 6.7 Wire diagram approval gate
+
+Update:
+
+```text
+src/features/system-design/graphs/layer1Graph.ts
+src/features/system-design/graphs/layer1GraphEdges.ts
+src/features/system-design/graphs/layer1GraphRunner.ts
+src/features/system-design/stores/useLayer1Store.ts
+src/features/system-design/components/Layer1Shell.tsx
+```
+
+The graph must enforce:
+
+```text
+No diagram generation before Markdown approval.
+No artifact bundle before diagram approval.
+No Layer 2 readiness before approved artifacts exist.
+```
+
+## Files
+
+```text
+app/api/system-builder/layer1/generate-diagram/route.ts
+app/api/system-builder/layer1/refine-diagram/route.ts
+src/features/system-design/components/Layer1DiagramStep.tsx
+src/features/system-design/components/Layer1DiagramReview.tsx
+src/features/system-design/components/Layer1DiagramRefinement.tsx
+src/features/system-design/components/DiagramRevisionHistory.tsx
+src/features/system-design/nodes/generateDiagramNode.ts
+src/features/system-design/nodes/refineDiagramNode.ts
+src/features/system-design/tools/xmlValidationTool.ts
+src/features/system-design/tools/drawioExportTool.ts
+src/features/system-design/prompts/diagramGenerationPrompt.ts
+src/features/system-design/prompts/diagramRefinementPrompt.ts
+src/features/system-design/utils/drawioXml.ts
+src/components/system-builder/DrawioEmbed.tsx
+src/features/system-design/graphs/layer1Graph.ts
+src/features/system-design/graphs/layer1GraphEdges.ts
+src/features/system-design/graphs/layer1GraphRunner.ts
+src/features/system-design/stores/useLayer1Store.ts
+src/features/system-design/components/Layer1Shell.tsx
+```
+
+## Acceptance Criteria
+
+```text
+Diagram is generated only after Markdown spec approval
+Diagram generation uses full Layer 1 context
+Draw.io XML is extracted, sanitized, and validated
+Invalid XML is rejected or repaired safely
+Draw.io loads generated XML
+Manual edits update current XML
+AI refinement goes through LangGraph refineDiagramNode
+Revision history is stored
+User can approve diagram
+Diagram image export path is prepared
+Approved Layer 1 artifact bundle is still blocked until diagram approval
+Layer 2 does not appear as available before artifact bundle exists
+npm run lint passes
+npm run build passes
+```
+
+---
+
+# Task 7 — Final Export, Approved Artifact Bundle, Tests, Documentation, Deployment Readiness, and Cleanup
 
 ## Goal
 
 Finish Layer 1 as a professional deliverable.
+
+## Why This Task Is Critical
+
+Task 7 turns the workflow into a complete product output.
+
+It ensures the final Layer 1 files can be downloaded, the approved artifact bundle exists, tests cover critical logic, documentation is clear, and deployment is safe.
 
 ## Scope
 
@@ -3108,6 +3498,7 @@ Optional diagram summary export
 Approved Layer 1 artifact bundle
 LangGraph artifact bundle node
 Download utilities
+Export UI
 Tests
 Documentation
 Deployment notes
@@ -3117,7 +3508,25 @@ Final verification
 
 ## Subtasks
 
-### 6.1 Create export step
+### 7.1 Create artifact bundle node and tool
+
+Create:
+
+```text
+src/features/system-design/tools/artifactBundleTool.ts
+src/features/system-design/nodes/createArtifactBundleNode.ts
+```
+
+The bundle must contain:
+
+```text
+final-system-spec.md
+system-diagram.drawio.xml
+system-diagram.png or system-diagram.svg
+optional system-diagram-summary.md
+```
+
+### 7.2 Create export UI
 
 Create:
 
@@ -3125,53 +3534,57 @@ Create:
 src/features/system-design/components/Layer1ExportStep.tsx
 ```
 
-### 6.2 Create export utilities and artifact bundle tool
+It should include:
+
+```text
+Download Markdown Spec
+Download Draw.io XML
+Download Diagram Image
+Download Diagram Summary if available
+Send to Layer 2 — Coming soon disabled button
+```
+
+### 7.3 Create export utilities
 
 Create:
 
 ```text
 src/features/system-design/utils/exportLayer1.ts
 src/features/system-design/utils/downloadFile.ts
-src/features/system-design/tools/artifactBundleTool.ts
-src/features/system-design/nodes/createArtifactBundleNode.ts
 ```
 
-### 6.3 Export required files
+There should be no user-facing JSON export in this phase.
 
-Support downloads for:
+### 7.4 Create export API route
+
+Create:
 
 ```text
-final-system-spec.md
-system-diagram.drawio.xml
-system-diagram.png or system-diagram.svg
-optional system-diagram-summary.md
+app/api/system-builder/layer1/export/route.ts
 ```
 
-Do not add a downloadable JSON export in this phase.
-
-### 6.4 Prepare future Layer 2 input
-
-After exports exist, prepare the approved Layer 1 artifact bundle for future Layer 2.
-
-Layer 2 input should be:
+This route should:
 
 ```text
-final-system-spec.md
-system-diagram.drawio.xml
-system-diagram.png or system-diagram.svg
-optional system-diagram-summary.md
+validate final state
+create approved artifact bundle
+return export-ready artifact metadata
+keep Layer 2 locked
 ```
 
-### 6.5 Add tests
+### 7.5 Add tests
 
 Create tests for:
 
 ```text
 input normalization
 text chunking
+context compression placeholder behavior
 question selection
+understanding update
 completeness scoring
 markdown generation
+markdown validation
 draw.io XML validation
 artifact bundle preparation
 LangGraph node behavior
@@ -3184,6 +3597,7 @@ Recommended files:
 ```text
 src/features/system-design/utils/__tests__/inputNormalization.test.ts
 src/features/system-design/utils/__tests__/textChunking.test.ts
+src/features/system-design/utils/__tests__/contextCompression.test.ts
 src/features/system-design/utils/__tests__/questionSelection.test.ts
 src/features/system-design/utils/__tests__/completeness.test.ts
 src/features/system-design/utils/__tests__/markdownSpec.test.ts
@@ -3194,7 +3608,7 @@ src/features/system-design/nodes/__tests__/processInputNode.test.ts
 src/features/system-design/nodes/__tests__/createArtifactBundleNode.test.ts
 ```
 
-### 6.6 Add docs
+### 7.6 Add docs
 
 Create or update:
 
@@ -3205,7 +3619,7 @@ Docs/system-design-layer1.md
 Docs/system-design-team-tasks.md
 ```
 
-### 6.7 Deployment readiness
+### 7.7 Deployment readiness
 
 Document:
 
@@ -3218,7 +3632,7 @@ LangGraph runs inside the Next.js server/runtime for this phase
 package.json and package-lock.json must include LangGraph dependencies
 ```
 
-### 6.8 Cleanup
+### 7.8 Cleanup
 
 Before final commit, remove or ignore local inspection files:
 
@@ -3229,7 +3643,7 @@ branch-inspection.zip
 branch-inspection-content.zip
 ```
 
-### 6.9 Final verification
+### 7.9 Final verification
 
 Run:
 
@@ -3242,8 +3656,7 @@ npm run test
 ## Files
 
 ```text
-package.json
-package-lock.json
+app/api/system-builder/layer1/export/route.ts
 src/features/system-design/components/Layer1ExportStep.tsx
 src/features/system-design/tools/artifactBundleTool.ts
 src/features/system-design/nodes/createArtifactBundleNode.ts
@@ -3251,6 +3664,7 @@ src/features/system-design/utils/exportLayer1.ts
 src/features/system-design/utils/downloadFile.ts
 src/features/system-design/utils/__tests__/inputNormalization.test.ts
 src/features/system-design/utils/__tests__/textChunking.test.ts
+src/features/system-design/utils/__tests__/contextCompression.test.ts
 src/features/system-design/utils/__tests__/questionSelection.test.ts
 src/features/system-design/utils/__tests__/completeness.test.ts
 src/features/system-design/utils/__tests__/markdownSpec.test.ts
@@ -3289,24 +3703,26 @@ npm run test passes or known unrelated failures are documented
 
 ---
 
-## 56. Task Dependency Order
+## 56. Updated Task Dependency Order
 
 ```mermaid
 flowchart TD
-    T1[Task 1: Foundation and LangGraph Setup]
-    T2[Task 2: Input Pipeline]
-    T3[Task 3: LangGraph State, Graph, Nodes, Tools]
+    T1[Task 1 Completed: Foundation and LangGraph Layout]
+    T2[Task 2: Input Pipeline and Ingestion]
+    T3[Task 3: LangGraph Runtime and State]
     T4[Task 4: Clarification and Understanding]
-    T5[Task 5: Spec and Draw.io]
-    T6[Task 6: Export, Artifact Bundle, QA]
+    T5[Task 5: Markdown Specification Approval]
+    T6[Task 6: Draw.io Diagram and Refinement]
+    T7[Task 7: Export, Artifact Bundle, QA]
 
     T1 --> T2
     T2 --> T3
     T3 --> T4
     T4 --> T5
     T5 --> T6
+    T6 --> T7
 
-    T6 --> A[Approved Layer 1 Artifact Bundle]
+    T7 --> A[Approved Layer 1 Artifact Bundle]
     A --> L2[Layer 2: Locked Placeholder]
     L2 --> L3[Layer 3: Locked Placeholder]
 ```
@@ -3314,13 +3730,17 @@ flowchart TD
 Parallel notes:
 
 ```text
-Task 5 can plan Draw.io UI early, but final generation depends on Task 4 output.
-Task 6 can start docs and test skeleton early, but final export depends on Task 5.
+Task 1 is completed and should remain as the tested foundation.
+Task 2 can start immediately after this document update.
+Task 3 depends on the Task 2 input types, schemas, and processing tool.
+Task 4 depends on the Task 3 graph runtime, API route, and store sync.
+Task 5 depends on Task 4 understanding and completeness output.
+Task 6 depends on Task 5 approved Markdown specification.
+Task 7 depends on Task 6 approved diagram and current XML state.
 Layer 2 appears only after the approved Layer 1 artifact bundle exists.
 Layer 3 appears only after Layer 2 in the future.
 ```
 
----
 
 ## 57. Contribution Rules
 
@@ -3379,7 +3799,7 @@ npm run lint
 npm run build
 ```
 
-Task 6 should also run:
+Task 7 should also run:
 
 ```bash
 npm run test
@@ -3451,6 +3871,7 @@ No secrets are committed
 Existing frontend behavior remains stable
 npm run lint passes
 npm run build passes
+npm run test passes or known unrelated failures are documented
 ```
 
 ---
