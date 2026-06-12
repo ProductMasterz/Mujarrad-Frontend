@@ -229,8 +229,8 @@ flowchart TD
 
     B --> C{Input Source}
     C --> C1[Typed or Pasted Text]
-    C --> C2[Future Voice Transcript]
-    C --> C3[Future File Text]
+    C --> C2[Server-Transcribed Voice Input]
+    C --> C3[Plain .txt File Text]
 
     C1 --> LG[LangGraph Layer 1 Graph]
     C2 --> LG
@@ -280,7 +280,7 @@ Detailed flow:
 ```text
 1. User provides the system idea.
 
-2. Input can come from typed text, pasted text, future voice transcript, or future extracted file text.
+2. Input can come from typed text, pasted text, server-transcribed voice input, or extracted .txt file text.
 
 3. A Next.js API route sends the request to the LangGraph Layer 1 graph.
 
@@ -331,65 +331,126 @@ Detailed flow:
 
 ## 8. Input Collection and Processing
 
-The System Design input box is not a simple prompt box. It is the first stage of the Layer 1 workflow.
+The System Design input box is the first active stage of the Layer 1 workflow.
 
-The initial input UI should support:
+It is not a basic prompt box. It is a compact professional input composer that accepts multiple input sources and prepares them for the Layer 1 pipeline.
+
+Implemented Task 2 input sources:
 
 ```text
-Large multiline textbox
-Character counter
-Estimated input size indicator
-Input quality hints
-Clear button
-Next button
-Future voice input placeholder
-Future file input placeholder
+Typed text
+Pasted text
+Voice recording transcription through server route
+Plain .txt file upload
 ```
 
-Recommended component:
+The input UI supports:
+
+```text
+Compact multiline textarea
+Input source label
+Input size label
+Character count
+Estimated token count
+Processed chunk count
+Smart inline status pill
+File upload button inside composer
+Voice recording button inside composer
+Process button inside composer
+Clear button inside composer
+Short-input warning only when useful
+Error messages only when needed
+```
+
+Implemented component:
 
 ```text
 src/features/system-design/components/Layer1InputPanel.tsx
 ```
 
+Important UI rules implemented in Task 2:
+
+```text
+Avoid long explanations inside the UI.
+Avoid duplicate warnings.
+Avoid large metric cards.
+Avoid unnecessary side panels.
+Keep file, voice, and process actions inside the input composer.
+Show only useful status information.
+```
+
+The input stage currently processes input locally through the deterministic Task 2 tool. Task 3 will move the source of truth into the server-side LangGraph runtime and store.
+
+---
 
 ## 9. Input Processing Pipeline
 
 ```mermaid
 flowchart TD
-    A[Raw Input] --> B[LangGraph Input Processing Node]
+    A[Raw Input] --> B[Input Processing Tool]
     B --> C[Normalize Text]
     C --> D[Estimate Size]
-    D --> E{Needs Compression?}
-    E -->|No| F[Processed Context]
-    E -->|Yes| G[Split into Chunks]
-    G --> H[Compress or Summarize]
-    H --> F
-    F --> I[Clarification Node]
+    D --> E{Needs Chunking?}
+    E -->|No| F[Single TextChunk]
+    E -->|Yes| G[Split into Ordered Chunks]
+    G --> H[Deterministic Summary Placeholder]
+    H --> I[ProcessedInputContext]
+    F --> I
+    I --> J[Layer 1 Step Unlock: Clarification]
 ```
 
-Recommended files:
+Implemented files:
 
 ```text
-src/features/system-design/config/systemDesignConfig.ts
+src/features/system-design/types/input.types.ts
+src/features/system-design/schemas/input.schema.ts
 src/features/system-design/utils/inputNormalization.ts
 src/features/system-design/utils/textChunking.ts
 src/features/system-design/utils/contextCompression.ts
+src/features/system-design/utils/id.ts
 src/features/system-design/tools/inputProcessingTool.ts
-src/features/system-design/graphs/layer1Graph.ts
+src/features/system-design/nodes/processInputNode.ts
 ```
 
-Recommended config:
+Implemented responsibilities:
+
+```text
+RawInputPayload typing
+ProcessedInputContext typing
+InputProcessingResult typing
+InputProcessingWarning typing
+Input source typing
+Text normalization
+Whitespace cleanup
+Paragraph preservation
+Estimated token count
+Input size label
+Chunking decision
+Ordered TextChunk creation
+Character start/end offsets
+Deterministic compressed summary placeholder
+Traceability ID creation
+Controlled warnings
+Controlled errors
+```
+
+Input limits are configured in:
+
+```text
+src/features/system-design/config/systemDesignConfig.ts
+```
+
+Current config:
 
 ```ts
-export const SYSTEM_DESIGN_INPUT_LIMITS = {
+inputLimits: {
   maxDirectCharacters: 12000,
   maxChunkCharacters: 6000,
   chunkOverlapCharacters: 500,
-};
+}
 ```
 
-Recommended input types:
+Implemented input source types:
 
 ```ts
 export type SystemDesignInputSourceType =
@@ -397,7 +458,11 @@ export type SystemDesignInputSourceType =
   | 'pasted_text'
   | 'voice_transcript'
   | 'file_text';
+```
 
+Implemented core input objects:
+
+```ts
 export interface RawInputPayload {
   id: string;
   sourceType: SystemDesignInputSourceType;
@@ -417,7 +482,7 @@ export interface ProcessedInputContext {
   chunks: TextChunk[];
   compressedSummary: string;
   inputSize: InputSize;
-  processingWarnings: string[];
+  processingWarnings: InputProcessingWarning[];
   createdAt: string;
 }
 
@@ -437,62 +502,110 @@ export interface TextChunk {
 }
 ```
 
+Task 2 rule:
+
+```text
+No diagram generation happens from raw input.
+No AI clarification starts from raw input.
+Raw input must become ProcessedInputContext first.
+```
+
 ---
 
-## 10. Voice and Transcription Preparation
+## 10. Voice and Transcription
 
-Voice input is not required to be fully implemented in the first version unless separately assigned.
+Voice input is now implemented as a server-backed transcription path, not as unreliable browser speech recognition.
 
-However, the LangGraph architecture must prepare for it.
-
-Future voice flow:
+Implemented voice flow:
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant UI as Voice UI
-    participant API as Next.js API Route
-    participant Graph as LangGraph Layer 1 Graph
-    participant Transcriber as Transcription Tool
-    participant Store as Layer 1 Store
+    participant UI as Layer1InputPanel
+    participant Browser as MediaRecorder
+    participant API as /api/system-builder/transcribe
+    participant Provider as OpenAI Audio Transcription
+    participant Pipeline as Input Processing Tool
 
-    User->>UI: Records or uploads voice
-    UI->>API: Send audio blob/file
-    API->>Graph: Invoke transcription/input graph path
-    Graph->>Transcriber: Transcribe audio
-    Transcriber-->>Graph: Transcript text
-    Graph-->>Store: ProcessedInputContext
+    User->>UI: Click mic
+    UI->>Browser: Start recording
+    User->>UI: Click mic again
+    Browser-->>UI: Audio Blob
+    UI->>API: POST FormData audio
+    API->>Provider: Transcribe audio
+    Provider-->>API: Transcript text
+    API-->>UI: Transcript
+    UI->>Pipeline: Use transcript as voice_transcript input
 ```
 
-Recommended future files:
+Implemented files:
 
 ```text
-src/features/system-design/components/VoiceInputPlaceholder.tsx
+app/api/system-builder/transcribe/route.ts
+src/features/system-design/components/Layer1InputPanel.tsx
 src/features/system-design/tools/transcriptionTool.ts
 src/features/system-design/types/input.types.ts
 ```
 
-Recommended type:
-
-```ts
-export interface TranscriptionResult {
-  id: string;
-  audioSourceName?: string;
-  transcript: string;
-  language?: string;
-  confidence?: number;
-  durationSeconds?: number;
-  createdAt: string;
-}
-```
-
-For now:
+Implemented behavior:
 
 ```text
-Voice input can be disabled or marked Coming Soon.
-Voice transcript must enter the same LangGraph input processing path later.
+Voice button is inside the composer.
+Browser records audio using MediaRecorder.
+Audio is sent to a server-side Next.js API route.
+The server route calls the transcription provider.
+Transcript text is inserted into the textarea.
+Transcript source type becomes voice_transcript.
+Transcript then uses the same input processing pipeline as typed text and file text.
 ```
 
+Required environment variables:
+
+```env
+OPENAI_API_KEY=
+SYSTEM_BUILDER_TRANSCRIPTION_MODEL=whisper-1
+```
+
+Security rule:
+
+```text
+OPENAI_API_KEY must stay server-side.
+Never expose transcription keys as NEXT_PUBLIC variables.
+Never commit .env.local.
+```
+
+Current transcription API route:
+
+```text
+app/api/system-builder/transcribe/route.ts
+```
+
+Route responsibilities:
+
+```text
+Accept audio FormData
+Validate audio file exists
+Read OPENAI_API_KEY server-side
+Send audio to transcription provider
+Return transcript text
+Return controlled setup error if key is missing
+Return controlled provider error if transcription fails
+```
+
+File input is also implemented in Task 2.
+
+Implemented file behavior:
+
+```text
+File button is inside the composer.
+Only .txt and text/plain files are accepted.
+Text content is inserted into the textarea.
+Input source type becomes file_text.
+File text uses the same processing pipeline as all other input sources.
+Non-.txt files are rejected with a controlled UI error.
+```
+
+Task 3 will connect this input result to the server-side LangGraph state and persistent Layer 1 store.
 ---
 
 ## 11. Constructive Clarification Principle
@@ -539,6 +652,10 @@ LangGraph controls the question loop and decides whether to ask again or continu
 ```
 
 ---
+
+
+
+
 
 ## 12. Clarification Loop Diagram
 
@@ -656,6 +773,7 @@ Layer 3 is locked and later takes Layer 2 output as input.
 
 ---
 
+
 ## 15. Environment Rules
 
 Local environment variables must stay in:
@@ -683,7 +801,7 @@ They should remain as already configured in local and deployment environments.
 
 System Design should not force contributors to expose or rewrite those values.
 
-Recommended `.env.example` structure:
+Current `.env.example` structure:
 
 ```env
 # Existing Mujarrad frontend variables
@@ -699,6 +817,13 @@ OPENROUTER_API_KEY=
 # Optional model override for System Design
 SYSTEM_BUILDER_MODEL=google/gemini-2.0-flash-001
 
+# Server-side transcription provider key
+# Used by /api/system-builder/transcribe. Never expose as NEXT_PUBLIC.
+OPENAI_API_KEY=
+
+# Optional transcription model override
+SYSTEM_BUILDER_TRANSCRIPTION_MODEL=whisper-1
+
 # LangGraph execution mode
 # In this phase, LangGraph runs inside the Next.js server/runtime.
 SYSTEM_DESIGN_ORCHESTRATOR=langgraph
@@ -709,18 +834,20 @@ NEXT_PUBLIC_ENABLE_LAYER_2=false
 NEXT_PUBLIC_ENABLE_LAYER_3=false
 ```
 
-AI provider keys must stay server-side.
+AI and transcription provider keys must stay server-side.
 
 Correct:
 
 ```text
 OPENROUTER_API_KEY
+OPENAI_API_KEY
 ```
 
 Wrong:
 
 ```text
 NEXT_PUBLIC_OPENROUTER_API_KEY
+NEXT_PUBLIC_OPENAI_API_KEY
 ```
 
 ---
@@ -747,7 +874,11 @@ can remain as wrappers or reusable low-level components when needed.
 
 The goal is to add a clean System Design architecture beside the existing frontend, not to rewrite unrelated parts of the application.
 
-The frontend UI should not contain orchestration logic. The UI should collect input, display workflow state, show questions, show outputs, and call API routes. The API routes should invoke the LangGraph graph on the server side.
+The frontend UI should not contain final orchestration logic. The UI should collect input, display workflow state, show questions, show outputs, and call API routes.
+
+The API routes should invoke the LangGraph graph on the server side.
+
+Task 2 currently uses local deterministic input processing for the first UI workflow. Task 3 must move the workflow source of truth into the LangGraph runtime and store.
 
 ---
 
@@ -762,20 +893,31 @@ flowchart TD
     Route[app/system-builder/page.tsx]
     Wrapper[src/components/system-builder/SystemBuilder.tsx]
     Shell[SystemDesignShell]
+    Header[SystemDesignHeader]
     LayerNav[LayerNavigation]
+    StepNav[Layer1StepNavigation]
 
     Route --> Wrapper
     Wrapper --> Shell
+    Shell --> Header
     Shell --> LayerNav
+    Shell --> StepNav
 
     Shell --> L1[Layer 1: System Design UI]
-    Shell --> L2[Layer 2: Abstract Logic - Locked]
-    Shell --> L3[Layer 3: Code Machine - Locked]
+    Shell --> L2[Layer 2: Locked Card]
+    Shell --> L3[Layer 3: Locked Card]
 
     L1 --> Input[Layer1InputPanel]
-    Input --> API[Next.js API Route]
-    API --> Graph[LangGraph Layer 1 Graph]
+    Input --> LocalTool[inputProcessingTool in Task 2]
+    Input --> TranscribeAPI[/api/system-builder/transcribe]
+    TranscribeAPI --> Transcript[Transcript Text]
+    Transcript --> Input
 
+    LocalTool --> Processed[ProcessedInputContext]
+
+    Processed --> T3[Task 3 LangGraph Runtime]
+
+    T3 --> Graph[LangGraph Layer 1 Graph]
     Graph --> N1[Input Processing Node]
     N1 --> N2[Question Generation Node]
     N2 --> N3[Human Answer Wait State]
@@ -799,8 +941,6 @@ flowchart TD
     Bundle4 --> L2
 
     L2 --> L3
-
-    N7 --> Drawio[DrawioEmbed]
 ```
 
 ---
@@ -814,8 +954,8 @@ src/features/system-design/
 │   ├── SystemDesignHeader.tsx
 │   ├── LayerNavigation.tsx
 │   ├── Layer1Shell.tsx
+│   ├── Layer1StepNavigation.tsx
 │   ├── Layer1InputPanel.tsx
-│   ├── VoiceInputPlaceholder.tsx
 │   ├── InputProcessingStatus.tsx
 │   ├── Layer1QuestionLoop.tsx
 │   ├── QuestionCard.tsx
@@ -897,6 +1037,18 @@ src/features/system-design/
     └── updateUnderstanding.ts
 ```
 
+API route folder additions:
+
+```text
+app/api/system-builder/transcribe/route.ts
+app/api/system-builder/layer1/route.ts
+app/api/system-builder/layer1/answer/route.ts
+app/api/system-builder/layer1/spec-review/route.ts
+app/api/system-builder/layer1/generate-diagram/route.ts
+app/api/system-builder/layer1/refine-diagram/route.ts
+app/api/system-builder/layer1/export/route.ts
+```
+
 ---
 
 ## 19. Route Strategy
@@ -921,7 +1073,7 @@ The route file should stay:
 app/system-builder/page.tsx
 ```
 
-Recommended implementation:
+Current implementation:
 
 ```tsx
 import { SystemBuilder } from '@/components/system-builder/SystemBuilder';
@@ -935,7 +1087,7 @@ export default function SystemBuilderPage() {
 }
 ```
 
-Then `SystemBuilder.tsx` should become a compatibility wrapper:
+`SystemBuilder.tsx` is a compatibility wrapper:
 
 ```tsx
 'use client';
@@ -947,13 +1099,13 @@ export function SystemBuilder() {
 }
 ```
 
-The UI should call API routes. API routes should invoke the LangGraph graph. Components should not run LangGraph directly in the browser.
+The UI should call API routes for server operations. API routes should invoke the LangGraph graph. Components should not run LangGraph directly in the browser.
 
 ---
 
 ## 20. Layer Shell Architecture
 
-The System Design page should visually contain three layers:
+The System Design page visually contains three layers:
 
 ```text
 Layer 1: System Design
@@ -963,12 +1115,14 @@ Layer 3: Code Machine
 
 Only Layer 1 is active in this phase.
 
+Layer 2 and Layer 3 are shown only as compact locked layer cards.
+
+Layer 2 and Layer 3 duplicated right-side cards were removed in Task 2 to reduce visual clutter.
+
 Layer 2 and Layer 3 should show:
 
 ```text
 Locked
-Coming soon
-Requires approved Layer 1 artifact bundle
 ```
 
 Layer 2 and Layer 3 buttons/cards should be disabled for now.
@@ -983,26 +1137,50 @@ This diagram describes the UI layout and locked progression.
 
 ```mermaid
 flowchart LR
-    A[System Design Header] --> B[Layer Navigation]
+    A[Compact System Design Header] --> B[Layer Navigation]
 
     B --> C[Layer 1 Card: Active]
     B --> D[Layer 2 Card: Locked]
     B --> E[Layer 3 Card: Locked]
 
-    C --> F[Layer 1 LangGraph Workflow]
-    F --> G[Approved Layer 1 Artifact Bundle]
+    C --> F[Layer 1 Step Navigation]
+    F --> G[Input]
+    F --> H[Clarify]
+    F --> I[Spec]
+    F --> J[Diagram]
+    F --> K[Review]
+    F --> L[Export]
 
-    G --> D
+    G --> M[ProcessedInputContext]
+    M --> H
+    H --> I
+    I --> J
+    J --> K
+    K --> L
+
+    L --> N[Approved Layer 1 Artifact Bundle]
+    N --> D
     D --> E
 ```
 
-Recommended layout:
+Current layout:
 
 ```text
-Top: System Design header
-Below: three-layer navigation/cards
-Main area: active Layer 1 workflow
-Side area: progress, current graph state, completeness, or export readiness
+Top: Compact System Design header
+Below: Compact three-layer navigation/cards
+Below: Layer 1 internal step navigation
+Main area: Selected Layer 1 step content
+```
+
+Task 2 UI decisions:
+
+```text
+Keep UI compact.
+Avoid long explanatory text in the interface.
+Show only useful status information.
+Keep input tools inside the composer.
+Keep future Layer 2 and Layer 3 visible but locked.
+Do not duplicate locked Layer 2 / Layer 3 cards in the main content area.
 ```
 
 ---
@@ -1011,7 +1189,48 @@ Side area: progress, current graph state, completeness, or export readiness
 
 Layer 1 should be controlled by explicit workflow stages.
 
-Recommended type:
+Current Task 2 UI stepper:
+
+```text
+1. Input
+2. Clarify
+3. Spec
+4. Diagram
+5. Review
+6. Export
+```
+
+Current Task 2 step behavior:
+
+```text
+Only Input is open on initial load.
+Later steps are locked until previous steps are completed.
+After Input is processed successfully, Clarify unlocks.
+After pressing Proceed in a placeholder step, the next step unlocks.
+Completed steps remain clickable.
+The next available step is clickable.
+Locked later steps are disabled.
+Users can go back to completed steps.
+Users can jump between unlocked/completed steps.
+```
+
+Current implementation files:
+
+```text
+src/features/system-design/components/Layer1Shell.tsx
+src/features/system-design/components/Layer1StepNavigation.tsx
+src/features/system-design/components/Layer1InputPanel.tsx
+```
+
+Important limitation:
+
+```text
+Task 2 step progress is stored in React state only.
+Progress resets on page refresh.
+Task 3 must move this into the Layer 1 store and server-side LangGraph state.
+```
+
+Recommended final type for Task 3:
 
 ```ts
 export type Layer1Stage =
@@ -1025,20 +1244,7 @@ export type Layer1Stage =
   | 'export';
 ```
 
-Recommended UI stepper:
-
-```text
-1. Input
-2. Processing
-3. Clarification
-4. Understanding
-5. Specification
-6. Diagram
-7. Review
-8. Export
-```
-
-The stage shown in the UI must come from the LangGraph state or from a store synchronized with the LangGraph result.
+The stage shown in the final UI must come from the LangGraph state or from a store synchronized with the LangGraph result.
 
 The UI should not allow users to jump to later stages before required data exists.
 
@@ -1050,7 +1256,6 @@ Cannot open Diagram before Markdown specification exists.
 Cannot export before the diagram is approved.
 Cannot show Layer 2 as available before approved Layer 1 artifacts exist.
 ```
-
 ---
 
 ## 23. Layer 1 LangGraph State Machine
@@ -1585,6 +1790,12 @@ app/api/system-builder/layer1/refine-diagram/route.ts
 app/api/system-builder/layer1/export/route.ts
 ```
 
+Implemented Task 2 transcription route:
+
+```text
+app/api/system-builder/transcribe/route.ts
+```
+
 Recommended responsibilities:
 
 ```text
@@ -1602,10 +1813,14 @@ The browser must not access:
 
 ```text
 OPENROUTER_API_KEY
+OPENAI_API_KEY
 ```
 
----
+Both keys must stay server-side only.
 
+Task 2 currently uses `/api/system-builder/transcribe` for server-side voice transcription. Task 3 must add the main Layer 1 graph route and move workflow state into the LangGraph/store runtime.
+
+---
 ## 38. LangGraph Dependency Status
 
 LangGraph.js is a required dependency for this project and must be used as the orchestration layer for the System Design workflow.
@@ -2182,37 +2397,36 @@ This is important because future Layer 2 logic will depend on understanding how 
 
 
 
-
-
-
-
-
 ---
 
 ## 54. Layer 1 Implementation Tasks
 
-Layer 1 is now divided into **seven implementation tasks**.
+Layer 1 is now divided into **eight implementation tasks**.
 
-Task 1 has already been completed and tested. It created the initial professional foundation, feature shell, folder structure, LangGraph dependency setup, and locked Layer 2 / Layer 3 placeholders.
+Task 1 and Task 2 have been completed and tested.
 
-Because Task 1 was intentionally focused on setup, the remaining implementation must be divided into **six stronger and more intensive professional tasks**.
+Task 1 created the foundation, feature shell, route compatibility, LangGraph dependency setup, and locked Layer 2 / Layer 3 placeholders.
+
+Task 2 created the professional input pipeline, compact input UI, text/file/voice ingestion paths, deterministic processing tool, input processing node, traceability types, schemas, and step-gated Layer 1 UI behavior.
 
 The updated task structure is:
 
 ```text
 Task 1: Completed — Foundation, environment, feature shell, and LangGraph layout
 
-Task 2: Input Pipeline, Text/Voice/File Ingestion, Processing UI, and Traceability
+Task 2: Completed — Input Pipeline, Text/Voice/File Ingestion, Processing UI, Step Gating, and Traceability
 
 Task 3: LangGraph Core Runtime, State Model, API Routes, Schemas, Nodes, Tools, and Store Sync
 
-Task 4: AI Clarification Engine, Constructive Question Loop, Understanding Model, and Completeness Logic
+Task 4: AI Clarification and Q&A Loop
 
-Task 5: Markdown Specification Editor, Review Workflow, Validation, and Approval Gate
+Task 5: Understanding Model, Completeness Logic, and Workflow Progression
 
-Task 6: Draw.io Generation, Manual Editing, AI Refinement, XML Validation, Revision History, and Diagram Export
+Task 6: Markdown Specification, Review, Validation, and Approval Gate
 
-Task 7: Final Export, Approved Artifact Bundle, Tests, Documentation, Deployment Readiness, and Cleanup
+Task 7: Draw.io Diagram, XML Validation, Manual Editing, AI Refinement, and Diagram Approval
+
+Task 8: Final Export, Approved Artifact Bundle, Tests, Documentation, Deployment Readiness, and Cleanup
 ```
 
 Important rule:
@@ -2224,26 +2438,33 @@ Layer 3 must still remain locked until future Layer 2 output exists.
 
 ---
 
-## 55. Seven-Task Implementation Roadmap
+## 55. Eight-Task Implementation Roadmap
 
 ```mermaid
 flowchart TD
     T1[Task 1 Completed: Foundation, Shell, LangGraph Layout]
-    T2[Task 2: Input Pipeline and Ingestion]
+    T2[Task 2 Completed: Input Pipeline, Voice/File/Text Ingestion, Step Gating]
     T3[Task 3: LangGraph Runtime, State, APIs, Schemas, Store]
-    T4[Task 4: Clarification, Understanding, Completeness]
-    T5[Task 5: Markdown Spec, Review, Approval]
-    T6[Task 6: Draw.io Generation, Editing, Refinement, Export]
-    T7[Task 7: Artifact Bundle, Tests, Docs, Deployment Readiness]
+    T4[Task 4: Clarification and Q&A Loop]
+    T5[Task 5: Understanding, Completeness, Progression]
+    T6[Task 6: Markdown Spec, Review, Approval]
+    T7[Task 7: Draw.io Diagram, Editing, Refinement, Approval]
+    T8[Task 8: Export, Artifact Bundle, Tests, Docs, Deployment]
 
     T1 --> T2
     T2 --> T3
     T3 --> T4
+    T3 --> T5
+    T3 --> T6
+    T3 --> T7
+    T3 --> T8
+
     T4 --> T5
     T5 --> T6
     T6 --> T7
+    T7 --> T8
 
-    T7 --> A[Approved Layer 1 Artifact Bundle]
+    T8 --> A[Approved Layer 1 Artifact Bundle]
     A --> L2[Layer 2: Abstract Logic - Locked Placeholder]
     L2 --> L3[Layer 3: Code Machine - Locked Placeholder]
 ```
@@ -2252,12 +2473,15 @@ Parallel notes:
 
 ```text
 Task 1 is completed and should not be expanded unless a foundation bug is found.
-Task 2 starts after the feature folder and shell exist.
-Task 3 depends on Task 2 types and input processing structures.
-Task 4 depends on Task 3 graph runtime, graph state, API routes, and store sync.
-Task 5 depends on Task 4 understanding and completeness output.
-Task 6 depends on Task 5 approved Markdown specification.
-Task 7 depends on Task 6 approved diagram and current XML state.
+Task 2 is completed and should not be expanded unless an input pipeline bug is found.
+Task 3 depends on Task 2 input types, schemas, processing tool, transcription route, and step UI.
+Task 3 must be completed before Tasks 4–8 are split across people.
+After Task 3 defines shared graph state, API patterns, and store sync, Tasks 4–8 can be developed more independently.
+Task 4 owns the clarification question loop.
+Task 5 owns understanding, completeness, and workflow progression.
+Task 6 owns Markdown specification generation/review/approval.
+Task 7 owns Draw.io diagram generation/review/refinement/approval.
+Task 8 owns final export, tests, docs, deployment readiness, and cleanup.
 Layer 2 appears only after the approved Layer 1 artifact bundle exists.
 Layer 3 appears only after Layer 2 in the future.
 ```
@@ -2316,6 +2540,49 @@ src/features/system-design/utils/.gitkeep
 .env.example
 ```
 
+## Completed File Responsibilities
+
+```text
+package.json:
+Stores LangGraph and LangChain dependencies.
+
+package-lock.json:
+Locks dependency versions.
+
+app/system-builder/page.tsx:
+Keeps the /system-builder route stable and sets System Design metadata.
+
+src/components/system-builder/SystemBuilder.tsx:
+Compatibility wrapper that points the old System Builder entry to the new System Design feature shell.
+
+src/features/system-design/components/SystemDesignShell.tsx:
+Main System Design page shell.
+
+src/features/system-design/components/SystemDesignHeader.tsx:
+System Design page header.
+
+src/features/system-design/components/LayerNavigation.tsx:
+Displays Layer 1 active, Layer 2 locked, and Layer 3 locked cards.
+
+src/features/system-design/components/Layer1Shell.tsx:
+Initial Layer 1 content shell.
+
+src/features/system-design/components/Layer2Locked.tsx:
+Locked Layer 2 placeholder.
+
+src/features/system-design/components/Layer3Locked.tsx:
+Locked Layer 3 placeholder.
+
+src/features/system-design/config/systemDesignConfig.ts:
+Shared product/layer/input/export configuration.
+
+src/features/system-design/*/.gitkeep:
+Keeps planned feature folders committed before implementation files exist.
+
+.env.example:
+Documents safe environment variable names without real secrets.
+```
+
 ## Verification Completed
 
 ```text
@@ -2325,7 +2592,6 @@ Layer 1 is active
 Layer 2 is locked
 Layer 3 is locked
 Layer 2 requires the approved Layer 1 artifact bundle
-LangGraph server-side note is visible
 Existing routes still build
 npm run lint passes with existing warnings only
 npm run build passes
@@ -2351,240 +2617,69 @@ npm run build passes: Done
 
 ---
 
-# Task 2 — Input Pipeline, Text/Voice/File Ingestion, Processing UI, and Traceability
+# Task 2 — Completed: Input Pipeline, Text/Voice/File Ingestion, Processing UI, Step Gating, and Traceability
+
+## Status
+
+```text
+Completed
+Tested locally
+Ready for final commit and push on task-2-system-design-input-pipeline
+```
 
 ## Goal
 
 Build the professional input foundation before AI questioning starts.
 
-## Why This Task Is Critical
-
-The LangGraph workflow depends on clean, safe, traceable input.
-
-Without this task, the system risks sending raw input directly to AI, losing traceability, or mixing voice/file logic into random UI components.
-
-Task 2 must make input collection feel like the first real stage of a professional Layer 1 workflow, not a basic prompt box.
-
-## Scope
+## Completed Work
 
 ```text
-Large text input panel
-Input source typing
-Input normalization
-Input size detection
-Estimated token count
-Chunking when needed
-Context compression preparation
-Voice input placeholder
-File input placeholder
-Transcription tool interface
-Input processing status UI
-Traceability IDs
-LangGraph input processing node
-Server-safe input processing tool
+Input types created
+Input schemas created
+Text normalization utility created
+Text chunking utility created
+Context compression placeholder created
+ID utility created
+Input processing tool created
+Input processing node created
+Server transcription route created
+Transcription tool placeholder/interface created
+Compact Layer 1 input composer created
+Voice recording added through MediaRecorder
+Voice transcription connected to server API route
+.txt file upload implemented
+Non-.txt file rejection implemented
+Smart input status pill implemented
+Input source labels implemented
+Character count implemented
+Estimated token count implemented
+Input size label implemented
+Chunk count display implemented after processing
+Empty input blocking implemented
+Short input warning implemented without duplicate large panels
+Clear/reset implemented
+Layer 1 internal step navigation implemented
+Step locking/gating implemented
+Input processing auto-opens Clarify step
+Completed steps remain clickable
+Locked future steps are disabled
+Right-side duplicate Layer 2/3 cards removed
+UI made compact and reduced explanatory text
 ```
 
-## Subtasks
-
-### 2.1 Create input types
-
-Create:
+## Completed Files
 
 ```text
-src/features/system-design/types/input.types.ts
-```
-
-Include:
-
-```text
-SystemDesignInputSourceType
-RawInputPayload
-ProcessedInputContext
-TextChunk
-InputSize
-TranscriptionResult
-InputProcessingStatus
-InputProcessingWarning
-InputProcessingResult
-```
-
-Input source types must include:
-
-```text
-typed_text
-pasted_text
-voice_transcript
-file_text
-```
-
-### 2.2 Create input schemas
-
-Create:
-
-```text
-src/features/system-design/schemas/input.schema.ts
-```
-
-Validate:
-
-```text
-raw input
-processed input
-text chunks
-input size
-transcription result
-processing result
-```
-
-The goal is to prevent invalid input payloads from entering the graph.
-
-### 2.3 Create input panel
-
-Create:
-
-```text
-src/features/system-design/components/Layer1InputPanel.tsx
-```
-
-It should support:
-
-```text
-large multiline textbox
-character count
-estimated token count
-input size label
-input quality hints
-empty input protection
-minimum useful input guidance
-Next / Process Input button
-clear/reset button
-future voice placeholder
-future file placeholder
-```
-
-### 2.4 Create voice placeholder
-
-Create:
-
-```text
-src/features/system-design/components/VoiceInputPlaceholder.tsx
-src/features/system-design/tools/transcriptionTool.ts
-```
-
-Voice does not need full implementation yet.
-
-For now, it should clearly show:
-
-```text
-Voice input coming soon
-Future transcripts will enter the same input processing pipeline
-```
-
-### 2.5 Create file input placeholder
-
-Create:
-
-```text
-src/features/system-design/components/FileInputPlaceholder.tsx
-```
-
-File upload does not need full implementation yet.
-
-For now, it should clearly show:
-
-```text
-File input coming soon
-Future extracted file text will enter the same input processing pipeline
-```
-
-### 2.6 Create input processing status UI
-
-Create:
-
-```text
-src/features/system-design/components/InputProcessingStatus.tsx
-```
-
-Show statuses:
-
-```text
-idle
-normalizing
-chunking
-compressing
-ready
-failed
-```
-
-### 2.7 Create input utilities
-
-Create:
-
-```text
-src/features/system-design/utils/inputNormalization.ts
-src/features/system-design/utils/textChunking.ts
-src/features/system-design/utils/contextCompression.ts
-src/features/system-design/utils/id.ts
-```
-
-Responsibilities:
-
-```text
-normalize text
-trim unsafe whitespace
-preserve paragraph structure
-estimate token count
-detect when chunking is needed
-split text while preserving order
-preserve character start/end offsets
-prepare deterministic compressed summary placeholder
-generate stable local IDs
-```
-
-### 2.8 Create input processing tool and node
-
-Create:
-
-```text
-src/features/system-design/tools/inputProcessingTool.ts
-src/features/system-design/nodes/processInputNode.ts
-```
-
-Responsibilities:
-
-```text
-accept RawInputPayload
-normalize text
-estimate size
-chunk if needed
-compress/summarize if needed
-preserve traceability
-return ProcessedInputContext
-return controlled warnings
-return controlled errors
-```
-
-### 2.9 Wire Task 2 into Layer 1 shell
-
-Update:
-
-```text
+app/api/system-builder/transcribe/route.ts
+src/features/system-design/components/SystemDesignShell.tsx
+src/features/system-design/components/SystemDesignHeader.tsx
+src/features/system-design/components/LayerNavigation.tsx
 src/features/system-design/components/Layer1Shell.tsx
-```
-
-It should display the real input panel instead of only static workflow cards.
-
-The existing workflow cards can remain as a stage overview, but input should become the active first step.
-
-## Files
-
-```text
-src/features/system-design/types/input.types.ts
-src/features/system-design/schemas/input.schema.ts
+src/features/system-design/components/Layer1StepNavigation.tsx
 src/features/system-design/components/Layer1InputPanel.tsx
 src/features/system-design/components/InputProcessingStatus.tsx
-src/features/system-design/components/VoiceInputPlaceholder.tsx
-src/features/system-design/components/FileInputPlaceholder.tsx
+src/features/system-design/types/input.types.ts
+src/features/system-design/schemas/input.schema.ts
 src/features/system-design/tools/inputProcessingTool.ts
 src/features/system-design/tools/transcriptionTool.ts
 src/features/system-design/nodes/processInputNode.ts
@@ -2593,32 +2688,183 @@ src/features/system-design/utils/inputNormalization.ts
 src/features/system-design/utils/textChunking.ts
 src/features/system-design/utils/contextCompression.ts
 src/features/system-design/config/systemDesignConfig.ts
-src/features/system-design/components/Layer1Shell.tsx
+.env.example
 ```
 
-## Acceptance Criteria
+## Completed File Responsibilities
 
 ```text
-User can enter text
-UI shows character count
-UI shows estimated token count
-UI shows input size label
-UI blocks empty input
-UI gives helpful input quality hints
-User can clear input
-Small text can pass directly
-Large text is chunked safely
-ProcessedInputContext is created
-TextChunk objects preserve order and character offsets
-Voice input path is architecturally prepared
-File input path is architecturally prepared
-No real transcription implementation is required yet
-No real file extraction implementation is required yet
-No diagram generation happens from raw input
-Input processing is represented as a LangGraph node/tool
-Layer1Shell shows the real input panel
-npm run lint passes
-npm run build passes
+app/api/system-builder/transcribe/route.ts:
+Server-side API route for voice transcription. Accepts audio FormData, reads OPENAI_API_KEY on the server, sends audio to the transcription provider, and returns transcript text or controlled errors.
+
+src/features/system-design/components/SystemDesignShell.tsx:
+Main compact page shell. Shows header, layer navigation, and full-width Layer 1 workflow. Removed duplicated right-side locked Layer 2/3 cards.
+
+src/features/system-design/components/SystemDesignHeader.tsx:
+Compact System Design header. Reduced text and vertical spacing.
+
+src/features/system-design/components/LayerNavigation.tsx:
+Compact Layer 1/2/3 navigation cards. Layer 1 active, Layer 2 and Layer 3 locked.
+
+src/features/system-design/components/Layer1Shell.tsx:
+Client-side Layer 1 step controller for Task 2. Tracks active step, completed steps, available steps, and step progression in React state. This is temporary until Task 3 moves workflow state into store/LangGraph.
+
+src/features/system-design/components/Layer1StepNavigation.tsx:
+Clickable compact internal Layer 1 workflow stepper. Supports active, done, open, and locked states.
+
+src/features/system-design/components/Layer1InputPanel.tsx:
+Compact input composer. Handles typed text, pasted text, .txt file upload, voice recording, server transcription request, local deterministic input processing, smart status pill, source/size/token/chunk chips, process action, and clear/reset.
+
+src/features/system-design/components/InputProcessingStatus.tsx:
+Reusable status display for input processing. It is currently minimized in the UI after compact redesign but kept available for future Task 3/4 state panels.
+
+src/features/system-design/types/input.types.ts:
+Defines RawInputPayload, ProcessedInputContext, TextChunk, InputSize, TranscriptionResult, InputProcessingStatus, InputProcessingWarning, and InputProcessingResult.
+
+src/features/system-design/schemas/input.schema.ts:
+Zod validation schemas for input source type, processing status, warnings, raw input payload, text chunks, input size, processed input context, processing result, and transcription result.
+
+src/features/system-design/tools/inputProcessingTool.ts:
+Deterministic tool that accepts RawInputPayload, normalizes text, estimates size, chunks when needed, creates deterministic summary placeholder, preserves traceability, and returns InputProcessingResult.
+
+src/features/system-design/tools/transcriptionTool.ts:
+Transcription tool interface placeholder. The current working transcription path is the Next.js API route. Task 3 can connect this tool into LangGraph.
+
+src/features/system-design/nodes/processInputNode.ts:
+LangGraph-compatible input node wrapper around inputProcessingTool. Returns processingResult for future graph state integration.
+
+src/features/system-design/utils/id.ts:
+Creates local stable IDs and ISO timestamps.
+
+src/features/system-design/utils/inputNormalization.ts:
+Normalizes input text, preserves paragraph structure, trims unsafe whitespace, estimates token count, and returns input size label.
+
+src/features/system-design/utils/textChunking.ts:
+Splits large text into ordered TextChunk objects with index, text, characterStart, and characterEnd.
+
+src/features/system-design/utils/contextCompression.ts:
+Creates deterministic summary placeholder for processed context. AI compression can be added later through LangGraph.
+
+src/features/system-design/config/systemDesignConfig.ts:
+Holds input limits used by the processing tool.
+
+.env.example:
+Documents OPENAI_API_KEY and SYSTEM_BUILDER_TRANSCRIPTION_MODEL for server-side transcription without committing real secrets.
+```
+
+## Implemented Input Sources
+
+```text
+typed_text:
+Manual textarea input.
+
+pasted_text:
+Supported through textarea paste behavior. Task 3 can add explicit paste detection if needed.
+
+voice_transcript:
+Audio is recorded in the browser using MediaRecorder, sent to /api/system-builder/transcribe, transcribed server-side, inserted into the textarea, and then processed through the same input pipeline.
+
+file_text:
+Plain .txt file content is read in the browser, inserted into the textarea, and processed through the same input pipeline.
+```
+
+## Implemented Step Gating
+
+```text
+Initial state:
+Only Input is available.
+
+After successful input processing:
+Input becomes completed.
+Clarify becomes available.
+UI automatically moves to Clarify.
+
+After pressing Proceed in a placeholder step:
+Current step becomes completed.
+Next step becomes available.
+UI automatically moves to the next step.
+
+Completed steps:
+Remain clickable.
+
+Available next step:
+Clickable.
+
+Locked future steps:
+Disabled.
+
+Refresh behavior:
+Progress resets because Task 2 stores step state only in React state.
+Task 3 must persist this state in the Layer 1 store and LangGraph state.
+```
+
+## Implemented Transcription Behavior
+
+```text
+Mic button starts recording.
+Mic button stops recording.
+Recording is converted into an audio Blob.
+Audio Blob is posted to /api/system-builder/transcribe.
+Server route sends the audio to the transcription provider.
+Returned transcript is inserted into textarea.
+Transcript source type becomes voice_transcript.
+Transcript uses the same processSystemDesignInput path.
+```
+
+Required local variables:
+
+```env
+OPENAI_API_KEY=
+SYSTEM_BUILDER_TRANSCRIPTION_MODEL=whisper-1
+```
+
+Security:
+
+```text
+OPENAI_API_KEY is read only on the server.
+OPENAI_API_KEY is not exposed to the browser.
+.env.local must not be committed.
+```
+
+## Acceptance Criteria Status
+
+```text
+User can enter text: Done
+UI shows character count: Done
+UI shows estimated token count: Done
+UI shows input size label: Done
+UI blocks empty input: Done
+UI gives helpful input quality hints: Done
+User can clear input: Done
+Small text can pass directly: Done
+Large text is chunked safely: Done
+ProcessedInputContext is created: Done
+TextChunk objects preserve order and character offsets: Done
+Voice recording is implemented: Done
+Voice transcription server route is implemented: Done
+Voice transcript enters same input pipeline: Done
+.txt file upload is implemented: Done
+Non-.txt file rejection is implemented: Done
+File text enters same input pipeline: Done
+Input processing is represented as a node/tool: Done
+Layer1Shell shows the real input panel: Done
+Layer1 step navigation exists: Done
+Step locking/gating exists: Done
+Completed steps remain clickable: Done
+Next step opens after proceed/process: Done
+UI is compact and avoids unnecessary explanations: Done
+No diagram generation happens from raw input: Done
+No secrets committed: Done
+npm run lint passes with existing warnings only: Done
+npm run build passes: Done
+```
+
+## Known Task 2 Limitation
+
+```text
+Layer 1 step progress is currently stored only in React state.
+It resets after page refresh.
+Task 3 must move progress, processed input, and workflow state into the shared store and server-side LangGraph graph state.
 ```
 
 ---
@@ -2635,6 +2881,8 @@ Task 3 is where the project becomes a real orchestrated system instead of a UI p
 
 The graph state must become the source of truth for workflow stage, processed input, questions, understanding, completeness, Markdown spec, Draw.io XML, diagram approval, and export readiness.
 
+Task 3 must absorb the temporary Task 2 React-only step gating into durable Layer 1 state.
+
 ## Scope
 
 ```text
@@ -2649,6 +2897,8 @@ Graph runner
 Initial API routes
 Frontend store sync
 Error handling pattern
+Task 2 input state integration
+Step gating persistence
 ```
 
 ## Subtasks
@@ -2665,6 +2915,7 @@ Include:
 
 ```text
 Layer1Stage
+Layer1StepId
 Layer1Run
 ConstructiveQuestion
 QuestionAnswer
@@ -2710,6 +2961,9 @@ Layer1GraphEvent
 Layer1GraphResult
 Layer1GraphResumeInput
 Layer1GraphError
+completedSteps
+availableSteps
+activeStep
 ```
 
 ### 3.3 Create future Layer 2 and Layer 3 placeholders
@@ -2747,6 +3001,7 @@ Layer1GraphEvent
 Layer1GraphResult
 DiagramGenerationRequest
 DiagramGenerationResponse
+Layer 1 step gating state
 ```
 
 ### 3.5 Create LangGraph graph skeleton
@@ -2783,6 +3038,7 @@ conditional edges
 human-in-the-loop pause points
 retry/error paths
 final artifact bundle path
+step gating state updates
 ```
 
 ### 3.6 Create server API route foundation
@@ -2801,6 +3057,8 @@ invoke the graph runner
 return safe graph result
 never expose AI provider keys
 never run browser-side orchestration
+process Task 2 input through the graph path
+return activeStep, completedSteps, and availableSteps
 ```
 
 Existing old API routes should not be destructively removed unless replaced safely.
@@ -2821,6 +3079,9 @@ syncFromGraphState
 submitRawInput
 setProcessedInput
 setStage
+setActiveStep
+setCompletedSteps
+setAvailableSteps
 setCurrentQuestion
 submitAnswer
 updateUnderstanding
@@ -2842,9 +3103,12 @@ Update:
 ```text
 src/features/system-design/components/Layer1InputPanel.tsx
 src/features/system-design/components/Layer1Shell.tsx
+src/features/system-design/components/Layer1StepNavigation.tsx
 ```
 
-For this task, the UI may call the server route to process input and sync returned state.
+For Task 3, the UI should call the server route to process input and sync returned state.
+
+The temporary React-only step state from Task 2 should be replaced by store/graph synchronized state.
 
 ## Files
 
@@ -2864,6 +3128,7 @@ src/features/system-design/stores/useLayer1Store.ts
 src/features/system-design/utils/id.ts
 src/features/system-design/components/Layer1InputPanel.tsx
 src/features/system-design/components/Layer1Shell.tsx
+src/features/system-design/components/Layer1StepNavigation.tsx
 ```
 
 ## Acceptance Criteria
@@ -2877,27 +3142,27 @@ Request and response schemas exist
 Graph result is validated before returning to UI
 Store can sync from graph state
 Input panel can start a Layer 1 run through the API route
+ProcessedInputContext is stored in graph/store state
+activeStep is stored in graph/store state
+completedSteps are stored in graph/store state
+availableSteps are stored in graph/store state
+Step locking is controlled by graph/store state
 Layer 2 expected input is the approved Layer 1 artifact bundle
 Layer 3 depends on future Layer 2 output
 Components do not own main workflow orchestration logic
 Browser does not access OPENROUTER_API_KEY
+Browser does not access OPENAI_API_KEY
 npm run lint passes
 npm run build passes
 ```
 
 ---
 
-# Task 4 — AI Clarification Engine, Constructive Question Loop, Understanding Model, and Completeness Logic
+# Task 4 — AI Clarification and Q&A Loop
 
 ## Goal
 
-Implement the intelligent requirement clarification workflow inside LangGraph.
-
-## Why This Task Is Critical
-
-This is the core intelligence of Layer 1.
-
-The system must not ask a static questionnaire. It must ask one cumulative, constructive question at a time based on the processed input, previous answers, current understanding, and missing details.
+Implement the intelligent clarification question workflow inside LangGraph.
 
 ## Scope
 
@@ -2908,149 +3173,22 @@ Question generation node
 Question display UI
 Question history UI
 Human-in-the-loop answer submission
-Understanding update node
-Understanding panel
-Completeness scoring node
-Completeness panel
-Graph loop back when details are missing
-Graph continuation when ready
+Answer API route
+Question traceability
 ```
 
-## Subtasks
-
-### 4.1 Create AI provider tool
-
-Create:
-
-```text
-src/features/system-design/tools/aiProviderTool.ts
-```
-
-Responsibilities:
-
-```text
-server-side OpenRouter wrapper
-model config handling
-controlled timeout/error handling
-JSON-mode style prompting where possible
-no browser exposure of provider key
-```
-
-### 4.2 Create question loop components
-
-Create:
-
-```text
-src/features/system-design/components/Layer1QuestionLoop.tsx
-src/features/system-design/components/QuestionCard.tsx
-src/features/system-design/components/QuestionHistory.tsx
-```
-
-### 4.3 Create question generation node and prompt
-
-Create:
-
-```text
-src/features/system-design/nodes/generateQuestionNode.ts
-src/features/system-design/prompts/constructiveQuestionPrompt.ts
-src/features/system-design/utils/questionCategories.ts
-src/features/system-design/utils/questionSelection.ts
-```
-
-The logic must use:
-
-```text
-processed input summary
-current understanding
-previous Q&A
-missing categories
-previous questions
-LangGraph state
-```
-
-### 4.4 Create answer submission route
-
-Create:
-
-```text
-app/api/system-builder/layer1/answer/route.ts
-```
-
-This route should:
-
-```text
-accept user answer
-validate request
-resume or continue graph
-return updated graph state
-```
-
-### 4.5 Create understanding update node
-
-Create:
-
-```text
-src/features/system-design/nodes/updateUnderstandingNode.ts
-src/features/system-design/prompts/understandingUpdatePrompt.ts
-src/features/system-design/components/Layer1UnderstandingPanel.tsx
-src/features/system-design/utils/updateUnderstanding.ts
-```
-
-### 4.6 Create completeness node
-
-Create:
-
-```text
-src/features/system-design/nodes/checkCompletenessNode.ts
-src/features/system-design/prompts/completenessPrompt.ts
-src/features/system-design/components/Layer1CompletenessPanel.tsx
-src/features/system-design/utils/completeness.ts
-```
-
-### 4.7 Wire graph loop
-
-Update:
-
-```text
-src/features/system-design/graphs/layer1Graph.ts
-src/features/system-design/graphs/layer1GraphEdges.ts
-src/features/system-design/graphs/layer1GraphRunner.ts
-src/features/system-design/stores/useLayer1Store.ts
-src/features/system-design/components/Layer1Shell.tsx
-```
-
-The graph must loop like this:
-
-```text
-processed input
-→ generate one question
-→ wait for user answer
-→ update understanding
-→ check completeness
-→ ask again if incomplete
-→ continue to Markdown spec when ready
-```
-
-## Files
+## Main Files
 
 ```text
 app/api/system-builder/layer1/answer/route.ts
 src/features/system-design/components/Layer1QuestionLoop.tsx
 src/features/system-design/components/QuestionCard.tsx
 src/features/system-design/components/QuestionHistory.tsx
-src/features/system-design/components/Layer1UnderstandingPanel.tsx
-src/features/system-design/components/Layer1CompletenessPanel.tsx
 src/features/system-design/nodes/generateQuestionNode.ts
-src/features/system-design/nodes/updateUnderstandingNode.ts
-src/features/system-design/nodes/checkCompletenessNode.ts
 src/features/system-design/tools/aiProviderTool.ts
 src/features/system-design/prompts/constructiveQuestionPrompt.ts
-src/features/system-design/prompts/understandingUpdatePrompt.ts
-src/features/system-design/prompts/completenessPrompt.ts
 src/features/system-design/utils/questionCategories.ts
 src/features/system-design/utils/questionSelection.ts
-src/features/system-design/utils/updateUnderstanding.ts
-src/features/system-design/utils/completeness.ts
 src/features/system-design/graphs/layer1Graph.ts
 src/features/system-design/graphs/layer1GraphEdges.ts
 src/features/system-design/graphs/layer1GraphRunner.ts
@@ -3069,11 +3207,6 @@ Graph waits for user answer
 User answer resumes/continues graph
 Next question uses previous context
 Question history is saved
-Understanding updates after answers
-Completeness report is generated
-Missing critical items are shown
-Graph loops when more questions are needed
-Graph continues when ready for Markdown specification
 No static questionnaire behavior
 npm run lint passes
 npm run build passes
@@ -3081,19 +3214,66 @@ npm run build passes
 
 ---
 
-# Task 5 — Markdown Specification Editor, Review Workflow, Validation, and Approval Gate
+# Task 5 — Understanding Model, Completeness Logic, and Workflow Progression
+
+## Goal
+
+Implement structured understanding, completeness calculation, and progression decisions.
+
+## Scope
+
+```text
+Understanding update node
+Understanding prompt/tooling
+Understanding panel
+Completeness scoring node
+Completeness prompt/tooling
+Completeness panel
+Missing critical item detection
+Graph loop decision
+Ready-for-spec decision
+Workflow stage gating
+```
+
+## Main Files
+
+```text
+src/features/system-design/nodes/updateUnderstandingNode.ts
+src/features/system-design/nodes/checkCompletenessNode.ts
+src/features/system-design/prompts/understandingUpdatePrompt.ts
+src/features/system-design/prompts/completenessPrompt.ts
+src/features/system-design/components/Layer1UnderstandingPanel.tsx
+src/features/system-design/components/Layer1CompletenessPanel.tsx
+src/features/system-design/utils/updateUnderstanding.ts
+src/features/system-design/utils/completeness.ts
+src/features/system-design/graphs/layer1Graph.ts
+src/features/system-design/graphs/layer1GraphEdges.ts
+src/features/system-design/graphs/layer1GraphRunner.ts
+src/features/system-design/stores/useLayer1Store.ts
+src/features/system-design/components/Layer1Shell.tsx
+```
+
+## Acceptance Criteria
+
+```text
+Understanding updates after answers
+Completeness report is generated
+Missing critical items are shown
+Weak areas are shown
+Graph loops when more questions are needed
+Graph continues when ready for Markdown specification
+Step gating uses completeness result
+npm run lint passes
+npm run build passes
+```
+
+---
+
+# Task 6 — Markdown Specification, Review, Validation, and Approval Gate
 
 ## Goal
 
 Generate the human-readable Layer 1 system specification and make it editable before diagram generation.
-
-## Why This Task Is Critical
-
-The Markdown specification is the main Layer 1 artifact.
-
-The Draw.io diagram must be generated from an approved Markdown specification, not directly from raw user input.
-
-This task creates the approval gate between understanding and diagram generation.
 
 ## Scope
 
@@ -3110,127 +3290,7 @@ Graph state update after approval
 Diagram generation gate
 ```
 
-## Subtasks
-
-### 5.1 Create Markdown spec generator
-
-Create:
-
-```text
-src/features/system-design/nodes/generateSpecNode.ts
-src/features/system-design/tools/markdownSpecTool.ts
-src/features/system-design/utils/markdownSpec.ts
-src/features/system-design/prompts/specGenerationPrompt.ts
-```
-
-The spec must use:
-
-```text
-processed input
-Q&A history
-system understanding
-completeness report
-assumptions
-open questions
-future Layer 2 preparation notes
-```
-
-### 5.2 Create spec validation
-
-Update:
-
-```text
-src/features/system-design/utils/markdownSpec.ts
-src/features/system-design/schemas/layer1.schema.ts
-```
-
-Validate required Markdown sections:
-
-```text
-System Overview
-Source Input Summary
-Main Goal
-Users and Roles
-Core Workflow
-Alternative Workflows
-Inputs
-Outputs
-Data Objects / Entities
-Business Rules
-Decision Logic
-Validations
-Edge Cases
-Error Handling
-Integrations
-Security and Permissions
-Notifications
-Reporting / Logging
-Diagram Generation Notes
-Open Questions
-Future Layer 2 Preparation
-```
-
-### 5.3 Create spec UI
-
-Create:
-
-```text
-src/features/system-design/components/Layer1SpecStep.tsx
-```
-
-It should support:
-
-```text
-generated Markdown display
-editable Markdown textarea/editor
-preview mode
-edit mode
-validation warnings
-approve spec button
-regenerate/request revision placeholder
-```
-
-Reuse existing markdown components where appropriate.
-
-### 5.4 Create specification review route
-
-Create:
-
-```text
-app/api/system-builder/layer1/spec-review/route.ts
-```
-
-This route should:
-
-```text
-accept edited Markdown spec
-validate it
-save approval state
-update graph state
-allow diagram generation only after approval
-```
-
-### 5.5 Wire approval gate
-
-Update:
-
-```text
-src/features/system-design/graphs/layer1Graph.ts
-src/features/system-design/graphs/layer1GraphEdges.ts
-src/features/system-design/graphs/layer1GraphRunner.ts
-src/features/system-design/stores/useLayer1Store.ts
-src/features/system-design/components/Layer1Shell.tsx
-```
-
-The graph must enforce:
-
-```text
-No diagram generation before Markdown spec exists.
-No diagram generation before Markdown spec is approved.
-Layer 1 artifact bundle cannot be created before diagram approval.
-```
-
-## Files
+## Main Files
 
 ```text
 app/api/system-builder/layer1/spec-review/route.ts
@@ -3265,19 +3325,11 @@ npm run build passes
 
 ---
 
-# Task 6 — Draw.io Generation, Manual Editing, AI Refinement, XML Validation, Revision History, and Diagram Export
+# Task 7 — Draw.io Diagram, XML Validation, Manual Editing, AI Refinement, and Diagram Approval
 
 ## Goal
 
 Generate and refine the visual Layer 1 architecture diagram.
-
-## Why This Task Is Critical
-
-The diagram is one of the required final Layer 1 outputs.
-
-It must be generated from the approved Markdown spec and validated before being loaded or exported.
-
-The user must be able to review it, manually edit it, request AI refinement, and approve it.
 
 ## Scope
 
@@ -3295,143 +3347,7 @@ Diagram approval
 Diagram image export preparation
 ```
 
-## Subtasks
-
-### 6.1 Create Draw.io XML utilities
-
-Create:
-
-```text
-src/features/system-design/utils/drawioXml.ts
-src/features/system-design/tools/xmlValidationTool.ts
-```
-
-Recommended functions:
-
-```text
-extractMxGraphModel
-sanitizeDrawioXml
-validateDrawioXml
-ensureMxGraphRoot
-createEmptyDrawioXml
-repairDrawioXmlIfPossible
-```
-
-### 6.2 Create diagram generation node
-
-Create:
-
-```text
-src/features/system-design/nodes/generateDiagramNode.ts
-src/features/system-design/prompts/diagramGenerationPrompt.ts
-```
-
-The node must use:
-
-```text
-approved Markdown spec
-processed input
-Q&A history
-system understanding
-completeness report
-diagram generation notes
-```
-
-### 6.3 Create diagram generation route
-
-Create:
-
-```text
-app/api/system-builder/layer1/generate-diagram/route.ts
-```
-
-The route should invoke the LangGraph diagram path, not direct diagram logic inside UI components.
-
-### 6.4 Integrate DrawioEmbed
-
-Reuse:
-
-```text
-src/components/system-builder/DrawioEmbed.tsx
-```
-
-Create:
-
-```text
-src/features/system-design/components/Layer1DiagramStep.tsx
-src/features/system-design/components/Layer1DiagramReview.tsx
-```
-
-The UI should support:
-
-```text
-load generated XML
-manual editing
-current XML state
-validation warnings
-approve diagram button
-```
-
-### 6.5 Create AI refinement flow
-
-Create:
-
-```text
-app/api/system-builder/layer1/refine-diagram/route.ts
-src/features/system-design/nodes/refineDiagramNode.ts
-src/features/system-design/prompts/diagramRefinementPrompt.ts
-src/features/system-design/components/Layer1DiagramRefinement.tsx
-src/features/system-design/components/DiagramRevisionHistory.tsx
-```
-
-The refinement request must use:
-
-```text
-current XML
-user instruction
-revision history
-approved Markdown spec
-full Layer 1 context
-```
-
-### 6.6 Prepare diagram image export
-
-Create or update:
-
-```text
-src/features/system-design/tools/drawioExportTool.ts
-```
-
-The tool should prepare support for:
-
-```text
-system-diagram.png
-system-diagram.svg
-```
-
-If browser-assisted export is required, document the limitation clearly and keep the artifact bundle structure prepared.
-
-### 6.7 Wire diagram approval gate
-
-Update:
-
-```text
-src/features/system-design/graphs/layer1Graph.ts
-src/features/system-design/graphs/layer1GraphEdges.ts
-src/features/system-design/graphs/layer1GraphRunner.ts
-src/features/system-design/stores/useLayer1Store.ts
-src/features/system-design/components/Layer1Shell.tsx
-```
-
-The graph must enforce:
-
-```text
-No diagram generation before Markdown approval.
-No artifact bundle before diagram approval.
-No Layer 2 readiness before approved artifacts exist.
-```
-
-## Files
+## Main Files
 
 ```text
 app/api/system-builder/layer1/generate-diagram/route.ts
@@ -3467,26 +3383,18 @@ Manual edits update current XML
 AI refinement goes through LangGraph refineDiagramNode
 Revision history is stored
 User can approve diagram
-Diagram image export path is prepared
 Approved Layer 1 artifact bundle is still blocked until diagram approval
-Layer 2 does not appear as available before artifact bundle exists
 npm run lint passes
 npm run build passes
 ```
 
 ---
 
-# Task 7 — Final Export, Approved Artifact Bundle, Tests, Documentation, Deployment Readiness, and Cleanup
+# Task 8 — Final Export, Approved Artifact Bundle, Tests, Documentation, Deployment Readiness, and Cleanup
 
 ## Goal
 
 Finish Layer 1 as a professional deliverable.
-
-## Why This Task Is Critical
-
-Task 7 turns the workflow into a complete product output.
-
-It ensures the final Layer 1 files can be downloaded, the approved artifact bundle exists, tests cover critical logic, documentation is clear, and deployment is safe.
 
 ## Scope
 
@@ -3506,154 +3414,7 @@ Git cleanup
 Final verification
 ```
 
-## Subtasks
-
-### 7.1 Create artifact bundle node and tool
-
-Create:
-
-```text
-src/features/system-design/tools/artifactBundleTool.ts
-src/features/system-design/nodes/createArtifactBundleNode.ts
-```
-
-The bundle must contain:
-
-```text
-final-system-spec.md
-system-diagram.drawio.xml
-system-diagram.png or system-diagram.svg
-optional system-diagram-summary.md
-```
-
-### 7.2 Create export UI
-
-Create:
-
-```text
-src/features/system-design/components/Layer1ExportStep.tsx
-```
-
-It should include:
-
-```text
-Download Markdown Spec
-Download Draw.io XML
-Download Diagram Image
-Download Diagram Summary if available
-Send to Layer 2 — Coming soon disabled button
-```
-
-### 7.3 Create export utilities
-
-Create:
-
-```text
-src/features/system-design/utils/exportLayer1.ts
-src/features/system-design/utils/downloadFile.ts
-```
-
-There should be no user-facing JSON export in this phase.
-
-### 7.4 Create export API route
-
-Create:
-
-```text
-app/api/system-builder/layer1/export/route.ts
-```
-
-This route should:
-
-```text
-validate final state
-create approved artifact bundle
-return export-ready artifact metadata
-keep Layer 2 locked
-```
-
-### 7.5 Add tests
-
-Create tests for:
-
-```text
-input normalization
-text chunking
-context compression placeholder behavior
-question selection
-understanding update
-completeness scoring
-markdown generation
-markdown validation
-draw.io XML validation
-artifact bundle preparation
-LangGraph node behavior
-graph state transitions
-store synchronization
-```
-
-Recommended files:
-
-```text
-src/features/system-design/utils/__tests__/inputNormalization.test.ts
-src/features/system-design/utils/__tests__/textChunking.test.ts
-src/features/system-design/utils/__tests__/contextCompression.test.ts
-src/features/system-design/utils/__tests__/questionSelection.test.ts
-src/features/system-design/utils/__tests__/completeness.test.ts
-src/features/system-design/utils/__tests__/markdownSpec.test.ts
-src/features/system-design/utils/__tests__/drawioXml.test.ts
-src/features/system-design/utils/__tests__/exportLayer1.test.ts
-src/features/system-design/graphs/__tests__/layer1GraphState.test.ts
-src/features/system-design/nodes/__tests__/processInputNode.test.ts
-src/features/system-design/nodes/__tests__/createArtifactBundleNode.test.ts
-```
-
-### 7.6 Add docs
-
-Create or update:
-
-```text
-Docs/system-design-detailed-plan.md
-Docs/system-design-env.md
-Docs/system-design-layer1.md
-Docs/system-design-team-tasks.md
-```
-
-### 7.7 Deployment readiness
-
-Document:
-
-```text
-.env.local remains local only
-.env.example contains no real secrets
-deployment variables must be configured in hosting platform
-OPENROUTER_API_KEY is server-side only
-LangGraph runs inside the Next.js server/runtime for this phase
-package.json and package-lock.json must include LangGraph dependencies
-```
-
-### 7.8 Cleanup
-
-Before final commit, remove or ignore local inspection files:
-
-```text
-branch-inspection/
-branch-inspection-content/
-branch-inspection.zip
-branch-inspection-content.zip
-```
-
-### 7.9 Final verification
-
-Run:
-
-```bash
-npm run lint
-npm run build
-npm run test
-```
-
-## Files
+## Main Files
 
 ```text
 app/api/system-builder/layer1/export/route.ts
@@ -3691,7 +3452,6 @@ Approved Layer 1 artifact bundle exists after export
 Layer 2 input is the approved Layer 1 artifact bundle
 Layer 2 button remains disabled
 Layer 3 button remains disabled
-LangGraph dependencies are committed
 Tests cover critical utilities and graph behavior
 Docs are clear
 No secrets committed
@@ -3707,40 +3467,49 @@ npm run test passes or known unrelated failures are documented
 
 ```mermaid
 flowchart TD
-    T1[Task 1 Completed: Foundation and LangGraph Layout]
-    T2[Task 2: Input Pipeline and Ingestion]
+    T1[Task 1 Completed: Foundation]
+    T2[Task 2 Completed: Input Pipeline]
     T3[Task 3: LangGraph Runtime and State]
-    T4[Task 4: Clarification and Understanding]
-    T5[Task 5: Markdown Specification Approval]
-    T6[Task 6: Draw.io Diagram and Refinement]
-    T7[Task 7: Export, Artifact Bundle, QA]
+    T4[Task 4: Clarification]
+    T5[Task 5: Understanding and Completeness]
+    T6[Task 6: Markdown Spec]
+    T7[Task 7: Draw.io Diagram]
+    T8[Task 8: Export and QA]
 
     T1 --> T2
     T2 --> T3
+
     T3 --> T4
+    T3 --> T5
+    T3 --> T6
+    T3 --> T7
+    T3 --> T8
+
     T4 --> T5
     T5 --> T6
     T6 --> T7
+    T7 --> T8
 
-    T7 --> A[Approved Layer 1 Artifact Bundle]
+    T8 --> A[Approved Layer 1 Artifact Bundle]
     A --> L2[Layer 2: Locked Placeholder]
     L2 --> L3[Layer 3: Locked Placeholder]
 ```
 
-Parallel notes:
+Dependency notes:
 
 ```text
 Task 1 is completed and should remain as the tested foundation.
-Task 2 can start immediately after this document update.
-Task 3 depends on the Task 2 input types, schemas, and processing tool.
-Task 4 depends on the Task 3 graph runtime, API route, and store sync.
-Task 5 depends on Task 4 understanding and completeness output.
-Task 6 depends on Task 5 approved Markdown specification.
-Task 7 depends on Task 6 approved diagram and current XML state.
+Task 2 is completed and should remain as the tested input pipeline.
+Task 3 must be done next.
+Task 3 creates the shared graph/store/API contracts.
+After Task 3, Tasks 4–8 can be split across people more safely.
+Task 4 and Task 5 are related but separable after shared graph state exists.
+Task 6 depends on understanding/completeness output.
+Task 7 depends on approved Markdown specification.
+Task 8 depends on approved diagram and export-ready state.
 Layer 2 appears only after the approved Layer 1 artifact bundle exists.
 Layer 3 appears only after Layer 2 in the future.
 ```
-
 
 ## 57. Contribution Rules
 
@@ -3799,7 +3568,7 @@ npm run lint
 npm run build
 ```
 
-Task 7 should also run:
+Task 8 should also run:
 
 ```bash
 npm run test
@@ -3855,7 +3624,7 @@ Layer 2 and Layer 3 are visible but locked
 Layer 2 expects the approved Layer 1 artifact bundle as input
 Layer 3 appears only after Layer 2
 Input is processed safely
-Voice transcription path is architecturally prepared
+Voice transcription works through server-side API route
 AI clarification loop works constructively through LangGraph
 System understanding is generated
 Completeness is calculated
@@ -3892,7 +3661,7 @@ Modular
 Orchestrated with LangGraph
 Safe for the existing frontend
 Able to process input safely
-Prepared for voice transcription
+Able to transcribe voice through a server-side route
 Prepared for future Layer 2 and Layer 3
 Exporting Markdown, XML, and diagrams
 Giving Layer 2 the approved Layer 1 artifact bundle as input
