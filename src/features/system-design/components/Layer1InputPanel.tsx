@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
+
 import { useLayer1Store } from '../stores/useLayer1Store';
 import type {
   InputProcessingResult,
@@ -8,13 +9,13 @@ import type {
   RawInputPayload,
   SystemDesignInputSourceType,
 } from '../types/input.types';
-import { processSystemDesignInput } from '../tools/inputProcessingTool';
 import { createIsoTimestamp, createSystemDesignId } from '../utils/id';
 import {
   estimateTokenCount,
   getInputSizeLabel,
   normalizeSystemDesignInput,
 } from '../utils/inputNormalization';
+import { transcribeAudioLocally } from '../utils/localWhisperTranscription';
 
 const minimumUsefulCharacters = 40;
 
@@ -28,12 +29,12 @@ function getSupportedAudioMimeType(): string | undefined {
   return mimeTypes.find((mimeType) => MediaRecorder.isTypeSupported(mimeType));
 }
 
-
 export function Layer1InputPanel() {
   const graphState = useLayer1Store((state) => state.graphState);
   const syncFromGraphState = useLayer1Store(
     (state) => state.syncFromGraphState,
   );
+
   const [inputText, setInputText] = useState('');
   const [status, setStatus] = useState<InputProcessingStatusValue>('idle');
   const [sourceType, setSourceType] =
@@ -63,7 +64,6 @@ export function Layer1InputPanel() {
   const chunkCount = processingResult?.processedInput?.inputSize.chunkCount;
   const sourceLabel = sourceType.replace('_', ' ');
   const hasProcessedInput = Boolean(processingResult?.processedInput);
-
 
   async function submitInputToLayer1Graph(rawInput: RawInputPayload) {
     const response = await fetch('/api/system-builder/layer1', {
@@ -113,6 +113,7 @@ export function Layer1InputPanel() {
     setIsTranscribing(false);
     setFileName(undefined);
     setInputError(undefined);
+    audioChunksRef.current = [];
   }
 
   async function handleProcessInput() {
@@ -150,36 +151,12 @@ export function Layer1InputPanel() {
     }
   }
 
-  async function transcribeAudioBlob(audioBlob: Blob) {
+  async function transcribeRecordedAudio(audioBlob: Blob) {
     setIsTranscribing(true);
     setInputError(undefined);
 
     try {
-      const formData = new FormData();
-      const fileExtension = audioBlob.type.includes('mp4') ? 'mp4' : 'webm';
-
-      formData.append(
-        'audio',
-        audioBlob,
-        `system-design-recording.${fileExtension}`,
-      );
-
-      const response = await fetch('/api/system-builder/transcribe', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = (await response.json()) as {
-        text?: string;
-        error?: string;
-      };
-
-      if (!response.ok) {
-        setInputError(data.error ?? 'Transcription failed.');
-        return;
-      }
-
-      const transcript = data.text?.trim();
+      const transcript = await transcribeAudioLocally(audioBlob);
 
       if (!transcript) {
         setInputError('No speech detected.');
@@ -194,7 +171,9 @@ export function Layer1InputPanel() {
       setStatus('idle');
       setProcessingResult(null);
     } catch {
-      setInputError('Could not transcribe recording.');
+      setInputError(
+        'Local voice transcription failed. Try a shorter recording or type/paste the text manually.',
+      );
     } finally {
       setIsTranscribing(false);
     }
@@ -208,6 +187,11 @@ export function Layer1InputPanel() {
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setInputError('Microphone is not supported in this browser.');
+      return;
+    }
+
+    if (typeof MediaRecorder === 'undefined') {
+      setInputError('Audio recording is not supported in this browser.');
       return;
     }
 
@@ -242,13 +226,14 @@ export function Layer1InputPanel() {
           return;
         }
 
-        void transcribeAudioBlob(audioBlob);
+        void transcribeRecordedAudio(audioBlob);
       };
 
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
       setIsRecording(true);
       setInputError(undefined);
+      resetProcessingState();
     } catch {
       setInputError('Microphone permission is blocked.');
       setIsRecording(false);
@@ -297,7 +282,7 @@ export function Layer1InputPanel() {
     if (isTranscribing) {
       return {
         tone: 'working',
-        label: 'Transcribing voice…',
+        label: 'Transcribing locally…',
       };
     }
 
@@ -443,7 +428,7 @@ export function Layer1InputPanel() {
 
               <button
                 type="button"
-                onClick={handleToggleRecording}
+                onClick={() => void handleToggleRecording()}
                 disabled={isTranscribing}
                 className={[
                   'flex h-10 w-10 items-center justify-center rounded-full transition',

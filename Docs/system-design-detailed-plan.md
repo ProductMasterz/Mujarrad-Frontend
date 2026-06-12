@@ -229,7 +229,7 @@ flowchart TD
 
     B --> C{Input Source}
     C --> C1[Typed or Pasted Text]
-    C --> C2[Server-Transcribed Voice Input]
+    C --> C2[Local Whisper Voice Transcription]
     C --> C3[Plain .txt File Text]
 
     C1 --> LG[LangGraph Layer 1 Graph]
@@ -280,7 +280,7 @@ Detailed flow:
 ```text
 1. User provides the system idea.
 
-2. Input can come from typed text, pasted text, server-transcribed voice input, or extracted .txt file text.
+2. Input can come from typed text, pasted text, local Whisper voice transcription, or extracted .txt file text.
 
 3. A Next.js API route sends the request to the LangGraph Layer 1 graph.
 
@@ -340,7 +340,7 @@ Implemented Task 2 input sources:
 ```text
 Typed text
 Pasted text
-Voice recording transcription through server route
+Voice recording transcription through local open-source Whisper in the browser
 Plain .txt file upload
 ```
 
@@ -379,7 +379,7 @@ Keep file, voice, and process actions inside the input composer.
 Show only useful status information.
 ```
 
-The input stage currently processes input locally through the deterministic Task 2 tool. Task 3 will move the source of truth into the server-side LangGraph runtime and store.
+The input stage now sends processed user text into the Task 3 Layer 1 runtime endpoint. The current source of truth for workflow progression is the Layer 1 graph/store state.
 
 ---
 
@@ -511,10 +511,11 @@ Raw input must become ProcessedInputContext first.
 ```
 
 ---
-
 ## 10. Voice and Transcription
 
-Voice input is now implemented as a server-backed transcription path, not as unreliable browser speech recognition.
+Voice input is now implemented through local open-source Whisper transcription in the browser.
+
+The system no longer depends on paid OpenAI transcription for the active voice path.
 
 Implemented voice flow:
 
@@ -523,28 +524,34 @@ sequenceDiagram
     participant User
     participant UI as Layer1InputPanel
     participant Browser as MediaRecorder
-    participant API as /api/system-builder/transcribe
-    participant Provider as OpenAI Audio Transcription
+    participant Whisper as Local Whisper Browser Runtime
+    participant Runtime as /api/system-builder/layer1
     participant Pipeline as Input Processing Tool
 
     User->>UI: Click mic
     UI->>Browser: Start recording
     User->>UI: Click mic again
     Browser-->>UI: Audio Blob
-    UI->>API: POST FormData audio
-    API->>Provider: Transcribe audio
-    Provider-->>API: Transcript text
-    API-->>UI: Transcript
-    UI->>Pipeline: Use transcript as voice_transcript input
+    UI->>Whisper: Transcribe locally with @xenova/transformers
+    Whisper-->>UI: Transcript text
+    UI->>UI: Insert transcript into textarea
+    User->>UI: Click Process
+    UI->>Runtime: POST RawInputPayload
+    Runtime->>Pipeline: Process transcript as voice_transcript input
 ```
 
 Implemented files:
 
 ```text
-app/api/system-builder/transcribe/route.ts
 src/features/system-design/components/Layer1InputPanel.tsx
-src/features/system-design/tools/transcriptionTool.ts
+src/features/system-design/utils/localWhisperTranscription.ts
 src/features/system-design/types/input.types.ts
+```
+
+Implemented dependency:
+
+```text
+@xenova/transformers
 ```
 
 Implemented behavior:
@@ -552,47 +559,59 @@ Implemented behavior:
 ```text
 Voice button is inside the composer.
 Browser records audio using MediaRecorder.
-Audio is sent to a server-side Next.js API route.
-The server route calls the transcription provider.
+Audio is transcribed locally in the browser using open-source Whisper through @xenova/transformers.
 Transcript text is inserted into the textarea.
 Transcript source type becomes voice_transcript.
-Transcript then uses the same input processing pipeline as typed text and file text.
+Transcript then uses the same Layer 1 input processing path as typed text and file text.
+No OpenAI transcription key is required for the active voice path.
+No /api/system-builder/transcribe request is sent by the current input panel.
 ```
 
-Required environment variables:
-
-```env
-OPENAI_API_KEY=
-SYSTEM_BUILDER_TRANSCRIPTION_MODEL=whisper-1
-```
-
-Security rule:
+Important browser/runtime behavior:
 
 ```text
-OPENAI_API_KEY must stay server-side.
-Never expose transcription keys as NEXT_PUBLIC variables.
-Never commit .env.local.
+The first local transcription can take longer because the Whisper model must be downloaded and cached.
+The /system-builder page bundle is larger because local transcription code is bundled for browser use.
+The model may download from the model host/CDN on first use.
+After caching, later transcription should be faster.
 ```
 
-Current transcription API route:
+Current local transcription utility:
+
+```text
+src/features/system-design/utils/localWhisperTranscription.ts
+```
+
+Utility responsibilities:
+
+```text
+Load the local Whisper ASR pipeline.
+Reuse the loaded transcriber instance.
+Convert recorded audio Blob into a browser object URL.
+Run local transcription.
+Return transcript text.
+Revoke the object URL after transcription.
+Return controlled empty output when no speech is detected.
+```
+
+Current active voice path:
+
+```text
+MediaRecorder
+→ transcribeAudioLocally
+→ textarea text
+→ /api/system-builder/layer1 on Process
+```
+
+The legacy server transcription route may still exist in the repository:
 
 ```text
 app/api/system-builder/transcribe/route.ts
 ```
 
-Route responsibilities:
+However, the current input panel no longer depends on it.
 
-```text
-Accept audio FormData
-Validate audio file exists
-Read OPENAI_API_KEY server-side
-Send audio to transcription provider
-Return transcript text
-Return controlled setup error if key is missing
-Return controlled provider error if transcription fails
-```
-
-File input is also implemented in Task 2.
+File input is also implemented.
 
 Implemented file behavior:
 
@@ -605,7 +624,6 @@ File text uses the same processing pipeline as all other input sources.
 Non-.txt files are rejected with a controlled UI error.
 ```
 
-Task 3 will connect this input result to the server-side LangGraph state and persistent Layer 1 store.
 ---
 
 ## 11. Constructive Clarification Principle
@@ -817,11 +835,12 @@ OPENROUTER_API_KEY=
 # Optional model override for System Design
 SYSTEM_BUILDER_MODEL=google/gemini-2.0-flash-001
 
-# Server-side transcription provider key
-# Used by /api/system-builder/transcribe. Never expose as NEXT_PUBLIC.
+# Optional legacy server-side transcription provider key
+# The active voice path uses local open-source Whisper in the browser.
+# Keep this only if the legacy /api/system-builder/transcribe route is used later.
 OPENAI_API_KEY=
 
-# Optional transcription model override
+# Optional legacy transcription model override
 SYSTEM_BUILDER_TRANSCRIPTION_MODEL=whisper-1
 
 # LangGraph execution mode
@@ -834,7 +853,7 @@ NEXT_PUBLIC_ENABLE_LAYER_2=false
 NEXT_PUBLIC_ENABLE_LAYER_3=false
 ```
 
-AI and transcription provider keys must stay server-side.
+AI provider keys must stay server-side. The active voice transcription path does not require a paid transcription key.
 
 Correct:
 
@@ -908,9 +927,10 @@ flowchart TD
     Shell --> L3[Layer 3: Locked Card]
 
     L1 --> Input[Layer1InputPanel]
-    Input --> LocalTool[inputProcessingTool in Task 2]
-    Input --> TranscribeAPI[/api/system-builder/transcribe]
-    TranscribeAPI --> Transcript[Transcript Text]
+    Input --> Layer1API[/api/system-builder/layer1]
+    Layer1API --> LocalTool[inputProcessingTool through Task 3 runtime]
+    Input --> LocalWhisper[Local Whisper Browser Transcription]
+    LocalWhisper --> Transcript[Transcript Text]
     Transcript --> Input
 
     LocalTool --> Processed[ProcessedInputContext]
@@ -993,7 +1013,7 @@ src/features/system-design/
 ├── tools/
 │   ├── aiProviderTool.ts
 │   ├── inputProcessingTool.ts
-│   ├── transcriptionTool.ts
+│   ├── transcriptionTool.ts optional legacy server transcription helper
 │   ├── xmlValidationTool.ts
 │   ├── markdownSpecTool.ts
 │   ├── drawioExportTool.ts
@@ -1034,7 +1054,8 @@ src/features/system-design/
     ├── questionCategories.ts
     ├── questionSelection.ts
     ├── textChunking.ts
-    └── updateUnderstanding.ts
+    ├── updateUnderstanding.ts
+    └── localWhisperTranscription.ts
 ```
 
 API route folder additions:
@@ -1222,12 +1243,12 @@ src/features/system-design/components/Layer1StepNavigation.tsx
 src/features/system-design/components/Layer1InputPanel.tsx
 ```
 
-Important limitation:
+Current implementation:
 
 ```text
-Task 2 step progress is stored in React state only.
-Progress resets on page refresh.
-Task 3 must move this into the Layer 1 store and server-side LangGraph state.
+Task 3 moved Layer 1 step progress into the Layer 1 graph/store state.
+The UI now reads activeStep, completedSteps, and availableSteps from the Layer 1 store.
+The Process and Proceed actions call /api/system-builder/layer1 and sync the returned graph state.
 ```
 
 Recommended final type for Task 3:
@@ -1790,11 +1811,14 @@ app/api/system-builder/layer1/refine-diagram/route.ts
 app/api/system-builder/layer1/export/route.ts
 ```
 
-Implemented Task 2 transcription route:
+Legacy optional transcription route:
 
 ```text
 app/api/system-builder/transcribe/route.ts
 ```
+
+The active voice input path now uses local open-source Whisper in the browser through @xenova/transformers.
+
 
 Recommended responsibilities:
 
@@ -1814,11 +1838,18 @@ The browser must not access:
 ```text
 OPENROUTER_API_KEY
 OPENAI_API_KEY
+
+OPENROUTER_API_KEY must stay server-side only.
+
+OPENAI_API_KEY is no longer required for the active voice path, but if the legacy transcription route is used later, it must also stay server-side only.
 ```
 
-Both keys must stay server-side only.
+OPENROUTER_API_KEY must stay server-side only.
 
-Task 2 currently uses `/api/system-builder/transcribe` for server-side voice transcription. Task 3 must add the main Layer 1 graph route and move workflow state into the LangGraph/store runtime.
+OPENAI_API_KEY is not required for the active voice path. It is only relevant if the optional legacy /api/system-builder/transcribe route is used again later.
+
+The active voice path currently uses local Whisper browser transcription and then sends the resulting text through /api/system-builder/layer1. The workflow state is controlled by the Task 3 graph/store runtime.
+
 
 ---
 ## 38. LangGraph Dependency Status
@@ -1830,7 +1861,10 @@ Installed packages:
 ```text
 @langchain/langgraph
 @langchain/core
+@xenova/transformers
 ```
+
+@xenova/transformers is used for local open-source browser transcription in the System Design input composer.
 
 These dependencies are stored in:
 
@@ -1980,7 +2014,7 @@ inputProcessingTool:
 Normalize, estimate, chunk, compress, and prepare processed context.
 
 transcriptionTool:
-Future tool for converting voice/audio into transcript text.
+Optional legacy helper for server-side transcription. The current active voice path uses localWhisperTranscription.ts with @xenova/transformers in the browser.
 
 xmlValidationTool:
 Extract, sanitize, validate, repair, or reject Draw.io XML.
@@ -2403,11 +2437,12 @@ This is important because future Layer 2 logic will depend on understanding how 
 
 Layer 1 is now divided into **eight implementation tasks**.
 
-Task 1 and Task 2 have been completed and tested.
+Task 1, Task 2, and Task 3 have been completed and tested.
 
 Task 1 created the foundation, feature shell, route compatibility, LangGraph dependency setup, and locked Layer 2 / Layer 3 placeholders.
 
-Task 2 created the professional input pipeline, compact input UI, text/file/voice ingestion paths, deterministic processing tool, input processing node, traceability types, schemas, and step-gated Layer 1 UI behavior.
+Task 2 created the professional input pipeline, compact input UI, text/file/voice ingestion paths, deterministic processing tool, input processing node, traceability types, schemas, and step-gated Layer 1 UI behavior. Voice input was later updated to use local open-source Whisper browser transcription instead of paid server transcription.
+
 
 The updated task structure is:
 
@@ -2416,7 +2451,7 @@ Task 1: Completed — Foundation, environment, feature shell, and LangGraph layo
 
 Task 2: Completed — Input Pipeline, Text/Voice/File Ingestion, Processing UI, Step Gating, and Traceability
 
-Task 3: LangGraph Core Runtime, State Model, API Routes, Schemas, Nodes, Tools, and Store Sync
+Task 3: Completed — LangGraph Core Runtime, State Model, API Routes, Schemas, Nodes, Tools, and Store Sync
 
 Task 4: AI Clarification and Q&A Loop
 
@@ -2444,7 +2479,7 @@ Layer 3 must still remain locked until future Layer 2 output exists.
 flowchart TD
     T1[Task 1 Completed: Foundation, Shell, LangGraph Layout]
     T2[Task 2 Completed: Input Pipeline, Voice/File/Text Ingestion, Step Gating]
-    T3[Task 3: LangGraph Runtime, State, APIs, Schemas, Store]
+    T3[Task 3 Completed: LangGraph Runtime, State, APIs, Schemas, Store]
     T4[Task 4: Clarification and Q&A Loop]
     T5[Task 5: Understanding, Completeness, Progression]
     T6[Task 6: Markdown Spec, Review, Approval]
@@ -2623,8 +2658,8 @@ npm run build passes: Done
 
 ```text
 Completed
-Tested locally
-Ready for final commit and push on task-2-system-design-input-pipeline
+Merged into feat/system-builder
+Voice path updated to local open-source Whisper browser transcription.
 ```
 
 ## Goal
@@ -2646,7 +2681,8 @@ Server transcription route created
 Transcription tool placeholder/interface created
 Compact Layer 1 input composer created
 Voice recording added through MediaRecorder
-Voice transcription connected to server API route
+Voice transcription updated to local open-source Whisper browser transcription
+@xenova/transformers added for local browser ASR
 .txt file upload implemented
 Non-.txt file rejection implemented
 Smart input status pill implemented
@@ -2688,6 +2724,10 @@ src/features/system-design/utils/inputNormalization.ts
 src/features/system-design/utils/textChunking.ts
 src/features/system-design/utils/contextCompression.ts
 src/features/system-design/config/systemDesignConfig.ts
+src/features/system-design/utils/localWhisperTranscription.ts
+next.config.js
+package.json
+package-lock.json
 .env.example
 ```
 
@@ -2695,7 +2735,19 @@ src/features/system-design/config/systemDesignConfig.ts
 
 ```text
 app/api/system-builder/transcribe/route.ts:
-Server-side API route for voice transcription. Accepts audio FormData, reads OPENAI_API_KEY on the server, sends audio to the transcription provider, and returns transcript text or controlled errors.
+Legacy optional server-side transcription route. The current active voice path no longer depends on this route. Voice transcription is now handled locally in the browser through @xenova/transformers.
+
+src/features/system-design/utils/localWhisperTranscription.ts:
+Loads and reuses a local Whisper automatic speech recognition pipeline through @xenova/transformers. Converts recorded browser audio into transcript text without a paid transcription API.
+
+next.config.js:
+Adds webpack aliases/fallbacks so browser-side @xenova/transformers can build inside Next.js without bundling unsupported native Node binaries such as onnxruntime-node and sharp.
+
+package.json:
+Adds @xenova/transformers for local open-source browser transcription.
+
+package-lock.json:
+Locks the local transcription dependency tree.
 
 src/features/system-design/components/SystemDesignShell.tsx:
 Main compact page shell. Shows header, layer navigation, and full-width Layer 1 workflow. Removed duplicated right-side locked Layer 2/3 cards.
@@ -2713,7 +2765,7 @@ src/features/system-design/components/Layer1StepNavigation.tsx:
 Clickable compact internal Layer 1 workflow stepper. Supports active, done, open, and locked states.
 
 src/features/system-design/components/Layer1InputPanel.tsx:
-Compact input composer. Handles typed text, pasted text, .txt file upload, voice recording, server transcription request, local deterministic input processing, smart status pill, source/size/token/chunk chips, process action, and clear/reset.
+Compact input composer. Handles typed text, pasted text, .txt file upload, voice recording, local Whisper browser transcription, Layer 1 runtime submission, smart status pill, source/size/token/chunk chips, process action, and clear/reset.
 
 src/features/system-design/components/InputProcessingStatus.tsx:
 Reusable status display for input processing. It is currently minimized in the UI after compact redesign but kept available for future Task 3/4 state panels.
@@ -2728,7 +2780,7 @@ src/features/system-design/tools/inputProcessingTool.ts:
 Deterministic tool that accepts RawInputPayload, normalizes text, estimates size, chunks when needed, creates deterministic summary placeholder, preserves traceability, and returns InputProcessingResult.
 
 src/features/system-design/tools/transcriptionTool.ts:
-Transcription tool interface placeholder. The current working transcription path is the Next.js API route. Task 3 can connect this tool into LangGraph.
+Optional legacy transcription tool interface placeholder. The current active transcription path is local Whisper browser transcription through localWhisperTranscription.ts.
 
 src/features/system-design/nodes/processInputNode.ts:
 LangGraph-compatible input node wrapper around inputProcessingTool. Returns processingResult for future graph state integration.
@@ -2762,7 +2814,7 @@ pasted_text:
 Supported through textarea paste behavior. Task 3 can add explicit paste detection if needed.
 
 voice_transcript:
-Audio is recorded in the browser using MediaRecorder, sent to /api/system-builder/transcribe, transcribed server-side, inserted into the textarea, and then processed through the same input pipeline.
+Audio is recorded in the browser using MediaRecorder, transcribed locally in the browser using @xenova/transformers with Whisper, inserted into the textarea, and then processed through the same Layer 1 runtime pipeline.
 
 file_text:
 Plain .txt file content is read in the browser, inserted into the textarea, and processed through the same input pipeline.
@@ -2804,25 +2856,28 @@ Task 3 must persist this state in the Layer 1 store and LangGraph state.
 Mic button starts recording.
 Mic button stops recording.
 Recording is converted into an audio Blob.
-Audio Blob is posted to /api/system-builder/transcribe.
-Server route sends the audio to the transcription provider.
+Audio Blob is transcribed locally in the browser through @xenova/transformers.
+The first transcription may take longer because the model downloads/caches.
 Returned transcript is inserted into textarea.
 Transcript source type becomes voice_transcript.
-Transcript uses the same processSystemDesignInput path.
+Transcript uses the same /api/system-builder/layer1 runtime processing path.
+No paid transcription API is required for the active voice path.
+No /api/system-builder/transcribe request is sent by the current input panel.
 ```
 
 Required local variables:
 
 ```env
-OPENAI_API_KEY=
-SYSTEM_BUILDER_TRANSCRIPTION_MODEL=whisper-1
+No paid transcription environment variable is required for the active voice path.
+
+OPENAI_API_KEY and SYSTEM_BUILDER_TRANSCRIPTION_MODEL are only relevant if the optional legacy /api/system-builder/transcribe route is used again later.
 ```
 
 Security:
 
 ```text
-OPENAI_API_KEY is read only on the server.
-OPENAI_API_KEY is not exposed to the browser.
+No transcription key is exposed to the browser.
+OPENAI_API_KEY is not required for the active voice path.
 .env.local must not be committed.
 ```
 
@@ -2841,8 +2896,8 @@ Large text is chunked safely: Done
 ProcessedInputContext is created: Done
 TextChunk objects preserve order and character offsets: Done
 Voice recording is implemented: Done
-Voice transcription server route is implemented: Done
-Voice transcript enters same input pipeline: Done
+Voice transcription uses local open-source Whisper in browser: Done
+Voice transcript enters same Layer 1 runtime input pipeline: Done
 .txt file upload is implemented: Done
 Non-.txt file rejection is implemented: Done
 File text enters same input pipeline: Done
@@ -2875,8 +2930,8 @@ Task 3 must move progress, processed input, and workflow state into the shared s
 
 ```text
 Completed
-Tested locally
-Ready for final commit and push on task-3-system-design-langgraph-runtime
+Merged into feat/system-builder
+Pushed to origin/feat/system-builder
 ```
 
 ## Goal
@@ -3197,6 +3252,20 @@ The current graph runner is a deterministic runtime foundation.
 The complete AI LangGraph StateGraph with clarification, understanding, completeness, Markdown generation, Draw.io generation, refinement, and export will be implemented in Tasks 4–8.
 
 The graph entry point and API route are already in place so future tasks should extend this runtime instead of creating separate disconnected routes or UI-only state.
+```
+
+
+---
+
+# Post-Task 3 Fix — Local Open-Source Voice Transcription
+
+## Status
+
+```text
+Completed
+Tested locally
+Build passes
+Lint passes with existing warnings only
 ```
 
 ---
@@ -3533,7 +3602,7 @@ npm run test passes or known unrelated failures are documented
 flowchart TD
     T1[Task 1 Completed: Foundation]
     T2[Task 2 Completed: Input Pipeline]
-    T3[Task 3: LangGraph Runtime and State]
+    T3[Task 3 Completed: LangGraph Runtime and State]
     T4[Task 4: Clarification]
     T5[Task 5: Understanding and Completeness]
     T6[Task 6: Markdown Spec]
@@ -3564,9 +3633,9 @@ Dependency notes:
 ```text
 Task 1 is completed and should remain as the tested foundation.
 Task 2 is completed and should remain as the tested input pipeline.
-Task 3 must be done next.
-Task 3 creates the shared graph/store/API contracts.
-After Task 3, Tasks 4–8 can be split across people more safely.
+Task 3 is completed.
+Task 3 created the shared graph/store/API contracts.
+Tasks 4–8 can now be split across people more safely.
 Task 4 and Task 5 are related but separable after shared graph state exists.
 Task 6 depends on understanding/completeness output.
 Task 7 depends on approved Markdown specification.
@@ -3590,7 +3659,7 @@ All contributors must follow these rules:
 
 5. Keep LangGraph execution on the server side.
 
-6. Do not install new packages unless necessary and approved.
+6. Do not install new packages unless necessary and approved. @xenova/transformers is already approved and installed for local browser transcription.
 
 7. Do not run npm audit fix --force unless it is a separate dependency task.
 
@@ -3614,7 +3683,7 @@ All contributors must follow these rules:
 
 17. Raw input should go through LangGraph input processing before AI clarification.
 
-18. Voice input must enter the same LangGraph text pipeline after transcription.
+18. Voice input must enter the same LangGraph text pipeline after local Whisper transcription.
 
 19. Existing Mujarrad frontend env variables must not be removed or renamed.
 
@@ -3688,7 +3757,7 @@ Layer 2 and Layer 3 are visible but locked
 Layer 2 expects the approved Layer 1 artifact bundle as input
 Layer 3 appears only after Layer 2
 Input is processed safely
-Voice transcription works through server-side API route
+Voice transcription works through local open-source Whisper browser transcription
 AI clarification loop works constructively through LangGraph
 System understanding is generated
 Completeness is calculated
@@ -3725,7 +3794,7 @@ Modular
 Orchestrated with LangGraph
 Safe for the existing frontend
 Able to process input safely
-Able to transcribe voice through a server-side route
+Able to transcribe voice through local open-source Whisper browser transcription
 Prepared for future Layer 2 and Layer 3
 Exporting Markdown, XML, and diagrams
 Giving Layer 2 the approved Layer 1 artifact bundle as input
