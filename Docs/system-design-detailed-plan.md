@@ -2869,293 +2869,357 @@ Task 3 must move progress, processed input, and workflow state into the shared s
 
 ---
 
-# Task 3 — LangGraph Core Runtime, State Model, API Routes, Schemas, Nodes, Tools, and Store Sync
+# Task 3 — Completed: LangGraph Core Runtime, State Model, API Routes, Schemas, Nodes, Tools, and Store Sync
+
+## Status
+
+```text
+Completed
+Tested locally
+Ready for final commit and push on task-3-system-design-langgraph-runtime
+```
 
 ## Goal
 
-Implement the typed LangGraph Layer 1 runtime foundation.
+Implement the typed Layer 1 runtime foundation so the System Design workflow no longer depends only on local React component state.
 
-## Why This Task Is Critical
+Task 3 creates the shared runtime contract that future Tasks 4–8 will build on.
 
-Task 3 is where the project becomes a real orchestrated system instead of a UI prototype.
+## Important Implementation Note
 
-The graph state must become the source of truth for workflow stage, processed input, questions, understanding, completeness, Markdown spec, Draw.io XML, diagram approval, and export readiness.
+Task 3 does not yet implement the full AI clarification engine, full LangGraph StateGraph branching, Markdown generation, Draw.io generation, or artifact export.
 
-Task 3 must absorb the temporary Task 2 React-only step gating into durable Layer 1 state.
-
-## Scope
+Task 3 creates the professional foundation for those steps:
 
 ```text
-Layer 1 type model
-Layer 2/3 placeholder types
-Graph state definition
-Graph event/result types
-Zod schemas
-LangGraph graph skeleton
-Conditional edges
+Typed Layer 1 state
+Graph event/result contracts
+Graph state helpers
 Graph runner
-Initial API routes
-Frontend store sync
-Error handling pattern
-Task 2 input state integration
-Step gating persistence
+Graph invocation entry point
+Server API endpoint
+Zod request validation
+Frontend Zustand store
+UI-to-runtime connection
+Step gating through graph/store state
+Task 2 input pipeline integrated into the runtime path
 ```
 
-## Subtasks
+Future Tasks 4–8 must extend this runtime instead of creating separate UI-only logic.
 
-### 3.1 Create Layer 1 types
+---
 
-Create:
+## Completed Work
 
 ```text
-src/features/system-design/types/layer1.types.ts
+Layer 1 runtime types created
+Layer 2 placeholder input type created
+Layer 3 placeholder input type created
+Graph event/result types created
+Graph state definition created
+Initial graph state helper created
+Step order helper created
+Step completion helper created
+Available-step calculation created
+Stage-by-step mapping created
+Graph runner created
+Graph invocation entry point created
+Graph edge placeholder created
+Layer 1 API route created
+Layer 1 graph request schema created
+Layer 1 state schemas created
+Frontend Layer 1 Zustand store created
+Layer1Shell connected to the store
+Layer1Shell connected to /api/system-builder/layer1
+Layer1InputPanel connected to /api/system-builder/layer1
+Input processing now goes through the server runtime endpoint
+ProcessedInputContext now syncs into graph/store state
+Step gating now syncs through graph/store state
+Task 2 local-only progression was replaced with runtime-backed progression
 ```
 
-Include:
+---
+
+## Completed Files
 
 ```text
-Layer1Stage
-Layer1StepId
-Layer1Run
-ConstructiveQuestion
-QuestionAnswer
-QuestionCategory
-SystemUnderstanding
-WorkflowDescription
-SystemInput
-SystemOutput
-SystemEntity
-BusinessRule
-DecisionRule
-ValidationRule
-EdgeCase
-ErrorCase
-IntegrationPoint
-NotificationRule
-ReportingRequirement
-SecurityRequirement
-CompletenessReport
-CompletenessCategoryStatus
-CompletenessStatus
-DiagramRevision
-Layer1ArtifactBundle
-Layer1Error
-Layer1InternalStateForFutureUse
-```
-
-### 3.2 Create graph types and graph state
-
-Create:
-
-```text
-src/features/system-design/types/graph.types.ts
+app/api/system-builder/layer1/route.ts
+src/features/system-design/components/Layer1InputPanel.tsx
+src/features/system-design/components/Layer1Shell.tsx
+src/features/system-design/graphs/layer1Graph.ts
+src/features/system-design/graphs/layer1GraphEdges.ts
+src/features/system-design/graphs/layer1GraphRunner.ts
 src/features/system-design/graphs/layer1GraphState.ts
-```
-
-Include:
-
-```text
-Layer1GraphState
-Layer1GraphNextAction
-Layer1GraphEvent
-Layer1GraphResult
-Layer1GraphResumeInput
-Layer1GraphError
-completedSteps
-availableSteps
-activeStep
-```
-
-### 3.3 Create future Layer 2 and Layer 3 placeholders
-
-Create:
-
-```text
+src/features/system-design/schemas/graph.schema.ts
+src/features/system-design/schemas/layer1.schema.ts
+src/features/system-design/stores/useLayer1Store.ts
+src/features/system-design/types/graph.types.ts
+src/features/system-design/types/layer1.types.ts
 src/features/system-design/types/layer2.types.ts
 src/features/system-design/types/layer3.types.ts
 ```
 
-Layer 2 expected input must be the approved Layer 1 artifact bundle.
+---
 
-Layer 3 expected input must come from future Layer 2 output.
-
-### 3.4 Create schemas
-
-Create:
+## Completed File Responsibilities
 
 ```text
-src/features/system-design/schemas/layer1.schema.ts
-src/features/system-design/schemas/graph.schema.ts
+app/api/system-builder/layer1/route.ts:
+Server-side Layer 1 runtime endpoint. Receives UI workflow events, validates the request with Zod, invokes the Layer 1 graph entry point, and returns safe graph results to the browser.
+
+src/features/system-design/graphs/layer1Graph.ts:
+Single public graph invocation entry point. UI/API code should call this instead of importing the runner directly. Future full LangGraph StateGraph implementation should keep this call shape stable.
+
+src/features/system-design/graphs/layer1GraphRunner.ts:
+Task 3 deterministic graph runner. Handles start_run, reset_run, submit_input, complete_step, and sync_state events. Calls the Task 2 inputProcessingTool during submit_input and returns updated graph state.
+
+src/features/system-design/graphs/layer1GraphState.ts:
+Creates the initial Layer 1 graph state. Defines Layer 1 step order, available-step logic, step completion logic, next-step logic, and step-to-stage mapping.
+
+src/features/system-design/graphs/layer1GraphEdges.ts:
+Initial graph edge utility placeholder. Provides a controlled place for future conditional continuation logic.
+
+src/features/system-design/types/layer1.types.ts:
+Defines the main Layer 1 domain model, including Layer1Run, Layer1Stage, Layer1StepId, SystemUnderstanding, ConstructiveQuestion, QuestionAnswer, CompletenessReport, DiagramRevision, Layer1ArtifactBundle, and Layer1Error.
+
+src/features/system-design/types/graph.types.ts:
+Defines graph runtime contracts, including Layer1GraphState, Layer1GraphEvent, Layer1GraphResult, Layer1GraphNextAction, Layer1GraphResumeInput, and Layer1StepState.
+
+src/features/system-design/types/layer2.types.ts:
+Defines the future Layer 2 expected input. Layer 2 must receive the approved Layer 1 artifact bundle.
+
+src/features/system-design/types/layer3.types.ts:
+Defines the future Layer 3 expected input. Layer 3 must depend on future Layer 2 output.
+
+src/features/system-design/schemas/layer1.schema.ts:
+Zod schemas for Layer 1 step IDs, stages, question categories, constructive questions, question answers, system understanding, completeness reports, and artifact bundles.
+
+src/features/system-design/schemas/graph.schema.ts:
+Zod schemas for graph events, graph next actions, and the Layer 1 API request body.
+
+src/features/system-design/stores/useLayer1Store.ts:
+Frontend Zustand store that mirrors graph state for UI display and interaction. Includes actions for syncing graph state, resetting runs, storing processed input, stage changes, step gating, questions, answers, understanding, completeness, Markdown, diagram XML, diagram revisions, diagram approval, and artifact bundle creation.
+
+src/features/system-design/components/Layer1Shell.tsx:
+Updated to read activeStep, completedSteps, and availableSteps from the Layer 1 store. Proceed actions now call /api/system-builder/layer1 instead of only updating local React state.
+
+src/features/system-design/components/Layer1InputPanel.tsx:
+Updated to submit RawInputPayload to /api/system-builder/layer1. The returned processingResult is displayed in the UI, and the returned graph state is synced into the Layer 1 store.
 ```
 
-Validate:
+---
+
+## Runtime Endpoint Created
+
+Main Task 3 endpoint:
 
 ```text
-ConstructiveQuestion
-QuestionAnswer
-SystemUnderstanding
-CompletenessReport
-Layer1ArtifactBundle
-Layer1GraphState
-Layer1GraphEvent
-Layer1GraphResult
-DiagramGenerationRequest
-DiagramGenerationResponse
-Layer 1 step gating state
+POST /api/system-builder/layer1
 ```
 
-### 3.5 Create LangGraph graph skeleton
-
-Create:
-
-```text
-src/features/system-design/graphs/layer1Graph.ts
-src/features/system-design/graphs/layer1GraphEdges.ts
-src/features/system-design/graphs/layer1GraphRunner.ts
-```
-
-The graph must include planned nodes:
-
-```text
-receive_input
-process_input
-generate_question
-wait_for_user_answer
-update_understanding
-check_completeness
-generate_markdown_spec
-review_markdown_spec
-generate_drawio_xml
-review_diagram
-refine_diagram
-create_layer1_artifact_bundle
-```
-
-The graph must include:
-
-```text
-conditional edges
-human-in-the-loop pause points
-retry/error paths
-final artifact bundle path
-step gating state updates
-```
-
-### 3.6 Create server API route foundation
-
-Create:
+Source file:
 
 ```text
 app/api/system-builder/layer1/route.ts
 ```
 
-This route should:
+Runtime:
 
 ```text
-validate request body
-invoke the graph runner
-return safe graph result
-never expose AI provider keys
-never run browser-side orchestration
-process Task 2 input through the graph path
-return activeStep, completedSteps, and availableSteps
+nodejs
 ```
 
-Existing old API routes should not be destructively removed unless replaced safely.
+Request shape:
 
-### 3.7 Create frontend store sync
+```ts
+{
+  event: {
+    type:
+      | 'start_run'
+      | 'submit_input'
+      | 'complete_step'
+      | 'sync_state'
+      | 'reset_run';
+    rawInput?: RawInputPayload;
+    stepId?: Layer1StepId;
+  };
+  state?: Layer1GraphState;
+}
+```
 
-Create:
+Response shape:
+
+```ts
+{
+  ok: boolean;
+  state: Layer1GraphState;
+  processingResult?: InputProcessingResult;
+  message?: string;
+}
+```
+
+Validation:
 
 ```text
-src/features/system-design/stores/useLayer1Store.ts
+Request body is validated by src/features/system-design/schemas/graph.schema.ts
+Invalid requests return 400
+Runtime failures return controlled 500 response
 ```
 
-The store should support:
+Security:
 
 ```text
-startRun
-syncFromGraphState
-submitRawInput
-setProcessedInput
-setStage
-setActiveStep
-setCompletedSteps
-setAvailableSteps
-setCurrentQuestion
-submitAnswer
-updateUnderstanding
-setCompleteness
-setMarkdownSpec
-approveMarkdownSpec
-setDrawioXml
-setDiagramImage
-addDiagramRevision
-approveDiagram
-createLayer1ArtifactBundle
-resetRun
+The endpoint runs server-side.
+The browser does not access OPENROUTER_API_KEY.
+The browser does not access OPENAI_API_KEY.
+Future AI calls must be added behind server-side tools/routes only.
 ```
 
-### 3.8 Connect UI to the route/store carefully
+---
 
-Update:
+## Runtime Event Behavior
+
+Supported graph events:
 
 ```text
-src/features/system-design/components/Layer1InputPanel.tsx
-src/features/system-design/components/Layer1Shell.tsx
-src/features/system-design/components/Layer1StepNavigation.tsx
+start_run:
+Creates or returns an initial Layer 1 graph state.
+
+reset_run:
+Creates a fresh Layer 1 graph state.
+
+submit_input:
+Accepts RawInputPayload, runs processSystemDesignInput, stores rawInputs and processedInput in graph state, completes the Input step, unlocks Clarification, and returns InputProcessingResult.
+
+complete_step:
+Completes the current step, calculates the next available step, updates activeStep, completedSteps, availableSteps, and stage.
+
+sync_state:
+Returns the current state without changing the workflow.
 ```
 
-For Task 3, the UI should call the server route to process input and sync returned state.
+---
 
-The temporary React-only step state from Task 2 should be replaced by store/graph synchronized state.
+## Current Runtime Flow
 
-## Files
+```mermaid
+flowchart TD
+    UI[Layer1InputPanel] --> API[POST /api/system-builder/layer1]
+    API --> GraphEntry[invokeLayer1Graph]
+    GraphEntry --> Runner[runLayer1GraphEvent]
+    Runner --> InputTool[inputProcessingTool]
+    InputTool --> Processed[ProcessedInputContext]
+    Processed --> State[Layer1GraphState]
+    State --> Store[useLayer1Store]
+    Store --> Shell[Layer1Shell]
+    Shell --> Stepper[Layer1StepNavigation]
+```
+
+---
+
+## Task 3 UI Runtime Behavior
 
 ```text
-app/api/system-builder/layer1/route.ts
-src/features/system-design/types/layer1.types.ts
-src/features/system-design/types/layer2.types.ts
-src/features/system-design/types/layer3.types.ts
-src/features/system-design/types/graph.types.ts
-src/features/system-design/schemas/layer1.schema.ts
-src/features/system-design/schemas/graph.schema.ts
-src/features/system-design/graphs/layer1Graph.ts
-src/features/system-design/graphs/layer1GraphState.ts
-src/features/system-design/graphs/layer1GraphEdges.ts
-src/features/system-design/graphs/layer1GraphRunner.ts
-src/features/system-design/stores/useLayer1Store.ts
-src/features/system-design/utils/id.ts
-src/features/system-design/components/Layer1InputPanel.tsx
-src/features/system-design/components/Layer1Shell.tsx
-src/features/system-design/components/Layer1StepNavigation.tsx
+Initial page load:
+Layer 1 store creates initial graph state.
+Only Input is available.
+All future steps are locked.
+
+User clicks Process:
+Layer1InputPanel sends submit_input event to /api/system-builder/layer1.
+The API route validates the request.
+The graph entry point invokes the runner.
+The runner processes input using inputProcessingTool.
+The runner stores processedInput in graph state.
+The runner completes Input.
+Clarification becomes available and active.
+Layer1InputPanel syncs returned graph state into useLayer1Store.
+
+User clicks Proceed on placeholder step:
+Layer1Shell sends complete_step event to /api/system-builder/layer1.
+The API route validates the request.
+The graph runner marks the step completed.
+The graph runner unlocks the next step.
+Layer1Shell syncs returned graph state into useLayer1Store.
 ```
 
-## Acceptance Criteria
+---
+
+## Verified Browser Behavior
 
 ```text
-Layer 1 state is strongly typed
-Layer 1 graph state exists
-Layer 1 graph runner exists server-side
-Layer 1 API route exists
-Request and response schemas exist
-Graph result is validated before returning to UI
-Store can sync from graph state
-Input panel can start a Layer 1 run through the API route
-ProcessedInputContext is stored in graph/store state
-activeStep is stored in graph/store state
-completedSteps are stored in graph/store state
-availableSteps are stored in graph/store state
-Step locking is controlled by graph/store state
-Layer 2 expected input is the approved Layer 1 artifact bundle
-Layer 3 depends on future Layer 2 output
-Components do not own main workflow orchestration logic
-Browser does not access OPENROUTER_API_KEY
-Browser does not access OPENAI_API_KEY
-npm run lint passes
-npm run build passes
+/api/system-builder/layer1 is called from the browser.
+Network status is 200 OK.
+Input becomes Done after processing.
+Clarify opens automatically after input processing.
+Proceed on Clarify marks Clarify as Done.
+Spec becomes active/open.
+Later steps remain locked.
+Unlocked/completed steps remain clickable.
 ```
 
+---
+
+## Acceptance Criteria Status
+
+```text
+Layer 1 state is strongly typed: Done
+Layer 1 graph state exists: Done
+Layer 1 graph runner exists server-side: Done
+Layer 1 graph invocation entry point exists: Done
+Layer 1 API route exists: Done
+Request schemas exist: Done
+Layer 1 schemas exist: Done
+Graph request is validated before execution: Done
+Graph result is returned safely to UI: Done
+Frontend store can sync from graph state: Done
+Input panel starts Layer 1 run through API route: Done
+ProcessedInputContext is stored in graph/store state: Done
+activeStep is stored in graph/store state: Done
+completedSteps are stored in graph/store state: Done
+availableSteps are stored in graph/store state: Done
+Step locking is controlled by graph/store state: Done
+Layer 2 expected input is the approved Layer 1 artifact bundle: Done
+Layer 3 depends on future Layer 2 output: Done
+Components no longer own main step progression alone: Done
+Browser does not access OPENROUTER_API_KEY: Done
+Browser does not access OPENAI_API_KEY: Done
+npm run build passes: Done
+npm run lint passes with existing warnings only: Done
+```
+
+---
+
+## Known Task 3 Limitation
+
+```text
+The current graph runner is a deterministic runtime foundation.
+The complete AI LangGraph StateGraph with clarification, understanding, completeness, Markdown generation, Draw.io generation, refinement, and export will be implemented in Tasks 4–8.
+
+The graph entry point and API route are already in place so future tasks should extend this runtime instead of creating separate disconnected routes or UI-only state.
+```
+
+---
+
+## Next Task
+
+```text
+Task 4: AI Clarification and Q&A Loop
+```
+
+Task 4 should extend the Task 3 runtime by adding:
+
+```text
+aiProviderTool
+constructiveQuestionPrompt
+generateQuestionNode
+QuestionCard
+QuestionHistory
+Layer1QuestionLoop
+answer route
+human-in-the-loop continuation
+question traceability
+```
 ---
 
 # Task 4 — AI Clarification and Q&A Loop

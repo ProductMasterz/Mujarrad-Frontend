@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-
+import { useLayer1Store } from '../stores/useLayer1Store';
 import type {
   InputProcessingResult,
   InputProcessingStatus as InputProcessingStatusValue,
@@ -28,11 +28,12 @@ function getSupportedAudioMimeType(): string | undefined {
   return mimeTypes.find((mimeType) => MediaRecorder.isTypeSupported(mimeType));
 }
 
-interface Layer1InputPanelProps {
-  onProceed: () => void;
-}
 
-export function Layer1InputPanel({ onProceed }: Layer1InputPanelProps) {
+export function Layer1InputPanel() {
+  const graphState = useLayer1Store((state) => state.graphState);
+  const syncFromGraphState = useLayer1Store(
+    (state) => state.syncFromGraphState,
+  );
   const [inputText, setInputText] = useState('');
   const [status, setStatus] = useState<InputProcessingStatusValue>('idle');
   const [sourceType, setSourceType] =
@@ -63,6 +64,31 @@ export function Layer1InputPanel({ onProceed }: Layer1InputPanelProps) {
   const sourceLabel = sourceType.replace('_', ' ');
   const hasProcessedInput = Boolean(processingResult?.processedInput);
 
+
+  async function submitInputToLayer1Graph(rawInput: RawInputPayload) {
+    const response = await fetch('/api/system-builder/layer1', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        event: {
+          type: 'submit_input',
+          rawInput,
+        },
+        state: graphState,
+      }),
+    });
+
+    return (await response.json()) as {
+      ok: boolean;
+      state?: typeof graphState;
+      processingResult?: InputProcessingResult;
+      message?: string;
+      error?: string;
+    };
+  }
+
   function resetProcessingState() {
     setStatus('idle');
     setProcessingResult(null);
@@ -89,7 +115,7 @@ export function Layer1InputPanel({ onProceed }: Layer1InputPanelProps) {
     setInputError(undefined);
   }
 
-  function handleProcessInput() {
+  async function handleProcessInput() {
     const rawInput: RawInputPayload = {
       id: createSystemDesignId('raw-input'),
       sourceType,
@@ -99,17 +125,29 @@ export function Layer1InputPanel({ onProceed }: Layer1InputPanelProps) {
     };
 
     setStatus('normalizing');
+    setInputError(undefined);
 
-    const result = processSystemDesignInput(rawInput);
+    try {
+      const result = await submitInputToLayer1Graph(rawInput);
 
-    if (result.status === 'ready' && result.processedInput) {
-      setStatus('ready');
-      onProceed();
-    } else {
+      if (!result.ok || !result.state || !result.processingResult) {
+        setStatus('failed');
+        setInputError(result.message ?? result.error ?? 'Input processing failed.');
+        return;
+      }
+
+      setProcessingResult(result.processingResult);
+      syncFromGraphState(result.state);
+
+      if (result.processingResult.status === 'ready') {
+        setStatus('ready');
+      } else {
+        setStatus('failed');
+      }
+    } catch {
       setStatus('failed');
+      setInputError('Layer 1 runtime request failed.');
     }
-
-    setProcessingResult(result);
   }
 
   async function transcribeAudioBlob(audioBlob: Blob) {
@@ -434,7 +472,7 @@ export function Layer1InputPanel({ onProceed }: Layer1InputPanelProps) {
 
               <button
                 type="button"
-                onClick={handleProcessInput}
+                onClick={() => void handleProcessInput()}
                 disabled={isEmpty || isRecording || isTranscribing}
                 className="rounded-full bg-slate-950 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
               >

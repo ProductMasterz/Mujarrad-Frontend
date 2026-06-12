@@ -1,21 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-
 import { Layer1InputPanel } from './Layer1InputPanel';
-import {
-  Layer1StepId,
-  Layer1StepNavigation,
-} from './Layer1StepNavigation';
-
-const stepOrder: Layer1StepId[] = [
-  'input',
-  'clarification',
-  'specification',
-  'diagram',
-  'review',
-  'export',
-];
+import { Layer1StepNavigation } from './Layer1StepNavigation';
+import { useLayer1Store } from '../stores/useLayer1Store';
+import type { Layer1StepId } from '../types/layer1.types';
 
 const stepMessages: Record<
   Exclude<Layer1StepId, 'input'>,
@@ -46,52 +34,65 @@ const stepMessages: Record<
   },
 };
 
-function getNextStep(stepId: Layer1StepId): Layer1StepId | null {
-  const currentIndex = stepOrder.indexOf(stepId);
-  return stepOrder[currentIndex + 1] ?? null;
+async function postLayer1Event(
+  event: {
+    type: 'complete_step';
+    stepId: Layer1StepId;
+  },
+  graphState: ReturnType<typeof useLayer1Store.getState>['graphState'],
+) {
+  const response = await fetch('/api/system-builder/layer1', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      event,
+      state: graphState,
+    }),
+  });
+
+  return (await response.json()) as {
+    ok: boolean;
+    state?: typeof graphState;
+    message?: string;
+    error?: string;
+  };
 }
 
 export function Layer1Shell() {
-  const [activeStep, setActiveStep] = useState<Layer1StepId>('input');
-  const [completedSteps, setCompletedSteps] = useState<Layer1StepId[]>([]);
+  const graphState = useLayer1Store((state) => state.graphState);
+  const syncFromGraphState = useLayer1Store(
+    (state) => state.syncFromGraphState,
+  );
 
-  const availableSteps = useMemo(() => {
-    const available = new Set<Layer1StepId>(['input']);
+  const activeStep = graphState.activeStep;
+  const completedSteps = graphState.completedSteps;
+  const availableSteps = graphState.availableSteps;
 
-    completedSteps.forEach((stepId) => {
-      available.add(stepId);
-
-      const nextStep = getNextStep(stepId);
-      if (nextStep) {
-        available.add(nextStep);
-      }
-    });
-
-    return stepOrder.filter((stepId) => available.has(stepId));
-  }, [completedSteps]);
-
-  function completeStep(stepId: Layer1StepId) {
-    setCompletedSteps((currentSteps) => {
-      if (currentSteps.includes(stepId)) {
-        return currentSteps;
-      }
-
-      return [...currentSteps, stepId];
-    });
-
-    const nextStep = getNextStep(stepId);
-
-    if (nextStep) {
-      setActiveStep(nextStep);
-    }
-  }
-
-  function handleStepChange(stepId: Layer1StepId) {
+  async function handleStepChange(stepId: Layer1StepId) {
     if (!availableSteps.includes(stepId)) {
       return;
     }
 
-    setActiveStep(stepId);
+    syncFromGraphState({
+      ...graphState,
+      activeStep: stepId,
+    });
+  }
+
+  async function handleCompleteStep(stepId: Layer1StepId) {
+    const result = await postLayer1Event(
+      {
+        type: 'complete_step',
+        stepId,
+      },
+      graphState,
+    );
+
+    if (result.ok && result.state) {
+      syncFromGraphState(result.state);
+    }
   }
 
   return (
@@ -104,7 +105,7 @@ export function Layer1Shell() {
       />
 
       {activeStep === 'input' ? (
-        <Layer1InputPanel onProceed={() => completeStep('input')} />
+        <Layer1InputPanel />
       ) : (
         <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70">
           <div className="flex items-center justify-between gap-4">
@@ -120,7 +121,7 @@ export function Layer1Shell() {
 
             <button
               type="button"
-              onClick={() => completeStep(activeStep)}
+              onClick={() => void handleCompleteStep(activeStep)}
               className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
             >
               Proceed
