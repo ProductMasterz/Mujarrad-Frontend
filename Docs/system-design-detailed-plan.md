@@ -462,6 +462,8 @@ Show only useful status information.
 
 The input stage now sends processed user text into the Task 3 Layer 1 runtime endpoint. The current source of truth for workflow progression is the Layer 1 graph/store state.
 
+The input composer also restores the latest submitted input from `graphState.rawInputs` when the user returns to the Input step during the current app session. This keeps completed input reviewable while moving between Layer 1 steps.
+
 ---
 
 ## 10. Input Processing Pipeline
@@ -2968,6 +2970,7 @@ Frontend Layer 1 Zustand store created
 Layer1Shell connected to the store
 Layer1Shell connected to /api/system-builder/layer1
 Layer1InputPanel connected to /api/system-builder/layer1
+Layer1InputPanel restores latest submitted input from graph/store state when returning to the Input step
 Input processing now goes through the server runtime endpoint
 ProcessedInputContext now syncs into graph/store state
 Step gating now syncs through graph/store state
@@ -3036,7 +3039,7 @@ src/features/system-design/components/Layer1Shell.tsx:
 Updated to read activeStep, completedSteps, and availableSteps from the Layer 1 store. Proceed actions now call /api/system-builder/layer1 instead of only updating local React state.
 
 src/features/system-design/components/Layer1InputPanel.tsx:
-Updated to submit RawInputPayload to /api/system-builder/layer1. The returned processingResult is displayed in the UI, and the returned graph state is synced into the Layer 1 store.
+Updated to submit RawInputPayload to /api/system-builder/layer1. The returned processingResult is displayed in the UI, and the returned graph state is synced into the Layer 1 store. The panel restores the latest submitted text from graphState.rawInputs when the user returns to the Input step, so the processed input remains reviewable during the current session. Clear resets the local input UI and the Layer 1 run state.
 ```
 
 ## Runtime Endpoint Created
@@ -3148,6 +3151,7 @@ flowchart TD
 Network status is 200 OK.
 Input becomes Done after processing.
 Clarify opens automatically after input processing.
+Returning to the Input step preserves the latest submitted text during the current session.
 Proceed on Clarify marks Clarify as Done.
 Next step becomes active/open.
 Later steps remain gated.
@@ -3169,6 +3173,7 @@ Graph result is returned safely to UI: Done
 Frontend store can sync from graph state: Done
 Input panel starts Layer 1 run through API route: Done
 ProcessedInputContext is stored in graph/store state: Done
+Submitted input remains reviewable when returning to the Input step: Done
 activeStep is stored in graph/store state: Done
 completedSteps are stored in graph/store state: Done
 availableSteps are stored in graph/store state: Done
@@ -3189,6 +3194,8 @@ The current graph runner is a deterministic runtime foundation.
 The complete AI LangGraph StateGraph with clarification, understanding, completeness, Draw.io generation, refinement, final documentation generation, and export will be implemented in Tasks 4–8.
 
 The graph entry point and API route are already in place so future tasks should extend this runtime instead of creating separate disconnected routes or UI-only state.
+
+Current session state is preserved through the graph/store runtime while navigating between Layer 1 steps. Full persisted project/session storage across browser refreshes is not part of Task 3 and should be handled later if required.
 ```
 
 ---

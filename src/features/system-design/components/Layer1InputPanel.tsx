@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLayer1Store } from '../stores/useLayer1Store';
 import type {
@@ -34,6 +34,9 @@ export function Layer1InputPanel() {
   const syncFromGraphState = useLayer1Store(
     (state) => state.syncFromGraphState,
   );
+  const resetRun = useLayer1Store((state) => state.resetRun);
+
+  const latestRawInput = graphState.rawInputs.at(-1);
 
   const [inputText, setInputText] = useState('');
   const [status, setStatus] = useState<InputProcessingStatusValue>('idle');
@@ -63,7 +66,24 @@ export function Layer1InputPanel() {
 
   const chunkCount = processingResult?.processedInput?.inputSize.chunkCount;
   const sourceLabel = sourceType.replace('_', ' ');
-  const hasProcessedInput = Boolean(processingResult?.processedInput);
+  const hasProcessedInput = Boolean(
+    processingResult?.processedInput ?? graphState.processedInput,
+  );
+
+  useEffect(() => {
+    if (!latestRawInput?.rawText) {
+      return;
+    }
+
+    setInputText((currentText) => currentText || latestRawInput.rawText);
+    setSourceType(latestRawInput.sourceType);
+    setFileName(latestRawInput.metadata?.fileName);
+  }, [
+    latestRawInput?.id,
+    latestRawInput?.rawText,
+    latestRawInput?.sourceType,
+    latestRawInput?.metadata?.fileName,
+  ]);
 
   async function submitInputToLayer1Graph(rawInput: RawInputPayload) {
     const response = await fetch('/api/system-builder/layer1', {
@@ -114,6 +134,7 @@ export function Layer1InputPanel() {
     setFileName(undefined);
     setInputError(undefined);
     audioChunksRef.current = [];
+    resetRun();
   }
 
   async function handleProcessInput() {
