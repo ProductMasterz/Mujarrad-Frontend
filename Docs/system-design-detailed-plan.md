@@ -2570,6 +2570,19 @@ flowchart TD
     L2 --> L3[Layer 3: Future Code Machine]
 ```
 
+Parallel work rule:
+
+```text
+Tasks 5–8 can be developed in parallel only if they use mocked upstream outputs that match the shared Task 3 state/types.
+
+Final integration must still happen in this order:
+
+Task 4 → Task 5 → Task 6 → Task 7 → Task 8
+
+No task should create a separate disconnected state shape, API pattern, or UI-only workflow. All tasks must extend the shared LangGraph runtime, schemas, and Zustand store created in Task 3.
+```
+
+
 Dependency notes:
 
 ```text
