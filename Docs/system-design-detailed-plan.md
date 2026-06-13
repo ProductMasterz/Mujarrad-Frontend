@@ -771,6 +771,7 @@ flowchart TD
     J -->|No| E
     J -->|Yes| K[Draw.io Diagram Generation]
 ```
+
 ---
 
 ## 14. LangGraph Architecture Requirement
@@ -1730,8 +1731,6 @@ FinalDocumentationResponse
 ```
 
 The purpose is to prevent invalid AI output or broken graph state from moving through the workflow.
-
-
 ---
 
 ## 36. LangGraph Orchestration Design
@@ -2503,1009 +2502,703 @@ Which LangGraph nodes produced each major result
 This is important because future Layer 2 logic will depend on understanding how the approved Layer 1 artifact bundle was created.
 
 ---
+## 36. LangGraph Orchestration Design
 
-## 55. Layer 1 Implementation Tasks
+Layer 1 should be implemented through a real LangGraph graph.
 
-Layer 1 is now divided into **eight implementation tasks**.
-
-Task 1, Task 2, and Task 3 have been completed and tested.
-
-Task 1 created the foundation, feature shell, route compatibility, LangGraph dependency setup, and future Layer 2 / Layer 3 placeholders.
-
-Task 2 created the professional input pipeline, compact input UI, text/file/voice ingestion paths, deterministic processing tool, input processing node, traceability types, schemas, and step-gated Layer 1 UI behavior. Voice input was later updated to use local open-source Whisper browser transcription instead of paid server transcription.
-
-Task 3 created the shared Layer 1 runtime foundation, graph/store state model, API route, graph runner, schemas, and store synchronization.
-
-The updated task structure is:
+Recommended file:
 
 ```text
-Task 1: Completed — Foundation, environment, feature shell, and LangGraph layout
-
-Task 2: Completed — Input Pipeline, Text/Voice/File Ingestion, Processing UI, Step Gating, and Traceability
-
-Task 3: Completed — LangGraph Core Runtime, State Model, API Routes, Schemas, Nodes, Tools, and Store Sync
-
-Task 4: AI Questions, System Understanding, and Completeness
-
-Task 5: Draw.io Diagram Generation and Editable Diagram Workspace
-
-Task 6: AI Diagram Refinement, Diagram Review, and Diagram Approval
-
-Task 7: Final Documentation Generation and Artifact Bundle
-
-Task 8: Export UI, Tests, Documentation Cleanup, and Deployment Readiness
+src/features/system-design/graphs/layer1Graph.ts
 ```
 
-Important rule:
+Recommended graph state file:
 
 ```text
-Layer 1 final user-facing outputs are Markdown, Draw.io XML, and diagram images.
-Markdown is generated after diagram approval.
-Draw.io generation does not depend on Markdown.
+src/features/system-design/graphs/layer1GraphState.ts
 ```
+
+Recommended graph runner file:
+
+```text
+src/features/system-design/graphs/layer1GraphRunner.ts
+```
+
+The graph should control:
+
+```text
+workflow order
+conditional branching
+human-in-the-loop pauses
+retry paths
+AI output validation
+diagram refinement loops
+final documentation generation
+artifact bundle creation
+```
+
+Recommended graph nodes:
+
+```text
+receive_input
+process_input
+generate_question
+wait_for_user_answer
+update_understanding
+check_completeness
+generate_drawio_xml
+review_diagram
+refine_diagram
+approve_diagram
+generate_final_markdown
+create_layer1_artifact_bundle
+export_files
+```
+
+The UI should not decide the orchestration path alone. The UI should send user actions to API routes, and API routes should invoke the graph.
 
 ---
 
-## 56. Updated Task Dependency Order
+## 37. LangGraph Graph Pattern
 
 ```mermaid
 flowchart TD
-    T1[Task 1 Completed: Foundation]
-    T2[Task 2 Completed: Input Pipeline]
-    T3[Task 3 Completed: LangGraph Runtime and State]
-    T4[Task 4: AI Questions and Understanding]
-    T5[Task 5: Draw.io Diagram Generation]
-    T6[Task 6: AI Diagram Refinement and Approval]
-    T7[Task 7: Final Documentation and Artifact Bundle]
-    T8[Task 8: Export, Tests, Docs, Deployment]
+    UI[Layer 1 UI Components] --> API[Next.js API Routes]
+    API --> Graph[LangGraph Layer 1 Graph]
 
-    T1 --> T2
-    T2 --> T3
-    T3 --> T4
-    T4 --> T5
-    T5 --> T6
-    T6 --> T7
-    T7 --> T8
+    Graph --> State[Layer1GraphState]
 
-    T8 --> A[Approved Layer 1 Artifact Bundle]
-    A --> L2[Layer 2: Future Abstract Logic]
-    L2 --> L3[Layer 3: Future Code Machine]
+    Graph --> N1[processInputNode]
+    Graph --> N2[generateQuestionNode]
+    Graph --> N3[updateUnderstandingNode]
+    Graph --> N4[checkCompletenessNode]
+    Graph --> N5[generateDiagramNode]
+    Graph --> N6[refineDiagramNode]
+    Graph --> N7[generateFinalDocsNode]
+    Graph --> N8[createArtifactBundleNode]
+
+    N1 --> T1[inputProcessingTool]
+    N2 --> T2[aiProviderTool]
+    N3 --> T2
+    N4 --> T2
+    N5 --> T2
+    N5 --> T3[xmlValidationTool]
+    N6 --> T2
+    N6 --> T3
+    N7 --> T2
+    N7 --> T4[markdownSpecTool]
+    N8 --> T5[artifactBundleTool]
+
+    Graph --> Store[Frontend Store Sync]
 ```
 
-Dependency notes:
+Rules:
 
 ```text
-Task 1 is completed and should remain as the tested foundation.
-Task 2 is completed and should remain as the tested input pipeline.
-Task 3 is completed and provides shared graph/store/API contracts.
-Task 4 owns the main AI questioning loop, understanding, and completeness.
-Task 5 owns initial Draw.io diagram generation and editable diagram workspace.
-Task 6 owns the second major AI area: diagram refinement from current XML and user instruction.
-Task 7 owns final Markdown documentation and artifact bundle creation.
-Task 8 owns export UI, tests, docs, cleanup, and deployment readiness.
+UI components must not own the full workflow logic.
+The LangGraph graph controls the workflow.
+The store reflects graph state for the UI.
+Nodes represent major workflow steps.
+Tools represent reusable operations.
+API routes keep AI provider keys server-side.
+Final user-facing exports are Markdown, XML, and diagram images.
 ```
 
 ---
 
-# Task 1 — Completed: Foundation, Environment, Feature Shell, and LangGraph Layout
+## 38. LangGraph Server Runtime
 
-## Status
+LangGraph must run inside the Next.js server/runtime for this phase.
 
-```text
-Completed
-Tested
-Merged into feat/system-builder
-Pushed to origin/feat/system-builder
-```
-
-## Completed Work
+Recommended API route style:
 
 ```text
-LangGraph dependencies installed
-Feature folder created
-System Design shell created
-/system-builder route kept stable
-SystemBuilder converted into compatibility wrapper
-Layer 1 active card created
-Layer 2 future placeholder created
-Layer 3 future placeholder created
-System Design config created
-.env.example updated safely
-Existing frontend routes kept stable
+app/api/system-builder/layer1/route.ts
+app/api/system-builder/layer1/answer/route.ts
+app/api/system-builder/layer1/generate-diagram/route.ts
+app/api/system-builder/layer1/refine-diagram/route.ts
+app/api/system-builder/layer1/final-docs/route.ts
+app/api/system-builder/layer1/export/route.ts
 ```
 
-## Completed Files
-
-```text
-package.json
-package-lock.json
-app/system-builder/page.tsx
-src/components/system-builder/SystemBuilder.tsx
-src/features/system-design/components/SystemDesignShell.tsx
-src/features/system-design/components/SystemDesignHeader.tsx
-src/features/system-design/components/LayerNavigation.tsx
-src/features/system-design/components/Layer1Shell.tsx
-src/features/system-design/components/Layer2Locked.tsx
-src/features/system-design/components/Layer3Locked.tsx
-src/features/system-design/config/systemDesignConfig.ts
-src/features/system-design/graphs/.gitkeep
-src/features/system-design/nodes/.gitkeep
-src/features/system-design/prompts/.gitkeep
-src/features/system-design/schemas/.gitkeep
-src/features/system-design/stores/.gitkeep
-src/features/system-design/tools/.gitkeep
-src/features/system-design/types/.gitkeep
-src/features/system-design/utils/.gitkeep
-.env.example
-```
-
-## Completed File Responsibilities
-
-```text
-package.json:
-Stores LangGraph and LangChain dependencies.
-
-package-lock.json:
-Locks dependency versions.
-
-app/system-builder/page.tsx:
-Keeps the /system-builder route stable and sets System Design metadata.
-
-src/components/system-builder/SystemBuilder.tsx:
-Compatibility wrapper that points the old System Builder entry to the new System Design feature shell.
-
-src/features/system-design/components/SystemDesignShell.tsx:
-Main System Design page shell.
-
-src/features/system-design/components/SystemDesignHeader.tsx:
-System Design page header.
-
-src/features/system-design/components/LayerNavigation.tsx:
-Displays Layer 1 active, Layer 2 future, and Layer 3 future cards.
-
-src/features/system-design/components/Layer1Shell.tsx:
-Initial Layer 1 content shell.
-
-src/features/system-design/components/Layer2Locked.tsx:
-Future Layer 2 placeholder.
-
-src/features/system-design/components/Layer3Locked.tsx:
-Future Layer 3 placeholder.
-
-src/features/system-design/config/systemDesignConfig.ts:
-Shared product/layer/input/export configuration.
-
-src/features/system-design/*/.gitkeep:
-Keeps planned feature folders committed before implementation files exist.
-
-.env.example:
-Documents safe environment variable names without real secrets.
-```
-
-## Verification Completed
-
-```text
-/system-builder loads successfully
-UI says System Design
-Layer 1 is active
-Layer 2 is shown as future
-Layer 3 is shown as future
-Existing routes still build
-npm run lint passes with existing warnings only
-npm run build passes
-git status is clean
-```
-
-## Acceptance Criteria Status
-
-```text
-LangGraph dependencies are installed: Done
-package.json and package-lock.json include LangGraph dependencies: Done
-/system-builder loads: Done
-UI says System Design: Done
-Layer 1 is active: Done
-Layer 2 and Layer 3 future placeholders exist: Done
-Existing frontend remains stable: Done
-No secrets committed: Done
-Existing frontend env variables are not removed or renamed: Done
-npm run lint passes: Done
-npm run build passes: Done
-```
-
----
-
-# Task 2 — Completed: Input Pipeline, Text/Voice/File Ingestion, Processing UI, Step Gating, and Traceability
-
-## Status
-
-```text
-Completed
-Merged into feat/system-builder
-Voice path updated to local open-source Whisper browser transcription.
-```
-
-## Goal
-
-Build the professional input foundation before AI questioning starts.
-
-## Completed Work
-
-```text
-Input types created
-Input schemas created
-Text normalization utility created
-Text chunking utility created
-Context compression placeholder created
-ID utility created
-Input processing tool created
-Input processing node created
-Server transcription route created
-Transcription tool placeholder/interface created
-Compact Layer 1 input composer created
-Voice recording added through MediaRecorder
-Voice transcription updated to local open-source Whisper browser transcription
-@xenova/transformers added for local browser ASR
-.txt file upload implemented
-Non-.txt file rejection implemented
-Smart input status pill implemented
-Input source labels implemented
-Character count implemented
-Estimated token count implemented
-Input size label implemented
-Chunk count display implemented after processing
-Empty input blocking implemented
-Short input warning implemented without duplicate large panels
-Clear/reset implemented
-Layer 1 internal step navigation implemented
-Step locking/gating implemented
-Input processing auto-opens Clarify step
-Completed steps remain clickable
-Right-side duplicate Layer 2/3 cards removed
-UI made compact and reduced explanatory text
-```
-
-## Completed Files
+Legacy optional transcription route:
 
 ```text
 app/api/system-builder/transcribe/route.ts
-src/features/system-design/components/SystemDesignShell.tsx
-src/features/system-design/components/SystemDesignHeader.tsx
-src/features/system-design/components/LayerNavigation.tsx
-src/features/system-design/components/Layer1Shell.tsx
-src/features/system-design/components/Layer1StepNavigation.tsx
-src/features/system-design/components/Layer1InputPanel.tsx
-src/features/system-design/components/InputProcessingStatus.tsx
-src/features/system-design/types/input.types.ts
-src/features/system-design/schemas/input.schema.ts
-src/features/system-design/tools/inputProcessingTool.ts
-src/features/system-design/tools/transcriptionTool.ts
-src/features/system-design/nodes/processInputNode.ts
-src/features/system-design/utils/id.ts
-src/features/system-design/utils/inputNormalization.ts
-src/features/system-design/utils/textChunking.ts
-src/features/system-design/utils/contextCompression.ts
-src/features/system-design/config/systemDesignConfig.ts
-src/features/system-design/utils/localWhisperTranscription.ts
-next.config.js
+```
+
+The active voice input path uses local open-source Whisper in the browser through `@xenova/transformers`.
+
+Recommended responsibilities:
+
+```text
+API route receives UI request.
+API route validates request body.
+API route invokes LangGraph graph runner.
+Graph runner executes graph nodes/tools.
+Graph returns validated state or next UI instruction.
+API route returns safe response to browser.
+```
+
+The browser must not call the AI provider directly.
+
+The browser must not access:
+
+```text
+OPENROUTER_API_KEY
+OPENAI_API_KEY
+```
+
+`OPENROUTER_API_KEY` must stay server-side only.
+
+`OPENAI_API_KEY` is not required for the active voice path. It is only relevant if the optional legacy `/api/system-builder/transcribe` route is used again later.
+
+The active voice path currently uses local Whisper browser transcription and then sends the resulting text through `/api/system-builder/layer1`. The workflow state is controlled by the Task 3 graph/store runtime.
+
+---
+
+## 39. LangGraph Dependency Status
+
+LangGraph.js is a required dependency for this project and must be used as the orchestration layer for the System Design workflow.
+
+Installed packages:
+
+```text
+@langchain/langgraph
+@langchain/core
+@xenova/transformers
+```
+
+`@xenova/transformers` is used for local open-source browser transcription in the System Design input composer.
+
+These dependencies are stored in:
+
+```text
 package.json
 package-lock.json
-.env.example
 ```
 
-## Completed File Responsibilities
+Contributors only need to run:
 
-```text
-app/api/system-builder/transcribe/route.ts:
-Legacy optional server-side transcription route. The current active voice path no longer depends on this route. Voice transcription is now handled locally in the browser through @xenova/transformers.
-
-src/features/system-design/utils/localWhisperTranscription.ts:
-Loads and reuses a local Whisper automatic speech recognition pipeline through @xenova/transformers. Converts recorded browser audio into transcript text without a paid transcription API.
-
-next.config.js:
-Adds webpack aliases/fallbacks so browser-side @xenova/transformers can build inside Next.js without bundling unsupported native Node binaries such as onnxruntime-node and sharp.
-
-package.json:
-Adds @xenova/transformers for local open-source browser transcription.
-
-package-lock.json:
-Locks the local transcription dependency tree.
-
-src/features/system-design/components/SystemDesignShell.tsx:
-Main compact page shell. Shows header, layer navigation, and full-width Layer 1 workflow.
-
-src/features/system-design/components/SystemDesignHeader.tsx:
-Compact System Design header.
-
-src/features/system-design/components/LayerNavigation.tsx:
-Compact Layer 1/2/3 navigation cards.
-
-src/features/system-design/components/Layer1Shell.tsx:
-Layer 1 step controller for Task 2, later connected to runtime/store in Task 3.
-
-src/features/system-design/components/Layer1StepNavigation.tsx:
-Clickable compact internal Layer 1 workflow stepper.
-
-src/features/system-design/components/Layer1InputPanel.tsx:
-Compact input composer. Handles typed text, pasted text, .txt file upload, voice recording, local Whisper browser transcription, Layer 1 runtime submission, smart status pill, source/size/token/chunk chips, process action, and clear/reset.
-
-src/features/system-design/components/InputProcessingStatus.tsx:
-Reusable status display for input processing.
-
-src/features/system-design/types/input.types.ts:
-Defines RawInputPayload, ProcessedInputContext, TextChunk, InputSize, TranscriptionResult, InputProcessingStatus, InputProcessingWarning, and InputProcessingResult.
-
-src/features/system-design/schemas/input.schema.ts:
-Zod validation schemas for input source type, processing status, warnings, raw input payload, text chunks, input size, processed input context, processing result, and transcription result.
-
-src/features/system-design/tools/inputProcessingTool.ts:
-Deterministic tool that accepts RawInputPayload, normalizes text, estimates size, chunks when needed, creates deterministic summary placeholder, preserves traceability, and returns InputProcessingResult.
-
-src/features/system-design/tools/transcriptionTool.ts:
-Optional legacy transcription tool interface placeholder.
-
-src/features/system-design/nodes/processInputNode.ts:
-LangGraph-compatible input node wrapper around inputProcessingTool.
-
-src/features/system-design/utils/id.ts:
-Creates local stable IDs and ISO timestamps.
-
-src/features/system-design/utils/inputNormalization.ts:
-Normalizes input text, preserves paragraph structure, trims unsafe whitespace, estimates token count, and returns input size label.
-
-src/features/system-design/utils/textChunking.ts:
-Splits large text into ordered TextChunk objects with index, text, characterStart, and characterEnd.
-
-src/features/system-design/utils/contextCompression.ts:
-Creates deterministic summary placeholder for processed context.
-
-src/features/system-design/config/systemDesignConfig.ts:
-Holds input limits used by the processing tool.
-
-.env.example:
-Documents safe environment variables without committing real secrets.
+```bash
+npm install
 ```
 
-## Acceptance Criteria Status
-
-```text
-User can enter text: Done
-UI shows character count: Done
-UI shows estimated token count: Done
-UI shows input size label: Done
-UI blocks empty input: Done
-User can clear input: Done
-Small text can pass directly: Done
-Large text is chunked safely: Done
-ProcessedInputContext is created: Done
-TextChunk objects preserve order and character offsets: Done
-Voice recording is implemented: Done
-Voice transcription uses local open-source Whisper in browser: Done
-Voice transcript enters same Layer 1 runtime input pipeline: Done
-.txt file upload is implemented: Done
-Non-.txt file rejection is implemented: Done
-File text enters same input pipeline: Done
-Input processing is represented as a node/tool: Done
-Layer1Shell shows the real input panel: Done
-Layer1 step navigation exists: Done
-UI is compact and avoids unnecessary explanations: Done
-No diagram generation happens from raw input: Done
-No secrets committed: Done
-npm run lint passes with existing warnings only: Done
-npm run build passes: Done
-```
+to install the same dependencies.
 
 ---
 
-# Task 3 — Completed: LangGraph Core Runtime, State Model, API Routes, Schemas, Nodes, Tools, and Store Sync
+## 40. LangGraph State Definition
 
-## Status
-
-```text
-Completed
-Merged into feat/system-builder
-Pushed to origin/feat/system-builder
-```
-
-## Goal
-
-Implement the typed Layer 1 runtime foundation so the System Design workflow no longer depends only on local React component state.
-
-Task 3 creates the shared runtime contract that future Tasks 4–8 will build on.
-
-## Important Implementation Note
-
-Task 3 does not yet implement the full AI clarification engine, full LangGraph StateGraph branching, Draw.io generation, diagram refinement, final documentation generation, or artifact export.
-
-Task 3 creates the professional foundation for those steps:
+Create or extend:
 
 ```text
-Typed Layer 1 state
-Graph event/result contracts
-Graph state helpers
-Graph runner
-Graph invocation entry point
-Server API endpoint
-Zod request validation
-Frontend Zustand store
-UI-to-runtime connection
-Step gating through graph/store state
-Task 2 input pipeline integrated into the runtime path
-```
-
-Future Tasks 4–8 must extend this runtime instead of creating separate UI-only logic.
-
-## Completed Work
-
-```text
-Layer 1 runtime types created
-Layer 2 placeholder input type created
-Layer 3 placeholder input type created
-Graph event/result types created
-Graph state definition created
-Initial graph state helper created
-Step order helper created
-Step completion helper created
-Available-step calculation created
-Stage-by-step mapping created
-Graph runner created
-Graph invocation entry point created
-Graph edge placeholder created
-Layer 1 API route created
-Layer 1 graph request schema created
-Layer 1 state schemas created
-Frontend Layer 1 Zustand store created
-Layer1Shell connected to the store
-Layer1Shell connected to /api/system-builder/layer1
-Layer1InputPanel connected to /api/system-builder/layer1
-Input processing now goes through the server runtime endpoint
-ProcessedInputContext now syncs into graph/store state
-Step gating now syncs through graph/store state
-Task 2 local-only progression was replaced with runtime-backed progression
-```
-
-## Completed Files
-
-```text
-app/api/system-builder/layer1/route.ts
-src/features/system-design/components/Layer1InputPanel.tsx
-src/features/system-design/components/Layer1Shell.tsx
-src/features/system-design/graphs/layer1Graph.ts
-src/features/system-design/graphs/layer1GraphEdges.ts
-src/features/system-design/graphs/layer1GraphRunner.ts
 src/features/system-design/graphs/layer1GraphState.ts
-src/features/system-design/schemas/graph.schema.ts
-src/features/system-design/schemas/layer1.schema.ts
-src/features/system-design/stores/useLayer1Store.ts
-src/features/system-design/types/graph.types.ts
-src/features/system-design/types/layer1.types.ts
-src/features/system-design/types/layer2.types.ts
-src/features/system-design/types/layer3.types.ts
 ```
 
-## Completed File Responsibilities
-
-```text
-app/api/system-builder/layer1/route.ts:
-Server-side Layer 1 runtime endpoint. Receives UI workflow events, validates the request with Zod, invokes the Layer 1 graph entry point, and returns safe graph results to the browser.
-
-src/features/system-design/graphs/layer1Graph.ts:
-Single public graph invocation entry point. UI/API code should call this instead of importing the runner directly.
-
-src/features/system-design/graphs/layer1GraphRunner.ts:
-Task 3 deterministic graph runner. Handles start_run, reset_run, submit_input, complete_step, and sync_state events. Calls the Task 2 inputProcessingTool during submit_input and returns updated graph state.
-
-src/features/system-design/graphs/layer1GraphState.ts:
-Creates the initial Layer 1 graph state. Defines Layer 1 step order, available-step logic, step completion logic, next-step logic, and step-to-stage mapping.
-
-src/features/system-design/graphs/layer1GraphEdges.ts:
-Initial graph edge utility placeholder. Provides a controlled place for future conditional continuation logic.
-
-src/features/system-design/types/layer1.types.ts:
-Defines the main Layer 1 domain model, including Layer1Run, Layer1Stage, Layer1StepId, SystemUnderstanding, ConstructiveQuestion, QuestionAnswer, CompletenessReport, DiagramRevision, Layer1ArtifactBundle, and Layer1Error.
-
-src/features/system-design/types/graph.types.ts:
-Defines graph runtime contracts, including Layer1GraphState, Layer1GraphEvent, Layer1GraphResult, Layer1GraphNextAction, Layer1GraphResumeInput, and Layer1StepState.
-
-src/features/system-design/types/layer2.types.ts:
-Defines the future Layer 2 expected input. Layer 2 must receive the approved Layer 1 artifact bundle.
-
-src/features/system-design/types/layer3.types.ts:
-Defines the future Layer 3 expected input. Layer 3 must depend on future Layer 2 output.
-
-src/features/system-design/schemas/layer1.schema.ts:
-Zod schemas for Layer 1 step IDs, stages, question categories, constructive questions, question answers, system understanding, completeness reports, and artifact bundles.
-
-src/features/system-design/schemas/graph.schema.ts:
-Zod schemas for graph events, graph next actions, and the Layer 1 API request body.
-
-src/features/system-design/stores/useLayer1Store.ts:
-Frontend Zustand store that mirrors graph state for UI display and interaction.
-
-src/features/system-design/components/Layer1Shell.tsx:
-Updated to read activeStep, completedSteps, and availableSteps from the Layer 1 store. Proceed actions now call /api/system-builder/layer1 instead of only updating local React state.
-
-src/features/system-design/components/Layer1InputPanel.tsx:
-Updated to submit RawInputPayload to /api/system-builder/layer1. The returned processingResult is displayed in the UI, and the returned graph state is synced into the Layer 1 store.
-```
-
-## Runtime Endpoint Created
-
-Main Task 3 endpoint:
-
-```text
-POST /api/system-builder/layer1
-```
-
-Source file:
-
-```text
-app/api/system-builder/layer1/route.ts
-```
-
-Runtime:
-
-```text
-nodejs
-```
-
-Request shape:
+The graph state should include:
 
 ```ts
-{
-  event: {
-    type:
-      | 'start_run'
-      | 'submit_input'
-      | 'complete_step'
-      | 'sync_state'
-      | 'reset_run';
-    rawInput?: RawInputPayload;
-    stepId?: Layer1StepId;
-  };
-  state?: Layer1GraphState;
+export interface Layer1GraphState {
+  runId: string;
+  stage: Layer1Stage;
+
+  rawInputs: RawInputPayload[];
+  processedInput: ProcessedInputContext | null;
+
+  currentQuestion: ConstructiveQuestion | null;
+  questions: ConstructiveQuestion[];
+  qaHistory: QuestionAnswer[];
+
+  understanding: SystemUnderstanding;
+  completeness: CompletenessReport | null;
+
+  drawioXml: string;
+  diagramSummary: string;
+  diagramApproved: boolean;
+  diagramRevisions: DiagramRevision[];
+
+  markdownSpec: string;
+
+  approvedLayer1Artifacts?: Layer1ArtifactBundle;
+
+  nextAction:
+    | 'process_input'
+    | 'ask_question'
+    | 'wait_for_answer'
+    | 'update_understanding'
+    | 'check_completeness'
+    | 'generate_diagram'
+    | 'wait_for_diagram_review'
+    | 'refine_diagram'
+    | 'approve_diagram'
+    | 'generate_final_docs'
+    | 'create_artifact_bundle'
+    | 'complete'
+    | 'error';
+
+  errors: Layer1Error[];
 }
 ```
 
-Response shape:
+The graph state is the source of truth for Layer 1 execution.
 
-```ts
-{
-  ok: boolean;
-  state: Layer1GraphState;
-  processingResult?: InputProcessingResult;
-  message?: string;
-}
-```
-
-Validation:
-
-```text
-Request body is validated by src/features/system-design/schemas/graph.schema.ts
-Invalid requests return 400
-Runtime failures return controlled 500 response
-```
-
-Security:
-
-```text
-The endpoint runs server-side.
-The browser does not access OPENROUTER_API_KEY.
-The browser does not access OPENAI_API_KEY.
-Future AI calls must be added behind server-side tools/routes only.
-```
-
-## Runtime Event Behavior
-
-Supported graph events:
-
-```text
-start_run:
-Creates or returns an initial Layer 1 graph state.
-
-reset_run:
-Creates a fresh Layer 1 graph state.
-
-submit_input:
-Accepts RawInputPayload, runs processSystemDesignInput, stores rawInputs and processedInput in graph state, completes the Input step, unlocks Clarification, and returns InputProcessingResult.
-
-complete_step:
-Completes the current step, calculates the next available step, updates activeStep, completedSteps, availableSteps, and stage.
-
-sync_state:
-Returns the current state without changing the workflow.
-```
-
-## Current Runtime Flow
-
-```mermaid
-flowchart TD
-    UI[Layer1InputPanel] --> API[POST /api/system-builder/layer1]
-    API --> GraphEntry[invokeLayer1Graph]
-    GraphEntry --> Runner[runLayer1GraphEvent]
-    Runner --> InputTool[inputProcessingTool]
-    InputTool --> Processed[ProcessedInputContext]
-    Processed --> State[Layer1GraphState]
-    State --> Store[useLayer1Store]
-    Store --> Shell[Layer1Shell]
-    Shell --> Stepper[Layer1StepNavigation]
-```
-
-## Verified Browser Behavior
-
-```text
-/api/system-builder/layer1 is called from the browser.
-Network status is 200 OK.
-Input becomes Done after processing.
-Clarify opens automatically after input processing.
-Proceed on Clarify marks Clarify as Done.
-Next step becomes active/open.
-Later steps remain gated.
-Unlocked/completed steps remain clickable.
-```
-
-## Acceptance Criteria Status
-
-```text
-Layer 1 state is strongly typed: Done
-Layer 1 graph state exists: Done
-Layer 1 graph runner exists server-side: Done
-Layer 1 graph invocation entry point exists: Done
-Layer 1 API route exists: Done
-Request schemas exist: Done
-Layer 1 schemas exist: Done
-Graph request is validated before execution: Done
-Graph result is returned safely to UI: Done
-Frontend store can sync from graph state: Done
-Input panel starts Layer 1 run through API route: Done
-ProcessedInputContext is stored in graph/store state: Done
-activeStep is stored in graph/store state: Done
-completedSteps are stored in graph/store state: Done
-availableSteps are stored in graph/store state: Done
-Step gating is controlled by graph/store state: Done
-Layer 2 expected input is the approved Layer 1 artifact bundle: Done
-Layer 3 depends on future Layer 2 output: Done
-Components no longer own main step progression alone: Done
-Browser does not access OPENROUTER_API_KEY: Done
-Browser does not access OPENAI_API_KEY: Done
-npm run build passes: Done
-npm run lint passes with existing warnings only: Done
-```
-
-## Known Task 3 Limitation
-
-```text
-The current graph runner is a deterministic runtime foundation.
-The complete AI LangGraph StateGraph with clarification, understanding, completeness, Draw.io generation, refinement, final documentation generation, and export will be implemented in Tasks 4–8.
-
-The graph entry point and API route are already in place so future tasks should extend this runtime instead of creating separate disconnected routes or UI-only state.
-```
+The frontend store should mirror this state only for UI display and interaction.
 
 ---
 
-# Post-Task 3 Fix — Local Open-Source Voice Transcription
+## 41. LangGraph Nodes
 
-## Status
-
-```text
-Completed
-Tested locally
-Build passes
-Lint passes with existing warnings only
-```
-
-## Completed Work
+Create or extend:
 
 ```text
-Browser Web Speech API attempt was replaced because it can fail with network errors.
-Voice input now uses local open-source Whisper browser transcription.
-@xenova/transformers was installed.
-localWhisperTranscription.ts was added.
-Layer1InputPanel now records audio with MediaRecorder and transcribes locally.
-next.config.js was updated to prevent unsupported native Node binaries from being bundled.
-Docs were updated.
-```
-
-## Latest Commit
-
-```text
-6af786e Use local Whisper transcription for system builder input
-```
-
----
-
-# Task 4 — AI Questions, System Understanding, and Completeness
-
-## Goal
-
-Implement the main AI clarification workflow inside LangGraph.
-
-This task is the first major AI part of Layer 1.
-
-## Current State
-
-Tasks 1–3 are completed.
-
-Input is processed through `/api/system-builder/layer1`, and graph/store state already controls step progression.
-
-## Scope
-
-```text
-AI provider server tool
-Constructive question prompt
-Question generation node
-Question display UI
-Question history UI
-Human-in-the-loop answer submission
-Answer API route
-Question traceability
-Understanding update node
-Understanding update prompt/tooling
-Understanding panel
-Completeness scoring node
-Completeness prompt/tooling
-Completeness panel
-Missing critical item detection
-Graph loop decision
-Ready-for-diagram decision
-Workflow stage gating
-```
-
-## Main Files
-
-```text
-app/api/system-builder/layer1/answer/route.ts
-src/features/system-design/components/Layer1QuestionLoop.tsx
-src/features/system-design/components/QuestionCard.tsx
-src/features/system-design/components/QuestionHistory.tsx
-src/features/system-design/components/Layer1UnderstandingPanel.tsx
-src/features/system-design/components/Layer1CompletenessPanel.tsx
+src/features/system-design/nodes/processInputNode.ts
 src/features/system-design/nodes/generateQuestionNode.ts
 src/features/system-design/nodes/updateUnderstandingNode.ts
 src/features/system-design/nodes/checkCompletenessNode.ts
+src/features/system-design/nodes/generateDiagramNode.ts
+src/features/system-design/nodes/refineDiagramNode.ts
+src/features/system-design/nodes/generateFinalDocsNode.ts
+src/features/system-design/nodes/createArtifactBundleNode.ts
+```
+
+Node responsibilities:
+
+```text
+processInputNode:
+Normalize text, estimate size, chunk/compress when needed, return ProcessedInputContext.
+
+generateQuestionNode:
+Use current graph state to generate exactly one constructive question.
+
+updateUnderstandingNode:
+Merge the latest answer into the structured system understanding.
+
+checkCompletenessNode:
+Decide whether more questions are needed or the graph can continue to diagram generation.
+
+generateDiagramNode:
+Generate Draw.io XML from the full Layer 1 context after clarification is complete.
+
+refineDiagramNode:
+Use AI to refine the current Draw.io XML using the user instruction and current diagram state.
+
+generateFinalDocsNode:
+Generate the final Markdown documentation after the diagram is approved.
+
+createArtifactBundleNode:
+Create the approved Layer 1 artifact bundle containing Markdown, XML, diagram image, and optional summary.
+```
+
+Every node should return a partial graph state update, not random UI data.
+
+---
+
+## 42. LangGraph Tools
+
+Create or extend:
+
+```text
 src/features/system-design/tools/aiProviderTool.ts
+src/features/system-design/tools/inputProcessingTool.ts
+src/features/system-design/tools/transcriptionTool.ts
+src/features/system-design/tools/xmlValidationTool.ts
+src/features/system-design/tools/markdownSpecTool.ts
+src/features/system-design/tools/drawioExportTool.ts
+src/features/system-design/tools/artifactBundleTool.ts
+```
+
+Tool responsibilities:
+
+```text
+aiProviderTool:
+Server-side wrapper for AI calls through OpenRouter or another provider.
+
+inputProcessingTool:
+Normalize, estimate, chunk, compress, and prepare processed context.
+
+transcriptionTool:
+Optional legacy helper for server-side transcription. The current active voice path uses localWhisperTranscription.ts with @xenova/transformers in the browser.
+
+xmlValidationTool:
+Extract, sanitize, validate, repair, or reject Draw.io XML.
+
+markdownSpecTool:
+Build and validate final Markdown documentation after diagram approval.
+
+drawioExportTool:
+Prepare XML/image export behavior and connect with Draw.io output.
+
+artifactBundleTool:
+Create the final approved Layer 1 artifact bundle.
+```
+
+Tools must be deterministic where possible.
+
+AI-dependent tools must validate output before returning it to the graph.
+
+---
+
+## 43. AI Prompt Files
+
+Prompts should be stored separately so contributors do not hide prompt logic inside components or graph nodes.
+
+Recommended prompt files:
+
+```text
 src/features/system-design/prompts/constructiveQuestionPrompt.ts
 src/features/system-design/prompts/understandingUpdatePrompt.ts
 src/features/system-design/prompts/completenessPrompt.ts
-src/features/system-design/utils/questionCategories.ts
-src/features/system-design/utils/questionSelection.ts
-src/features/system-design/utils/updateUnderstanding.ts
-src/features/system-design/utils/completeness.ts
-src/features/system-design/graphs/layer1Graph.ts
-src/features/system-design/graphs/layer1GraphEdges.ts
-src/features/system-design/graphs/layer1GraphRunner.ts
-src/features/system-design/stores/useLayer1Store.ts
-src/features/system-design/components/Layer1Shell.tsx
-```
-
-## Expected Output
-
-```text
-AI asks one constructive question at a time.
-User can answer the current question.
-Answers are saved in qaHistory.
-Questions and answers update structured understanding.
-Completeness report is generated.
-Graph decides whether to ask another question or move to diagram generation.
-```
-
-## Acceptance Criteria
-
-```text
-User starts clarification after input processing.
-LangGraph asks exactly one constructive question.
-Question includes reason for asking.
-Question includes traceability fields.
-Graph waits for user answer.
-User answer resumes/continues graph.
-Next question uses previous context.
-Question history is saved.
-Understanding updates after answers.
-Completeness report is generated.
-Missing critical items are shown.
-Weak areas are shown.
-Graph loops when more questions are needed.
-Graph continues when ready for Draw.io diagram generation.
-No static questionnaire behavior.
-npm run lint passes.
-npm run build passes.
-```
-
----
-
-# Task 5 — Draw.io Diagram Generation and Editable Diagram Workspace
-
-## Goal
-
-Generate the first editable Draw.io diagram directly from the completed understanding and Q&A context.
-
-## Current State
-
-Task 4 provides processed input, Q&A history, structured understanding, and completeness/readiness state.
-
-## Scope
-
-```text
-Draw.io XML generation node
-Diagram generation prompt
-XML validation and repair utility
-Diagram API route
-Draw.io embed integration
-Diagram workspace UI
-Manual XML sync
-Current XML stored in graph/store state
-Initial diagram summary
-Diagram image export preparation
-```
-
-## Main Files
-
-```text
-app/api/system-builder/layer1/generate-diagram/route.ts
-src/features/system-design/components/Layer1DiagramStep.tsx
-src/features/system-design/components/Layer1DiagramReview.tsx
-src/features/system-design/nodes/generateDiagramNode.ts
-src/features/system-design/tools/xmlValidationTool.ts
-src/features/system-design/tools/drawioExportTool.ts
 src/features/system-design/prompts/diagramGenerationPrompt.ts
-src/features/system-design/utils/drawioXml.ts
-src/components/system-builder/DrawioEmbed.tsx
-src/features/system-design/graphs/layer1Graph.ts
-src/features/system-design/graphs/layer1GraphEdges.ts
-src/features/system-design/graphs/layer1GraphRunner.ts
-src/features/system-design/stores/useLayer1Store.ts
-src/features/system-design/components/Layer1Shell.tsx
-```
-
-## Expected Output
-
-```text
-Draw.io diagram is generated after clarification is complete.
-Generated XML is validated before loading.
-The diagram opens in Draw.io.
-The user can manually edit the diagram.
-Manual edits update the current XML in graph/store state.
-```
-
-## Acceptance Criteria
-
-```text
-Diagram generation starts after questioning is complete.
-Diagram uses full context, not raw input only.
-AI returns valid Draw.io XML.
-XML is extracted, sanitized, and validated before loading.
-Invalid XML is rejected or repaired safely.
-Draw.io opens with the generated diagram.
-User can manually edit the diagram.
-Edited XML is stored in Layer 1 state.
-npm run lint passes.
-npm run build passes.
-```
-
----
-
-# Task 6 — AI Diagram Refinement, Diagram Review, and Diagram Approval
-
-## Goal
-
-Allow the user to improve the diagram manually or through AI refinement, then approve it.
-
-This task is the second major AI part of Layer 1.
-
-## Current State
-
-Task 5 provides generated editable Draw.io XML and current diagram state.
-
-## Scope
-
-```text
-AI diagram refinement route
-AI diagram refinement node
-Diagram refinement prompt
-Refinement instruction UI
-Current XML + instruction context building
-XML validation after refinement
-Diagram review UI
-Manual edit tracking
-AI refinement tracking
-Revision history
-Diagram approval state
-```
-
-## Main Files
-
-```text
-app/api/system-builder/layer1/refine-diagram/route.ts
-src/features/system-design/components/Layer1DiagramReview.tsx
-src/features/system-design/components/Layer1DiagramRefinement.tsx
-src/features/system-design/components/DiagramRevisionHistory.tsx
-src/features/system-design/nodes/refineDiagramNode.ts
-src/features/system-design/tools/xmlValidationTool.ts
-src/features/system-design/tools/drawioExportTool.ts
 src/features/system-design/prompts/diagramRefinementPrompt.ts
-src/features/system-design/utils/drawioXml.ts
-src/components/system-builder/DrawioEmbed.tsx
-src/features/system-design/graphs/layer1Graph.ts
-src/features/system-design/graphs/layer1GraphEdges.ts
-src/features/system-design/graphs/layer1GraphRunner.ts
-src/features/system-design/stores/useLayer1Store.ts
-src/features/system-design/components/Layer1Shell.tsx
+src/features/system-design/prompts/finalDocumentationPrompt.ts
 ```
 
-## Expected Output
+Prompt files should export functions because prompts need context.
 
-```text
-User can review the current diagram.
-User can manually edit diagram in Draw.io.
-User can ask AI to refine the current diagram.
-AI receives current XML, user instruction, understanding, Q&A, and revision history.
-Refined XML is validated before applying.
-All revisions are tracked.
-User can approve the final diagram.
+Example:
+
+```ts
+export function buildConstructiveQuestionPrompt(input: BuildQuestionPromptInput): string {
+  return `
+You are helping design a software system.
+
+Processed input summary:
+${input.processedInput.compressedSummary}
+
+Current understanding:
+${JSON.stringify(input.understanding, null, 2)}
+
+Previous Q&A:
+${JSON.stringify(input.qaHistory, null, 2)}
+
+Completeness gaps:
+${JSON.stringify(input.completeness, null, 2)}
+
+Ask exactly one constructive next question.
+Return structured JSON only.
+`;
+}
 ```
 
-## Acceptance Criteria
+Layer 1 has two main AI areas:
 
 ```text
-User can request AI diagram changes.
-AI refinement uses current XML and user instruction.
-AI refinement also considers system understanding and Q&A context.
-Refined XML is validated before applying.
-Invalid refined XML is rejected or repaired safely.
-Manual edits are tracked.
-AI refinements are tracked.
-Revision history is stored.
-User can approve final diagram.
-Final Docs step remains blocked until diagram approval.
-npm run lint passes.
-npm run build passes.
+AI Area 1:
+Constructive questioning, understanding update, and completeness reasoning.
+
+AI Area 2:
+Draw.io diagram generation and diagram refinement from current XML.
+```
+
+Final documentation generation can also use the AI provider, but it must be treated as a final artifact generation step after diagram approval, not as a gate before diagram generation.
+
+---
+
+## 44. AI Output Validation Flow
+
+```mermaid
+flowchart TD
+    A[AI Response] --> B{Expected Output Type?}
+    B -->|Question JSON| C[Parse JSON]
+    B -->|Understanding JSON| D[Parse JSON]
+    B -->|Completeness JSON| E[Parse JSON]
+    B -->|Draw.io XML| F[Extract XML]
+    B -->|Markdown| G[Validate Markdown Structure]
+
+    C --> H[Validate With Zod]
+    D --> H
+    E --> H
+    F --> I[Validate Draw.io XML]
+    G --> J[Validate Required Sections]
+
+    H --> K{Valid?}
+    I --> K
+    J --> K
+
+    K -->|Yes| L[Commit to LangGraph State]
+    K -->|No| M[Retry or Return Controlled Error]
+```
+
+AI output should never be blindly trusted.
+
+Validation is required before saving generated questions, system understanding, completeness reports, Draw.io XML, refined XML, Markdown docs, or artifact bundles.
+
+---
+
+## 45. API Route Strategy
+
+Recommended API routes:
+
+```text
+app/api/system-builder/layer1/route.ts
+app/api/system-builder/layer1/answer/route.ts
+app/api/system-builder/layer1/generate-diagram/route.ts
+app/api/system-builder/layer1/refine-diagram/route.ts
+app/api/system-builder/layer1/final-docs/route.ts
+app/api/system-builder/layer1/export/route.ts
+```
+
+These routes should invoke LangGraph graph actions.
+
+Recommended mapping:
+
+```text
+POST /api/system-builder/layer1
+→ start or continue Layer 1 graph
+
+POST /api/system-builder/layer1/answer
+→ submit human answer and continue graph
+
+POST /api/system-builder/layer1/generate-diagram
+→ generate Draw.io XML through graph node
+
+POST /api/system-builder/layer1/refine-diagram
+→ refine current diagram XML through graph node
+
+POST /api/system-builder/layer1/final-docs
+→ generate final Markdown documentation after diagram approval
+
+POST /api/system-builder/layer1/export
+→ create approved Layer 1 artifact bundle
+```
+
+The existing route namespace can stay stable, but the orchestration should move to the LangGraph graph.
+
+---
+
+## 46. Diagram API Payload
+
+Recommended diagram generation request:
+
+```ts
+export interface DiagramGenerationRequest {
+  mode: 'generate';
+
+  processedInput: ProcessedInputContext;
+
+  qaHistory: QuestionAnswer[];
+  systemUnderstanding: SystemUnderstanding;
+  completenessReport: CompletenessReport;
+}
+```
+
+Recommended diagram generation response:
+
+```ts
+export interface DiagramGenerationResponse {
+  xml: string;
+  summary: string;
+  warnings: string[];
+}
+```
+
+Recommended diagram refinement request:
+
+```ts
+export interface DiagramRefinementRequest {
+  mode: 'refine';
+
+  currentXml: string;
+  refinementInstruction: string;
+
+  processedInput: ProcessedInputContext;
+  qaHistory: QuestionAnswer[];
+  systemUnderstanding: SystemUnderstanding;
+  completenessReport: CompletenessReport;
+  revisionHistory: DiagramRevision[];
+}
+```
+
+Recommended diagram refinement response:
+
+```ts
+export interface DiagramRefinementResponse {
+  xml: string;
+  summary: string;
+  warnings: string[];
+}
+```
+
+These requests should be handled by LangGraph diagram nodes, not directly by UI components.
+
+---
+
+## 47. Draw.io Integration Rules
+
+Recommended approach:
+
+```text
+Use DrawioEmbed as the low-level iframe component.
+Move Layer 1 workflow UI into src/features/system-design/components.
+Pass XML into DrawioEmbed.
+Listen to onXmlChange.
+Store latest XML in Layer 1 store.
+Send refinement requests back through LangGraph.
+Export final XML and diagram image.
+```
+
+Draw.io should support:
+
+```text
+Load generated XML
+Manual editing
+Export/save current XML
+AI refinement using current XML
+Revision history
+Approval before final documentation/export
 ```
 
 ---
 
-# Task 7 — Final Documentation Generation and Artifact Bundle
+## 48. Draw.io Workflow Diagram
 
-## Goal
+```mermaid
+flowchart TD
+    A[Clarification Complete] --> B[LangGraph Diagram Node]
+    B --> C[AI Generates Draw.io XML]
+    C --> D[XML Validation Tool]
+    D --> E{Valid?}
+    E -->|No| F[Repair / Retry / Controlled Error]
+    E -->|Yes| G[Load XML in DrawioEmbed]
+    G --> H[User Reviews]
+    H --> I{Approved?}
+    I -->|Yes| J[Final Documentation Node]
+    I -->|No| K[Manual Edit or LangGraph AI Refinement]
+    K --> L[Update Current XML]
+    L --> H
 
-Generate the final Layer 1 Markdown documentation only after the diagram is approved, then prepare the approved artifact bundle.
-
-## Current State
-
-Task 6 provides approved diagram XML, diagram summary, diagram revisions, and complete Layer 1 context.
-
-## Scope
-
-```text
-Final Markdown generation node
-Final documentation prompt
-Markdown spec tool
-Markdown validation
-Final documentation UI
-Artifact bundle node
-Artifact bundle tool
-Final artifact state
-Layer 2 handoff-ready bundle
+    J --> M[Markdown + XML + Diagram Image]
+    M --> N[Artifact Bundle Node]
 ```
 
-## Main Files
+---
+
+## 49. Draw.io XML Utilities
+
+Create:
 
 ```text
-app/api/system-builder/layer1/final-docs/route.ts
-src/features/system-design/components/Layer1FinalDocsStep.tsx
-src/features/system-design/nodes/generateFinalDocsNode.ts
-src/features/system-design/nodes/createArtifactBundleNode.ts
-src/features/system-design/tools/markdownSpecTool.ts
-src/features/system-design/tools/artifactBundleTool.ts
-src/features/system-design/prompts/finalDocumentationPrompt.ts
+src/features/system-design/utils/drawioXml.ts
+```
+
+Recommended functions:
+
+```ts
+export function extractMxGraphModel(raw: string): string;
+export function sanitizeDrawioXml(xml: string): string;
+export function validateDrawioXml(xml: string): DrawioValidationResult;
+export function ensureMxGraphRoot(xml: string): string;
+export function createEmptyDrawioXml(): string;
+```
+
+These utilities should protect the app from broken AI XML output.
+
+The LangGraph diagram node and refinement node should call these utilities before storing XML.
+
+---
+
+## 50. Final Markdown Documentation Generation
+
+Create:
+
+```text
 src/features/system-design/utils/markdownSpec.ts
-src/features/system-design/schemas/layer1.schema.ts
-src/features/system-design/graphs/layer1Graph.ts
-src/features/system-design/graphs/layer1GraphEdges.ts
-src/features/system-design/graphs/layer1GraphRunner.ts
-src/features/system-design/stores/useLayer1Store.ts
-src/features/system-design/components/Layer1Shell.tsx
 ```
 
-## Final Outputs
+The final Markdown specification is generated after diagram approval.
+
+It should be based on:
+
+```text
+processed input
+Q&A history
+system understanding
+completeness report
+approved Draw.io XML
+diagram summary
+diagram revisions when useful
+```
+
+The final Markdown specification should follow this structure:
+
+```markdown
+# System Design Specification
+
+## 1. System Overview
+
+## 2. Source Input Summary
+
+## 3. Main Goal
+
+## 4. Users and Roles
+
+## 5. Core Workflow
+
+## 6. Alternative Workflows
+
+## 7. Inputs
+
+## 8. Outputs
+
+## 9. Data Objects / Entities
+
+## 10. Business Rules
+
+## 11. Decision Logic
+
+## 12. Validations
+
+## 13. Edge Cases
+
+## 14. Error Handling
+
+## 15. Integrations
+
+## 16. Security and Permissions
+
+## 17. Notifications
+
+## 18. Reporting / Logging
+
+## 19. Diagram Explanation
+
+## 20. Open Questions
+
+## 21. Future Layer 2 Preparation
+```
+
+Existing markdown components may be reused where suitable:
+
+```text
+src/components/markdown/MarkdownEditor.tsx
+src/components/markdown/MarkdownRenderer.tsx
+```
+
+---
+
+## 51. Diagram to Final Documentation Flow
+
+```mermaid
+flowchart TD
+    A[Processed Input] --> D[System Understanding]
+    B[Q&A History] --> D
+    C[Completeness Report] --> D
+    D --> E[Draw.io Diagram Generation]
+    E --> F[Diagram Review and Refinement]
+    F --> G[Approved Draw.io XML]
+    G --> H[Final Markdown Documentation]
+    H --> I[Approved Layer 1 Artifact Bundle]
+    I --> I1[Markdown]
+    I --> I2[XML]
+    I --> I3[Diagram Image]
+```
+
+---
+
+## 52. Export Requirements
+
+Layer 1 must export user-facing files:
 
 ```text
 final-system-spec.md
@@ -3514,249 +3207,66 @@ system-diagram.png or system-diagram.svg
 optional system-diagram-summary.md
 ```
 
-## Acceptance Criteria
+There should be no user-facing JSON export in this phase.
+
+Create:
 
 ```text
-Markdown is generated only after diagram approval.
-Markdown includes system understanding and diagram explanation.
-Markdown follows required final documentation structure.
-Markdown can be previewed.
-Markdown is stored in Layer 1 state.
-Draw.io XML is included in final artifacts.
-Diagram image is included when available.
-Optional diagram summary is included when available.
-No user-facing JSON export exists.
-Approved Layer 1 artifact bundle exists.
-npm run lint passes.
-npm run build passes.
-```
-
----
-
-# Task 8 — Export UI, Tests, Documentation Cleanup, and Deployment Readiness
-
-## Goal
-
-Finish the feature professionally and make it safe for review and deployment.
-
-## Current State
-
-Task 7 creates the final Layer 1 artifact bundle.
-
-## Scope
-
-```text
-Export step UI
-Download buttons
-File download utilities
-Diagram image export handling
-Tests for critical utilities and graph behavior
-Documentation cleanup
-Deployment readiness cleanup
-Git hygiene verification
-Final verification
-```
-
-## Main Files
-
-```text
-app/api/system-builder/layer1/export/route.ts
 src/features/system-design/components/Layer1ExportStep.tsx
 src/features/system-design/utils/exportLayer1.ts
 src/features/system-design/utils/downloadFile.ts
-src/features/system-design/utils/__tests__/inputNormalization.test.ts
-src/features/system-design/utils/__tests__/textChunking.test.ts
-src/features/system-design/utils/__tests__/contextCompression.test.ts
-src/features/system-design/utils/__tests__/questionSelection.test.ts
-src/features/system-design/utils/__tests__/completeness.test.ts
-src/features/system-design/utils/__tests__/markdownSpec.test.ts
-src/features/system-design/utils/__tests__/drawioXml.test.ts
-src/features/system-design/utils/__tests__/exportLayer1.test.ts
-src/features/system-design/graphs/__tests__/layer1GraphState.test.ts
-src/features/system-design/nodes/__tests__/processInputNode.test.ts
-src/features/system-design/nodes/__tests__/createArtifactBundleNode.test.ts
-Docs/system-design-detailed-plan.md
-Docs/system-design-env.md
-Docs/system-design-layer1.md
-Docs/system-design-team-tasks.md
 ```
 
-## Acceptance Criteria
+The export step should include:
 
 ```text
-User can download Markdown.
-User can download Draw.io XML.
-User can download diagram image.
-Optional summary download works if available.
-No user-facing JSON export exists.
-Tests cover important logic.
-Docs match the real workflow.
-No secrets committed.
-No local inspection files committed.
-npm run lint passes.
-npm run build passes.
-npm run test passes or unrelated failures are documented.
+Download Markdown Spec
+Download Draw.io XML
+Download Diagram Image
+Download Diagram Summary if available
 ```
 
 ---
 
-## 57. Contribution Rules
+## 53. Export Package Diagram
 
-All contributors must follow these rules:
+```mermaid
+flowchart TD
+    A[Layer 1 Final State] --> B[LangGraph Artifact Bundle Node]
+    B --> C[final-system-spec.md]
+    B --> D[system-diagram.drawio.xml]
+    B --> E[system-diagram.png or svg]
+    B --> F[optional system-diagram-summary.md]
 
-```text
-1. Do not break existing frontend behavior.
+    C --> G[Approved Layer 1 Artifact Bundle]
+    D --> G
+    E --> G
+    F --> G
 
-2. Do not merge unrelated main branch changes unless requested.
-
-3. Do not commit .env.local.
-
-4. Do not expose AI provider keys to the browser.
-
-5. Keep LangGraph execution on the server side.
-
-6. Do not install new packages unless necessary and approved. @xenova/transformers is already approved and installed for local browser transcription.
-
-7. Do not run npm audit fix --force unless it is a separate dependency task.
-
-8. Keep new code inside src/features/system-design where possible.
-
-9. System Builder compatibility files should be treated as wrappers or low-level reusable components.
-
-10. Components should not contain large orchestration logic.
-
-11. LangGraph graph, nodes, tools, schemas, and utilities should hold workflow logic.
-
-12. Every task must pass lint and build before review.
-
-13. Draw.io XML must be validated before being loaded or exported.
-
-14. Raw input should go through LangGraph input processing before AI clarification.
-
-15. Voice input must enter the same LangGraph text pipeline after local Whisper transcription.
-
-16. Existing Mujarrad frontend env variables must not be removed or renamed.
-
-17. Final user-facing exports are Markdown, XML, and diagram files, not JSON.
-
-18. Markdown documentation must be generated after diagram approval, not before diagram generation.
-
-19. AI diagram refinement must use current XML plus user instruction.
-
-20. AI provider tools must remain server-side and swappable.
+    G --> H[Layer 2: Abstract Logic - Future]
+    H --> I[Layer 3: Code Machine - Future]
 ```
 
 ---
 
-## 58. Testing Checklist
+## 54. Traceability Requirements
 
-Each contributor should run:
+The internal state should preserve traceability even if JSON is not exported to the user.
 
-```bash
-npm run lint
-npm run build
-```
-
-Task 8 should also run:
-
-```bash
-npm run test
-```
-
-The expected branch baseline is:
+It should track:
 
 ```text
-Lint passes with warnings only.
-Build passes successfully.
+Which input started the process
+Whether the input was typed, pasted, transcribed, or file-based
+How the input was processed
+Which questions were asked
+Why each question was asked
+Which answers were given
+Which completeness gaps existed
+Which diagram revisions happened
+Which final artifacts were produced
+Which LangGraph nodes produced each major result
 ```
 
-Existing lint warnings are not part of this System Design task unless they are caused by new work.
-
+This is important because future Layer 2 logic will depend on understanding how the approved Layer 1 artifact bundle was created.
 ---
-
-## 59. Git Hygiene
-
-Before committing, check:
-
-```bash
-git status --short
-```
-
-Do not commit local inspection artifacts:
-
-```text
-branch-inspection/
-branch-inspection-content/
-branch-inspection.zip
-branch-inspection-content.zip
-```
-
-Do not commit:
-
-```text
-.env.local
-.env
-```
-
----
-
-## 60. Final Definition of Done
-
-This phase is complete when:
-
-```text
-/system-builder opens the new System Design shell
-LangGraph dependencies are installed and committed
-Layer 1 workflow is orchestrated by LangGraph
-Layer 1 workflow is usable from input to export
-Input is processed safely
-Voice transcription works through local open-source Whisper browser transcription
-AI clarification loop works constructively through LangGraph
-System understanding is generated
-Completeness is calculated
-Draw.io diagram is generated from full context
-Diagram can be manually edited
-Diagram can be AI-refined through LangGraph using current XML and user instruction
-Diagram can be approved
-Final Markdown documentation is generated after diagram approval
-Final Markdown/XML/diagram exports work
-No user-facing JSON export exists
-Docs exist
-Tests exist for critical utilities and graph behavior
-No secrets are committed
-Existing frontend behavior remains stable
-npm run lint passes
-npm run build passes
-npm run test passes or known unrelated failures are documented
-```
-
----
-
-## 61. Summary
-
-This project is not only a Draw.io page.
-
-It is the first implemented layer of a larger Mujarrad orchestration system.
-
-The correct implementation must be:
-
-```text
-Professional
-Typed
-Traceable
-Modular
-Orchestrated with LangGraph
-Safe for the existing frontend
-Able to process input safely
-Able to transcribe voice through local open-source Whisper browser transcription
-Able to ask constructive AI questions
-Able to build structured understanding
-Able to generate Draw.io diagrams from full context
-Able to refine diagrams with AI using current XML
-Able to generate final Markdown documentation after diagram approval
-Able to export Markdown, XML, and diagram images
-Prepared for future Layer 2 and Layer 3
-```
-
-All contributors should follow this document before implementing their assigned tasks.
-
