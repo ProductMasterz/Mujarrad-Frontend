@@ -1,6 +1,7 @@
 'use client';
 
 import { Layer1InputPanel } from './Layer1InputPanel';
+import { Layer1QuestionLoop } from './Layer1QuestionLoop';
 import { Layer1StepNavigation } from './Layer1StepNavigation';
 import { useLayer1Store } from '../stores/useLayer1Store';
 import type { Layer1StepId } from '../types/layer1.types';
@@ -106,6 +107,8 @@ export function Layer1Shell() {
 
       {activeStep === 'input' ? (
         <Layer1InputPanel />
+      ) : activeStep === 'clarification' ? (
+        <Layer1QuestionLoop />
       ) : (
         <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70">
           <div className="flex items-center justify-between gap-4">

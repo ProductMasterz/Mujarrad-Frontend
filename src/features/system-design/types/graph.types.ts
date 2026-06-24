@@ -19,6 +19,8 @@ export type Layer1GraphNextAction =
 export type Layer1GraphEventType =
   | 'start_run'
   | 'submit_input'
+  | 'submit_answer'
+  | 'generate_question'
   | 'complete_step'
   | 'sync_state'
   | 'reset_run';
@@ -26,6 +28,7 @@ export type Layer1GraphEventType =
 export interface Layer1GraphEvent {
   type: Layer1GraphEventType;
   rawInput?: RawInputPayload;
+  answer?: string;
   stepId?: Layer1StepId;
 }
 
