@@ -10,6 +10,9 @@ import {
   createInitialLayer1GraphState,
 } from './layer1GraphState';
 
+import { generateFinalDocsNode } from '../nodes/generateFinalDocsNode';
+import { createArtifactBundleNode } from '../nodes/createArtifactBundleNode';
+
 function addGraphError(
   state: Layer1GraphState,
   message: string,
@@ -112,11 +115,54 @@ export async function runLayer1GraphEvent(
       };
     }
 
-    return {
-      ok: true,
-      state: completeLayer1Step(state, event.stepId),
-      message: `${event.stepId} completed.`,
-    };
+ const completedState = completeLayer1Step(state, event.stepId);
+
+if (
+  event.stepId === 'review' &&
+  state.diagramApproved &&
+  state.markdownSpec
+) {
+  const docs = await generateFinalDocsNode({
+    markdownSpec: state.markdownSpec,
+    understandingSummary:
+      state.understanding?.summary ?? '',
+    diagramSummary: state.diagramSummary,
+  });
+
+  const artifactBundle = await createArtifactBundleNode({
+    markdownSpec: state.markdownSpec,
+
+    finalDocumentation: {
+      markdown: docs.markdown,
+      generatedAt: createIsoTimestamp(),
+      approved: docs.valid,
+    },
+
+    drawioXml: state.drawioXml,
+
+    diagramImage: state.diagramImage,
+
+    diagramSummary: state.diagramSummary,
+  });
+
+  return {
+    ok: true,
+    state: {
+      ...completedState,
+
+      stage: 'approved_layer1_artifact_bundle',
+
+      approvedLayer1Artifacts: artifactBundle,
+    },
+    message: 'Final documentation generated.',
+  };
+}
+
+return {
+  ok: true,
+  state: completedState,
+  message: `${event.stepId} completed.`,
+};
   }
 
   return {
