@@ -1,5 +1,3 @@
-import { createIsoTimestamp, createSystemDesignId } from '../utils/id';
-
 export interface AiRequestOptions {
   model?: string;
   temperature?: number;
@@ -12,107 +10,102 @@ export interface AiMessage {
   content: string;
 }
 
+interface AiProviderChoice {
+  message?: {
+    content?: string;
+  };
+}
+
+interface AiProviderResponse {
+  choices?: AiProviderChoice[];
+}
+
+function getProviderConfig(options?: AiRequestOptions): {
+  apiKey: string;
+  url: string;
+  model: string;
+  extraHeaders: Record<string, string>;
+} {
+  const provider = process.env.SYSTEM_BUILDER_AI_PROVIDER ?? 'openrouter';
+
+  if (provider === 'groq') {
+    const apiKey = process.env.GROQ_API_KEY;
+
+    if (!apiKey) {
+      throw new Error('GROQ_API_KEY is missing. Add it to .env.local.');
+    }
+
+    return {
+      apiKey,
+      url: 'https://api.groq.com/openai/v1/chat/completions',
+      model:
+        options?.model ??
+        process.env.SYSTEM_BUILDER_MODEL ??
+        'llama-3.1-8b-instant',
+      extraHeaders: {},
+    };
+  }
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      'OPENROUTER_API_KEY is missing. Add it to .env.local or set SYSTEM_BUILDER_AI_PROVIDER=groq with GROQ_API_KEY.',
+    );
+  }
+
+  return {
+    apiKey,
+    url: 'https://openrouter.ai/api/v1/chat/completions',
+    model:
+      options?.model ??
+      process.env.SYSTEM_BUILDER_MODEL ??
+      'google/gemini-2.5-flash',
+    extraHeaders: {
+      'HTTP-Referer': 'http://localhost:3000',
+      'X-Title': 'Mujarrad System Design',
+    },
+  };
+}
+
 export async function callAiProvider(
   messages: AiMessage[],
   options?: AiRequestOptions,
 ): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const config = getProviderConfig(options);
 
-  if (!apiKey) {
-    console.warn('OPENAI_API_KEY is missing. Using mock AI response.');
-    return generateMockResponse(messages, options);
-  }
-
-  const model = options?.model ?? 'gpt-4o-mini';
-  const responseFormat = options?.responseFormat === 'json_object' ? { type: 'json_object' } : undefined;
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(config.url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${config.apiKey}`,
+      ...config.extraHeaders,
     },
     body: JSON.stringify({
-      model,
+      model: config.model,
       messages,
-      temperature: options?.temperature ?? 0.7,
-      max_tokens: options?.maxTokens ?? 1000,
-      response_format: responseFormat,
+      temperature: options?.temperature ?? 0.3,
+      max_tokens: options?.maxTokens ?? 700,
+      response_format:
+        options?.responseFormat === 'json_object'
+          ? { type: 'json_object' }
+          : undefined,
     }),
   });
 
   if (!response.ok) {
     const errorBody = await response.text();
-    console.error('AI provider error:', errorBody);
-    throw new Error(`AI provider request failed: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `AI provider request failed: ${response.status} ${response.statusText}. ${errorBody}`,
+    );
   }
 
-  const data = await response.json();
-  return data.choices[0].message.content;
-}
+  const data = (await response.json()) as AiProviderResponse;
+  const content = data.choices?.[0]?.message?.content;
 
-function generateMockResponse(messages: AiMessage[], options?: AiRequestOptions): string {
-  // Simple mock logic depending on if JSON is requested
-  const isJson = options?.responseFormat === 'json_object';
-  
-  if (isJson) {
-    const isQuestion = messages.some(m => m.content.includes('Generate exactly one question'));
-    const isUnderstanding = messages.some(m => m.content.includes('Update the system understanding'));
-    const isCompleteness = messages.some(m => m.content.includes('Evaluate the completeness'));
-
-    if (isQuestion) {
-      return JSON.stringify({
-        question: "Can you elaborate on the main goal of the system?",
-        category: "goal",
-        reasonForAsking: "We need a clear understanding of the primary objective.",
-        expectedAnswerType: "long_text"
-      });
-    }
-
-    if (isUnderstanding) {
-      return JSON.stringify({
-        summary: "Mock system summary",
-        goal: "Mock goal",
-        primaryUsers: ["Admin"],
-        secondaryUsers: [],
-        roles: ["Admin"],
-        permissions: ["All"],
-        workflows: [],
-        alternativeWorkflows: [],
-        inputs: [],
-        outputs: [],
-        entities: [],
-        businessRules: [],
-        decisionLogic: [],
-        validationRules: [],
-        edgeCases: [],
-        errorCases: [],
-        integrations: [],
-        notifications: [],
-        reporting: [],
-        security: [],
-        openQuestions: [],
-        assumptions: [],
-        confidence: 0.5
-      });
-    }
-
-    if (isCompleteness) {
-      return JSON.stringify({
-        overallScore: 50,
-        readyForSpec: false,
-        readyForDiagram: false,
-        categories: [
-          { category: 'goal', status: 'weak', score: 50, notes: 'Needs more detail.' }
-        ],
-        missingCriticalItems: ['Core workflow steps'],
-        weakItems: ['User roles'],
-        suggestedNextQuestionCategory: 'workflow'
-      });
-    }
-    
-    return "{}";
+  if (!content || typeof content !== 'string') {
+    throw new Error('AI provider returned an empty response.');
   }
 
-  return "This is a mock AI response.";
+  return content;
 }

@@ -4,8 +4,3 @@ export function isReadyForDiagram(completeness: CompletenessReport | null): bool
   if (!completeness) return false;
   return completeness.readyForDiagram;
 }
-
-export function isReadyForSpec(completeness: CompletenessReport | null): boolean {
-  if (!completeness) return false;
-  return completeness.readyForSpec;
-}

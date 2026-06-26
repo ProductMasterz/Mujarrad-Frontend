@@ -85,6 +85,12 @@ export function Layer1InputPanel() {
     latestRawInput?.metadata?.fileName,
   ]);
 
+  useEffect(() => {
+    if (graphState.processedInput && status === 'idle') {
+      setStatus('ready');
+    }
+  }, [graphState.processedInput, status]);
+
   async function submitInputToLayer1Graph(rawInput: RawInputPayload) {
     const response = await fetch('/api/system-builder/layer1', {
       method: 'POST',

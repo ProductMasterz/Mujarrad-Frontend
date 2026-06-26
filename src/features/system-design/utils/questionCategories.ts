@@ -1,6 +1,4 @@
-import { QuestionCategory } from '../types/layer1.types';
-
-export const allQuestionCategories: QuestionCategory[] = [
+export const suggestedQuestionCategoryExamples = [
   'goal',
   'users',
   'roles_permissions',
@@ -18,5 +16,5 @@ export const allQuestionCategories: QuestionCategory[] = [
   'security',
   'notifications',
   'reporting',
-  'layer1_artifact_preparation'
+  'diagram_readiness',
 ];

@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import type { StateStorage } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { createInitialLayer1GraphState } from '../graphs/layer1GraphState';
 import type { Layer1GraphState } from '../types/graph.types';
@@ -16,7 +18,9 @@ import type {
 
 interface Layer1StoreState {
   graphState: Layer1GraphState;
+  hasHydrated: boolean;
 
+  setHasHydrated: (hasHydrated: boolean) => void;
   syncFromGraphState: (graphState: Layer1GraphState) => void;
   resetRun: () => void;
 
@@ -44,149 +48,277 @@ interface Layer1StoreState {
   createLayer1ArtifactBundle: (bundle: Layer1ArtifactBundle) => void;
 }
 
-export const useLayer1Store = create<Layer1StoreState>((set) => ({
-  graphState: createInitialLayer1GraphState(),
+const baseStorageName = 'mujarrad-system-builder-layer1-state-v1';
+const authStorageName = 'auth-storage';
 
-  syncFromGraphState: (graphState) => set({ graphState }),
+function getInitialState(): Layer1GraphState {
+  return createInitialLayer1GraphState();
+}
 
-  resetRun: () => set({ graphState: createInitialLayer1GraphState() }),
+function getCurrentAuthUserKey(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
 
-  submitRawInput: (rawInput) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        rawInputs: [...state.graphState.rawInputs, rawInput],
+  try {
+    const raw = window.localStorage.getItem(authStorageName);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as {
+      state?: {
+        user?: {
+          id?: string;
+          userId?: string;
+          email?: string;
+          username?: string;
+        } | null;
+        token?: string | null;
+      };
+    };
+
+    const user = parsed.state?.user;
+    const token = parsed.state?.token;
+
+    if (!user || !token) {
+      return null;
+    }
+
+    return user.id || user.userId || user.email || user.username || null;
+  } catch {
+    return null;
+  }
+}
+
+function getScopedStorageName(): string {
+  const userKey = getCurrentAuthUserKey();
+
+  if (!userKey) {
+    return `${baseStorageName}:anonymous`;
+  }
+
+  return `${baseStorageName}:${userKey}`;
+}
+
+export function clearAllLayer1LocalRuns() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  Object.keys(window.localStorage).forEach((key) => {
+    if (key === baseStorageName || key.startsWith(`${baseStorageName}:`)) {
+      window.localStorage.removeItem(key);
+    }
+  });
+}
+
+export function clearCurrentLayer1LocalRun() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.removeItem(getScopedStorageName());
+}
+
+const scopedLayer1Storage: StateStorage = {
+  getItem: () => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    window.localStorage.removeItem(baseStorageName);
+    window.localStorage.removeItem(`${baseStorageName}:anonymous`);
+
+    return window.localStorage.getItem(getScopedStorageName());
+  },
+  setItem: (_name, value) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const userKey = getCurrentAuthUserKey();
+
+    if (!userKey) {
+      return;
+    }
+
+    window.localStorage.setItem(getScopedStorageName(), value);
+  },
+  removeItem: () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.removeItem(getScopedStorageName());
+  },
+};
+
+export const useLayer1Store = create<Layer1StoreState>()(
+  persist(
+    (set) => ({
+      graphState: getInitialState(),
+      hasHydrated: false,
+
+      setHasHydrated: (hasHydrated) => set({ hasHydrated }),
+
+      syncFromGraphState: (graphState) => set({ graphState }),
+
+      resetRun: () => {
+        clearCurrentLayer1LocalRun();
+        set({ graphState: getInitialState() });
       },
-    })),
 
-  setProcessedInput: (processedInput) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        processedInput,
-      },
-    })),
+      submitRawInput: (rawInput) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            rawInputs: [...state.graphState.rawInputs, rawInput],
+          },
+        })),
 
-  setStage: (stage) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        stage,
-      },
-    })),
+      setProcessedInput: (processedInput) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            processedInput,
+          },
+        })),
 
-  setActiveStep: (activeStep) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        activeStep,
-      },
-    })),
+      setStage: (stage) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            stage,
+          },
+        })),
 
-  setCompletedSteps: (completedSteps) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        completedSteps,
-      },
-    })),
+      setActiveStep: (activeStep) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            activeStep,
+          },
+        })),
 
-  setAvailableSteps: (availableSteps) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        availableSteps,
-      },
-    })),
+      setCompletedSteps: (completedSteps) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            completedSteps,
+          },
+        })),
 
-  setCurrentQuestion: (question) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        currentQuestion: question,
-        questions: question
-          ? [...state.graphState.questions, question]
-          : state.graphState.questions,
-      },
-    })),
+      setAvailableSteps: (availableSteps) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            availableSteps,
+          },
+        })),
 
-  submitAnswer: (answer) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        qaHistory: [...state.graphState.qaHistory, answer],
-      },
-    })),
+      setCurrentQuestion: (question) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            currentQuestion: question,
+            questions: question
+              ? [...state.graphState.questions, question]
+              : state.graphState.questions,
+          },
+        })),
 
-  updateUnderstanding: (understanding) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        understanding,
-      },
-    })),
+      submitAnswer: (answer) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            qaHistory: [...state.graphState.qaHistory, answer],
+          },
+        })),
 
-  setCompleteness: (completeness) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        completeness,
-      },
-    })),
+      updateUnderstanding: (understanding) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            understanding,
+          },
+        })),
 
-  setMarkdownSpec: (markdownSpec) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        markdownSpec,
-      },
-    })),
+      setCompleteness: (completeness) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            completeness,
+          },
+        })),
 
-  approveMarkdownSpec: () =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        markdownApproved: true,
-      },
-    })),
+      setMarkdownSpec: (markdownSpec) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            markdownSpec,
+          },
+        })),
 
-  setDrawioXml: (drawioXml) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        drawioXml,
-      },
-    })),
+      approveMarkdownSpec: () =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            markdownApproved: true,
+          },
+        })),
 
-  setDiagramImage: (diagramImage) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        diagramImage,
-      },
-    })),
+      setDrawioXml: (drawioXml) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            drawioXml,
+          },
+        })),
 
-  addDiagramRevision: (revision) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        diagramRevisions: [...state.graphState.diagramRevisions, revision],
-      },
-    })),
+      setDiagramImage: (diagramImage) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            diagramImage,
+          },
+        })),
 
-  approveDiagram: () =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        diagramApproved: true,
-      },
-    })),
+      addDiagramRevision: (revision) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            diagramRevisions: [...state.graphState.diagramRevisions, revision],
+          },
+        })),
 
-  createLayer1ArtifactBundle: (bundle) =>
-    set((state) => ({
-      graphState: {
-        ...state.graphState,
-        approvedLayer1Artifacts: bundle,
+      approveDiagram: () =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            diagramApproved: true,
+          },
+        })),
+
+      createLayer1ArtifactBundle: (bundle) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            approvedLayer1Artifacts: bundle,
+          },
+        })),
+    }),
+    {
+      name: baseStorageName,
+      version: 1,
+      storage: createJSONStorage(() => scopedLayer1Storage),
+      partialize: (state) => ({
+        graphState: state.graphState,
+      }),
+      skipHydration: true,
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
       },
-    })),
-}));
+    },
+  ),
+);

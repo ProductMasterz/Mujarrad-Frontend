@@ -7,9 +7,9 @@ import type {
 export type Layer1StepId =
   | 'input'
   | 'clarification'
-  | 'specification'
   | 'diagram'
   | 'review'
+  | 'final_docs'
   | 'export';
 
 export type Layer1Stage =
@@ -17,31 +17,13 @@ export type Layer1Stage =
   | 'input_processing'
   | 'clarification'
   | 'understanding'
-  | 'specification'
   | 'diagram'
   | 'diagram_review'
+  | 'final_docs'
   | 'export'
   | 'approved_layer1_artifact_bundle';
 
-export type QuestionCategory =
-  | 'goal'
-  | 'users'
-  | 'roles_permissions'
-  | 'workflow'
-  | 'alternative_workflows'
-  | 'inputs'
-  | 'outputs'
-  | 'entities'
-  | 'business_rules'
-  | 'decision_logic'
-  | 'validations'
-  | 'edge_cases'
-  | 'error_handling'
-  | 'integrations'
-  | 'security'
-  | 'notifications'
-  | 'reporting'
-  | 'layer1_artifact_preparation';
+export type QuestionCategory = string;
 
 export interface ConstructiveQuestion {
   id: string;
@@ -194,8 +176,8 @@ export interface CompletenessCategoryStatus {
 
 export interface CompletenessReport {
   overallScore: number;
-  readyForSpec: boolean;
   readyForDiagram: boolean;
+  readyForSpec?: boolean;
   categories: CompletenessCategoryStatus[];
   missingCriticalItems: string[];
   weakItems: string[];
@@ -219,6 +201,49 @@ export interface Layer1ArtifactBundle {
   };
   diagramSummary?: string;
   approvedAt: string;
+}
+
+export interface DiagramGenerationQuestionAnswer {
+  questionId: string;
+  question: string;
+  answer: string;
+  category?: string;
+  reasonForAsking?: string;
+  createdAt: string;
+}
+
+export interface Layer1DiagramGenerationContext {
+  id: string;
+  runId: string;
+  createdAt: string;
+  source: 'layer1_cumulative_understanding';
+  status: 'ready_for_diagram' | 'skipped_to_diagram';
+
+  processedInput: ProcessedInputContext | null;
+  originalUserText: string;
+  cumulativeUnderstandingText: string;
+
+  understanding: SystemUnderstanding;
+  answeredQuestions: DiagramGenerationQuestionAnswer[];
+  unansweredQuestions: ConstructiveQuestion[];
+  completeness: CompletenessReport | null;
+
+  task5Instructions: {
+    mustUseOnlyThisContext: boolean;
+    mustNotUseRawInputAlone: boolean;
+    mustGenerateDrawioXml: boolean;
+    mustNotGenerateFinalMarkdownYet: boolean;
+  };
+
+  mujarradPersistenceDraft: {
+    futureNodeType: 'system_design_layer1_run';
+    shouldCreateOrUpdateMujarradNodeLater: boolean;
+    includesInitialInput: boolean;
+    includesQuestionHistory: boolean;
+    includesUnderstanding: boolean;
+    includesCompleteness: boolean;
+    includesDiagramContext: boolean;
+  };
 }
 
 export interface Layer1Error {
@@ -248,6 +273,7 @@ export interface Layer1Run {
 
   understanding: SystemUnderstanding;
   completeness: CompletenessReport | null;
+  diagramGenerationContext: Layer1DiagramGenerationContext | null;
 
   markdownSpec: string;
   markdownApproved: boolean;

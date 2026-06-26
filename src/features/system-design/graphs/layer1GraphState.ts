@@ -9,9 +9,9 @@ import { createIsoTimestamp, createSystemDesignId } from '../utils/id';
 export const layer1StepOrder: Layer1StepId[] = [
   'input',
   'clarification',
-  'specification',
   'diagram',
   'review',
+  'final_docs',
   'export',
 ];
 
@@ -26,9 +26,9 @@ export function getStageForStep(stepId: Layer1StepId): Layer1Stage {
   const stageByStep: Record<Layer1StepId, Layer1Stage> = {
     input: 'input',
     clarification: 'clarification',
-    specification: 'specification',
     diagram: 'diagram',
     review: 'diagram_review',
+    final_docs: 'final_docs',
     export: 'export',
   };
 
@@ -76,6 +76,7 @@ export function createInitialLayer1GraphState(): Layer1GraphState {
 
     understanding: createEmptySystemUnderstanding(),
     completeness: null,
+    diagramGenerationContext: null,
 
     markdownSpec: '',
     markdownApproved: false,

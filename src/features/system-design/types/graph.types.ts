@@ -7,11 +7,11 @@ export type Layer1GraphNextAction =
   | 'wait_for_answer'
   | 'update_understanding'
   | 'check_completeness'
-  | 'generate_spec'
-  | 'wait_for_spec_review'
   | 'generate_diagram'
   | 'wait_for_diagram_review'
   | 'refine_diagram'
+  | 'generate_final_docs'
+  | 'wait_for_final_docs_review'
   | 'create_artifact_bundle'
   | 'complete'
   | 'error';
@@ -21,6 +21,7 @@ export type Layer1GraphEventType =
   | 'submit_input'
   | 'submit_answer'
   | 'generate_question'
+  | 'skip_to_diagram'
   | 'complete_step'
   | 'sync_state'
   | 'reset_run';

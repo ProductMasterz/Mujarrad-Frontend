@@ -1,38 +1,33 @@
 import type { Layer1GraphState } from '../types/graph.types';
-import { allQuestionCategories } from '../utils/questionCategories';
+import { suggestedQuestionCategoryExamples } from '../utils/questionCategories';
 
 export function getCompletenessPrompt(state: Layer1GraphState): string {
-  const { understanding } = state;
+  return `You are an expert system architect evaluating whether the clarified understanding is ready for diagram generation.
 
-  return `You are an expert system architect evaluating the completeness of a system design.
-Your goal is to assess the current structured understanding and generate a completeness report.
-
-Current System Understanding (JSON):
-${JSON.stringify(understanding, null, 2)}
+Current System Understanding:
+${JSON.stringify(state.understanding, null, 2)}
 
 Instructions:
-1. Evaluate the system understanding across all major architectural dimensions.
-2. Score the overall completeness (0 to 100).
-3. Determine if the understanding is sufficient to proceed to diagram generation (readyForDiagram) and specification generation (readyForSpec). Usually a score > 80 is required.
-4. Assess each of the following categories: ${allQuestionCategories.join(', ')}.
-5. For each category, assign a status ('complete', 'weak', 'missing', 'not_applicable'), a score (0 to 100), and brief notes.
-6. Identify critical missing items that block the design from being actionable.
-7. Identify weak items that need more detail.
-8. Suggest the most important category for the next clarification question.
+1. Evaluate completeness from 0 to 100.
+2. Determine readyForDiagram only.
+3. readyForDiagram should be true only when the system is clear enough to generate an initial architecture/workflow/entity diagram.
+4. Do NOT evaluate final Markdown/specification readiness here.
+5. Categories are open-ended. Use short snake_case category names.
+6. Suggested example categories: ${suggestedQuestionCategoryExamples.join(', ')}.
+7. Identify critical missing items that block diagram generation.
+8. Identify weak items that would improve the diagram.
+9. Suggest the most important next question category if not ready.
 
-Output MUST be a valid JSON object matching this schema:
+Return valid JSON only:
 {
   "overallScore": 0,
-  "readyForSpec": false,
   "readyForDiagram": false,
   "categories": [
-    { "category": "goal", "status": "weak", "score": 50, "notes": "Needs more detail." }
+    { "category": "workflow", "status": "weak", "score": 50, "notes": "Needs clearer main flow." }
   ],
   "missingCriticalItems": ["Core workflow steps"],
   "weakItems": ["User roles"],
   "suggestedNextQuestionCategory": "workflow"
 }
-
-Output MUST be valid JSON only. Do not wrap in markdown or add explanations.
 `;
 }

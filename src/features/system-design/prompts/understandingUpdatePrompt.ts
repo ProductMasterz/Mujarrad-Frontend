@@ -1,31 +1,40 @@
 import type { Layer1GraphState } from '../types/graph.types';
 
+function buildHistoryText(state: Layer1GraphState): string {
+  if (state.qaHistory.length === 0) return 'No history yet.';
+
+  return state.qaHistory
+    .map((qa) => {
+      const question = state.questions.find((q) => q.id === qa.questionId);
+      return `Q: ${question?.question ?? qa.questionId}\nA: ${qa.answer}`;
+    })
+    .join('\n\n');
+}
+
 export function getUnderstandingUpdatePrompt(state: Layer1GraphState): string {
-  const { rawInputs, qaHistory, understanding } = state;
-  const inputTexts = rawInputs.map(r => r.rawText).join('\n---\n');
-  const historyText = qaHistory.map(qa => `Q: ${qa.questionId}\nA: ${qa.answer}`).join('\n\n');
+  const processed = state.processedInput;
 
-  return `You are an expert system architect managing the structured understanding of a system design.
-Your goal is to update the system understanding based on new information from raw inputs and Q&A history.
+  return `You are an expert system architect maintaining a structured system understanding.
 
-Context:
-Raw Inputs:
-${inputTexts}
+Update the existing SystemUnderstanding object using the processed input and the Q&A history.
+
+Processed Input Context:
+${processed ? JSON.stringify(processed, null, 2) : 'No processed input available.'}
 
 Q&A History:
-${historyText || 'No history yet.'}
+${buildHistoryText(state)}
 
-Current System Understanding (JSON):
-${JSON.stringify(understanding, null, 2)}
+Current System Understanding:
+${JSON.stringify(state.understanding, null, 2)}
 
 Instructions:
-1. Review the existing system understanding.
-2. Synthesize the raw inputs and Q&A history to identify new information, corrections, or refinements.
-3. Update the understanding object with this new knowledge. Be comprehensive but concise.
-4. If a piece of information is ambiguous or conflicting, record it in assumptions or openQuestions.
-5. Provide a realistic confidence score between 0.0 and 1.0 representing how well the system is understood.
-6. The output MUST be a valid JSON object matching the SystemUnderstanding schema completely.
-
-Output MUST be valid JSON only. Do not wrap in markdown or add explanations.
+1. Return the COMPLETE updated SystemUnderstanding object.
+2. Preserve correct existing information unless the latest answer clearly updates it.
+3. Add new entities, workflows, rules, inputs, outputs, edge cases, security needs, integrations, notifications, and reporting requirements when discovered.
+4. Put ambiguity into openQuestions.
+5. Put reasonable inferred details into assumptions.
+6. Use stable string ids for nested objects when possible.
+7. confidence must be between 0 and 1.
+8. Return valid JSON only. No markdown.
 `;
 }

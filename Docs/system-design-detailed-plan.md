@@ -137,21 +137,60 @@ Frontend UI
 → validated result returned to UI
 ```
 
-LangGraph must control:
+Current implementation status:
 
 ```text
-workflow order
-branching
-human-in-the-loop pauses
-AI question loop
-understanding updates
-diagram generation
-AI diagram refinement
-final documentation generation
-artifact bundle creation
+Task 4 clarification workflow is now controlled by a real LangGraph StateGraph.
+
+The active Task 4 graph controls:
+- event dispatching
+- input submission transition
+- AI question generation
+- human answer submission
+- understanding update
+- completeness check
+- ask-more-or-handoff decision
+- skip-to-diagram decision
+- diagramGenerationContext preparation for Task 5
 ```
 
+Current Task 4 LangGraph file:
+
+```text
+src/features/system-design/graphs/layer1Graph.ts
+```
+
+Current Task 4 graph pattern:
+
+```ts
+const workflow = new StateGraph(RuntimeAnnotation)
+  .addNode('dispatch_event', dispatchEventNode)
+  .addNode('update_understanding', updateUnderstandingGraphNode)
+  .addNode('check_completeness', checkCompletenessGraphNode)
+  .addNode('decide_next_action', decideNextActionGraphNode)
+  .addEdge(START, 'dispatch_event')
+  .addConditionalEdges('dispatch_event', shouldRunAnswerPipeline)
+  .addEdge('update_understanding', 'check_completeness')
+  .addEdge('check_completeness', 'decide_next_action')
+  .addEdge('decide_next_action', END);
+```
+
+LangGraph must control the business workflow.
+
 The UI must not own the main workflow logic. The UI displays graph state and sends user actions to the runtime.
+
+Correct Task 4 flow:
+
+```text
+UI sends event
+→ API route receives event
+→ API route calls invokeLayer1Graph()
+→ LangGraph decides what node runs next
+→ LangGraph returns updated Layer1GraphState
+→ UI renders the returned state
+```
+
+LangGraph currently controls Task 4. Future Tasks 5–8 must extend the same graph/runtime pattern instead of creating disconnected UI-only workflows.
 
 ---
 
@@ -182,7 +221,7 @@ Zod:
 Validates graph events, AI output, state objects, XML responses, final Markdown responses, and artifact objects.
 
 Zustand:
-Mirrors graph state in the frontend for UI display.
+Mirrors graph state in the frontend for UI display and user interaction. The Layer 1 store now persists state in browser localStorage using a logged-in-user-scoped storage key.
 
 Draw.io / diagrams.net embed:
 Provides editable visual diagram workspace.
@@ -191,7 +230,7 @@ Provides editable visual diagram workspace.
 Provides local open-source browser Whisper transcription for voice input.
 
 Native browser APIs:
-Used for MediaRecorder, file reading, and file download behavior.
+Used for MediaRecorder, file reading, localStorage persistence, and file download behavior.
 
 Jest:
 Used for utility, schema, graph, and export tests.
@@ -200,7 +239,23 @@ React Testing Library:
 Used only when UI interaction tests are useful.
 ```
 
-AI provider logic must stay server-side behind an `aiProviderTool`. The provider should be swappable so the team can later use OpenRouter, a local model service, or another approved backend without rewriting UI components.
+AI provider logic must stay server-side behind an `aiProviderTool`.
+
+The provider must be swappable. The current implementation supports server-side provider selection through environment variables, including OpenRouter and Groq.
+
+Supported provider pattern:
+
+```text
+SYSTEM_BUILDER_AI_PROVIDER=openrouter
+OPENROUTER_API_KEY=...
+
+or
+
+SYSTEM_BUILDER_AI_PROVIDER=groq
+GROQ_API_KEY=...
+```
+
+The browser must never access provider keys directly.
 
 ---
 
@@ -228,21 +283,25 @@ flowchart TD
     B --> LG[LangGraph Layer 1 Graph]
 
     LG --> B1[Input Collection]
-    B1 --> B2[Input Processing Node]
+    B1 --> B2[Input Processing]
     B2 --> B3[AI Constructive Question Node]
-    B3 --> B4[Understanding Update Node]
-    B4 --> B5[Completeness Check Node]
-    B5 --> B6[Draw.io Diagram Generation Node]
-    B6 --> B7[Diagram Review Workspace]
-    B7 --> B8[AI Diagram Refinement Node]
-    B8 --> B7
-    B7 --> B9[Final Documentation Node]
-    B9 --> B10[Approved Layer 1 Artifact Bundle]
+    B3 --> B4[Human Answer Wait State]
+    B4 --> B5[Understanding Update Node]
+    B5 --> B6[Completeness Check Node]
+    B6 --> B3
+    B6 --> Handoff[diagramGenerationContext for Task 5]
 
-    B10 --> E1[final-system-spec.md]
-    B10 --> E2[system-diagram.drawio.xml]
-    B10 --> E3[system-diagram.png or system-diagram.svg]
-    B10 --> E4[optional system-diagram-summary.md]
+    Handoff --> B7[Draw.io Diagram Generation Node]
+    B7 --> B8[Diagram Review Workspace]
+    B8 --> B9[AI Diagram Refinement Node]
+    B9 --> B8
+    B8 --> B10[Final Documentation Node]
+    B10 --> B11[Approved Layer 1 Artifact Bundle]
+
+    B11 --> E1[final-system-spec.md]
+    B11 --> E2[system-diagram.drawio.xml]
+    B11 --> E3[system-diagram.png or system-diagram.svg]
+    B11 --> E4[optional system-diagram-summary.md]
 
     E1 --> C[Layer 2: Abstract Logic - Future]
     E2 --> C
@@ -256,10 +315,10 @@ Important rules:
 
 ```text
 Layer 1 is orchestrated by LangGraph.
-Layer 1 has two main AI parts:
-1. AI constructive questions and understanding.
-2. AI diagram generation/refinement.
-Draw.io generation happens after clarification/understanding is ready.
+Task 4 now controls the AI constructive questioning, understanding update, completeness check, and Task 5 handoff.
+Task 5 must use diagramGenerationContext as its main input.
+Task 5 must not use raw user text alone.
+Draw.io generation happens after clarification/understanding is ready or after the user intentionally skips to diagram.
 Markdown documentation is generated after diagram approval.
 Layer 1 exports Markdown, XML, and diagram image files.
 Layer 2 takes the approved Layer 1 artifact bundle as input in the future.
@@ -283,6 +342,46 @@ System Design
 
 The implementation should be treated as a clean Layer 1 System Design workflow.
 
+The `/system-builder` page must be accessible only after login.
+
+Current route protection behavior:
+
+```text
+If the frontend has no valid auth_token or no auth-storage user, /system-builder redirects to /login.
+If the user is logged in, /system-builder opens normally.
+```
+
+Current page-specific auth gate:
+
+```text
+src/features/system-design/components/SystemBuilderAuthGate.tsx
+```
+
+Current route file:
+
+```text
+app/system-builder/page.tsx
+```
+
+Current protected route pattern:
+
+```tsx
+import { SystemBuilder } from '@/components/system-builder/SystemBuilder';
+import { SystemBuilderAuthGate } from '@/features/system-design/components/SystemBuilderAuthGate';
+
+export const metadata = {
+  title: 'System Design — Mujarrad',
+};
+
+export default function SystemBuilderPage() {
+  return (
+    <SystemBuilderAuthGate>
+      <SystemBuilder />
+    </SystemBuilderAuthGate>
+  );
+}
+```
+
 The target workflow is:
 
 ```text
@@ -292,6 +391,7 @@ input
 → AI clarification
 → understanding
 → completeness
+→ diagramGenerationContext
 → Draw.io diagram
 → diagram review
 → AI diagram refinement
@@ -315,7 +415,9 @@ optional system-diagram-summary.md
 
 ```mermaid
 flowchart TD
-    A[User opens System Design] --> B[Input Step]
+    A[User opens System Design] --> Auth{Logged in?}
+    Auth -->|No| Login[Redirect to /login]
+    Auth -->|Yes| B[Input Step]
 
     B --> C{Input Source}
     C --> C1[Typed or Pasted Text]
@@ -341,71 +443,85 @@ flowchart TD
     M --> N[Check Completeness]
 
     N -->|Needs More Detail| K
-    N -->|Ready for Diagram| O[Generate Draw.io Diagram]
+    N -->|Ready for Diagram| O[Build diagramGenerationContext]
+    J -->|User Skips| O
 
-    O --> P[Load Diagram in Draw.io]
-    P --> Q[User Reviews and Edits Diagram]
+    O --> P[Task 5 Generates Draw.io Diagram]
+    P --> Q[Load Diagram in Draw.io]
+    Q --> R[User Reviews and Edits Diagram]
 
-    Q --> R{Needs AI Refinement?}
-    R -->|Yes| S[AI Refines Current XML]
-    S --> P
-    R -->|No| T{Diagram Approved?}
+    R --> S{Needs AI Refinement?}
+    S -->|Yes| T[AI Refines Current XML]
+    T --> Q
+    S -->|No| U{Diagram Approved?}
 
-    T -->|No| Q
-    T -->|Yes| U[Generate Final Documentation and Artifact Bundle]
+    U -->|No| R
+    U -->|Yes| V[Generate Final Documentation and Artifact Bundle]
 
-    U --> U1[Markdown Spec]
-    U --> U2[Draw.io XML]
-    U --> U3[Diagram Image]
-    U --> U4[Optional Diagram Summary]
+    V --> V1[Markdown Spec]
+    V --> V2[Draw.io XML]
+    V --> V3[Diagram Image]
+    V --> V4[Optional Diagram Summary]
 ```
 
 Detailed flow:
 
 ```text
-1. User provides the system idea.
+1. User opens /system-builder.
 
-2. Input can come from typed text, pasted text, local Whisper voice transcription, or extracted .txt file text.
+2. If the user is not logged in, the page redirects to /login.
 
-3. A Next.js API route sends the request to the LangGraph Layer 1 graph.
+3. User provides the system idea.
 
-4. LangGraph controls the workflow.
+4. Input can come from typed text, pasted text, local Whisper voice transcription, or extracted .txt file text.
 
-5. Input is normalized and processed.
+5. A Next.js API route sends the request to the LangGraph Layer 1 graph.
 
-6. Large input is chunked/compressed only when needed.
+6. LangGraph controls the workflow.
 
-7. LangGraph starts a constructive AI clarification loop.
+7. Input is normalized and processed.
 
-8. LangGraph asks one question at a time.
+8. Large input is chunked/compressed only when needed.
 
-9. The graph pauses for human-in-the-loop user input.
+9. LangGraph starts a constructive AI clarification loop.
 
-10. Each answer updates the structured system understanding.
+10. LangGraph asks one question at a time.
 
-11. Completeness/readiness is recalculated.
+11. The graph pauses for human-in-the-loop user input.
 
-12. When enough detail exists, LangGraph generates a Draw.io diagram from the full Layer 1 context.
+12. Each answer updates the structured system understanding.
 
-13. User reviews and edits the diagram in Draw.io.
+13. Completeness/readiness is recalculated.
 
-14. User can manually edit the diagram.
+14. If more detail is needed, LangGraph asks another constructive question.
 
-15. User can ask AI to refine the current diagram XML.
+15. If enough detail exists, LangGraph prepares diagramGenerationContext for Task 5.
 
-16. AI refinement must use the current XML plus the user instruction.
+16. If the user skips to diagram early, LangGraph still prepares diagramGenerationContext from the best available current state.
 
-17. Refined XML must be validated before it is applied.
+17. User can return after skipping and continue clarification.
 
-18. User approves the final diagram.
+18. Task 5 generates a Draw.io diagram from diagramGenerationContext.
 
-19. System generates the final Layer 1 documentation and artifact bundle:
+19. User reviews and edits the diagram in Draw.io.
+
+20. User can manually edit the diagram.
+
+21. User can ask AI to refine the current diagram XML.
+
+22. AI refinement must use the current XML plus the user instruction.
+
+23. Refined XML must be validated before it is applied.
+
+24. User approves the final diagram.
+
+25. System generates the final Layer 1 documentation and artifact bundle:
     - Markdown specification
     - Draw.io XML
     - diagram image
     - optional diagram summary
 
-20. User can download the Layer 1 files.
+26. User can download the Layer 1 files.
 ```
 
 ---
@@ -782,16 +898,16 @@ The frontend must be prepared like this:
 
 ```text
 Typed state:
-Use TypeScript types for every important object, such as input, questions, answers, understanding, Draw.io XML, final Markdown, image exports, and artifact bundles.
+Use TypeScript types for every important object, such as input, questions, answers, understanding, Draw.io XML, final Markdown, image exports, diagramGenerationContext, and artifact bundles.
 
 Central store:
 Keep the Layer 1 workflow data in one controlled store instead of spreading it randomly across components.
 
 LangGraph graph:
-Create a real Layer 1 graph that controls the workflow order, branching, retries, and human-in-the-loop pauses.
+Create a real Layer 1 graph that controls workflow order, branching, retries, AI output handling, and human-in-the-loop pauses.
 
 LangGraph nodes:
-Each major function must be represented as a graph node, such as input processing, AI question generation, understanding update, completeness check, diagram generation, AI diagram refinement, final documentation generation, and artifact bundle creation.
+Each major function must be represented as a graph node or node-compatible server function, such as input dispatching, AI question generation, understanding update, completeness check, diagram generation, AI diagram refinement, final documentation generation, and artifact bundle creation.
 
 LangGraph tools:
 Reusable operations should be implemented as tools or tool-like server utilities, such as text normalization, chunking, AI calls, XML validation, diagram export, Markdown generation, and artifact preparation.
@@ -800,16 +916,33 @@ Zod schemas:
 Validate AI responses and important data structures before saving them in the store.
 
 Clear workflow stages:
-Represent the flow as explicit stages: input, processing, clarification, understanding, diagram, diagram_review, final_docs, export.
+Represent the flow as explicit stages: input, input_processing, clarification, understanding, diagram, diagram_review, final_docs, export.
 
 AI output validation:
-Never trust raw AI output directly. Validate questions, understanding updates, diagram generation responses, diagram refinement responses, Markdown responses, and Draw.io XML before using them.
+Never trust raw AI output directly. Validate questions, understanding updates, completeness reports, diagram generation responses, diagram refinement responses, Markdown responses, and Draw.io XML before using them.
+
+Task 5 handoff:
+After Task 4 clarification, create diagramGenerationContext. This is the input contract for Task 5.
 
 Approved Layer 1 artifact bundle:
 After the diagram is approved, create the final bundle of Markdown, Draw.io XML, diagram image, and optional summary. This bundle is what future Layer 2 will take as input.
 ```
 
-Recommended graph sequence:
+Current implemented Task 4 graph sequence:
+
+```text
+dispatch_event
+→ generate_question when requested
+→ wait_for_user_answer
+→ submit_answer
+→ update_understanding
+→ check_completeness
+→ decide_next_action
+→ if incomplete: ask_question
+→ if ready: build diagramGenerationContext and hand off to Task 5
+```
+
+Recommended future full graph sequence:
 
 ```text
 receive_input
@@ -819,7 +952,8 @@ receive_input
 → update_understanding
 → check_completeness
 → if incomplete: generate_question
-→ if complete: generate_drawio_xml
+→ if complete or skipped: build diagramGenerationContext
+→ generate_drawio_xml
 → review_diagram
 → refine_diagram if needed
 → approve_diagram
@@ -905,12 +1039,21 @@ Current `.env.example` structure:
 NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_AGENT_SERVICE_URL=
 
-# Server-side AI provider key for System Design
-# Do not expose this as NEXT_PUBLIC_ because it must stay server-side only.
+# System Design AI provider selection
+# Supported values: openrouter, groq
+SYSTEM_BUILDER_AI_PROVIDER=openrouter
+
+# Server-side AI provider keys for System Design
+# Do not expose these as NEXT_PUBLIC_ because they must stay server-side only.
 OPENROUTER_API_KEY=
+GROQ_API_KEY=
 
 # Optional model override for System Design
-SYSTEM_BUILDER_MODEL=google/gemini-2.0-flash-001
+# OpenRouter example:
+# SYSTEM_BUILDER_MODEL=google/gemini-2.5-flash
+# Groq example:
+# SYSTEM_BUILDER_MODEL=llama-3.1-8b-instant
+SYSTEM_BUILDER_MODEL=google/gemini-2.5-flash
 
 # Optional legacy server-side transcription provider key
 # The active voice path uses local open-source Whisper in the browser.
@@ -930,12 +1073,13 @@ NEXT_PUBLIC_ENABLE_LAYER_2=false
 NEXT_PUBLIC_ENABLE_LAYER_3=false
 ```
 
-AI provider keys must stay server-side. The active voice transcription path does not require a paid transcription key.
+AI provider keys must stay server-side.
 
 Correct:
 
 ```text
 OPENROUTER_API_KEY
+GROQ_API_KEY
 OPENAI_API_KEY
 ```
 
@@ -943,8 +1087,11 @@ Wrong:
 
 ```text
 NEXT_PUBLIC_OPENROUTER_API_KEY
+NEXT_PUBLIC_GROQ_API_KEY
 NEXT_PUBLIC_OPENAI_API_KEY
 ```
+
+The active voice transcription path does not require a paid transcription key.
 
 ---
 
@@ -981,13 +1128,15 @@ This diagram shows the frontend module architecture and the LangGraph execution 
 ```mermaid
 flowchart TD
     Route[app/system-builder/page.tsx]
+    AuthGate[SystemBuilderAuthGate]
     Wrapper[src/components/system-builder/SystemBuilder.tsx]
     Shell[SystemDesignShell]
     Header[SystemDesignHeader]
     LayerNav[LayerNavigation]
     StepNav[Layer1StepNavigation]
 
-    Route --> Wrapper
+    Route --> AuthGate
+    AuthGate --> Wrapper
     Wrapper --> Shell
     Shell --> Header
     Shell --> LayerNav
@@ -997,30 +1146,34 @@ flowchart TD
 
     L1 --> Input[Layer1InputPanel]
     Input --> Layer1API[/api/system-builder/layer1]
-    Layer1API --> LocalTool[inputProcessingTool through Task 3 runtime]
+    Layer1API --> Graph[LangGraph Layer 1 Graph]
     Input --> LocalWhisper[Local Whisper Browser Transcription]
     LocalWhisper --> Transcript[Transcript Text]
     Transcript --> Input
 
-    LocalTool --> Processed[ProcessedInputContext]
+    Graph --> Dispatch[dispatch_event]
+    Dispatch --> Process[Input Processing Tool]
+    Process --> Processed[ProcessedInputContext]
 
-    Processed --> Runtime[LangGraph Runtime]
+    Processed --> Question[generateQuestionNode]
+    Question --> Wait[Human Answer Wait State]
+    Wait --> AnswerAPI[/api/system-builder/layer1/answer]
+    AnswerAPI --> Graph
 
-    Runtime --> Graph[LangGraph Layer 1 Graph]
-    Graph --> N1[Input Processing Node]
-    N1 --> N2[AI Question Generation Node]
-    N2 --> N3[Human Answer Wait State]
-    N3 --> N4[Understanding Update Node]
-    N4 --> N5[Completeness Check Node]
-    N5 --> N2
-    N5 --> N6[Draw.io XML Generation Node]
-    N6 --> N7[Diagram Review Workspace]
-    N7 --> N8[AI Diagram Refinement Node]
-    N8 --> N7
-    N7 --> N9[Final Documentation Node]
-    N9 --> N10[Artifact Bundle Node]
+    Graph --> Understanding[updateUnderstandingNode]
+    Understanding --> Completeness[checkCompletenessNode]
+    Completeness --> Decision[decideNextActionGraphNode]
 
-    N10 --> Bundle[Approved Layer 1 Artifact Bundle]
+    Decision -->|More Detail Needed| Question
+    Decision -->|Ready or Skipped| Handoff[diagramGenerationContext]
+
+    Handoff --> Task5[Task 5: Draw.io XML Generation]
+    Task5 --> DiagramReview[Diagram Review Workspace]
+    DiagramReview --> Refinement[Task 6: AI Diagram Refinement]
+    Refinement --> DiagramReview
+    DiagramReview --> FinalDocs[Task 7: Final Documentation]
+    FinalDocs --> Bundle[Approved Layer 1 Artifact Bundle]
+
     Bundle --> Bundle1[Markdown Spec]
     Bundle --> Bundle2[Draw.io XML]
     Bundle --> Bundle3[Diagram Image]
@@ -1034,6 +1187,7 @@ flowchart TD
 ```text
 src/features/system-design/
 ├── components/
+│   ├── SystemBuilderAuthGate.tsx
 │   ├── SystemDesignShell.tsx
 │   ├── SystemDesignHeader.tsx
 │   ├── LayerNavigation.tsx
@@ -1046,6 +1200,7 @@ src/features/system-design/
 │   ├── QuestionHistory.tsx
 │   ├── Layer1UnderstandingPanel.tsx
 │   ├── Layer1CompletenessPanel.tsx
+│   ├── Layer1GraphViewer.tsx
 │   ├── Layer1DiagramStep.tsx
 │   ├── Layer1DiagramReview.tsx
 │   ├── Layer1DiagramRefinement.tsx
@@ -1109,6 +1264,7 @@ src/features/system-design/
 └── utils/
     ├── completeness.ts
     ├── contextCompression.ts
+    ├── diagramGenerationContext.ts
     ├── downloadFile.ts
     ├── drawioXml.ts
     ├── exportLayer1.ts
@@ -1162,13 +1318,18 @@ Current implementation:
 
 ```tsx
 import { SystemBuilder } from '@/components/system-builder/SystemBuilder';
+import { SystemBuilderAuthGate } from '@/features/system-design/components/SystemBuilderAuthGate';
 
 export const metadata = {
   title: 'System Design — Mujarrad',
 };
 
 export default function SystemBuilderPage() {
-  return <SystemBuilder />;
+  return (
+    <SystemBuilderAuthGate>
+      <SystemBuilder />
+    </SystemBuilderAuthGate>
+  );
 }
 ```
 
@@ -1182,6 +1343,21 @@ import { SystemDesignShell } from '@/features/system-design/components/SystemDes
 export function SystemBuilder() {
   return <SystemDesignShell />;
 }
+```
+
+`SystemBuilderAuthGate.tsx` is a page-specific auth gate for `/system-builder`.
+
+It checks browser-side frontend auth state:
+
+```text
+auth_token exists
+auth-storage contains a user
+```
+
+If not authenticated, it redirects to:
+
+```text
+/login
 ```
 
 The UI should call API routes for server operations. API routes should invoke the LangGraph graph. Components should not run LangGraph directly in the browser.
@@ -1283,13 +1459,26 @@ Correct behavior:
 ```text
 Only Input is open on initial load.
 Clarify opens after input processing.
-Diagram opens after the AI questioning/understanding loop is complete.
+Diagram opens after the AI questioning/understanding loop is complete or after the user intentionally skips to diagram.
 Review opens after generated Draw.io XML is loaded.
 Final Docs opens after diagram approval.
 Export opens after final docs and artifact bundle are ready.
 Completed steps remain clickable.
 Available next step is clickable.
 Locked later steps are disabled.
+```
+
+Current implemented behavior:
+
+```text
+Input processing opens Clarification.
+Clarification is controlled by LangGraph.
+The user can answer AI questions.
+The user can skip to diagram.
+Skip creates diagramGenerationContext.
+After skipping, the user can return to Clarify and continue clarification.
+The Reset Layer 1 Run button has been removed from the main UI.
+Layer 1 state persists for the logged-in user.
 ```
 
 Recommended final stage type:
@@ -1303,7 +1492,8 @@ export type Layer1Stage =
   | 'diagram'
   | 'diagram_review'
   | 'final_docs'
-  | 'export';
+  | 'export'
+  | 'approved_layer1_artifact_bundle';
 ```
 
 The stage shown in the UI must come from LangGraph state or from a store synchronized with the LangGraph result.
@@ -1312,7 +1502,7 @@ Examples:
 
 ```text
 Cannot open Clarification before input is processed.
-Cannot open Diagram before the clarification loop is complete.
+Cannot open Diagram before the clarification loop is complete or intentionally skipped.
 Cannot open Final Docs before the diagram is approved.
 Cannot export before final artifacts exist.
 ```
@@ -1330,8 +1520,10 @@ stateDiagram-v2
     waiting_for_answer --> understanding: user answers
     understanding --> completeness_check
     completeness_check --> clarification: still missing details
-    completeness_check --> diagram: ready for diagram
-    diagram --> diagram_review: XML generated
+    completeness_check --> diagram_handoff: ready for diagram
+    clarification --> diagram_handoff: user skips to diagram
+    diagram_handoff --> diagram: diagramGenerationContext created
+    diagram --> diagram_review: XML generated by Task 5
     diagram_review --> diagram_review: manual edit
     diagram_review --> diagram_refinement: user asks AI to refine
     diagram_refinement --> diagram_review: refined XML validated
@@ -1377,6 +1569,8 @@ export interface Layer1Run {
   understanding: SystemUnderstanding;
   completeness: CompletenessReport | null;
 
+  diagramGenerationContext: Layer1DiagramGenerationContext | null;
+
   drawioXml: string;
   diagramImage?: {
     format: 'png' | 'svg';
@@ -1393,6 +1587,46 @@ export interface Layer1Run {
   approvedLayer1Artifacts?: Layer1ArtifactBundle;
 
   errors: Layer1Error[];
+}
+```
+
+Recommended Task 5 handoff type:
+
+```ts
+export interface Layer1DiagramGenerationContext {
+  id: string;
+  runId: string;
+  createdAt: string;
+  source: 'layer1_cumulative_understanding';
+  status: 'ready_for_diagram' | 'skipped_to_diagram';
+
+  processedInput: ProcessedInputContext | null;
+  originalUserText: string;
+  cumulativeUnderstandingText: string;
+
+  understanding: SystemUnderstanding;
+  answeredQuestions: DiagramGenerationQuestionAnswer[];
+  unansweredQuestions: ConstructiveQuestion[];
+  completeness: CompletenessReport | null;
+
+  task5Instructions: {
+    mustUseOnlyThisContext: boolean;
+    mustNotUseRawInputAlone: boolean;
+    mustGenerateDrawioXml: boolean;
+    mustNotGenerateFinalMarkdownYet: boolean;
+  };
+
+  mujarradPersistenceDraft: {
+    futureNodeType: string;
+    purpose: string;
+    shouldPersistHistory: boolean;
+    shouldPersistInput: boolean;
+    shouldPersistQuestions: boolean;
+    shouldPersistUnderstanding: boolean;
+    shouldPersistCompleteness: boolean;
+    shouldPersistDiagramContext: boolean;
+    shouldPersistFinalArtifactsLater: boolean;
+  };
 }
 ```
 
@@ -1513,30 +1747,50 @@ export interface ConstructiveQuestion {
 
 ## 29. Question Categories
 
-Recommended categories:
+Question categories should not be treated as a hard-coded closed list.
+
+The AI question node should support flexible categories because real system-design gaps can vary between projects.
+
+Current implementation:
 
 ```ts
-export type QuestionCategory =
-  | 'goal'
-  | 'users'
-  | 'roles_permissions'
-  | 'workflow'
-  | 'alternative_workflows'
-  | 'inputs'
-  | 'outputs'
-  | 'entities'
-  | 'business_rules'
-  | 'decision_logic'
-  | 'validations'
-  | 'edge_cases'
-  | 'error_handling'
-  | 'integrations'
-  | 'security'
-  | 'notifications'
-  | 'reporting'
-  | 'diagram_preparation'
-  | 'layer1_artifact_preparation';
+export type QuestionCategory = string;
 ```
+
+Recommended suggested categories:
+
+```ts
+export const suggestedQuestionCategories = [
+  'goal',
+  'users',
+  'roles_permissions',
+  'workflow',
+  'alternative_workflows',
+  'inputs',
+  'outputs',
+  'entities',
+  'business_rules',
+  'decision_logic',
+  'validations',
+  'edge_cases',
+  'error_handling',
+  'integrations',
+  'security',
+  'notifications',
+  'reporting',
+  'diagram_preparation',
+  'layer1_artifact_preparation',
+];
+```
+
+Rule:
+
+```text
+Do not force the AI to choose only from a fixed enum.
+Allow open categories while still encouraging known useful categories.
+```
+
+This avoids a hard-coded questionnaire-style implementation.
 
 ---
 
@@ -1544,13 +1798,19 @@ export type QuestionCategory =
 
 The system should calculate whether the current understanding is ready for diagram generation.
 
+Current Task 4 focus:
+
+```text
+Completeness is focused on diagram readiness, not final documentation readiness.
+```
+
 Recommended shape:
 
 ```ts
 export interface CompletenessReport {
   overallScore: number;
   readyForDiagram: boolean;
-  readyForFinalDocs: boolean;
+  readyForSpec?: boolean;
   categories: CompletenessCategoryStatus[];
   missingCriticalItems: string[];
   weakItems: string[];
@@ -1566,6 +1826,15 @@ export type CompletenessStatus =
   | 'weak'
   | 'missing'
   | 'not_applicable';
+```
+
+Rules:
+
+```text
+readyForDiagram decides whether Task 4 can hand off to Task 5.
+readyForFinalDocs should not gate Task 4.
+Final documentation readiness belongs after diagram approval.
+missingCriticalItems and weakItems should safely default to empty arrays when AI output omits them.
 ```
 
 ---
@@ -1646,6 +1915,8 @@ export interface Layer1InternalStateForFutureUse {
   systemUnderstanding: SystemUnderstanding;
   completenessReport: CompletenessReport;
 
+  diagramGenerationContext: Layer1DiagramGenerationContext;
+
   approvedArtifacts: Layer1ArtifactBundle;
 
   traceability: {
@@ -1665,6 +1936,8 @@ This is internal application state.
 It is not a downloadable JSON export in the current phase.
 User-facing exports are Markdown, XML, and diagram images.
 ```
+
+Future Mujarrad persistence should store this history as a Mujarrad node or equivalent persisted record, but Task 4 only prepares the persistence contract. It does not implement full Mujarrad backend persistence yet.
 
 ---
 
@@ -1756,20 +2029,38 @@ Recommended graph runner file:
 src/features/system-design/graphs/layer1GraphRunner.ts
 ```
 
-The graph should control:
+Current Task 4 implementation uses a real LangGraph StateGraph:
+
+```ts
+const workflow = new StateGraph(RuntimeAnnotation)
+  .addNode('dispatch_event', dispatchEventNode)
+  .addNode('update_understanding', updateUnderstandingGraphNode)
+  .addNode('check_completeness', checkCompletenessGraphNode)
+  .addNode('decide_next_action', decideNextActionGraphNode)
+  .addEdge(START, 'dispatch_event')
+  .addConditionalEdges('dispatch_event', shouldRunAnswerPipeline)
+  .addEdge('update_understanding', 'check_completeness')
+  .addEdge('check_completeness', 'decide_next_action')
+  .addEdge('decide_next_action', END);
+```
+
+Current Task 4 graph controls:
 
 ```text
 workflow order
+event validation
 conditional branching
-human-in-the-loop pauses
-retry paths
-AI output validation
-diagram refinement loops
-final documentation generation
-artifact bundle creation
+human-in-the-loop answer pause/resume
+AI question loop
+understanding update
+completeness check
+non-blocking AI failure handling
+ready-for-diagram decision
+skip-to-diagram decision
+diagramGenerationContext creation
 ```
 
-Recommended graph nodes:
+Recommended future graph nodes:
 
 ```text
 receive_input
@@ -1778,6 +2069,7 @@ generate_question
 wait_for_user_answer
 update_understanding
 check_completeness
+build_diagram_generation_context
 generate_drawio_xml
 review_diagram
 refine_diagram
@@ -1800,28 +2092,27 @@ flowchart TD
 
     Graph --> State[Layer1GraphState]
 
-    Graph --> N1[processInputNode]
+    Graph --> N0[dispatch_event]
+    Graph --> N1[processSystemDesignInput during submit_input]
     Graph --> N2[generateQuestionNode]
     Graph --> N3[updateUnderstandingNode]
     Graph --> N4[checkCompletenessNode]
-    Graph --> N5[generateDiagramNode]
-    Graph --> N6[refineDiagramNode]
-    Graph --> N7[generateFinalDocsNode]
-    Graph --> N8[createArtifactBundleNode]
+    Graph --> N5[decideNextActionGraphNode]
+    Graph --> Handoff[buildDiagramGenerationContext]
 
     N1 --> T1[inputProcessingTool]
     N2 --> T2[aiProviderTool]
     N3 --> T2
     N4 --> T2
-    N5 --> T2
-    N5 --> T3[xmlValidationTool]
-    N6 --> T2
-    N6 --> T3
-    N7 --> T2
-    N7 --> T4[markdownSpecTool]
-    N8 --> T5[artifactBundleTool]
+    Handoff --> T3[diagramGenerationContext utility]
 
-    Graph --> Store[Frontend Store Sync]
+    Handoff --> Task5[Task 5 Draw.io Diagram Generation]
+
+    Task5 --> N6[generateDiagramNode]
+    N6 --> T2
+    N6 --> T4[xmlValidationTool]
+
+    Task5 --> Store[Frontend Store Sync]
 ```
 
 Rules:
@@ -1842,11 +2133,16 @@ Final user-facing exports are Markdown, XML, and diagram images.
 
 LangGraph must run inside the Next.js server/runtime for this phase.
 
-Recommended API route style:
+Current implemented API route style:
 
 ```text
 app/api/system-builder/layer1/route.ts
 app/api/system-builder/layer1/answer/route.ts
+```
+
+Recommended future API routes:
+
+```text
 app/api/system-builder/layer1/generate-diagram/route.ts
 app/api/system-builder/layer1/refine-diagram/route.ts
 app/api/system-builder/layer1/final-docs/route.ts
@@ -1861,7 +2157,7 @@ app/api/system-builder/transcribe/route.ts
 
 The active voice input path uses local open-source Whisper in the browser through `@xenova/transformers`.
 
-Recommended responsibilities:
+Current runtime responsibilities:
 
 ```text
 API route receives UI request.
@@ -1878,14 +2174,13 @@ The browser must not access:
 
 ```text
 OPENROUTER_API_KEY
+GROQ_API_KEY
 OPENAI_API_KEY
 ```
 
-`OPENROUTER_API_KEY` must stay server-side only.
+The active voice path currently uses local Whisper browser transcription and then sends the resulting text through `/api/system-builder/layer1`.
 
-`OPENAI_API_KEY` is not required for the active voice path. It is only relevant if the optional legacy `/api/system-builder/transcribe` route is used again later.
-
-The active voice path currently uses local Whisper browser transcription and then sends the resulting text through `/api/system-builder/layer1`. The workflow state is controlled by the Task 3 graph/store runtime.
+The Task 4 workflow state is controlled by the LangGraph graph and mirrored into the frontend store.
 
 ---
 
@@ -1934,6 +2229,9 @@ The graph state should include:
 export interface Layer1GraphState {
   runId: string;
   stage: Layer1Stage;
+  activeStep: Layer1StepId;
+  completedSteps: Layer1StepId[];
+  availableSteps: Layer1StepId[];
 
   rawInputs: RawInputPayload[];
   processedInput: ProcessedInputContext | null;
@@ -1945,12 +2243,15 @@ export interface Layer1GraphState {
   understanding: SystemUnderstanding;
   completeness: CompletenessReport | null;
 
+  diagramGenerationContext: Layer1DiagramGenerationContext | null;
+
   drawioXml: string;
   diagramSummary: string;
   diagramApproved: boolean;
   diagramRevisions: DiagramRevision[];
 
   markdownSpec: string;
+  markdownApproved: boolean;
 
   approvedLayer1Artifacts?: Layer1ArtifactBundle;
 
@@ -1970,12 +2271,16 @@ export interface Layer1GraphState {
     | 'error';
 
   errors: Layer1Error[];
+  createdAt: string;
+  updatedAt: string;
 }
 ```
 
 The graph state is the source of truth for Layer 1 execution.
 
 The frontend store should mirror this state only for UI display and interaction.
+
+The store now uses persisted browser localStorage for the logged-in user so Layer 1 state survives page refresh/navigation.
 
 ---
 
@@ -1994,23 +2299,27 @@ src/features/system-design/nodes/generateFinalDocsNode.ts
 src/features/system-design/nodes/createArtifactBundleNode.ts
 ```
 
-Node responsibilities:
+Implemented Task 4 node responsibilities:
+
+```text
+generateQuestionNode:
+Uses processed input, current understanding, previous questions, previous answers, completeness gaps, and traceability context to generate exactly one constructive question.
+
+updateUnderstandingNode:
+Merges the latest answer into the structured system understanding. It normalizes imperfect AI output before strict validation so one weak AI response does not destroy the run.
+
+checkCompletenessNode:
+Evaluates whether the current understanding is ready for diagram generation. It focuses on readyForDiagram, not final documentation readiness.
+```
+
+Future node responsibilities:
 
 ```text
 processInputNode:
 Normalize text, estimate size, chunk/compress when needed, return ProcessedInputContext.
 
-generateQuestionNode:
-Use current graph state to generate exactly one constructive question.
-
-updateUnderstandingNode:
-Merge the latest answer into the structured system understanding.
-
-checkCompletenessNode:
-Decide whether more questions are needed or the graph can continue to diagram generation.
-
 generateDiagramNode:
-Generate Draw.io XML from the full Layer 1 context after clarification is complete.
+Generate Draw.io XML from diagramGenerationContext after clarification is complete or skipped.
 
 refineDiagramNode:
 Use AI to refine the current Draw.io XML using the user instruction and current diagram state.
@@ -2044,7 +2353,7 @@ Tool responsibilities:
 
 ```text
 aiProviderTool:
-Server-side wrapper for AI calls through OpenRouter or another provider.
+Server-side wrapper for AI calls. Supports swappable providers such as OpenRouter and Groq through environment variables.
 
 inputProcessingTool:
 Normalize, estimate, chunk, compress, and prepare processed context.
@@ -2088,6 +2397,19 @@ src/features/system-design/prompts/finalDocumentationPrompt.ts
 
 Prompt files should export functions because prompts need context.
 
+Current Task 4 prompt behavior:
+
+```text
+constructiveQuestionPrompt:
+Uses processed input, current understanding, previous Q&A, completeness gaps, weak areas, missing critical items, and suggested next category. It asks for exactly one constructive question.
+
+understandingUpdatePrompt:
+Uses processed input, existing understanding, and all Q&A history to build the updated structured SystemUnderstanding.
+
+completenessPrompt:
+Evaluates diagram readiness only. It should not force final documentation readiness before Draw.io generation.
+```
+
 Example:
 
 ```ts
@@ -2095,8 +2417,8 @@ export function buildConstructiveQuestionPrompt(input: BuildQuestionPromptInput)
   return `
 You are helping design a software system.
 
-Processed input summary:
-${input.processedInput.compressedSummary}
+Processed input:
+${JSON.stringify(input.processedInput, null, 2)}
 
 Current understanding:
 ${JSON.stringify(input.understanding, null, 2)}
@@ -2173,17 +2495,28 @@ app/api/system-builder/layer1/export/route.ts
 
 These routes should invoke LangGraph graph actions.
 
-Recommended mapping:
+Current implemented mapping:
 
 ```text
 POST /api/system-builder/layer1
 → start or continue Layer 1 graph
+→ handles submit_input, generate_question, skip_to_diagram, complete_step, reset_run, sync_state
 
 POST /api/system-builder/layer1/answer
-→ submit human answer and continue graph
+→ submit human answer
+→ validates submit_answer
+→ invokes LangGraph
+→ saves answer
+→ updates understanding
+→ checks completeness
+→ decides ask more or prepare Task 5 handoff
+```
 
+Recommended future mapping:
+
+```text
 POST /api/system-builder/layer1/generate-diagram
-→ generate Draw.io XML through graph node
+→ generate Draw.io XML through graph node using diagramGenerationContext
 
 POST /api/system-builder/layer1/refine-diagram
 → refine current diagram XML through graph node
@@ -2195,24 +2528,35 @@ POST /api/system-builder/layer1/export
 → create approved Layer 1 artifact bundle
 ```
 
-The existing route namespace can stay stable, but the orchestration should move to the LangGraph graph.
+The existing route namespace can stay stable, but the orchestration should move through the LangGraph graph.
 
 ---
 
 ## 46. Diagram API Payload
 
-Recommended diagram generation request:
+Task 5 should not use raw input alone.
+
+Task 5 should use the Task 4 handoff object:
 
 ```ts
 export interface DiagramGenerationRequest {
   mode: 'generate';
-
-  processedInput: ProcessedInputContext;
-
-  qaHistory: QuestionAnswer[];
-  systemUnderstanding: SystemUnderstanding;
-  completenessReport: CompletenessReport;
+  diagramGenerationContext: Layer1DiagramGenerationContext;
 }
+```
+
+`diagramGenerationContext` includes:
+
+```text
+processed input
+original user text
+cumulative understanding text
+structured understanding
+answered questions
+unanswered questions if skipped
+completeness report
+Task 5 instructions
+future Mujarrad persistence draft
 ```
 
 Recommended diagram generation response:
@@ -2234,10 +2578,7 @@ export interface DiagramRefinementRequest {
   currentXml: string;
   refinementInstruction: string;
 
-  processedInput: ProcessedInputContext;
-  qaHistory: QuestionAnswer[];
-  systemUnderstanding: SystemUnderstanding;
-  completenessReport: CompletenessReport;
+  diagramGenerationContext: Layer1DiagramGenerationContext;
   revisionHistory: DiagramRevision[];
 }
 ```
@@ -2508,13 +2849,15 @@ This is important because future Layer 2 logic will depend on understanding how 
 
 Layer 1 is now divided into **eight implementation tasks**.
 
-Task 1, Task 2, and Task 3 have been completed and tested.
+Task 1, Task 2, Task 3, and Task 4 have been completed and tested.
 
 Task 1 created the foundation, feature shell, route compatibility, LangGraph dependency setup, and future Layer 2 / Layer 3 placeholders.
 
 Task 2 created the professional input pipeline, compact input UI, text/file/voice ingestion paths, deterministic processing tool, input processing node, traceability types, schemas, and step-gated Layer 1 UI behavior. Voice input was later updated to use local open-source Whisper browser transcription instead of paid server transcription.
 
 Task 3 created the shared Layer 1 runtime foundation, graph/store state model, API route, graph runner, schemas, and store synchronization.
+
+Task 4 created the real LangGraph-controlled clarification workflow, AI provider tool, constructive AI question loop, answer route, understanding update, completeness check, user-scoped persistence, page-specific auth gate, professional graph viewer, and Task 5 diagramGenerationContext handoff.
 
 The updated task structure is:
 
@@ -2525,7 +2868,7 @@ Task 2: Completed — Input Pipeline, Text/Voice/File Ingestion, Processing UI, 
 
 Task 3: Completed — LangGraph Core Runtime, State Model, API Routes, Schemas, Nodes, Tools, and Store Sync
 
-Task 4: AI Questions, System Understanding, and Completeness
+Task 4: Completed — AI Questions, System Understanding, Completeness, LangGraph Clarification Loop, User-Scoped Persistence, and Task 5 Handoff
 
 Task 5: Draw.io Diagram Generation and Editable Diagram Workspace
 
@@ -2542,6 +2885,7 @@ Important rule:
 Layer 1 final user-facing outputs are Markdown, Draw.io XML, and diagram images.
 Markdown is generated after diagram approval.
 Draw.io generation does not depend on Markdown.
+Task 5 must use diagramGenerationContext from Task 4.
 ```
 
 ---
@@ -2553,7 +2897,7 @@ flowchart TD
     T1[Task 1 Completed: Foundation]
     T2[Task 2 Completed: Input Pipeline]
     T3[Task 3 Completed: LangGraph Runtime and State]
-    T4[Task 4: AI Questions and Understanding]
+    T4[Task 4 Completed: AI Questions, Understanding, Completeness, and Task 5 Handoff]
     T5[Task 5: Draw.io Diagram Generation]
     T6[Task 6: AI Diagram Refinement and Approval]
     T7[Task 7: Final Documentation and Artifact Bundle]
@@ -2575,15 +2919,14 @@ flowchart TD
 Parallel work rule:
 
 ```text
-Tasks 5–8 can be developed in parallel only if they use mocked upstream outputs that match the shared Task 3 state/types.
+Tasks 5–8 can be developed in parallel only if they use mocked upstream outputs that match the shared graph/store state/types.
 
 Final integration must still happen in this order:
 
 Task 4 → Task 5 → Task 6 → Task 7 → Task 8
 
-No task should create a separate disconnected state shape, API pattern, or UI-only workflow. All tasks must extend the shared LangGraph runtime, schemas, and Zustand store created in Task 3.
+No task should create a separate disconnected state shape, API pattern, or UI-only workflow. All tasks must extend the shared LangGraph runtime, schemas, and Zustand store.
 ```
-
 
 Dependency notes:
 
@@ -2591,7 +2934,7 @@ Dependency notes:
 Task 1 is completed and should remain as the tested foundation.
 Task 2 is completed and should remain as the tested input pipeline.
 Task 3 is completed and provides shared graph/store/API contracts.
-Task 4 owns the main AI questioning loop, understanding, and completeness.
+Task 4 is completed and owns the main AI questioning loop, understanding, completeness, and Task 5 handoff.
 Task 5 owns initial Draw.io diagram generation and editable diagram workspace.
 Task 6 owns the second major AI area: diagram refinement from current XML and user instruction.
 Task 7 owns final Markdown documentation and artifact bundle creation.
@@ -3191,7 +3534,7 @@ npm run lint passes with existing warnings only: Done
 
 ```text
 The current graph runner is a deterministic runtime foundation.
-The complete AI LangGraph StateGraph with clarification, understanding, completeness, Draw.io generation, refinement, final documentation generation, and export will be implemented in Tasks 4–8.
+The AI clarification, understanding, and completeness part has now been implemented in Task 4. Draw.io generation, diagram refinement, final documentation generation, and export will be implemented in Tasks 5–8.
 
 The graph entry point and API route are already in place so future tasks should extend this runtime instead of creating separate disconnected routes or UI-only state.
 
@@ -3231,7 +3574,17 @@ Docs were updated.
 
 ---
 
-# Task 4 — AI Questions, System Understanding, and Completeness
+# Task 4 — Completed: AI Questions, System Understanding, Completeness, LangGraph Clarification Loop, and Task 5 Handoff
+
+## Status
+
+```text
+Completed
+Tested locally
+Build passes
+Lint passes with existing warnings only
+Ready for Task 5 integration
+```
 
 ## Goal
 
@@ -3239,44 +3592,87 @@ Implement the main AI clarification workflow inside LangGraph.
 
 This task is the first major AI part of Layer 1.
 
-## Current State
-
-Tasks 1–3 are completed.
-
-Input is processed through `/api/system-builder/layer1`, and graph/store state already controls step progression.
-
-## Scope
+## Original Branch Issues Fixed
 
 ```text
-AI provider server tool
-Constructive question prompt
-Question generation node
-Question display UI
-Question history UI
-Human-in-the-loop answer submission
-Answer API route
-Question traceability
-Understanding update node
-Understanding update prompt/tooling
-Understanding panel
-Completeness scoring node
-Completeness prompt/tooling
-Completeness panel
-Missing critical item detection
-Graph loop decision
-Ready-for-diagram decision
-Workflow stage gating
+Task 4 was not fully aligned with the corrected Layer 1 structure.
+The workflow mixed clarification, markdown/spec, and diagram responsibilities.
+Markdown/spec logic appeared too early.
+The question-answer loop was incomplete.
+Answer submission was not reliably connected to understanding update and completeness.
+The answer API route needed stronger validation and event handling.
+AI provider logic was not flexible enough for Groq/OpenRouter switching.
+Completeness was not focused on diagram readiness.
+Task 5 had no proper structured handoff object.
+Skip-to-diagram did not reliably prepare Task 5 context.
+After skipping, the user could not continue clarification properly.
+State persistence was unreliable across refresh/navigation.
+Persistence created a hydration mismatch.
+Saved state was global/anonymous instead of user-scoped.
+The /system-builder page was accessible without page-specific login protection.
+The LangGraph viewer was basic and did not clearly show orchestration state.
+Some workflow pieces were hard-coded or too fixed for real system-design clarification.
+```
+
+## Completed Work
+
+```text
+Real LangGraph StateGraph implemented for Task 4.
+submit_input flow reset downstream clarification/diagram/final-doc state correctly.
+generate_question event added.
+submit_answer event added.
+skip_to_diagram event added.
+Answer API route fixed and validated.
+AI provider tool updated for OpenRouter and Groq.
+Constructive question prompt updated to use cumulative context.
+generateQuestionNode implemented with traceability.
+understandingUpdatePrompt implemented.
+updateUnderstandingNode implemented with AI-output normalization.
+completenessPrompt implemented for diagram readiness.
+checkCompletenessNode implemented.
+Non-blocking AI failure handling added.
+Question history UI added.
+Understanding panel added.
+Completeness panel updated.
+Task 5 handoff object diagramGenerationContext added.
+buildDiagramGenerationContext utility added.
+Skip-to-diagram now creates diagramGenerationContext.
+Continue Clarification added after Skip to Diagram.
+Professional LangGraph Viewer modal added.
+Duplicate/local graph viewer behavior removed.
+Visible Reset Layer 1 Run button removed.
+Layer 1 store persistence added.
+Hydration-safe store rehydration added.
+Layer 1 persistence scoped to logged-in user.
+Old anonymous/global Layer 1 cache ignored/removed.
+SystemBuilderAuthGate added for /system-builder.
+```
+
+## Hard-Coded / Misaligned Parts Fixed
+
+```text
+Hard-coded early markdown/spec flow was removed from Task 4.
+Hard-coded final documentation before diagram was corrected.
+Hard-coded question-category enum behavior was replaced with flexible string categories.
+Hard-coded raw-input diagram handoff was replaced with diagramGenerationContext.
+Hard-coded global localStorage key was replaced with user-scoped persistence.
+Task 4 no longer assumes it generates diagram XML or final Markdown.
+Task 4 now prepares the correct handoff for Task 5.
 ```
 
 ## Main Files
 
 ```text
 app/api/system-builder/layer1/answer/route.ts
+app/api/system-builder/layer1/route.ts
+app/system-builder/page.tsx
+src/features/system-design/components/SystemBuilderAuthGate.tsx
 src/features/system-design/components/Layer1QuestionLoop.tsx
 src/features/system-design/components/QuestionCard.tsx
 src/features/system-design/components/QuestionHistory.tsx
 src/features/system-design/components/Layer1UnderstandingPanel.tsx
 src/features/system-design/components/Layer1CompletenessPanel.tsx
+src/features/system-design/components/Layer1GraphViewer.tsx
 src/features/system-design/nodes/generateQuestionNode.ts
 src/features/system-design/nodes/updateUnderstandingNode.ts
 src/features/system-design/nodes/checkCompletenessNode.ts
@@ -3285,28 +3681,20 @@ src/features/system-design/prompts/constructiveQuestionPrompt.ts
 src/features/system-design/prompts/understandingUpdatePrompt.ts
 src/features/system-design/prompts/completenessPrompt.ts
 src/features/system-design/utils/questionCategories.ts
-src/features/system-design/utils/questionSelection.ts
-src/features/system-design/utils/updateUnderstanding.ts
 src/features/system-design/utils/completeness.ts
+src/features/system-design/utils/diagramGenerationContext.ts
 src/features/system-design/graphs/layer1Graph.ts
-src/features/system-design/graphs/layer1GraphEdges.ts
 src/features/system-design/graphs/layer1GraphRunner.ts
+src/features/system-design/graphs/layer1GraphState.ts
 src/features/system-design/stores/useLayer1Store.ts
+src/features/system-design/schemas/graph.schema.ts
+src/features/system-design/schemas/layer1.schema.ts
+src/features/system-design/types/graph.types.ts
+src/features/system-design/types/layer1.types.ts
 src/features/system-design/components/Layer1Shell.tsx
 ```
 
-## Expected Output
-
-```text
-AI asks one constructive question at a time.
-User can answer the current question.
-Answers are saved in qaHistory.
-Questions and answers update structured understanding.
-Completeness report is generated.
-Graph decides whether to ask another question or move to diagram generation.
-```
-
-## Acceptance Criteria
+## Runtime Behavior
 
 ```text
 User starts clarification after input processing.
@@ -3314,18 +3702,86 @@ LangGraph asks exactly one constructive question.
 Question includes reason for asking.
 Question includes traceability fields.
 Graph waits for user answer.
-User answer resumes/continues graph.
-Next question uses previous context.
-Question history is saved.
-Understanding updates after answers.
+User answer resumes the graph.
+Answer is saved in qaHistory.
+Current question is marked answered.
+Understanding is updated after answers.
 Completeness report is generated.
-Missing critical items are shown.
-Weak areas are shown.
-Graph loops when more questions are needed.
-Graph continues when ready for Draw.io diagram generation.
-No static questionnaire behavior.
-npm run lint passes.
-npm run build passes.
+Graph decides whether to ask another question or move to Task 5 handoff.
+If readyForDiagram is true, graph creates diagramGenerationContext with status ready_for_diagram.
+If user clicks Skip to Diagram, graph creates diagramGenerationContext with status skipped_to_diagram.
+If user returns after skip, Continue Clarification lets them resume questioning.
+```
+
+## Task 5 Handoff Output
+
+Task 4 now prepares:
+
+```text
+diagramGenerationContext
+```
+
+It contains:
+
+```text
+Original user input
+Processed input context
+Cumulative structured understanding
+Cumulative understanding text
+All asked questions
+All user answers
+Unanswered/current questions if skipped
+Completeness report
+Task 5 instructions
+Future Mujarrad persistence draft contract
+```
+
+Task 5 must use:
+
+```text
+diagramGenerationContext
+```
+
+Task 5 must not use raw input alone.
+
+## Persistence and Auth Behavior
+
+```text
+/system-builder redirects to /login when no valid frontend auth session exists.
+Layer 1 state persists across refresh/navigation for the logged-in user.
+Layer 1 state is scoped to the logged-in user.
+Old anonymous/global state is not reused.
+Hydration mismatch from localStorage persistence is fixed.
+```
+
+## Acceptance Criteria Status
+
+```text
+User starts clarification after input processing: Done
+LangGraph asks exactly one constructive question: Done
+Question includes reason for asking: Done
+Question includes traceability fields: Done
+Graph waits for user answer: Done
+User answer resumes/continues graph: Done
+Next question uses previous context: Done
+Question history is saved: Done
+Understanding updates after answers: Done
+Completeness report is generated: Done
+Missing critical items are shown: Done
+Weak areas are shown: Done
+Graph loops when more questions are needed: Done
+Graph continues when ready for Draw.io diagram generation: Done
+Skip to diagram prepares Task 5 context: Done
+Continue clarification after skip works: Done
+No static questionnaire behavior: Done
+AI provider is server-side and swappable: Done
+Groq/OpenRouter support exists: Done
+diagramGenerationContext exists: Done
+/system-builder requires login: Done
+Layer 1 state is user-scoped: Done
+Hydration error is fixed: Done
+npm run lint passes with existing warnings only: Done
+npm run build passes: Done
 ```
 
 ---
@@ -3334,11 +3790,27 @@ npm run build passes.
 
 ## Goal
 
-Generate the first editable Draw.io diagram directly from the completed understanding and Q&A context.
+Generate the first editable Draw.io diagram directly from the completed Task 4 handoff context.
 
 ## Current State
 
-Task 4 provides processed input, Q&A history, structured understanding, and completeness/readiness state.
+Task 4 provides:
+
+```text
+processed input
+Q&A history
+structured understanding
+completeness/readiness state
+diagramGenerationContext
+```
+
+Task 5 must use:
+
+```text
+diagramGenerationContext
+```
+
+Task 5 must not use raw user input alone.
 
 ## Scope
 
@@ -3377,7 +3849,7 @@ src/features/system-design/components/Layer1Shell.tsx
 ## Expected Output
 
 ```text
-Draw.io diagram is generated after clarification is complete.
+Draw.io diagram is generated after Task 4 prepares diagramGenerationContext.
 Generated XML is validated before loading.
 The diagram opens in Draw.io.
 The user can manually edit the diagram.
@@ -3387,8 +3859,8 @@ Manual edits update the current XML in graph/store state.
 ## Acceptance Criteria
 
 ```text
-Diagram generation starts after questioning is complete.
-Diagram uses full context, not raw input only.
+Diagram generation starts only after diagramGenerationContext exists.
+Diagram uses full Task 4 context, not raw input only.
 AI returns valid Draw.io XML.
 XML is extracted, sanitized, and validated before loading.
 Invalid XML is rejected or repaired safely.
@@ -3662,6 +4134,20 @@ All contributors must follow these rules:
 19. AI diagram refinement must use current XML plus user instruction.
 
 20. AI provider tools must remain server-side and swappable.
+
+21. Task 4 must prepare diagramGenerationContext for Task 5.
+
+22. Task 5 must use diagramGenerationContext and must not use raw input alone.
+
+23. /system-builder must be accessible only after login.
+
+24. Layer 1 persisted browser state must be scoped to the logged-in user.
+
+25. Do not reintroduce a static questionnaire. Clarification questions must be cumulative and context-aware.
+
+26. Do not reintroduce final Markdown/spec generation before Draw.io diagram generation.
+
+27. Do not create disconnected UI-only workflow state. Extend the shared LangGraph runtime and Layer 1 store.
 ```
 
 ---
@@ -3724,6 +4210,7 @@ This phase is complete when:
 
 ```text
 /system-builder opens the new System Design shell
+/system-builder redirects to /login when the user is not logged in
 LangGraph dependencies are installed and committed
 Layer 1 workflow is orchestrated by LangGraph
 Layer 1 workflow is usable from input to export
@@ -3731,14 +4218,16 @@ Input is processed safely
 Voice transcription works through local open-source Whisper browser transcription
 AI clarification loop works constructively through LangGraph
 System understanding is generated
-Completeness is calculated
-Draw.io diagram is generated from full context
+Completeness is calculated for diagram readiness
+diagramGenerationContext is created for Task 5
+Task 5 generates Draw.io diagram from diagramGenerationContext
 Diagram can be manually edited
 Diagram can be AI-refined through LangGraph using current XML and user instruction
 Diagram can be approved
 Final Markdown documentation is generated after diagram approval
 Final Markdown/XML/diagram exports work
 No user-facing JSON export exists
+Layer 1 state is scoped to logged-in user
 Docs exist
 Tests exist for critical utilities and graph behavior
 No secrets are committed
@@ -3765,16 +4254,22 @@ Traceable
 Modular
 Orchestrated with LangGraph
 Safe for the existing frontend
+Accessible only after login
 Able to process input safely
 Able to transcribe voice through local open-source Whisper browser transcription
-Able to ask constructive AI questions
+Able to ask constructive AI questions through LangGraph
 Able to build structured understanding
-Able to generate Draw.io diagrams from full context
+Able to calculate diagram readiness
+Able to prepare diagramGenerationContext for Task 5
+Able to generate Draw.io diagrams from full Task 4 context
 Able to refine diagrams with AI using current XML
 Able to generate final Markdown documentation after diagram approval
 Able to export Markdown, XML, and diagram images
 Prepared for future Layer 2 and Layer 3
 ```
 
+Task 4 is now completed as the LangGraph-controlled clarification, understanding, completeness, and Task 5 handoff layer.
+
 All contributors should follow this document before implementing their assigned tasks.
+
 ---

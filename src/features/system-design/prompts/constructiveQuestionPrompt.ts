@@ -1,41 +1,65 @@
 import type { Layer1GraphState } from '../types/graph.types';
-import { allQuestionCategories } from '../utils/questionCategories';
+import { suggestedQuestionCategoryExamples } from '../utils/questionCategories';
+
+function buildHistoryText(state: Layer1GraphState): string {
+  if (state.qaHistory.length === 0) return 'No history yet.';
+
+  return state.qaHistory
+    .map((qa) => {
+      const question = state.questions.find((q) => q.id === qa.questionId);
+      return `Q: ${question?.question ?? qa.questionId}\nA: ${qa.answer}`;
+    })
+    .join('\n\n');
+}
+
+function buildProcessedInputText(state: Layer1GraphState): string {
+  const processed = state.processedInput;
+
+  if (!processed) {
+    return 'No processed input is available.';
+  }
+
+  return JSON.stringify(processed, null, 2);
+}
 
 export function getConstructiveQuestionPrompt(state: Layer1GraphState): string {
-  const { rawInputs, qaHistory, understanding, completeness } = state;
-  const inputTexts = rawInputs.map(r => r.rawText).join('\n---\n');
-  const historyText = qaHistory.map(qa => `Q: ${qa.questionId}\nA: ${qa.answer}`).join('\n\n');
-
   return `You are an expert system architect conducting a clarification interview.
-Your goal is to generate exactly ONE constructive clarification question to improve our understanding of the system being designed.
 
-Context:
-Raw Inputs:
-${inputTexts}
+Your goal is to generate exactly ONE constructive clarification question that improves the system design understanding.
+
+Use the processed input as the main source of truth. Do not depend on raw unprocessed input.
+
+Processed Input Context:
+${buildProcessedInputText(state)}
 
 Q&A History:
-${historyText || 'No history yet.'}
+${buildHistoryText(state)}
 
-Current System Understanding (JSON):
-${JSON.stringify(understanding, null, 2)}
+Current System Understanding:
+${JSON.stringify(state.understanding, null, 2)}
 
-Current Completeness Report (JSON):
-${completeness ? JSON.stringify(completeness, null, 2) : 'No completeness report yet.'}
+Current Completeness Report:
+${state.completeness ? JSON.stringify(state.completeness, null, 2) : 'No completeness report yet.'}
 
 Instructions:
-1. Review the current system understanding and identify missing or ambiguous information.
-2. If there is a completeness report, prioritize the weak or missing items, or the suggested next question category.
-3. Formulate EXACTLY ONE clear, concise question that helps clarify the system design.
-4. Provide a reason for asking this question.
-5. Choose an appropriate category from: ${allQuestionCategories.join(', ')}.
-6. Select an expected answer type: 'short_text', 'long_text', 'list', 'yes_no', 'choice', 'number', 'structured'.
+1. Ask exactly ONE question.
+2. The question must be specific, useful, and based on a real gap or ambiguity.
+3. Avoid repeating questions already answered.
+4. If a completeness report exists, prioritize missingCriticalItems, weakItems, and suggestedNextQuestionCategory.
+5. The category is open-ended. You may use any short snake_case category name that fits the gap.
+6. Example categories only: ${suggestedQuestionCategoryExamples.join(', ')}.
+7. expectedAnswerType must be one of: short_text, long_text, list, yes_no, choice, number, structured.
+8. Do not generate a static questionnaire.
+9. Do not proceed to documentation or diagram content.
 
-Output MUST be a valid JSON object matching this schema:
+Return valid JSON only:
 {
-  "question": "The question text",
-  "category": "The question category",
-  "reasonForAsking": "Why this question is important",
-  "expectedAnswerType": "long_text"
+  "question": "One clear question",
+  "category": "open_category_name",
+  "reasonForAsking": "Why this question matters",
+  "expectedAnswerType": "long_text",
+  "options": ["optional only if expectedAnswerType is choice"],
+  "understandingFields": ["optional fields this question improves"]
 }
 `;
 }

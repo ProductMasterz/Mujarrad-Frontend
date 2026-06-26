@@ -14,7 +14,7 @@ export const SYSTEM_DESIGN_CONFIG = {
       title: 'System Design',
       status: 'active',
       description:
-        'Collect requirements, clarify the system, generate a Markdown specification, create a Draw.io diagram, and export the approved Layer 1 artifact bundle.',
+        'Collect requirements, clarify the system, create and review a Draw.io diagram, then generate final Markdown documentation and export the approved Layer 1 artifact bundle.',
     },
     layer2: {
       id: 'layer-2',
@@ -22,7 +22,7 @@ export const SYSTEM_DESIGN_CONFIG = {
       title: 'Abstract Logic',
       status: 'locked',
       description:
-        'Coming soon. Requires the approved Layer 1 artifact bundle: Markdown specification, Draw.io XML, and diagram image.',
+        'Coming soon. Requires the approved Layer 1 artifact bundle: final Markdown documentation, Draw.io XML, and diagram image.',
     },
     layer3: {
       id: 'layer-3',

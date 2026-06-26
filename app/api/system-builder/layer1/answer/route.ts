@@ -1,34 +1,50 @@
 import { NextResponse } from 'next/server';
 
 import { invokeLayer1Graph } from '@/features/system-design/graphs/layer1Graph';
-import type { Layer1GraphState, Layer1GraphEvent } from '@/features/system-design/types/graph.types';
+import { layer1ApiRequestSchema } from '@/features/system-design/schemas/graph.schema';
+import type { Layer1GraphState } from '@/features/system-design/types/graph.types';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const event = body.event as Layer1GraphEvent;
-    const state = body.state as Layer1GraphState;
+    const parsed = layer1ApiRequestSchema.safeParse(body);
 
-    if (!event || event.type !== 'submit_answer') {
+    if (!parsed.success) {
       return NextResponse.json(
         {
           ok: false,
           error: 'Invalid Layer 1 answer request.',
+          issues: parsed.error.flatten(),
         },
         { status: 400 },
       );
     }
 
-    const result = await invokeLayer1Graph(event, state);
+    const { event, state } = parsed.data;
+
+    if (event.type !== 'submit_answer') {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Invalid Layer 1 answer event.',
+        },
+        { status: 400 },
+      );
+    }
+
+    const result = await invokeLayer1Graph(event, state as Layer1GraphState | undefined);
 
     return NextResponse.json(result);
   } catch (err) {
+    const message =
+      err instanceof Error ? err.message : 'Layer 1 graph request failed.';
+
     return NextResponse.json(
       {
         ok: false,
-        error: 'Layer 1 graph request failed.',
+        error: message,
       },
       { status: 500 },
     );

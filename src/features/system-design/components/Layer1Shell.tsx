@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
+
+import { Layer1GraphViewer } from './Layer1GraphViewer';
 import { Layer1InputPanel } from './Layer1InputPanel';
 import { Layer1QuestionLoop } from './Layer1QuestionLoop';
 import { Layer1StepNavigation } from './Layer1StepNavigation';
@@ -7,26 +10,22 @@ import { useLayer1Store } from '../stores/useLayer1Store';
 import type { Layer1StepId } from '../types/layer1.types';
 
 const stepMessages: Record<
-  Exclude<Layer1StepId, 'input'>,
+  Exclude<Layer1StepId, 'input' | 'clarification'>,
   {
     title: string;
     task: string;
   }
 > = {
-  clarification: {
-    title: 'Clarification',
-    task: 'Task 4',
-  },
-  specification: {
-    title: 'Specification',
-    task: 'Task 6',
-  },
   diagram: {
     title: 'Diagram',
-    task: 'Task 7',
+    task: 'Task 5',
   },
   review: {
-    title: 'Review',
+    title: 'Diagram Review',
+    task: 'Task 6',
+  },
+  final_docs: {
+    title: 'Final Documentation',
     task: 'Task 7',
   },
   export: {
@@ -63,15 +62,33 @@ async function postLayer1Event(
 
 export function Layer1Shell() {
   const graphState = useLayer1Store((state) => state.graphState);
+  const hasHydrated = useLayer1Store((state) => state.hasHydrated);
   const syncFromGraphState = useLayer1Store(
     (state) => state.syncFromGraphState,
   );
+
+  useEffect(() => {
+    void useLayer1Store.persist.rehydrate();
+  }, []);
 
   const activeStep = graphState.activeStep;
   const completedSteps = graphState.completedSteps;
   const availableSteps = graphState.availableSteps;
 
-  async function handleStepChange(stepId: Layer1StepId) {
+  if (!hasHydrated) {
+    return (
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200/70">
+        <div className="text-lg font-black text-slate-950">
+          Loading saved Layer 1 run...
+        </div>
+        <div className="mt-2 text-sm font-medium text-slate-500">
+          Restoring local System Builder state.
+        </div>
+      </div>
+    );
+  }
+
+  function handleStepChange(stepId: Layer1StepId) {
     if (!availableSteps.includes(stepId)) {
       return;
     }
@@ -98,6 +115,10 @@ export function Layer1Shell() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Layer1GraphViewer graphState={graphState} />
+      </div>
+
       <Layer1StepNavigation
         activeStep={activeStep}
         completedSteps={completedSteps}
@@ -133,6 +154,22 @@ export function Layer1Shell() {
 
           <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-medium text-slate-600">
             This step will be implemented in {stepMessages[activeStep].task}.
+
+            {activeStep === 'diagram' && graphState.diagramGenerationContext && (
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+                <div className="font-black">Task 5 input is prepared</div>
+                <div className="mt-1">
+                  Diagram generation must use the cumulative Layer 1
+                  understanding, processed input, and answered Q&A from
+                  diagramGenerationContext.
+                </div>
+                <div className="mt-2 text-xs">
+                  Status: {graphState.diagramGenerationContext.status} ·
+                  Answered Q&A:{' '}
+                  {graphState.diagramGenerationContext.answeredQuestions.length}
+                </div>
+              </div>
+            )}
           </div>
         </section>
       )}
