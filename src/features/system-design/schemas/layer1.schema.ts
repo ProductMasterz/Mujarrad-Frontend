@@ -6,7 +6,7 @@ export const layer1StepIdSchema = z.enum([
   'specification',
   'diagram',
   'review',
-  'final_docs',
+  
   'export',
 ]);
 
@@ -134,7 +134,7 @@ export const layer1ArtifactBundleSchema = z.object({
   markdownSpec: z.string(),
   
   finalDocumentation: finalDocumentationSchema.optional(),
-  
+
   drawioXml: z.string(),
   diagramImage: z
     .object({
