@@ -6,6 +6,7 @@ export const layer1StepIdSchema = z.enum([
   'specification',
   'diagram',
   'review',
+  'final_docs',
   'export',
 ]);
 
@@ -17,6 +18,7 @@ export const layer1StageSchema = z.enum([
   'specification',
   'diagram',
   'diagram_review',
+  'final_documentation',
   'export',
   'approved_layer1_artifact_bundle',
 ]);
@@ -121,8 +123,18 @@ export const completenessReportSchema = z.object({
   suggestedNextQuestionCategory: questionCategorySchema.optional(),
 });
 
+//completenessReportSchema
+export const finalDocumentationSchema = z.object({
+  markdown: z.string(),
+  generatedAt: z.string(),
+  approved: z.boolean().default(false),
+});
+
 export const layer1ArtifactBundleSchema = z.object({
   markdownSpec: z.string(),
+  
+  finalDocumentation: finalDocumentationSchema.optional(),
+  
   drawioXml: z.string(),
   diagramImage: z
     .object({
