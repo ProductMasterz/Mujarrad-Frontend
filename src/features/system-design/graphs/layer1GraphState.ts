@@ -30,6 +30,7 @@ export function getStageForStep(stepId: Layer1StepId): Layer1Stage {
     diagram: 'diagram',
     review: 'diagram_review',
     export: 'export',
+    final_docs: 'input'
   };
 
   return stageByStep[stepId];

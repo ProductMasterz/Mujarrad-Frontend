@@ -1,50 +1,20 @@
 'use client';
 
-import { useState } from 'react';
-
 import { useLayer1Store } from '../stores/useLayer1Store';
 
 export function Layer1FinalDocsStep() {
-  const graphState = useLayer1Store((state) => state.graphState);
-
-  const syncFromGraphState = useLayer1Store(
-    (state) => state.syncFromGraphState,
+  const graphState = useLayer1Store(
+    (state) => state.graphState,
   );
 
-  const [loading, setLoading] = useState(false);
-
-  async function handleGenerate() {
-    try {
-      setLoading(true);
-
-      const response = await fetch(
-        '/api/system-builder/layer1/final-docs',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-
-          body: JSON.stringify(graphState),
-        },
-      );
-
-      const result = await response.json();
-
-      if (result.artifacts) {
-        syncFromGraphState({
-          ...graphState,
-          approvedLayer1Artifacts: result.artifacts,
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
+  const artifacts =
+    graphState.approvedLayer1Artifacts;
 
   const markdown =
-    graphState.approvedLayer1Artifacts?.markdownSpec ??
-    'Final documentation has not been generated yet.';
+    artifacts?.markdownSpec ??
+    'Final documentation will appear automatically after Review completes.';
+
+  const isGenerated = Boolean(artifacts);
 
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70">
@@ -61,11 +31,12 @@ export function Layer1FinalDocsStep() {
 
         <button
           type="button"
-          onClick={() => void handleGenerate()}
-          disabled={loading}
-          className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+          disabled
+          className="rounded-xl bg-slate-300 px-5 py-3 text-sm font-bold text-white cursor-not-allowed"
         >
-          {loading ? 'Generating…' : 'Generate'}
+          {isGenerated
+            ? 'Generated'
+            : 'Waiting for Review'}
         </button>
       </div>
 

@@ -10,6 +10,7 @@ export type Layer1StepId =
   | 'specification'
   | 'diagram'
   | 'review'
+  | 'final_docs'
   | 'export';
 
 export type Layer1Stage =
@@ -20,6 +21,7 @@ export type Layer1Stage =
   | 'specification'
   | 'diagram'
   | 'diagram_review'
+  | 'final_docs'
   | 'export'
   | 'approved_layer1_artifact_bundle';
 
