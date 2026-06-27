@@ -22,16 +22,25 @@ export function createArtifactBundle(
   input: ArtifactBundleInput,
 ) {
   return {
-    markdownSpec: input.markdownSpec,
+    markdownSpec:
+      input.finalDocumentation?.markdown ??
+      input.markdownSpec,
 
-    finalDocumentation: input.finalDocumentation,
+    finalDocumentation:
+      input.finalDocumentation,
 
-    drawioXml: input.drawioXml,
+    drawioXml:
+      input.drawioXml,
 
-    diagramImage: input.diagramImage,
+    diagramImage:
+      input.diagramImage,
 
-    diagramSummary: input.diagramSummary,
+    diagramSummary:
+      input.diagramSummary,
 
-    approvedAt: new Date().toISOString(),
+    approvedAt:
+      input.finalDocumentation
+        ?.generatedAt ??
+      new Date().toISOString(),
   };
 }

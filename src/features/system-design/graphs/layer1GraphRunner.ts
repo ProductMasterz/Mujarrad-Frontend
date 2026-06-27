@@ -118,9 +118,9 @@ export async function runLayer1GraphEvent(
  const completedState = completeLayer1Step(state, event.stepId);
 
 if (
-  event.stepId === 'review' &&
-  state.diagramApproved &&
-  state.markdownSpec
+  event.stepId === 'review' //&&
+//  state.diagramApproved &&
+  //state.markdownSpec
 ) {
   const docs = await generateFinalDocsNode({
     markdownSpec: state.markdownSpec,
