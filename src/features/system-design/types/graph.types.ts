@@ -22,6 +22,7 @@ export type Layer1GraphEventType =
   | 'submit_answer'
   | 'generate_question'
   | 'skip_to_diagram'
+  | 'generate_diagram'
   | 'complete_step'
   | 'sync_state'
   | 'reset_run';

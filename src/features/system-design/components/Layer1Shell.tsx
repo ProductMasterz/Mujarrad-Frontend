@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 
+import { Layer1DiagramStep } from './Layer1DiagramStep';
 import { Layer1GraphViewer } from './Layer1GraphViewer';
 import { Layer1InputPanel } from './Layer1InputPanel';
 import { Layer1QuestionLoop } from './Layer1QuestionLoop';
@@ -130,6 +131,8 @@ export function Layer1Shell() {
         <Layer1InputPanel />
       ) : activeStep === 'clarification' ? (
         <Layer1QuestionLoop />
+      ) : activeStep === 'diagram' ? (
+        <Layer1DiagramStep />
       ) : (
         <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70">
           <div className="flex items-center justify-between gap-4">
@@ -154,22 +157,6 @@ export function Layer1Shell() {
 
           <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-medium text-slate-600">
             This step will be implemented in {stepMessages[activeStep].task}.
-
-            {activeStep === 'diagram' && graphState.diagramGenerationContext && (
-              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
-                <div className="font-black">Task 5 input is prepared</div>
-                <div className="mt-1">
-                  Diagram generation must use the cumulative Layer 1
-                  understanding, processed input, and answered Q&A from
-                  diagramGenerationContext.
-                </div>
-                <div className="mt-2 text-xs">
-                  Status: {graphState.diagramGenerationContext.status} ·
-                  Answered Q&A:{' '}
-                  {graphState.diagramGenerationContext.answeredQuestions.length}
-                </div>
-              </div>
-            )}
           </div>
         </section>
       )}

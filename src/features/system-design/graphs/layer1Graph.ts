@@ -9,9 +9,11 @@ import type {
 import type { InputProcessingResult } from '../types/input.types';
 import {
   createEmptySystemUnderstanding,
+  type DiagramRevision,
   type QuestionAnswer,
 } from '../types/layer1.types';
 import { checkCompletenessNode } from '../nodes/checkCompletenessNode';
+import { generateDiagramNode } from '../nodes/generateDiagramNode';
 import { generateQuestionNode } from '../nodes/generateQuestionNode';
 import { updateUnderstandingNode } from '../nodes/updateUnderstandingNode';
 import { processSystemDesignInput } from '../tools/inputProcessingTool';
@@ -247,6 +249,30 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
     };
   }
 
+  if (event.type === 'generate_diagram') {
+    if (!state.diagramGenerationContext) {
+      return {
+        ok: false,
+        graphState: addGraphError(
+          state,
+          'Diagram generation requires a prepared diagramGenerationContext. Complete or skip clarification first.',
+          'generate_diagram',
+        ),
+        message: 'Diagram generation context is not ready.',
+      };
+    }
+
+    return {
+      ok: true,
+      graphState: {
+        ...state,
+        nextAction: 'generate_diagram',
+        updatedAt: createIsoTimestamp(),
+      },
+      message: 'Generating diagram from Layer 1 context.',
+    };
+  }
+
   if (event.type === 'complete_step') {
     if (!event.stepId) {
       return {
@@ -427,10 +453,68 @@ async function decideNextActionGraphNode(
   };
 }
 
-function shouldRunAnswerPipeline(runtime: RuntimeState): string {
-  return runtime.ok && runtime.event.type === 'submit_answer'
-    ? 'update_understanding'
-    : END;
+async function generateDiagramGraphNode(
+  runtime: RuntimeState,
+): Promise<Partial<RuntimeState>> {
+  if (!runtime.ok || runtime.event.type !== 'generate_diagram') {
+    return {};
+  }
+
+  const { xml, summary, warnings, error } = await generateDiagramNode(
+    runtime.graphState,
+  );
+
+  if (error || !xml) {
+    return {
+      ok: false,
+      graphState: addGraphWarning(
+        runtime.graphState,
+        error ?? 'Diagram generation failed.',
+        'generate_diagram',
+        'generate_diagram',
+      ),
+      message: error ?? 'Diagram generation failed.',
+    };
+  }
+
+  const revision: DiagramRevision = {
+    id: createSystemDesignId('diagram-revision'),
+    xml,
+    instruction: 'Initial AI-generated diagram from Layer 1 context.',
+    createdAt: createIsoTimestamp(),
+  };
+
+  return {
+    ok: true,
+    graphState: {
+      ...runtime.graphState,
+      drawioXml: xml,
+      diagramSummary: summary,
+      diagramRevisions: [...runtime.graphState.diagramRevisions, revision],
+      nextAction: 'wait_for_diagram_review',
+      updatedAt: createIsoTimestamp(),
+    },
+    message:
+      warnings.length > 0
+        ? `Diagram generated with ${warnings.length} repair(s) applied.`
+        : 'Diagram generated.',
+  };
+}
+
+function routeAfterDispatch(runtime: RuntimeState): string {
+  if (!runtime.ok) {
+    return END;
+  }
+
+  if (runtime.event.type === 'submit_answer') {
+    return 'update_understanding';
+  }
+
+  if (runtime.event.type === 'generate_diagram') {
+    return 'generate_diagram';
+  }
+
+  return END;
 }
 
 const workflow = new StateGraph(RuntimeAnnotation)
@@ -438,11 +522,13 @@ const workflow = new StateGraph(RuntimeAnnotation)
   .addNode('update_understanding', updateUnderstandingGraphNode)
   .addNode('check_completeness', checkCompletenessGraphNode)
   .addNode('decide_next_action', decideNextActionGraphNode)
+  .addNode('generate_diagram', generateDiagramGraphNode)
   .addEdge(START, 'dispatch_event')
-  .addConditionalEdges('dispatch_event', shouldRunAnswerPipeline)
+  .addConditionalEdges('dispatch_event', routeAfterDispatch)
   .addEdge('update_understanding', 'check_completeness')
   .addEdge('check_completeness', 'decide_next_action')
-  .addEdge('decide_next_action', END);
+  .addEdge('decide_next_action', END)
+  .addEdge('generate_diagram', END);
 
 const compiledLayer1Graph = workflow.compile();
 
