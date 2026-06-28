@@ -11,7 +11,7 @@ export async function checkCompletenessNode(
     const prompt = getCompletenessPrompt(state);
     const response = await callAiProvider(
       [{ role: 'user', content: prompt }],
-      { responseFormat: 'json_object', temperature: 0.2 },
+      { responseFormat: 'json_object', temperature: 0.2, maxTokens: 2000 },
     );
 
     const parsedJson = JSON.parse(response) as unknown;

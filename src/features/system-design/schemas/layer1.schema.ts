@@ -164,27 +164,62 @@ export const systemUnderstandingSchema = z.object({
   confidence: z.number().min(0).max(1),
 });
 
-export const completenessStatusSchema = z.enum([
-  'complete',
-  'weak',
-  'missing',
-  'not_applicable',
-]);
+// Map the synonyms models commonly return onto the canonical statuses so a
+// reasonable value like "strong" does not invalidate the whole report.
+const completenessStatusSynonyms: Record<
+  string,
+  'complete' | 'weak' | 'missing' | 'not_applicable'
+> = {
+  complete: 'complete',
+  completed: 'complete',
+  strong: 'complete',
+  good: 'complete',
+  great: 'complete',
+  ok: 'complete',
+  sufficient: 'complete',
+  clear: 'complete',
+  done: 'complete',
+  weak: 'weak',
+  partial: 'weak',
+  moderate: 'weak',
+  medium: 'weak',
+  fair: 'weak',
+  unclear: 'weak',
+  needs_improvement: 'weak',
+  missing: 'missing',
+  absent: 'missing',
+  none: 'missing',
+  unknown: 'missing',
+  not_applicable: 'not_applicable',
+  na: 'not_applicable',
+  n_a: 'not_applicable',
+};
+
+export const completenessStatusSchema = z.preprocess((value) => {
+  if (typeof value !== 'string') {
+    return 'weak';
+  }
+
+  const key = value.trim().toLowerCase().replace(/[\s-]+/g, '_');
+  return completenessStatusSynonyms[key] ?? 'weak';
+}, z.enum(['complete', 'weak', 'missing', 'not_applicable']));
 
 export const completenessCategoryStatusSchema = z.object({
-  category: questionCategorySchema,
+  category: questionCategorySchema.catch('general'),
   status: completenessStatusSchema,
-  score: z.number().min(0).max(100),
-  notes: z.string(),
+  score: z.coerce.number().min(0).max(100).catch(0),
+  notes: z.string().catch(''),
 });
 
 export const completenessReportSchema = z.object({
-  overallScore: z.number().min(0).max(100),
-  readyForDiagram: z.boolean(),
+  // overallScore drives the readiness UI, so it must survive even if other
+  // fields are malformed.
+  overallScore: z.coerce.number().min(0).max(100).catch(0),
+  readyForDiagram: z.boolean().catch(false),
   readyForSpec: z.boolean().optional(),
-  categories: z.array(completenessCategoryStatusSchema),
-  missingCriticalItems: z.array(z.string()).default([]),
-  weakItems: z.array(z.string()).default([]),
+  categories: z.array(completenessCategoryStatusSchema).catch([]),
+  missingCriticalItems: z.array(z.string()).catch([]).default([]),
+  weakItems: z.array(z.string()).catch([]).default([]),
   suggestedNextQuestionCategory: questionCategorySchema.optional(),
 });
 

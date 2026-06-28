@@ -215,7 +215,7 @@ export async function updateUnderstandingNode(
     const prompt = getUnderstandingUpdatePrompt(state);
     const response = await callAiProvider(
       [{ role: 'user', content: prompt }],
-      { responseFormat: 'json_object', temperature: 0.2, maxTokens: 900 },
+      { responseFormat: 'json_object', temperature: 0.2, maxTokens: 4000 },
     );
 
     const parsedJson = JSON.parse(response) as unknown;
