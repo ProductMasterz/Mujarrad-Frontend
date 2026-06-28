@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useLayer1Store } from '../stores/useLayer1Store';
 import { QuestionCard } from './QuestionCard';
 import { QuestionHistory } from './QuestionHistory';
+import { Layer1ReadinessHeader } from './Layer1ReadinessHeader';
 import { Layer1UnderstandingPanel } from './Layer1UnderstandingPanel';
 import { Layer1CompletenessPanel } from './Layer1CompletenessPanel';
 
@@ -155,6 +156,8 @@ export function Layer1QuestionLoop() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
+        <Layer1ReadinessHeader report={completeness} />
+
         {uiError && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800">
             <div className="font-bold">Clarification action failed</div>
