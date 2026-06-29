@@ -16,13 +16,73 @@ import type {
   SystemUnderstanding,
 } from '../types/layer1.types';
 
+export interface Layer1HistoryEntry {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  state: Layer1GraphState;
+}
+
+function deriveRunTitle(graphState: Layer1GraphState): string {
+  const source =
+    graphState.rawInputs[0]?.rawText?.trim() ||
+    graphState.processedInput?.normalizedText?.trim() ||
+    graphState.understanding.summary?.trim() ||
+    '';
+
+  if (!source) {
+    return 'Untitled design';
+  }
+
+  const firstLine = source.split('\n')[0].trim();
+  return firstLine.length > 60 ? `${firstLine.slice(0, 57)}…` : firstLine;
+}
+
+function hasStarted(graphState: Layer1GraphState): boolean {
+  return graphState.rawInputs.length > 0 || Boolean(graphState.processedInput);
+}
+
+function upsertHistory(
+  history: Layer1HistoryEntry[],
+  graphState: Layer1GraphState,
+): Layer1HistoryEntry[] {
+  if (!hasStarted(graphState)) {
+    return history;
+  }
+
+  const id = graphState.runId || graphState.id;
+  const entry: Layer1HistoryEntry = {
+    id,
+    title: deriveRunTitle(graphState),
+    createdAt: graphState.createdAt,
+    updatedAt: graphState.updatedAt || new Date().toISOString(),
+    state: graphState,
+  };
+
+  const existingIndex = history.findIndex((item) => item.id === id);
+
+  if (existingIndex >= 0) {
+    const next = history.slice();
+    next[existingIndex] = entry;
+    return next;
+  }
+
+  return [entry, ...history];
+}
+
 interface Layer1StoreState {
   graphState: Layer1GraphState;
+  history: Layer1HistoryEntry[];
   hasHydrated: boolean;
 
   setHasHydrated: (hasHydrated: boolean) => void;
   syncFromGraphState: (graphState: Layer1GraphState) => void;
   resetRun: () => void;
+
+  startNewRun: () => void;
+  loadRun: (id: string) => void;
+  deleteRun: (id: string) => void;
 
   submitRawInput: (rawInput: RawInputPayload) => void;
   setProcessedInput: (processedInput: ProcessedInputContext | null) => void;
@@ -158,16 +218,52 @@ export const useLayer1Store = create<Layer1StoreState>()(
   persist(
     (set) => ({
       graphState: getInitialState(),
+      history: [],
       hasHydrated: false,
 
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 
-      syncFromGraphState: (graphState) => set({ graphState }),
+      syncFromGraphState: (graphState) =>
+        set((state) => ({
+          graphState,
+          history: upsertHistory(state.history, graphState),
+        })),
 
       resetRun: () => {
         clearCurrentLayer1LocalRun();
-        set({ graphState: getInitialState() });
+        set({ graphState: getInitialState(), history: [] });
       },
+
+      startNewRun: () =>
+        set((state) => ({
+          // The current run is already mirrored in history via syncFromGraphState.
+          graphState: getInitialState(),
+          history: upsertHistory(state.history, state.graphState),
+        })),
+
+      loadRun: (id) =>
+        set((state) => {
+          const entry = state.history.find((item) => item.id === id);
+          if (!entry) {
+            return {};
+          }
+          return {
+            // Snapshot the live run into history before switching away.
+            history: upsertHistory(state.history, state.graphState),
+            graphState: entry.state,
+          };
+        }),
+
+      deleteRun: (id) =>
+        set((state) => {
+          const history = state.history.filter((item) => item.id !== id);
+          const activeId = state.graphState.runId || state.graphState.id;
+          return {
+            history,
+            graphState:
+              activeId === id ? getInitialState() : state.graphState,
+          };
+        }),
 
       submitRawInput: (rawInput) =>
         set((state) => ({
@@ -314,6 +410,7 @@ export const useLayer1Store = create<Layer1StoreState>()(
       storage: createJSONStorage(() => scopedLayer1Storage),
       partialize: (state) => ({
         graphState: state.graphState,
+        history: state.history,
       }),
       skipHydration: true,
       onRehydrateStorage: () => (state) => {

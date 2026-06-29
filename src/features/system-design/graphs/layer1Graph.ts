@@ -9,6 +9,7 @@ import type {
 import type { InputProcessingResult } from '../types/input.types';
 import {
   createEmptySystemUnderstanding,
+  type ConstructiveQuestion,
   type DiagramRevision,
   type QuestionAnswer,
 } from '../types/layer1.types';
@@ -290,21 +291,33 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
   }
 
   if (event.type === 'submit_answer') {
-    if (!event.answer || !state.currentQuestion) {
+    if (!event.answer) {
       return {
         ok: false,
-        graphState: addGraphError(
-          state,
-          'Missing answer or current question.',
-          'submit_answer',
-        ),
-        message: 'Missing answer or current question.',
+        graphState: addGraphError(state, 'Missing answer.', 'submit_answer'),
+        message: 'Missing answer.',
       };
     }
 
+    // Allow free-form messages even when the assistant has not posed a
+    // question (e.g. the user proactively adds detail). Synthesize a
+    // lightweight question so the answer is still recorded and folded into the
+    // understanding. Synthetic questions are tagged 'freeform' so the UI does
+    // not render them as assistant turns.
+    const isSynthetic = !state.currentQuestion;
+    const question: ConstructiveQuestion = state.currentQuestion ?? {
+      id: createSystemDesignId('question'),
+      question: 'Additional details from the user',
+      category: 'freeform',
+      reasonForAsking: 'User-provided additional context.',
+      basedOn: {},
+      expectedAnswerType: 'long_text',
+      createdAt: createIsoTimestamp(),
+    };
+
     const answer: QuestionAnswer = {
       id: createSystemDesignId('answer'),
-      questionId: state.currentQuestion.id,
+      questionId: question.id,
       answer: event.answer,
       createdAt: createIsoTimestamp(),
     };
@@ -313,9 +326,10 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
       ok: true,
       graphState: {
         ...state,
+        questions: isSynthetic ? [...state.questions, question] : state.questions,
         qaHistory: [...state.qaHistory, answer],
         currentQuestion: {
-          ...state.currentQuestion,
+          ...question,
           answer: event.answer,
           answeredAt: createIsoTimestamp(),
         },

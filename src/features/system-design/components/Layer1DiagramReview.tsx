@@ -34,7 +34,7 @@ export function Layer1DiagramReview() {
   });
 
   return (
-    <div className="h-[70vh] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="h-full w-full">
       <DiagramEditorInstance key={generationKey} onXmlChange={setDrawioXml} />
     </div>
   );

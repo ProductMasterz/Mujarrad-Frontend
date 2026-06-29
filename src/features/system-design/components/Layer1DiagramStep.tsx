@@ -169,7 +169,9 @@ export function Layer1DiagramStep() {
             1 run automatically.
           </p>
 
-          <Layer1DiagramReview />
+          <div className="h-[70vh] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <Layer1DiagramReview />
+          </div>
         </div>
       )}
     </section>
