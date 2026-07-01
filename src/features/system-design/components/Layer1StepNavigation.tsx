@@ -1,12 +1,8 @@
 'use client';
 
-export type Layer1StepId =
-  | 'input'
-  | 'clarification'
-  | 'specification'
-  | 'diagram'
-  | 'review'
-  | 'export';
+import type { Layer1StepId } from '../types/layer1.types';
+
+export type { Layer1StepId };
 
 interface Layer1Step {
   id: Layer1StepId;

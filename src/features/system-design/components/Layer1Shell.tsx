@@ -2,6 +2,7 @@
 
 import { Layer1InputPanel } from './Layer1InputPanel';
 import { Layer1FinalDocsStep } from './Layer1FinalDocsStep';
+import { Layer1ExportStep } from './Layer1ExportStep';
 import { Layer1StepNavigation } from './Layer1StepNavigation';
 import { useLayer1Store } from '../stores/useLayer1Store';
 import type { Layer1StepId } from '../types/layer1.types';
@@ -29,7 +30,12 @@ const stepMessages: Record<
     title: 'Review',
     task: 'Task 7',
   },
- 
+
+  final_docs: {
+    title: 'Final Documentation',
+    task: 'Task 7',
+  },
+
   export: {
     title: 'Export',
     task: 'Task 8',
@@ -110,6 +116,8 @@ export function Layer1Shell() {
   <Layer1InputPanel />
 ) : activeStep === 'review' ? (
   <Layer1FinalDocsStep />
+) : activeStep === 'export' ? (
+  <Layer1ExportStep />
 ) : (
         <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70">
           <div className="flex items-center justify-between gap-4">
