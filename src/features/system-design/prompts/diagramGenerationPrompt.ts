@@ -3,53 +3,62 @@ import type { Layer1DiagramGenerationContext } from '../types/layer1.types';
 /**
  * System prompt for Task 5 diagram generation.
  *
- * The model must output ONLY Draw.io XML (mxGraphModel). The XML is later
- * extracted, sanitized, and validated before being loaded into the embed.
+ * Compact prompt to avoid Groq on-demand token limits.
  */
-export const DIAGRAM_GENERATION_SYSTEM_PROMPT = `You are an expert system architect. You convert a clarified system design understanding into a clean, editable Draw.io diagram.
+export const DIAGRAM_GENERATION_SYSTEM_PROMPT = `You are an expert system architect. Generate clean editable Draw.io XML.
 
-Rules:
-- Return ONLY raw Draw.io XML. No markdown fences, no explanation, no surrounding text.
-- Use the mxGraphModel format with a <root> element containing mxCell elements.
-- The first two cells must be exactly: <mxCell id="0"/><mxCell id="1" parent="0"/>
-- Give every other cell a unique numeric id starting from 2.
-- Every shape cell needs vertex="1" and an <mxGeometry .../> with x, y, width, height.
-- Every connector cell needs edge="1", a source, a target, and an <mxGeometry relative="1" as="geometry"/>.
-- Close every mxCell with exactly </mxCell>. NEVER write </mxCell/> or add a stray slash to a closing tag.
-- Only self-closing tags (ending in "/>") are <mxGeometry .../> and <mxPoint .../>. Closing tags must end in ">" only.
-- Use plain text labels only. Do NOT use the characters & < > " ' inside value attributes.
-- Lay out nodes so they do not overlap. Space them at least 160px apart.
-- Use appropriate styles: rounded=1 for services/processes, shape=cylinder3 for databases/storage, ellipse for actors/users, rhombus for decisions.
-- Connect nodes with labeled edges that show the direction of flow.
-- Keep it focused: 5 to 15 nodes that capture the core architecture, main workflow, and key entities.
+Return ONLY raw Draw.io mxGraphModel XML. No markdown. No explanation.
 
-Output format (follow exactly):
-<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>[your cells here]</root></mxGraphModel>`;
+Strict Draw.io rules:
+- Output exactly one <mxGraphModel><root>...</root></mxGraphModel>.
+- First cells must be: <mxCell id="0"/><mxCell id="1" parent="0"/>
+- Use unique numeric ids for all other mxCell elements.
+- Each shape must have vertex="1" parent="1" and one <mxGeometry x="..." y="..." width="..." height="..." as="geometry"/>.
+- Each edge must have edge="1" parent="1" source="..." target="..." and one <mxGeometry relative="1" as="geometry"/>.
+- Do not nest mxCell inside mxCell.
+- Do not put mxGeometry directly under root.
+- Use 4 to 8 clear nodes maximum.
+- Use plain labels. Avoid special XML characters.
+- Prefer actors, services, data stores, and directional workflow edges.
+
+Example:
+<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><mxCell id="2" value="User" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1"><mxGeometry x="40" y="120" width="120" height="60" as="geometry"/></mxCell><mxCell id="3" value="Service" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1"><mxGeometry x="240" y="120" width="160" height="70" as="geometry"/></mxCell><mxCell id="4" value="uses" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="2" target="3"><mxGeometry relative="1" as="geometry"/></mxCell></root></mxGraphModel>`;
 
 /**
- * Build the user prompt from the Task 4 handoff context.
- *
- * IMPORTANT: This uses the cumulative Layer 1 understanding from the
- * diagramGenerationContext (processed input + structured understanding + Q&A +
- * completeness). It must NOT rely on raw user input alone.
+ * Build a compact prompt from Layer 1 context.
+ * This avoids hardcoded SystemUnderstanding fields and keeps Groq requests small.
  */
 export function getDiagramGenerationPrompt(
   context: Layer1DiagramGenerationContext,
 ): string {
-  return `Generate the first editable Draw.io diagram for the following clarified system design.
+  const understanding = context.understanding as unknown as Record<string, unknown>;
 
-Use this full Layer 1 context as the single source of truth. Do not invent requirements that contradict it, and do not rely on the raw input alone.
+  const compactUnderstanding = Object.fromEntries(
+    Object.entries(understanding)
+      .filter(([, value]) => value !== null && value !== undefined && value !== '')
+      .slice(0, 12),
+  );
 
-${context.cumulativeUnderstandingText}
+  const shortContext =
+    context.cumulativeUnderstandingText?.slice(0, 600) ||
+    'No additional cumulative understanding text provided.';
 
-Structured Understanding (authoritative):
-${JSON.stringify(context.understanding, null, 2)}
+  return `Generate an editable Draw.io architecture/workflow diagram from this compact Layer 1 understanding.
 
-Diagram requirements:
-1. Visualize the core architecture: main actors/users, services/processes, data stores, and key integrations.
-2. Show the primary workflow as a connected, directional flow.
-3. Represent the most important entities.
-4. Prefer clarity over completeness — capture the essential structure, not every detail.
+Use only this information. Prefer clarity over completeness.
 
-Return ONLY the Draw.io mxGraphModel XML.`;
+Short Layer 1 context:
+${shortContext}
+
+Structured understanding:
+${JSON.stringify(compactUnderstanding, null, 2).slice(0, 1200)}
+
+Diagram must include:
+- main users or actors if present
+- core services or processes
+- important entities or data stores
+- main directional workflow
+- important integrations if present
+
+Return ONLY Draw.io mxGraphModel XML. Start with <mxGraphModel> and end with </mxGraphModel>. Do not truncate.`;
 }

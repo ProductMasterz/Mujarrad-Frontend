@@ -1,5 +1,10 @@
 import type { InputProcessingResult, RawInputPayload } from './input.types';
-import type { Layer1Run, Layer1Stage, Layer1StepId } from './layer1.types';
+import type {
+  Layer1DiagramImages,
+  Layer1Run,
+  Layer1Stage,
+  Layer1StepId,
+} from './layer1.types';
 
 export type Layer1GraphNextAction =
   | 'process_input'
@@ -8,7 +13,7 @@ export type Layer1GraphNextAction =
   | 'update_understanding'
   | 'check_completeness'
   | 'generate_diagram'
-  | 'wait_for_diagram_review'
+  | 'wait_for_diagram_approval'
   | 'refine_diagram'
   | 'generate_final_docs'
   | 'wait_for_final_docs_review'
@@ -23,6 +28,12 @@ export type Layer1GraphEventType =
   | 'generate_question'
   | 'skip_to_diagram'
   | 'generate_diagram'
+  | 'refine_diagram'
+  | 'sync_diagram_xml'
+  | 'undo_diagram_revision'
+  | 'reset_diagram_revision'
+  | 'approve_diagram'
+  | 'generate_final_docs'
   | 'complete_step'
   | 'sync_state'
   | 'reset_run';
@@ -32,6 +43,9 @@ export interface Layer1GraphEvent {
   rawInput?: RawInputPayload;
   answer?: string;
   stepId?: Layer1StepId;
+  refinementInstruction?: string;
+  xml?: string;
+  diagramImages?: Layer1DiagramImages;
 }
 
 export interface Layer1GraphState extends Layer1Run {

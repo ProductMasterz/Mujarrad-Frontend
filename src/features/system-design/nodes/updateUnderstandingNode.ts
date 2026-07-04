@@ -2,7 +2,10 @@ import type { Layer1GraphState } from '../types/graph.types';
 import type { SystemUnderstanding } from '../types/layer1.types';
 import { systemUnderstandingSchema } from '../schemas/layer1.schema';
 import { getUnderstandingUpdatePrompt } from '../prompts/understandingUpdatePrompt';
-import { callAiProvider } from '../tools/aiProviderTool';
+import {
+  callAiProviderWithUsage,
+  type AiTokenUsage,
+} from '../tools/aiProviderTool';
 import { createSystemDesignId } from '../utils/id';
 
 type UnknownRecord = Record<string, unknown>;
@@ -210,20 +213,45 @@ function normalizeSystemUnderstanding(
 
 export async function updateUnderstandingNode(
   state: Layer1GraphState,
-): Promise<{ understanding: SystemUnderstanding; error?: string }> {
+): Promise<{
+  understanding: SystemUnderstanding;
+  usage: AiTokenUsage | null;
+  error?: string;
+}> {
+  let usage: AiTokenUsage | null = null;
+
   try {
     const prompt = getUnderstandingUpdatePrompt(state);
-    const response = await callAiProvider(
+
+    const result = await callAiProviderWithUsage(
       [{ role: 'user', content: prompt }],
-      { responseFormat: 'json_object', temperature: 0.2, maxTokens: 4000 },
+      {
+        modelRole: 'clarification',
+        responseFormat: 'json_object',
+        temperature: 0.2,
+        maxTokens: 2200,
+      },
     );
 
-    const parsedJson = JSON.parse(response) as unknown;
-    const understanding = normalizeSystemUnderstanding(parsedJson, state.understanding);
+    usage = result.usage;
 
-    return { understanding };
+    const parsedJson = JSON.parse(result.content) as unknown;
+    const understanding = normalizeSystemUnderstanding(
+      parsedJson,
+      state.understanding,
+    );
+
+    return { understanding, usage };
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Unknown understanding update error.';
-    return { understanding: state.understanding, error: errorMessage };
+    const errorMessage =
+      err instanceof Error
+        ? err.message
+        : 'Unknown understanding update error.';
+
+    return {
+      understanding: state.understanding,
+      usage,
+      error: errorMessage,
+    };
   }
 }

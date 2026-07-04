@@ -4,9 +4,7 @@ export const layer1StepIdSchema = z.enum([
   'input',
   'clarification',
   'diagram',
-  'review',
-  'final_docs',
-  'export',
+  'final_artifacts',
 ]);
 
 export const layer1StageSchema = z.enum([
@@ -15,7 +13,6 @@ export const layer1StageSchema = z.enum([
   'clarification',
   'understanding',
   'diagram',
-  'diagram_review',
   'final_docs',
   'export',
   'approved_layer1_artifact_bundle',

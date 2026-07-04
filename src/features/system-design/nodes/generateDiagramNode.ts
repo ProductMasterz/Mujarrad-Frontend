@@ -59,8 +59,9 @@ export async function generateDiagramNode(
         { role: 'user', content: getDiagramGenerationPrompt(context) },
       ],
       {
-        temperature: 0.2,
-        maxTokens: 4000,
+        temperature: 0,
+        maxTokens: 1800,
+        modelRole: 'diagram',
         responseFormat: 'text',
       },
     );

@@ -11,12 +11,16 @@ import {
   createEmptySystemUnderstanding,
   type DiagramRevision,
   type QuestionAnswer,
+  type Task4AiOperation,
 } from '../types/layer1.types';
 import { checkCompletenessNode } from '../nodes/checkCompletenessNode';
 import { generateDiagramNode } from '../nodes/generateDiagramNode';
+import { generateFinalDocsNode } from '../nodes/generateFinalDocsNode';
 import { generateQuestionNode } from '../nodes/generateQuestionNode';
+import { refineDiagramNode } from '../nodes/refineDiagramNode';
 import { updateUnderstandingNode } from '../nodes/updateUnderstandingNode';
 import { processSystemDesignInput } from '../tools/inputProcessingTool';
+import type { AiTokenUsage } from '../tools/aiProviderTool';
 import { createIsoTimestamp, createSystemDesignId } from '../utils/id';
 import { isReadyForDiagram } from '../utils/completeness';
 import { buildDiagramGenerationContext } from '../utils/diagramGenerationContext';
@@ -63,6 +67,67 @@ function addGraphError(
     updatedAt: createIsoTimestamp(),
   };
 }
+
+function appendTask4AiUsage(
+  state: Layer1GraphState,
+  operation: Task4AiOperation,
+  usage: AiTokenUsage | null,
+): Layer1GraphState {
+  if (!usage) {
+    return state;
+  }
+
+  return {
+    ...state,
+    task4AiUsage: {
+      calls: [
+        ...state.task4AiUsage.calls,
+        {
+          id: createSystemDesignId('ai-usage'),
+          operation,
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.totalTokens,
+          provider: usage.provider,
+          model: usage.model,
+          createdAt: createIsoTimestamp(),
+        },
+      ],
+    },
+    updatedAt: createIsoTimestamp(),
+  };
+}
+
+
+function appendTask6AiUsage(
+  state: Layer1GraphState,
+  usage: AiTokenUsage | null,
+): Layer1GraphState {
+  if (!usage) {
+    return state;
+  }
+
+  return {
+    ...state,
+    task6AiUsage: {
+      calls: [
+        ...state.task6AiUsage.calls,
+        {
+          id: createSystemDesignId('ai-usage'),
+          operation: 'diagram_refinement',
+          promptTokens: usage.promptTokens,
+          completionTokens: usage.completionTokens,
+          totalTokens: usage.totalTokens,
+          provider: usage.provider,
+          model: usage.model,
+          createdAt: createIsoTimestamp(),
+        },
+      ],
+    },
+    updatedAt: createIsoTimestamp(),
+  };
+}
+
 
 function addGraphWarning(
   state: Layer1GraphState,
@@ -165,9 +230,17 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         understanding: createEmptySystemUnderstanding(),
         completeness: null,
 
+        task4AiUsage: {
+          calls: [],
+        },
+
+        task6AiUsage: {
+          calls: [],
+        },
+
         diagramGenerationContext: null,
         drawioXml: '',
-        diagramImage: undefined,
+        diagramImages: undefined,
         diagramRevisions: [],
         diagramApproved: false,
 
@@ -195,13 +268,17 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
   }
 
   if (event.type === 'generate_question') {
-    const { question, error } = await generateQuestionNode(state);
+    const { question, usage, error } = await generateQuestionNode(state);
 
     if (error || !question) {
       return {
         ok: false,
         graphState: addGraphError(
-          state,
+          appendTask4AiUsage(
+            state,
+            'question_generation',
+            usage,
+          ),
           error ?? 'Failed to generate question.',
           'generate_question',
         ),
@@ -212,7 +289,11 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
     return {
       ok: true,
       graphState: {
-        ...state,
+        ...appendTask4AiUsage(
+          state,
+          'question_generation',
+          usage,
+        ),
         currentQuestion: question,
         questions: [...state.questions, question],
         nextAction: 'wait_for_answer',
@@ -270,6 +351,172 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         updatedAt: createIsoTimestamp(),
       },
       message: 'Generating diagram from Layer 1 context.',
+    };
+  }
+
+  if (event.type === 'refine_diagram') {
+    if (!event.refinementInstruction) {
+      return {
+        ok: false,
+        graphState: addGraphError(
+          state,
+          'Missing diagram refinement instruction.',
+          'refine_diagram',
+        ),
+        message: 'Missing diagram refinement instruction.',
+      };
+    }
+
+    if (!state.drawioXml) {
+      return {
+        ok: false,
+        graphState: addGraphError(
+          state,
+          'No Draw.io XML exists to refine.',
+          'refine_diagram',
+        ),
+        message: 'No Draw.io XML exists to refine.',
+      };
+    }
+
+    return {
+      ok: true,
+      graphState: {
+        ...state,
+        nextAction: 'refine_diagram',
+        updatedAt: createIsoTimestamp(),
+      },
+      message: 'Refining diagram.',
+    };
+  }
+
+  if (event.type === 'sync_diagram_xml') {
+    if (!event.xml) {
+      return {
+        ok: false,
+        graphState: addGraphError(
+          state,
+          'Missing Draw.io XML to sync.',
+          'sync_diagram_xml',
+        ),
+        message: 'Missing Draw.io XML to sync.',
+      };
+    }
+
+    const revision: DiagramRevision = {
+      id: createSystemDesignId('diagram-revision'),
+      xml: event.xml,
+      instruction: 'Manual Draw.io edit.',
+      createdAt: createIsoTimestamp(),
+    };
+
+    return {
+      ok: true,
+      graphState: {
+        ...state,
+        drawioXml: event.xml,
+        diagramRevisions: [...state.diagramRevisions, revision],
+        nextAction: 'wait_for_diagram_approval',
+        updatedAt: createIsoTimestamp(),
+      },
+      message: 'Manual diagram edit synchronized.',
+    };
+  }
+
+  if (event.type === 'undo_diagram_revision') {
+    if (state.diagramRevisions.length < 2) {
+      return {
+        ok: true,
+        graphState: {
+          ...state,
+          nextAction: 'wait_for_diagram_approval',
+          updatedAt: createIsoTimestamp(),
+        },
+        message: 'No previous diagram revision to restore.',
+      };
+    }
+
+    const previousRevision = state.diagramRevisions[state.diagramRevisions.length - 2];
+
+    const undoRevision: DiagramRevision = {
+      id: createSystemDesignId('diagram-revision'),
+      xml: previousRevision.xml,
+      instruction: 'Undo to previous diagram revision.',
+      createdAt: createIsoTimestamp(),
+    };
+
+    return {
+      ok: true,
+      graphState: {
+        ...state,
+        drawioXml: previousRevision.xml,
+        diagramRevisions: [...state.diagramRevisions, undoRevision],
+        nextAction: 'wait_for_diagram_approval',
+        updatedAt: createIsoTimestamp(),
+      },
+      message: 'Restored previous diagram revision.',
+    };
+  }
+
+  if (event.type === 'reset_diagram_revision') {
+    const originalRevision = state.diagramRevisions[0];
+
+    if (!originalRevision) {
+      return {
+        ok: false,
+        graphState: addGraphError(
+          state,
+          'No original generated diagram revision exists.',
+          'reset_diagram_revision',
+        ),
+        message: 'No original generated diagram revision exists.',
+      };
+    }
+
+    const resetRevision: DiagramRevision = {
+      id: createSystemDesignId('diagram-revision'),
+      xml: originalRevision.xml,
+      instruction: 'Reset to original generated diagram.',
+      createdAt: createIsoTimestamp(),
+    };
+
+    return {
+      ok: true,
+      graphState: {
+        ...state,
+        drawioXml: originalRevision.xml,
+        diagramRevisions: [...state.diagramRevisions, resetRevision],
+        nextAction: 'wait_for_diagram_approval',
+        updatedAt: createIsoTimestamp(),
+      },
+      message: 'Diagram reset to original generated version.',
+    };
+  }
+
+  if (event.type === 'approve_diagram') {
+    const completedState = completeLayer1Step(
+      {
+        ...state,
+        drawioXml: event.xml ?? state.drawioXml,
+        diagramImages:
+          event.diagramImages ?? state.diagramImages,
+        diagramApproved: true,
+        nextAction: 'generate_final_docs',
+        updatedAt: createIsoTimestamp(),
+      },
+      'diagram',
+    );
+
+    return {
+      ok: true,
+      graphState: {
+        ...completedState,
+        diagramApproved: true,
+        activeStep: 'final_artifacts',
+        nextAction: 'generate_final_docs',
+        updatedAt: createIsoTimestamp(),
+      },
+      message: 'Diagram approved. Final documentation is available.',
     };
   }
 
@@ -340,13 +587,18 @@ async function updateUnderstandingGraphNode(
     return {};
   }
 
-  const { understanding, error } = await updateUnderstandingNode(runtime.graphState);
+  const { understanding, usage, error } =
+    await updateUnderstandingNode(runtime.graphState);
 
   if (error) {
     return {
       ok: true,
       graphState: addGraphWarning(
-        runtime.graphState,
+        appendTask4AiUsage(
+          runtime.graphState,
+          'understanding_update',
+          usage,
+        ),
         error,
         'update_understanding',
         'ask_question',
@@ -360,7 +612,11 @@ async function updateUnderstandingGraphNode(
   return {
     ok: true,
     graphState: {
-      ...runtime.graphState,
+      ...appendTask4AiUsage(
+        runtime.graphState,
+        'understanding_update',
+        usage,
+      ),
       understanding,
       nextAction: 'check_completeness',
       updatedAt: createIsoTimestamp(),
@@ -376,13 +632,18 @@ async function checkCompletenessGraphNode(
     return {};
   }
 
-  const { completeness, error } = await checkCompletenessNode(runtime.graphState);
+  const { completeness, usage, error } =
+    await checkCompletenessNode(runtime.graphState);
 
   if (error || !completeness) {
     return {
       ok: true,
       graphState: addGraphWarning(
-        runtime.graphState,
+        appendTask4AiUsage(
+          runtime.graphState,
+          'completeness_check',
+          usage,
+        ),
         error ?? 'Completeness check failed.',
         'check_completeness',
         'ask_question',
@@ -395,7 +656,11 @@ async function checkCompletenessGraphNode(
   return {
     ok: true,
     graphState: {
-      ...runtime.graphState,
+      ...appendTask4AiUsage(
+        runtime.graphState,
+        'completeness_check',
+        usage,
+      ),
       completeness,
       nextAction: 'check_completeness',
       updatedAt: createIsoTimestamp(),
@@ -491,7 +756,7 @@ async function generateDiagramGraphNode(
       drawioXml: xml,
       diagramSummary: summary,
       diagramRevisions: [...runtime.graphState.diagramRevisions, revision],
-      nextAction: 'wait_for_diagram_review',
+      nextAction: 'wait_for_diagram_approval',
       updatedAt: createIsoTimestamp(),
     },
     message:
@@ -500,6 +765,120 @@ async function generateDiagramGraphNode(
         : 'Diagram generated.',
   };
 }
+
+
+async function refineDiagramGraphNode(
+  runtime: RuntimeState,
+): Promise<Partial<RuntimeState>> {
+  if (!runtime.ok || runtime.event.type !== 'refine_diagram') {
+    return {};
+  }
+
+  const instruction = runtime.event.refinementInstruction ?? '';
+
+  const {
+    xml,
+    summary,
+    warnings,
+    usage,
+    error,
+  } = await refineDiagramNode(
+    runtime.graphState,
+    instruction,
+  );
+
+  const stateWithUsage = appendTask6AiUsage(
+    runtime.graphState,
+    usage,
+  );
+
+  if (error || !xml) {
+    return {
+      ok: false,
+      graphState: addGraphWarning(
+        stateWithUsage,
+        error ?? 'Diagram refinement failed.',
+        'refine_diagram',
+        'wait_for_diagram_approval',
+      ),
+      message: error ?? 'Diagram refinement failed.',
+    };
+  }
+
+  const revision: DiagramRevision = {
+    id: createSystemDesignId('diagram-revision'),
+    xml,
+    instruction,
+    createdAt: createIsoTimestamp(),
+  };
+
+  return {
+    ok: true,
+    graphState: {
+      ...stateWithUsage,
+      drawioXml: xml,
+      diagramSummary: summary || stateWithUsage.diagramSummary,
+      diagramRevisions: [
+        ...stateWithUsage.diagramRevisions,
+        revision,
+      ],
+      nextAction: 'wait_for_diagram_approval',
+      updatedAt: createIsoTimestamp(),
+    },
+    message:
+      warnings.length > 0
+        ? `Diagram refined with ${warnings.length} repair(s) applied.`
+        : 'Diagram refined.',
+  };
+}
+
+async function generateFinalDocsGraphNode(
+  runtime: RuntimeState,
+): Promise<Partial<RuntimeState>> {
+  if (
+    !runtime.ok ||
+    !['approve_diagram', 'generate_final_docs'].includes(
+      runtime.event.type,
+    )
+  ) {
+    return {};
+  }
+
+  const { bundle, error } = await generateFinalDocsNode(
+    runtime.graphState,
+  );
+
+  if (error || !bundle) {
+    return {
+      ok: false,
+      graphState: addGraphWarning(
+        runtime.graphState,
+        error ?? 'Final documentation generation failed.',
+        'generate_final_docs',
+        'generate_final_docs',
+      ),
+      message:
+        error ?? 'Final documentation generation failed.',
+    };
+  }
+
+  return {
+    ok: true,
+    graphState: {
+      ...runtime.graphState,
+      stage: 'export',
+      activeStep: 'final_artifacts',
+      markdownSpec: bundle.markdownSpec,
+      markdownApproved: true,
+      approvedLayer1Artifacts: bundle,
+      nextAction: 'complete',
+      updatedAt: createIsoTimestamp(),
+    },
+    message:
+      'Final Layer 1 artifacts generated successfully. Artifact inspection and handoff are ready.',
+  };
+}
+
 
 function routeAfterDispatch(runtime: RuntimeState): string {
   if (!runtime.ok) {
@@ -514,6 +893,17 @@ function routeAfterDispatch(runtime: RuntimeState): string {
     return 'generate_diagram';
   }
 
+  if (runtime.event.type === 'refine_diagram') {
+    return 'refine_diagram';
+  }
+
+  if (
+    runtime.event.type === 'approve_diagram' ||
+    runtime.event.type === 'generate_final_docs'
+  ) {
+    return 'generate_final_docs';
+  }
+
   return END;
 }
 
@@ -523,12 +913,16 @@ const workflow = new StateGraph(RuntimeAnnotation)
   .addNode('check_completeness', checkCompletenessGraphNode)
   .addNode('decide_next_action', decideNextActionGraphNode)
   .addNode('generate_diagram', generateDiagramGraphNode)
+  .addNode('refine_diagram', refineDiagramGraphNode)
+  .addNode('generate_final_docs', generateFinalDocsGraphNode)
   .addEdge(START, 'dispatch_event')
   .addConditionalEdges('dispatch_event', routeAfterDispatch)
   .addEdge('update_understanding', 'check_completeness')
   .addEdge('check_completeness', 'decide_next_action')
   .addEdge('decide_next_action', END)
-  .addEdge('generate_diagram', END);
+  .addEdge('generate_diagram', END)
+  .addEdge('refine_diagram', END)
+  .addEdge('generate_final_docs', END);
 
 const compiledLayer1Graph = workflow.compile();
 

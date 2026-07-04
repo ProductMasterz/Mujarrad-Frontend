@@ -8,9 +8,7 @@ export type Layer1StepId =
   | 'input'
   | 'clarification'
   | 'diagram'
-  | 'review'
-  | 'final_docs'
-  | 'export';
+  | 'final_artifacts';
 
 export type Layer1Stage =
   | 'input'
@@ -18,7 +16,6 @@ export type Layer1Stage =
   | 'clarification'
   | 'understanding'
   | 'diagram'
-  | 'diagram_review'
   | 'final_docs'
   | 'export'
   | 'approved_layer1_artifact_bundle';
@@ -191,15 +188,116 @@ export interface DiagramRevision {
   createdAt: string;
 }
 
-export interface Layer1ArtifactBundle {
-  markdownSpec: string;
-  drawioXml: string;
-  diagramImage?: {
-    format: 'png' | 'svg';
-    dataUrl?: string;
-    fileName?: string;
+export type Layer1TextArtifactFormat =
+  | 'toon'
+  | 'compact_json'
+  | 'json'
+  | 'yaml'
+  | 'markdown'
+  | 'plain_text';
+
+export interface Layer1TokenEfficiencyEntry {
+  format: Layer1TextArtifactFormat;
+  characterCount: number;
+  utf8Bytes: number;
+  estimatedTokens: number;
+  relativeSavingsPercent: number;
+  rank: number;
+}
+
+export interface Layer1TokenEfficiencyReport {
+  method: 'character_estimate';
+  estimateFormula: string;
+  comparedAt: string;
+  lowestTokenFormat: Layer1TextArtifactFormat;
+  recommendedLayer2Format: Layer1TextArtifactFormat;
+  entries: Layer1TokenEfficiencyEntry[];
+  notes: string[];
+}
+
+export interface Layer1CanonicalArtifact {
+  version: '1.0';
+  runId: string;
+  generatedAt: string;
+
+  system: {
+    summary: string;
+    goal: string;
+    understanding: SystemUnderstanding;
+    completeness: CompletenessReport | null;
   };
-  diagramSummary?: string;
+
+  clarification: {
+    answeredQuestions: DiagramGenerationQuestionAnswer[];
+    unansweredQuestions: ConstructiveQuestion[];
+  };
+
+  diagram: {
+    summary: string;
+    approved: boolean;
+    revisionCount: number;
+  };
+}
+
+export interface Layer1ArtifactManifestEntry {
+  id: string;
+  format:
+    | Layer1TextArtifactFormat
+    | 'drawio_xml'
+    | 'svg'
+    | 'png'
+    | 'token_report';
+  mediaType: string;
+  fileName: string;
+  available: boolean;
+  characterCount?: number;
+  utf8Bytes?: number;
+}
+
+export interface Layer1ArtifactManifest {
+  version: '1.0';
+  createdAt: string;
+  entries: Layer1ArtifactManifestEntry[];
+}
+
+export interface Layer1DiagramImage {
+  dataUrl: string;
+  fileName: string;
+}
+
+export interface Layer1DiagramImages {
+  svg?: Layer1DiagramImage;
+  png?: Layer1DiagramImage;
+}
+
+export interface Layer1ArtifactBundle {
+  canonical: Layer1CanonicalArtifact;
+
+  markdownSpec: string;
+  jsonSpec: string;
+  compactJsonSpec: string;
+  toonSpec: string;
+  yamlSpec: string;
+  plainTextSpec: string;
+
+  drawioXml: string;
+
+  diagramImages: {
+    svg?: {
+      dataUrl?: string;
+      fileName: string;
+    };
+    png?: {
+      dataUrl?: string;
+      fileName: string;
+    };
+  };
+
+  diagramSummary: string;
+
+  tokenEfficiencyReport: Layer1TokenEfficiencyReport;
+  manifest: Layer1ArtifactManifest;
+
   approvedAt: string;
 }
 
@@ -253,6 +351,41 @@ export interface Layer1Error {
   source?: string;
 }
 
+export type Task4AiOperation =
+  | 'question_generation'
+  | 'understanding_update'
+  | 'completeness_check';
+
+export interface AiUsageRecord {
+  id: string;
+  operation: Task4AiOperation;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  provider: 'groq' | 'openrouter';
+  model: string;
+  createdAt: string;
+}
+
+export interface Task4AiUsage {
+  calls: AiUsageRecord[];
+}
+
+export interface Task6AiUsageRecord {
+  id: string;
+  operation: 'diagram_refinement';
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  provider: 'groq' | 'openrouter';
+  model: string;
+  createdAt: string;
+}
+
+export interface Task6AiUsage {
+  calls: Task6AiUsageRecord[];
+}
+
 export interface Layer1Run {
   id: string;
   runId: string;
@@ -273,17 +406,17 @@ export interface Layer1Run {
 
   understanding: SystemUnderstanding;
   completeness: CompletenessReport | null;
+
+  task4AiUsage: Task4AiUsage;
+  task6AiUsage: Task6AiUsage;
+
   diagramGenerationContext: Layer1DiagramGenerationContext | null;
 
   markdownSpec: string;
   markdownApproved: boolean;
 
   drawioXml: string;
-  diagramImage?: {
-    format: 'png' | 'svg';
-    dataUrl?: string;
-    fileName?: string;
-  };
+  diagramImages?: Layer1DiagramImages;
   diagramSummary: string;
   diagramApproved: boolean;
   diagramRevisions: DiagramRevision[];

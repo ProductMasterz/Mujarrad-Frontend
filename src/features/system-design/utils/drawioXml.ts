@@ -1,9 +1,8 @@
 /**
  * Draw.io XML extraction, sanitization, validation and repair.
  *
- * Task 5 requires that AI-generated diagram XML is never loaded into the
- * Draw.io embed unless it has been extracted from any surrounding text,
- * sanitized, repaired where possible, and structurally validated.
+ * This file is intentionally defensive because LLMs often generate XML that is
+ * "string-valid" but structurally invalid for diagrams.net/draw.io.
  */
 
 export interface DrawioXmlResult {
@@ -12,30 +11,228 @@ export interface DrawioXmlResult {
   valid: boolean;
 }
 
-/**
- * Structural validation: the value must contain an mxGraphModel with a root
- * node. This is intentionally lightweight — Draw.io itself is the final parser,
- * but we must guarantee the basic shape before loading.
- */
-export function isValidDrawioXml(xml: string): boolean {
-  if (!xml || typeof xml !== 'string') {
-    return false;
+function getAttr(tag: string, name: string): string | null {
+  const match = tag.match(new RegExp(`\\b${name}="([^"]*)"`, 'i'));
+  return match?.[1] ?? null;
+}
+
+function hasAttr(tag: string, name: string, value?: string): boolean {
+  const found = getAttr(tag, name);
+  if (value === undefined) return found !== null;
+  return found === value;
+}
+
+function extractCells(rootContent: string): string[] {
+  return rootContent.match(/<mxCell\b[^>]*(?:\/>|>[\s\S]*?<\/mxCell>)/g) ?? [];
+}
+
+function getOpeningTag(cell: string): string {
+  return cell.match(/^<mxCell\b[^>]*>/)?.[0] ?? cell;
+}
+
+function isRootCell(cell: string): boolean {
+  const tag = getOpeningTag(cell);
+  const id = getAttr(tag, 'id');
+  return id === '0' || id === '1';
+}
+
+function setAttr(tag: string, name: string, value: string): string {
+  const attrRegex = new RegExp(`\\b${name}="[^"]*"`, 'i');
+
+  if (attrRegex.test(tag)) {
+    return tag.replace(attrRegex, `${name}="${value}"`);
   }
 
-  const hasModel = /<mxGraphModel[\s\S]*<\/mxGraphModel>/.test(xml);
-  const hasRoot = /<root[\s>]/.test(xml) && /<\/root>/.test(xml);
+  return tag.replace(/>$/, ` ${name}="${value}">`);
+}
 
-  // Reject documents that still contain malformed closing tags like </mxCell/>,
-  // which break Draw.io's XML parser ("expected '>'").
-  const hasMalformedCloseTag = /<\/[A-Za-z][\w.-]*\s*\/>/.test(xml);
+function replaceOpeningTag(cell: string, nextTag: string): string {
+  return cell.replace(/^<mxCell\b[^>]*>/, nextTag);
+}
 
-  return hasModel && hasRoot && !hasMalformedCloseTag;
+function renumberNonRootCells(cells: string[], warnings: string[]): string[] {
+  const root0 =
+    cells.find((cell) => getAttr(getOpeningTag(cell), 'id') === '0') ??
+    '<mxCell id="0"/>';
+  const root1 =
+    cells.find((cell) => getAttr(getOpeningTag(cell), 'id') === '1' && getAttr(getOpeningTag(cell), 'parent') === '0') ??
+    '<mxCell id="1" parent="0"/>';
+
+  const normalCells = cells.filter((cell) => {
+    const tag = getOpeningTag(cell);
+    const id = getAttr(tag, 'id');
+    return !(id === '0' || (id === '1' && getAttr(tag, 'parent') === '0'));
+  });
+
+  const idMap = new Map<string, string>();
+  let nextId = 2;
+
+  for (const cell of normalCells) {
+    const oldId = getAttr(getOpeningTag(cell), 'id');
+    if (!oldId) continue;
+
+    if (!idMap.has(oldId)) {
+      idMap.set(oldId, String(nextId++));
+    } else {
+      // Duplicate source ids cannot be referenced safely. Give this duplicate a new id.
+      idMap.set(`${oldId}__duplicate_${nextId}`, String(nextId++));
+    }
+  }
+
+  let duplicateCounter = 0;
+  const usedIds = new Set(['0', '1']);
+  const renumbered: string[] = [];
+
+  for (const cell of normalCells) {
+    let tag = getOpeningTag(cell);
+    const oldId = getAttr(tag, 'id');
+
+    if (!oldId) {
+      warnings.push('Dropped mxCell with missing id during renumbering.');
+      continue;
+    }
+
+    let newId = idMap.get(oldId);
+
+    if (!newId || usedIds.has(newId)) {
+      newId = String(nextId++);
+    }
+
+    // If duplicate old ids appear, the first keeps the mapped id; later duplicates get unique ids.
+    if (renumbered.some((existing) => getAttr(getOpeningTag(existing), 'id') === newId)) {
+      duplicateCounter += 1;
+      newId = String(nextId++);
+      warnings.push(`Renumbered duplicate mxCell id=${oldId} to id=${newId}.`);
+    }
+
+    usedIds.add(newId);
+
+    tag = setAttr(tag, 'id', newId);
+
+    const source = getAttr(tag, 'source');
+    const target = getAttr(tag, 'target');
+
+    if (source && idMap.has(source)) {
+      tag = setAttr(tag, 'source', idMap.get(source)!);
+    }
+
+    if (target && idMap.has(target)) {
+      tag = setAttr(tag, 'target', idMap.get(target)!);
+    }
+
+    renumbered.push(replaceOpeningTag(cell, tag));
+  }
+
+  if (duplicateCounter > 0 || normalCells.length > 0) {
+    warnings.push('Normalized Draw.io mxCell ids and edge references.');
+  }
+
+  return [root0, root1, ...renumbered];
+}
+
+function isValidCell(cell: string): boolean {
+  const tag = getOpeningTag(cell);
+  const id = getAttr(tag, 'id');
+
+  if (!id) return false;
+
+  // Draw.io root cells are allowed to be self-closing/simple.
+  if (id === '0') return true;
+  if (id === '1') return getAttr(tag, 'parent') === '0';
+
+  // A non-root mxCell must not contain another mxCell.
+  const inner = cell.replace(/^<mxCell\b[^>]*>/, '').replace(/<\/mxCell>$/, '');
+  if (/<mxCell\b/i.test(inner)) return false;
+
+  const isVertex = hasAttr(tag, 'vertex', '1');
+  const isEdge = hasAttr(tag, 'edge', '1');
+
+  // Every normal cell must be either a vertex or an edge.
+  if (!isVertex && !isEdge) return false;
+
+  // Every normal cell must belong to the default layer unless it is an edge
+  // with source/target; still parent="1" is preferred and required here.
+  if (getAttr(tag, 'parent') !== '1') return false;
+
+  // Vertices need geometry with x/y/width/height.
+  if (isVertex) {
+    const geometry = cell.match(/<mxGeometry\b[^>]*(?:\/>|>[\s\S]*?<\/mxGeometry>)/)?.[0] ?? '';
+    if (!geometry) return false;
+    if (!hasAttr(geometry, 'as', 'geometry')) return false;
+    if (!hasAttr(geometry, 'x')) return false;
+    if (!hasAttr(geometry, 'y')) return false;
+    if (!hasAttr(geometry, 'width')) return false;
+    if (!hasAttr(geometry, 'height')) return false;
+  }
+
+  // Edges need source, target, and relative geometry.
+  if (isEdge) {
+    if (!hasAttr(tag, 'source')) return false;
+    if (!hasAttr(tag, 'target')) return false;
+
+    const geometry = cell.match(/<mxGeometry\b[^>]*(?:\/>|>[\s\S]*?<\/mxGeometry>)/)?.[0] ?? '';
+    if (!geometry) return false;
+    if (!hasAttr(geometry, 'as', 'geometry')) return false;
+    if (!hasAttr(geometry, 'relative', '1')) return false;
+  }
+
+  return true;
 }
 
 /**
- * Extract the diagram XML from a raw AI response and repair the common defects
- * that break the Draw.io embed loader. Returns the cleaned XML plus a list of
- * warnings describing every repair that was applied.
+ * Structural validation before loading into diagrams.net.
+ */
+export function isValidDrawioXml(xml: string): boolean {
+  if (!xml || typeof xml !== 'string') return false;
+
+  const modelMatch = xml.match(/<mxGraphModel\b[^>]*>[\s\S]*<\/mxGraphModel>/);
+  if (!modelMatch) return false;
+
+  const rootMatch = xml.match(/<root\b[^>]*>([\s\S]*?)<\/root>/);
+  if (!rootMatch) return false;
+
+  // Reject malformed closing tags like </mxCell/>.
+  if (/<\/[A-Za-z][\w.-]*\s*\/>/.test(xml)) return false;
+
+  const rootContent = rootMatch[1];
+  const cells = extractCells(rootContent);
+
+  if (cells.length < 3) return false;
+
+  const ids = new Set<string>();
+  let hasRoot0 = false;
+  let hasRoot1 = false;
+  let normalCellCount = 0;
+
+  for (const cell of cells) {
+    if (!isValidCell(cell)) return false;
+
+    const id = getAttr(getOpeningTag(cell), 'id');
+    if (!id || ids.has(id)) return false;
+
+    ids.add(id);
+
+    if (id === '0') hasRoot0 = true;
+    else if (id === '1') hasRoot1 = true;
+    else normalCellCount += 1;
+  }
+
+  if (!hasRoot0 || !hasRoot1 || normalCellCount === 0) return false;
+
+  // Remove all valid mxCell blocks. Anything tag-like left directly under root
+  // means orphan mxGeometry/mxPoint or another unsupported object exists.
+  const leftover = rootContent
+    .replace(/<mxCell\b[^>]*(?:\/>|>[\s\S]*?<\/mxCell>)/g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .trim();
+
+  if (/<[A-Za-z][\w.-]*/.test(leftover)) return false;
+
+  return true;
+}
+
+/**
+ * Extract and repair common LLM XML mistakes.
  */
 export function extractAndRepairDrawioXml(rawInput: string): DrawioXmlResult {
   const warnings: string[] = [];
@@ -46,58 +243,101 @@ export function extractAndRepairDrawioXml(rawInput: string): DrawioXmlResult {
 
   let xml = rawInput.trim();
 
-  // Strip markdown code fences (```xml ... ``` or ``` ... ```).
-  const fenced = xml.replace(/^```xml\s*\n?/i, '').replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '');
+  // Strip markdown fences.
+  const fenced = xml
+    .replace(/^```xml\s*\n?/i, '')
+    .replace(/^```\s*\n?/, '')
+    .replace(/\n?```\s*$/, '');
+
   if (fenced !== xml) {
     warnings.push('Removed markdown code fences from the AI response.');
     xml = fenced.trim();
   }
 
-  // Extract only the mxGraphModel block if surrounded by explanation text.
-  const match = xml.match(/<mxGraphModel[\s\S]*<\/mxGraphModel>/);
-  if (match) {
-    if (match[0] !== xml) {
+  // Extract only mxGraphModel.
+  const modelMatch = xml.match(/<mxGraphModel\b[^>]*>[\s\S]*<\/mxGraphModel>/);
+  if (modelMatch) {
+    if (modelMatch[0] !== xml) {
       warnings.push('Extracted the mxGraphModel block from surrounding text.');
     }
-    xml = match[0];
+    xml = modelMatch[0];
   }
 
-  // Repair malformed closing tags such as </mxCell/> -> </mxCell>. Models
-  // occasionally emit a stray slash before the '>' on closing tags, which makes
-  // the document fail to parse ("expected '>'").
+  // Repair malformed closing tags: </mxCell/> -> </mxCell>
   const closeTagFixed = xml.replace(/<\/([A-Za-z][\w.-]*)\s*\/>/g, '</$1>');
   if (closeTagFixed !== xml) {
-    warnings.push('Repaired malformed closing tags (e.g. </mxCell/>).');
+    warnings.push('Repaired malformed closing tags.');
     xml = closeTagFixed;
   }
 
-  // Escape stray ampersands that are not part of an existing entity.
-  const escaped = xml.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#)/g, '&amp;');
+  // Escape stray ampersands.
+  const escaped = xml.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)/g, '&amp;');
   if (escaped !== xml) {
-    warnings.push('Escaped unescaped & characters in the XML.');
+    warnings.push('Escaped unescaped ampersands.');
     xml = escaped;
   }
 
-  // Repair empty/missing ids on cells so Draw.io does not drop them.
-  let counter = 100;
+  // Repair empty/missing ids.
+  let counter = 1000;
+
   const emptyIdFixed = xml.replace(/id=""/g, () => `id="${counter++}"`);
   if (emptyIdFixed !== xml) {
-    warnings.push('Assigned ids to cells that had an empty id attribute.');
+    warnings.push('Assigned ids to cells with empty id attributes.');
     xml = emptyIdFixed;
   }
 
   const missingIdFixed = xml.replace(/<mxCell(?![^>]*\bid=)/g, () => `<mxCell id="${counter++}"`);
   if (missingIdFixed !== xml) {
-    warnings.push('Assigned ids to mxCell elements that had no id attribute.');
+    warnings.push('Assigned ids to mxCell elements with missing id attributes.');
     xml = missingIdFixed;
   }
 
-  // Repair empty parent attributes so cells attach to the default layer.
-  const parentFixed = xml.replace(/parent=""/g, 'parent="1"');
-  if (parentFixed !== xml) {
+  const emptyParentFixed = xml.replace(/parent=""/g, 'parent="1"');
+  if (emptyParentFixed !== xml) {
     warnings.push('Repaired empty parent attributes.');
-    xml = parentFixed;
+    xml = emptyParentFixed;
   }
+
+  // Rebuild the root using only valid mxCell blocks. This removes orphan
+  // mxGeometry/mxPoint nodes that cause diagrams.net "Could not add object"
+  // console errors.
+  const openingModel = xml.match(/<mxGraphModel\b[^>]*>/)?.[0] ?? '<mxGraphModel>';
+  const rootMatch = xml.match(/<root\b[^>]*>([\s\S]*?)<\/root>/);
+
+  if (!rootMatch) {
+    warnings.push('Missing Draw.io root element.');
+    return { xml, warnings, valid: false };
+  }
+
+  const cells = renumberNonRootCells(extractCells(rootMatch[1]), warnings);
+  const validCells: string[] = [];
+  const seen = new Set<string>();
+
+  for (const cell of cells) {
+    const id = getAttr(getOpeningTag(cell), 'id');
+
+    if (!id || seen.has(id)) {
+      warnings.push(`Dropped invalid or duplicate mxCell${id ? ` id=${id}` : ''}.`);
+      continue;
+    }
+
+    if (!isValidCell(cell)) {
+      warnings.push(`Dropped structurally invalid mxCell id=${id}.`);
+      continue;
+    }
+
+    seen.add(id);
+    validCells.push(cell);
+  }
+
+  const root0 = validCells.find((cell) => getAttr(getOpeningTag(cell), 'id') === '0') ?? '<mxCell id="0"/>';
+  const root1 =
+    validCells.find((cell) => getAttr(getOpeningTag(cell), 'id') === '1') ??
+    '<mxCell id="1" parent="0"/>';
+
+  const otherCells = validCells.filter((cell) => !isRootCell(cell));
+
+  xml = `${openingModel}<root>${root0}${root1}${otherCells.join('')}</root></mxGraphModel>`;
 
   const valid = isValidDrawioXml(xml);
 

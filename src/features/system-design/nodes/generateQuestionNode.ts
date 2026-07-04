@@ -2,27 +2,43 @@ import type { Layer1GraphState } from '../types/graph.types';
 import type { ConstructiveQuestion } from '../types/layer1.types';
 import { constructiveQuestionAiResponseSchema } from '../schemas/layer1.schema';
 import { getConstructiveQuestionPrompt } from '../prompts/constructiveQuestionPrompt';
-import { callAiProvider } from '../tools/aiProviderTool';
+import {
+  callAiProviderWithUsage,
+  type AiTokenUsage,
+} from '../tools/aiProviderTool';
 import { createIsoTimestamp, createSystemDesignId } from '../utils/id';
 
 export async function generateQuestionNode(
   state: Layer1GraphState,
-): Promise<{ question: ConstructiveQuestion | null; error?: string }> {
+): Promise<{
+  question: ConstructiveQuestion | null;
+  usage: AiTokenUsage | null;
+  error?: string;
+}> {
+  let usage: AiTokenUsage | null = null;
+
   try {
     if (!state.processedInput) {
       return {
         question: null,
+        usage,
         error: 'Processed input is required before generating clarification questions.',
       };
     }
 
     const prompt = getConstructiveQuestionPrompt(state);
-    const response = await callAiProvider(
+    const result = await callAiProviderWithUsage(
       [{ role: 'user', content: prompt }],
-      { responseFormat: 'json_object', temperature: 0.3 },
+      {
+        modelRole: 'clarification',
+        responseFormat: 'json_object',
+        temperature: 0.3,
+      },
     );
 
-    const parsedJson = JSON.parse(response) as unknown;
+    usage = result.usage;
+
+    const parsedJson = JSON.parse(result.content) as unknown;
     const parsed = constructiveQuestionAiResponseSchema.parse(parsedJson);
 
     const question: ConstructiveQuestion = {
@@ -49,9 +65,17 @@ export async function generateQuestionNode(
       createdAt: createIsoTimestamp(),
     };
 
-    return { question };
+    return { question, usage };
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Unknown question generation error.';
-    return { question: null, error: errorMessage };
+    const errorMessage =
+      err instanceof Error
+        ? err.message
+        : 'Unknown question generation error.';
+
+    return {
+      question: null,
+      usage,
+      error: errorMessage,
+    };
   }
 }

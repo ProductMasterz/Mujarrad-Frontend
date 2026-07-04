@@ -41,7 +41,7 @@ interface Layer1StoreState {
   approveMarkdownSpec: () => void;
 
   setDrawioXml: (drawioXml: string) => void;
-  setDiagramImage: (diagramImage: Layer1GraphState['diagramImage']) => void;
+  setDiagramImages: (diagramImages: Layer1GraphState['diagramImages']) => void;
   addDiagramRevision: (revision: DiagramRevision) => void;
   approveDiagram: () => void;
 
@@ -127,23 +127,15 @@ const scopedLayer1Storage: StateStorage = {
       return null;
     }
 
-    window.localStorage.removeItem(baseStorageName);
-    window.localStorage.removeItem(`${baseStorageName}:anonymous`);
+    // System Builder runs must always start fresh after reload/relogin.
+    // Remove any old persisted Layer 1 runs and do not hydrate previous state.
+    clearAllLayer1LocalRuns();
 
-    return window.localStorage.getItem(getScopedStorageName());
+    return null;
   },
-  setItem: (_name, value) => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const userKey = getCurrentAuthUserKey();
-
-    if (!userKey) {
-      return;
-    }
-
-    window.localStorage.setItem(getScopedStorageName(), value);
+  setItem: () => {
+    // Intentionally disabled.
+    // Do not persist System Builder Layer 1 state between reloads/relogins.
   },
   removeItem: () => {
     if (typeof window === 'undefined') {
@@ -276,11 +268,11 @@ export const useLayer1Store = create<Layer1StoreState>()(
           },
         })),
 
-      setDiagramImage: (diagramImage) =>
+      setDiagramImages: (diagramImages) =>
         set((state) => ({
           graphState: {
             ...state.graphState,
-            diagramImage,
+            diagramImages,
           },
         })),
 

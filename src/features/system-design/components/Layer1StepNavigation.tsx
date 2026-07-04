@@ -9,9 +9,7 @@ const steps: {
   { id: 'input', label: 'Input' },
   { id: 'clarification', label: 'Clarify' },
   { id: 'diagram', label: 'Diagram' },
-  { id: 'review', label: 'Review' },
-  { id: 'final_docs', label: 'Final Docs' },
-  { id: 'export', label: 'Export' },
+  { id: 'final_artifacts', label: 'Final Artifacts' },
 ];
 
 interface Layer1StepNavigationProps {
@@ -29,7 +27,7 @@ export function Layer1StepNavigation({
 }: Layer1StepNavigationProps) {
   return (
     <nav className="rounded-[2rem] border border-slate-200 bg-white p-3 shadow-xl shadow-slate-200/70">
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         {steps.map((step) => {
           const isActive = activeStep === step.id;
           const isCompleted = completedSteps.includes(step.id);

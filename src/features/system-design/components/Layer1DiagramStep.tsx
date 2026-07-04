@@ -54,75 +54,32 @@ export function Layer1DiagramStep() {
     }
   };
 
-  const handleContinue = async () => {
-    setIsLoading(true);
-    setUiError(null);
 
-    try {
-      const response = await fetch('/api/system-builder/layer1', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: { type: 'complete_step', stepId: 'diagram' },
-          state: graphState,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.state) {
-        syncFromGraphState(result.state);
-      }
-
-      if (!result.ok) {
-        const message =
-          result.error ?? result.message ?? 'Failed to continue.';
-        setUiError(message);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to continue.';
-      setUiError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
-            Task 5
+            Tasks 5 and 6
           </p>
           <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-            Diagram
+            Diagram Generation and Refinement
           </h2>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={isLoading || !diagramGenerationContext}
-            className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isLoading
-              ? 'Generating...'
-              : hasDiagram
-                ? 'Regenerate diagram'
-                : 'Generate diagram'}
-          </button>
-
-          {hasDiagram && (
+          {!hasDiagram && (
             <button
               type="button"
-              onClick={handleContinue}
-              disabled={isLoading}
-              className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
+              onClick={handleGenerate}
+              disabled={isLoading || !diagramGenerationContext}
+              className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50"
             >
-              Continue to Diagram Review
+              {isLoading ? 'Generating...' : 'Generate Diagram'}
             </button>
           )}
+
         </div>
       </div>
 
@@ -165,8 +122,9 @@ export function Layer1DiagramStep() {
           )}
 
           <p className="text-sm font-medium text-slate-500">
-            Edit the diagram directly below. Your changes are saved to this Layer
-            1 run automatically.
+            Review, edit, and refine the generated diagram below. Manual edits
+            and AI refinements remain inside this Diagram step until you accept
+            the final version.
           </p>
 
           <Layer1DiagramReview />

@@ -10,9 +10,7 @@ export const layer1StepOrder: Layer1StepId[] = [
   'input',
   'clarification',
   'diagram',
-  'review',
-  'final_docs',
-  'export',
+  'final_artifacts',
 ];
 
 export function getNextLayer1Step(
@@ -27,9 +25,7 @@ export function getStageForStep(stepId: Layer1StepId): Layer1Stage {
     input: 'input',
     clarification: 'clarification',
     diagram: 'diagram',
-    review: 'diagram_review',
-    final_docs: 'final_docs',
-    export: 'export',
+    final_artifacts: 'final_docs',
   };
 
   return stageByStep[stepId];
@@ -76,13 +72,22 @@ export function createInitialLayer1GraphState(): Layer1GraphState {
 
     understanding: createEmptySystemUnderstanding(),
     completeness: null,
+
+    task4AiUsage: {
+      calls: [],
+    },
+
+    task6AiUsage: {
+      calls: [],
+    },
+
     diagramGenerationContext: null,
 
     markdownSpec: '',
     markdownApproved: false,
 
     drawioXml: '',
-    diagramImage: undefined,
+    diagramImages: undefined,
     diagramSummary: '',
     diagramApproved: false,
     diagramRevisions: [],
