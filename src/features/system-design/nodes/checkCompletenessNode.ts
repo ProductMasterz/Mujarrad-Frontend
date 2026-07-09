@@ -3,6 +3,9 @@ import type { CompletenessReport } from '../types/layer1.types';
 import { completenessReportSchema } from '../schemas/layer1.schema';
 import { getCompletenessPrompt } from '../prompts/completenessPrompt';
 import {
+  applyDeterministicReadiness,
+} from '../utils/completeness';
+import {
   callAiProviderWithUsage,
   type AiTokenUsage,
 } from '../tools/aiProviderTool';
@@ -25,14 +28,24 @@ export async function checkCompletenessNode(
         modelRole: 'clarification',
         responseFormat: 'json_object',
         temperature: 0.2,
-        maxTokens: 700,
+
       },
     );
 
     usage = result.usage;
 
     const parsedJson = JSON.parse(result.content) as unknown;
-    const completeness = completenessReportSchema.parse(parsedJson);
+    const aiCompleteness =
+      completenessReportSchema.parse(
+        parsedJson,
+      );
+
+    const completeness =
+      applyDeterministicReadiness(
+        state.understanding,
+        aiCompleteness,
+        state.qaHistory.length,
+      );
 
     return {
       completeness,
@@ -44,10 +57,47 @@ export async function checkCompletenessNode(
         ? err.message
         : 'Unknown completeness check error.';
 
+    const fallbackReport:
+      CompletenessReport = {
+        overallScore: 0,
+
+        readyForDiagram:
+          false,
+
+        categories:
+          state.completeness
+            ?.categories ??
+          [],
+
+        missingCriticalItems:
+          state.completeness
+            ?.missingCriticalItems ??
+          [],
+
+        weakItems:
+          state.completeness
+            ?.weakItems ??
+          [],
+
+        suggestedNextQuestionCategory:
+          state.completeness
+            ?.suggestedNextQuestionCategory,
+      };
+
+    const completeness =
+      applyDeterministicReadiness(
+        state.understanding,
+        fallbackReport,
+        state.qaHistory.length,
+      );
+
     return {
-      completeness: state.completeness,
+      completeness,
+
       usage,
-      error: errorMessage,
+
+      error:
+        errorMessage,
     };
   }
 }

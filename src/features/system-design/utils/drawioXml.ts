@@ -23,7 +23,11 @@ function hasAttr(tag: string, name: string, value?: string): boolean {
 }
 
 function extractCells(rootContent: string): string[] {
-  return rootContent.match(/<mxCell\b[^>]*(?:\/>|>[\s\S]*?<\/mxCell>)/g) ?? [];
+  return (
+    rootContent.match(
+      /<mxCell\b[^>]*\/>|<mxCell\b[^>]*>[\s\S]*?<\/mxCell>/g,
+    ) ?? []
+  );
 }
 
 function getOpeningTag(cell: string): string {
@@ -109,18 +113,45 @@ function renumberNonRootCells(cells: string[], warnings: string[]): string[] {
 
     tag = setAttr(tag, 'id', newId);
 
+    const parent = getAttr(tag, 'parent');
     const source = getAttr(tag, 'source');
     const target = getAttr(tag, 'target');
 
+    if (
+      parent &&
+      parent !== '0' &&
+      parent !== '1' &&
+      idMap.has(parent)
+    ) {
+      tag = setAttr(
+        tag,
+        'parent',
+        idMap.get(parent)!,
+      );
+    }
+
     if (source && idMap.has(source)) {
-      tag = setAttr(tag, 'source', idMap.get(source)!);
+      tag = setAttr(
+        tag,
+        'source',
+        idMap.get(source)!,
+      );
     }
 
     if (target && idMap.has(target)) {
-      tag = setAttr(tag, 'target', idMap.get(target)!);
+      tag = setAttr(
+        tag,
+        'target',
+        idMap.get(target)!,
+      );
     }
 
-    renumbered.push(replaceOpeningTag(cell, tag));
+    renumbered.push(
+      replaceOpeningTag(
+        cell,
+        tag,
+      ),
+    );
   }
 
   if (duplicateCounter > 0 || normalCells.length > 0) {
@@ -150,9 +181,16 @@ function isValidCell(cell: string): boolean {
   // Every normal cell must be either a vertex or an edge.
   if (!isVertex && !isEdge) return false;
 
-  // Every normal cell must belong to the default layer unless it is an edge
-  // with source/target; still parent="1" is preferred and required here.
-  if (getAttr(tag, 'parent') !== '1') return false;
+  // Every normal cell must have a parent.
+  //
+  // Flat diagrams normally use parent="1".
+  // Professional container diagrams may instead use a group or swimlane
+  // mxCell as the parent. Whole-document reference validation happens later.
+  const parent = getAttr(tag, 'parent');
+
+  if (!parent) return false;
+
+  if (parent === id) return false;
 
   // Vertices need geometry with x/y/width/height.
   if (isVertex) {
@@ -177,6 +215,65 @@ function isValidCell(cell: string): boolean {
   }
 
   return true;
+}
+
+function hasParentCycle(
+  cells: string[],
+): boolean {
+  const parentById =
+    new Map<string, string>();
+
+  for (const cell of cells) {
+    const tag =
+      getOpeningTag(cell);
+
+    const id =
+      getAttr(tag, 'id');
+
+    const parent =
+      getAttr(tag, 'parent');
+
+    if (
+      id &&
+      parent &&
+      id !== '0' &&
+      id !== '1'
+    ) {
+      parentById.set(
+        id,
+        parent,
+      );
+    }
+  }
+
+  for (
+    const startId of
+    parentById.keys()
+  ) {
+    const visited =
+      new Set<string>();
+
+    let current:
+      string | undefined =
+      startId;
+
+    while (
+      current &&
+      current !== '0' &&
+      current !== '1'
+    ) {
+      if (visited.has(current)) {
+        return true;
+      }
+
+      visited.add(current);
+
+      current =
+        parentById.get(current);
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -217,12 +314,80 @@ export function isValidDrawioXml(xml: string): boolean {
     else normalCellCount += 1;
   }
 
-  if (!hasRoot0 || !hasRoot1 || normalCellCount === 0) return false;
+  if (
+    !hasRoot0 ||
+    !hasRoot1 ||
+    normalCellCount === 0
+  ) {
+    return false;
+  }
+
+  if (hasParentCycle(cells)) {
+    return false;
+  }
+
+  // Validate whole-document references only after every mxCell id is known.
+  //
+  // This allows professional Draw.io container structures such as:
+  // group -> child node
+  // swimlane -> child node
+  // parent group -> nested group
+  for (const cell of cells) {
+    const tag =
+      getOpeningTag(cell);
+
+    const id =
+      getAttr(tag, 'id');
+
+    if (!id || id === '0') {
+      continue;
+    }
+
+    const parent =
+      getAttr(tag, 'parent');
+
+    if (!parent || !ids.has(parent)) {
+      return false;
+    }
+
+    if (parent === id) {
+      return false;
+    }
+
+    if (hasAttr(tag, 'edge', '1')) {
+      const source =
+        getAttr(tag, 'source');
+
+      const target =
+        getAttr(tag, 'target');
+
+      if (
+        !source ||
+        !target ||
+        !ids.has(source) ||
+        !ids.has(target)
+      ) {
+        return false;
+      }
+
+      if (
+        source === '0' ||
+        source === '1' ||
+        target === '0' ||
+        target === '1'
+      ) {
+        return false;
+      }
+    }
+  }
 
   // Remove all valid mxCell blocks. Anything tag-like left directly under root
   // means orphan mxGeometry/mxPoint or another unsupported object exists.
   const leftover = rootContent
-    .replace(/<mxCell\b[^>]*(?:\/>|>[\s\S]*?<\/mxCell>)/g, '')
+    .replace(
+      /<mxCell\b[^>]*\/>|<mxCell\b[^>]*>[\s\S]*?<\/mxCell>/g,
+      '',
+    )
     .replace(/<!--[\s\S]*?-->/g, '')
     .trim();
 

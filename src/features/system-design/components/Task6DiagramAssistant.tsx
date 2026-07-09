@@ -82,7 +82,7 @@ export function Task6DiagramAssistant() {
 
   return (
     <>
-      <header className="border-b border-slate-200 p-5">
+      <header className="shrink-0 border-b border-slate-200 p-5">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
           Task 6
         </p>
@@ -97,30 +97,12 @@ export function Task6DiagramAssistant() {
         </p>
       </header>
 
-      <section className="min-h-0 flex-1 overflow-y-auto p-4">
-        <div className="space-y-3">
-          {graphState.diagramRevisions.map(
-            (revision, index) => (
-              <div
-                key={revision.id}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-3"
-              >
-                <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  Revision {index + 1}
-                </div>
-
-                <div className="mt-1 text-sm leading-5 text-slate-700">
-                  {revision.instruction}
-                </div>
-              </div>
-            ),
-          )}
-        </div>
-      </section>
-
-      <section className="border-t border-slate-200 p-4">
+      <section className="shrink-0 p-4">
         {uiError && (
-          <div className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+          <div
+            role="alert"
+            className="mb-3 max-h-20 overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium leading-5 text-red-700 [overflow-wrap:anywhere]"
+          >
             {uiError}
           </div>
         )}
@@ -132,7 +114,7 @@ export function Task6DiagramAssistant() {
           }
           placeholder="Example: Add an admin dashboard connected to the backend and database."
           disabled={isLoading}
-          className="min-h-28 w-full resize-none rounded-xl border border-slate-200 p-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+          className="h-32 w-full resize-y rounded-xl border border-slate-200 p-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
         />
 
         <button
@@ -152,7 +134,7 @@ export function Task6DiagramAssistant() {
             : 'Apply AI Change'}
         </button>
 
-        <div className="mt-4">
+        <div className="mt-4 max-h-44 overflow-y-auto">
           <Task6AiUsagePanel
             calls={graphState.task6AiUsage.calls}
           />

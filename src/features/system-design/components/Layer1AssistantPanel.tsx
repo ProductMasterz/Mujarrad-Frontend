@@ -36,8 +36,8 @@ export function Layer1AssistantPanel() {
     Boolean(graphState.drawioXml)
   ) {
     return (
-      <div className="space-y-4">
-        <AssistantContainer>
+      <div className="max-h-[calc(100vh-3rem)] min-h-0 space-y-4 overflow-y-auto overscroll-contain pr-1">
+        <AssistantContainer tall>
           <Task6DiagramAssistant />
         </AssistantContainer>
 
@@ -53,11 +53,20 @@ export function Layer1AssistantPanel() {
 
 function AssistantContainer({
   children,
+  tall = false,
 }: {
   children: React.ReactNode;
+  tall?: boolean;
 }) {
   return (
-    <aside className="flex h-[680px] max-h-[calc(100vh-3rem)] min-h-[520px] flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
+    <aside
+      className={[
+        'flex flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/70',
+        tall
+          ? 'h-[620px] min-h-[560px]'
+          : 'h-[680px] min-h-[520px]',
+      ].join(' ')}
+    >
       {children}
     </aside>
   );

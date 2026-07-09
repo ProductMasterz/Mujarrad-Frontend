@@ -36,6 +36,126 @@ function asStringArray(value: unknown, fallback: string[] = []): string[] {
     .filter(Boolean);
 }
 
+function mergeUniqueStrings(
+  previous: string[],
+  incoming: string[],
+): string[] {
+  const seen =
+    new Set<string>();
+
+  return [
+    ...previous,
+    ...incoming,
+  ].filter((item) => {
+    const key =
+      item
+        .trim()
+        .toLowerCase();
+
+    if (
+      !key ||
+      seen.has(key)
+    ) {
+      return false;
+    }
+
+    seen.add(key);
+
+    return true;
+  });
+}
+
+function normalizeIdentity(
+  value: string,
+): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9]+/g,
+      ' ',
+    )
+    .trim();
+}
+
+function mergeStructuredItems<
+  T extends {
+    id: string;
+  },
+>(
+  previous: T[],
+  incoming: T[],
+  getIdentity: (
+    item: T,
+  ) => string,
+  mergeItem?: (
+    previousItem: T,
+    incomingItem: T,
+  ) => T,
+): T[] {
+  const merged =
+    new Map<string, T>();
+
+  previous.forEach(
+    (item) => {
+      const key =
+        normalizeIdentity(
+          getIdentity(item),
+        );
+
+      if (key) {
+        merged.set(
+          key,
+          item,
+        );
+      }
+    },
+  );
+
+  incoming.forEach(
+    (item) => {
+      const key =
+        normalizeIdentity(
+          getIdentity(item),
+        );
+
+      if (!key) {
+        return;
+      }
+
+      const existing =
+        merged.get(key);
+
+      if (!existing) {
+        merged.set(
+          key,
+          item,
+        );
+
+        return;
+      }
+
+      merged.set(
+        key,
+        mergeItem
+          ? mergeItem(
+              existing,
+              item,
+            )
+          : {
+              ...existing,
+              ...item,
+              id: existing.id,
+            },
+      );
+    },
+  );
+
+  return Array.from(
+    merged.values(),
+  );
+}
+
 function asRecordArray(value: unknown): UnknownRecord[] {
   if (!Array.isArray(value)) return [];
 
@@ -185,24 +305,203 @@ function normalizeSystemUnderstanding(
   const normalized: SystemUnderstanding = {
     summary: asString(input.summary, previous.summary),
     goal: asString(input.goal, previous.goal),
-    primaryUsers: asStringArray(input.primaryUsers, previous.primaryUsers),
-    secondaryUsers: asStringArray(input.secondaryUsers, previous.secondaryUsers),
-    roles: asStringArray(input.roles, previous.roles),
-    permissions: asStringArray(input.permissions, previous.permissions),
-    workflows: normalizeWorkflows(input.workflows, previous.workflows),
-    alternativeWorkflows: normalizeWorkflows(input.alternativeWorkflows, previous.alternativeWorkflows),
-    inputs: normalizeNamedDescriptions(input.inputs, previous.inputs),
-    outputs: normalizeNamedDescriptions(input.outputs, previous.outputs),
-    entities: normalizeEntities(input.entities, previous.entities),
-    businessRules: normalizeBusinessRules(input.businessRules, previous.businessRules),
-    decisionLogic: normalizeDecisionLogic(input.decisionLogic, previous.decisionLogic),
-    validationRules: normalizeValidationRules(input.validationRules, previous.validationRules),
-    edgeCases: normalizeEdgeCases(input.edgeCases, previous.edgeCases),
-    errorCases: normalizeErrorCases(input.errorCases, previous.errorCases),
-    integrations: normalizeIntegrations(input.integrations, previous.integrations),
-    notifications: normalizeNotifications(input.notifications, previous.notifications),
-    reporting: normalizeReporting(input.reporting, previous.reporting),
-    security: normalizeSecurity(input.security, previous.security),
+    primaryUsers: mergeUniqueStrings(
+      previous.primaryUsers,
+      asStringArray(input.primaryUsers, []),
+    ),
+    secondaryUsers: mergeUniqueStrings(
+      previous.secondaryUsers,
+      asStringArray(input.secondaryUsers, []),
+    ),
+    roles: mergeUniqueStrings(
+      previous.roles,
+      asStringArray(input.roles, []),
+    ),
+    permissions: mergeUniqueStrings(
+      previous.permissions,
+      asStringArray(input.permissions, []),
+    ),
+    workflows: mergeStructuredItems(
+      previous.workflows,
+      normalizeWorkflows(
+        input.workflows,
+        [],
+      ),
+      (item) =>
+        item.title,
+      (
+        previousItem,
+        incomingItem,
+      ) => ({
+        ...previousItem,
+        ...incomingItem,
+        id: previousItem.id,
+        steps: mergeUniqueStrings(
+          previousItem.steps,
+          incomingItem.steps,
+        ),
+      }),
+    ),
+
+    alternativeWorkflows:
+      mergeStructuredItems(
+        previous.alternativeWorkflows,
+        normalizeWorkflows(
+          input.alternativeWorkflows,
+          [],
+        ),
+        (item) =>
+          item.title,
+        (
+          previousItem,
+          incomingItem,
+        ) => ({
+          ...previousItem,
+          ...incomingItem,
+          id: previousItem.id,
+          steps: mergeUniqueStrings(
+            previousItem.steps,
+            incomingItem.steps,
+          ),
+        }),
+      ),
+
+    inputs: mergeStructuredItems(
+      previous.inputs,
+      normalizeNamedDescriptions(
+        input.inputs,
+        [],
+      ),
+      (item) =>
+        item.name,
+    ),
+
+    outputs: mergeStructuredItems(
+      previous.outputs,
+      normalizeNamedDescriptions(
+        input.outputs,
+        [],
+      ),
+      (item) =>
+        item.name,
+    ),
+
+    entities: mergeStructuredItems(
+      previous.entities,
+      normalizeEntities(
+        input.entities,
+        [],
+      ),
+      (item) =>
+        item.name,
+      (
+        previousItem,
+        incomingItem,
+      ) => ({
+        ...previousItem,
+        ...incomingItem,
+        id: previousItem.id,
+        attributes: mergeUniqueStrings(
+          previousItem.attributes,
+          incomingItem.attributes,
+        ),
+      }),
+    ),
+
+    businessRules:
+      mergeStructuredItems(
+        previous.businessRules,
+        normalizeBusinessRules(
+          input.businessRules,
+          [],
+        ),
+        (item) =>
+          item.rule,
+      ),
+
+    decisionLogic:
+      mergeStructuredItems(
+        previous.decisionLogic,
+        normalizeDecisionLogic(
+          input.decisionLogic,
+          [],
+        ),
+        (item) =>
+          item.condition,
+      ),
+
+    validationRules:
+      mergeStructuredItems(
+        previous.validationRules,
+        normalizeValidationRules(
+          input.validationRules,
+          [],
+        ),
+        (item) =>
+          `${item.field}:${item.rule}`,
+      ),
+
+    edgeCases: mergeStructuredItems(
+      previous.edgeCases,
+      normalizeEdgeCases(
+        input.edgeCases,
+        [],
+      ),
+      (item) =>
+        item.case,
+    ),
+
+    errorCases: mergeStructuredItems(
+      previous.errorCases,
+      normalizeErrorCases(
+        input.errorCases,
+        [],
+      ),
+      (item) =>
+        item.error,
+    ),
+
+    integrations:
+      mergeStructuredItems(
+        previous.integrations,
+        normalizeIntegrations(
+          input.integrations,
+          [],
+        ),
+        (item) =>
+          item.name,
+      ),
+
+    notifications:
+      mergeStructuredItems(
+        previous.notifications,
+        normalizeNotifications(
+          input.notifications,
+          [],
+        ),
+        (item) =>
+          item.trigger,
+      ),
+
+    reporting: mergeStructuredItems(
+      previous.reporting,
+      normalizeReporting(
+        input.reporting,
+        [],
+      ),
+      (item) =>
+        item.report,
+    ),
+
+    security: mergeStructuredItems(
+      previous.security,
+      normalizeSecurity(
+        input.security,
+        [],
+      ),
+      (item) =>
+        item.requirement,
+    ),
     openQuestions: asStringArray(input.openQuestions, previous.openQuestions),
     assumptions: asStringArray(input.assumptions, previous.assumptions),
     confidence: Math.min(1, Math.max(0, asNumber(input.confidence, previous.confidence))),
@@ -221,27 +520,97 @@ export async function updateUnderstandingNode(
   let usage: AiTokenUsage | null = null;
 
   try {
-    const prompt = getUnderstandingUpdatePrompt(state);
+    const prompt =
+      getUnderstandingUpdatePrompt(state);
 
-    const result = await callAiProviderWithUsage(
-      [{ role: 'user', content: prompt }],
-      {
-        modelRole: 'clarification',
-        responseFormat: 'json_object',
-        temperature: 0.2,
-        maxTokens: 2200,
-      },
-    );
+    const requestUnderstanding = async (
+      retry = false,
+    ) =>
+      callAiProviderWithUsage(
+        [
+          {
+            role: 'user',
+            content: retry
+              ? `${prompt}
 
-    usage = result.usage;
+RETRY REQUIREMENT
 
-    const parsedJson = JSON.parse(result.content) as unknown;
-    const understanding = normalizeSystemUnderstanding(
-      parsedJson,
-      state.understanding,
-    );
+Your previous response could not be parsed or validated as the required SystemUnderstanding JSON.
 
-    return { understanding, usage };
+Return exactly one complete updated SystemUnderstanding object.
+
+Requirements:
+- Preserve previously established facts unless newer evidence changes them.
+- Incorporate the newest answer.
+- Keep arrays concise but complete.
+- Do not include markdown, code fences, commentary, or trailing text.
+- Before finishing, ensure every opened string, object, and array is closed.`
+              : prompt,
+          },
+        ],
+        {
+          modelRole: 'clarification',
+          responseFormat: 'json_object',
+          temperature: retry
+            ? 0.05
+            : 0.2,
+
+        },
+      );
+
+    const requestAndParse = async (
+      retry = false,
+    ): Promise<{
+      understanding: SystemUnderstanding;
+      usage: AiTokenUsage | null;
+    }> => {
+      const result =
+        await requestUnderstanding(
+          retry,
+        );
+
+      const parsedJson =
+        JSON.parse(
+          result.content,
+        ) as unknown;
+
+      return {
+        understanding:
+          normalizeSystemUnderstanding(
+            parsedJson,
+            state.understanding,
+          ),
+
+        usage:
+          result.usage,
+      };
+    };
+
+    try {
+      const firstAttempt =
+        await requestAndParse();
+
+      return {
+        understanding:
+          firstAttempt.understanding,
+
+        usage:
+          firstAttempt.usage,
+      };
+    } catch {
+      const retryAttempt =
+        await requestAndParse(
+          true,
+        );
+
+      return {
+        understanding:
+          retryAttempt.understanding,
+
+        usage:
+          retryAttempt.usage,
+      };
+    }
   } catch (err) {
     const errorMessage =
       err instanceof Error

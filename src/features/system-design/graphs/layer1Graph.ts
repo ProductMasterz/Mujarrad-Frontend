@@ -12,6 +12,7 @@ import {
   type DiagramRevision,
   type QuestionAnswer,
   type Task4AiOperation,
+  type Task6AiOperation,
 } from '../types/layer1.types';
 import { checkCompletenessNode } from '../nodes/checkCompletenessNode';
 import { generateDiagramNode } from '../nodes/generateDiagramNode';
@@ -101,6 +102,7 @@ function appendTask4AiUsage(
 
 function appendTask6AiUsage(
   state: Layer1GraphState,
+  operation: Task6AiOperation,
   usage: AiTokenUsage | null,
 ): Layer1GraphState {
   if (!usage) {
@@ -114,7 +116,7 @@ function appendTask6AiUsage(
         ...state.task6AiUsage.calls,
         {
           id: createSystemDesignId('ai-usage'),
-          operation: 'diagram_refinement',
+          operation,
           promptTokens: usage.promptTokens,
           completionTokens: usage.completionTokens,
           totalTokens: usage.totalTokens,
@@ -583,7 +585,13 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
 async function updateUnderstandingGraphNode(
   runtime: RuntimeState,
 ): Promise<Partial<RuntimeState>> {
-  if (!runtime.ok || runtime.event.type !== 'submit_answer') {
+  if (
+    !runtime.ok ||
+    (
+      runtime.event.type !== 'submit_input' &&
+      runtime.event.type !== 'submit_answer'
+    )
+  ) {
     return {};
   }
 
@@ -592,20 +600,25 @@ async function updateUnderstandingGraphNode(
 
   if (error) {
     return {
-      ok: true,
-      graphState: addGraphWarning(
-        appendTask4AiUsage(
-          runtime.graphState,
-          'understanding_update',
-          usage,
+      ok: false,
+
+      graphState:
+        addGraphWarning(
+          appendTask4AiUsage(
+            runtime.graphState,
+            'understanding_update',
+            usage,
+          ),
+          error,
+          'update_understanding',
+          'update_understanding',
         ),
-        error,
-        'update_understanding',
-        'ask_question',
-      ),
-      skipCompleteness: true,
+
+      skipCompleteness:
+        true,
+
       message:
-        'Answer saved. Understanding update failed, but the user can continue or skip to diagram.',
+        `System understanding update failed: ${error}`,
     };
   }
 
@@ -628,14 +641,21 @@ async function updateUnderstandingGraphNode(
 async function checkCompletenessGraphNode(
   runtime: RuntimeState,
 ): Promise<Partial<RuntimeState>> {
-  if (!runtime.ok || runtime.event.type !== 'submit_answer' || runtime.skipCompleteness) {
+  if (
+    !runtime.ok ||
+    (
+      runtime.event.type !== 'submit_input' &&
+      runtime.event.type !== 'submit_answer'
+    ) ||
+    runtime.skipCompleteness
+  ) {
     return {};
   }
 
   const { completeness, usage, error } =
     await checkCompletenessNode(runtime.graphState);
 
-  if (error || !completeness) {
+  if (!completeness) {
     return {
       ok: true,
       graphState: addGraphWarning(
@@ -665,15 +685,37 @@ async function checkCompletenessGraphNode(
       nextAction: 'check_completeness',
       updatedAt: createIsoTimestamp(),
     },
-    message: 'Completeness checked.',
+    message:
+      error
+        ? `Readiness calculated deterministically. Advisory completeness analysis was unavailable: ${error}`
+        : 'Completeness checked.',
   };
 }
 
 async function decideNextActionGraphNode(
   runtime: RuntimeState,
 ): Promise<Partial<RuntimeState>> {
-  if (!runtime.ok || runtime.event.type !== 'submit_answer') {
+  if (
+    !runtime.ok ||
+    (
+      runtime.event.type !== 'submit_input' &&
+      runtime.event.type !== 'submit_answer'
+    )
+  ) {
     return {};
+  }
+
+  if (runtime.event.type === 'submit_input') {
+    return {
+      ok: true,
+      graphState: {
+        ...runtime.graphState,
+        nextAction: 'ask_question',
+        updatedAt: createIsoTimestamp(),
+      },
+      message:
+        'Initial system understanding and clarification readiness calculated.',
+    };
   }
 
   if (runtime.skipCompleteness) {
@@ -780,17 +822,23 @@ async function refineDiagramGraphNode(
     xml,
     summary,
     warnings,
-    usage,
+    usageRecords,
     error,
   } = await refineDiagramNode(
     runtime.graphState,
     instruction,
   );
 
-  const stateWithUsage = appendTask6AiUsage(
-    runtime.graphState,
-    usage,
-  );
+  const stateWithUsage =
+    usageRecords.reduce(
+      (currentState, record) =>
+        appendTask6AiUsage(
+          currentState,
+          record.operation,
+          record.usage,
+        ),
+      runtime.graphState,
+    );
 
   if (error || !xml) {
     return {
@@ -885,7 +933,10 @@ function routeAfterDispatch(runtime: RuntimeState): string {
     return END;
   }
 
-  if (runtime.event.type === 'submit_answer') {
+  if (
+    runtime.event.type === 'submit_input' ||
+    runtime.event.type === 'submit_answer'
+  ) {
     return 'update_understanding';
   }
 

@@ -371,9 +371,25 @@ export interface Task4AiUsage {
   calls: AiUsageRecord[];
 }
 
+export type Task6AiOperation =
+  | 'refinement_intent_analysis'
+  | 'current_diagram_analysis'
+  | 'context_selection'
+  | 'architecture_reasoning'
+  | 'representation_planning'
+  | 'transformation_planning'
+  | 'semantic_diagram_synthesis'
+  | 'layout_planning'
+  | 'diagram_refinement'
+  | 'architecture_critique'
+  | 'representation_critique'
+  | 'coverage_critique'
+  | 'visual_critique'
+  | 'diagram_repair';
+
 export interface Task6AiUsageRecord {
   id: string;
-  operation: 'diagram_refinement';
+  operation: Task6AiOperation;
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;

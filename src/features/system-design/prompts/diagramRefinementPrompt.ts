@@ -1,4 +1,11 @@
 import type { Layer1GraphState } from '../types/graph.types';
+import type {
+  CurrentDiagramAnalysis,
+  DiagramContextSelection,
+  DiagramRefinementIntent,
+  DiagramTransformationPlan,
+  SemanticDiagramModel,
+} from '../types/diagramIntelligence.types';
 import {
   compactJson,
   compactRevisionHistory,
@@ -20,8 +27,22 @@ export function getDiagramRefinementPrompt(input: {
   state: Layer1GraphState;
   currentXml: string;
   refinementInstruction: string;
+  refinementIntent: DiagramRefinementIntent;
+  currentDiagramAnalysis?: CurrentDiagramAnalysis;
+  contextSelection?: DiagramContextSelection;
+  transformationPlan?: DiagramTransformationPlan;
+  semanticDiagram?: SemanticDiagramModel;
 }): string {
-  const { state, currentXml, refinementInstruction } = input;
+  const {
+    state,
+    currentXml,
+    refinementInstruction,
+    refinementIntent,
+    currentDiagramAnalysis,
+    contextSelection,
+    transformationPlan,
+    semanticDiagram,
+  } = input;
   const context = state.diagramGenerationContext;
 
   if (!context) {
@@ -41,11 +62,43 @@ export function getDiagramRefinementPrompt(input: {
   return `REQUEST
 ${refinementInstruction.trim()}
 
+REFINEMENT_INTENT
+${compactJson(refinementIntent)}
+
+CURRENT_DIAGRAM_ANALYSIS
+${
+  currentDiagramAnalysis
+    ? compactJson(currentDiagramAnalysis)
+    : 'Not required for this fast local edit.'
+}
+
 CURRENT_XML
 ${currentXml}
 
-SYSTEM_CONTEXT
-${compactJson(relevantContext)}
+SELECTED_SYSTEM_CONTEXT
+${
+  contextSelection
+    ? compactJson(contextSelection)
+    : compactJson({
+        status: relevantContext.status,
+        understandingSummary:
+          relevantContext.understanding.summary,
+      })
+}
+
+TRANSFORMATION_PLAN
+${
+  transformationPlan
+    ? compactJson(transformationPlan)
+    : 'No expert transformation plan required for this fast local edit.'
+}
+
+TARGET_SEMANTIC_DIAGRAM
+${
+  semanticDiagram
+    ? compactJson(semanticDiagram)
+    : 'No semantic reconstruction required for this fast local edit.'
+}
 
 REVISION_HISTORY
 ${compactRevisionHistory(state.diagramRevisions)}

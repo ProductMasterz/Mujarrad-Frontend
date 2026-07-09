@@ -1,97 +1,291 @@
-import type { Layer1GraphState } from '../types/graph.types';
+import type {
+  Layer1GraphState,
+} from '../types/graph.types';
+
+import type {
+  DiagramType,
+} from '../types/diagramIntelligence.types';
+
+import type {
+  SystemUnderstanding,
+} from '../types/layer1.types';
+
 import {
-  DIAGRAM_GENERATION_SYSTEM_PROMPT,
-  getDiagramGenerationPrompt,
-} from '../prompts/diagramGenerationPrompt';
-import { callAiProvider } from '../tools/aiProviderTool';
-import { extractAndRepairDrawioXml } from '../utils/drawioXml';
+  buildCompactSemanticDiagram,
+} from '../diagram-intelligence/buildCompactSemanticDiagram';
+
+import {
+  compileSemanticDiagramToDrawio,
+} from '../diagram-intelligence/compileSemanticDiagramToDrawio';
+
+import {
+  extractAndRepairDrawioXml,
+} from '../utils/drawioXml';
 
 export interface GenerateDiagramNodeResult {
-  xml: string | null;
-  summary: string;
-  warnings: string[];
-  error?: string;
+  xml:
+    string | null;
+
+  summary:
+    string;
+
+  warnings:
+    string[];
+
+  error?:
+    string;
 }
 
-function buildDiagramSummary(state: Layer1GraphState): string {
-  const understanding = state.understanding;
-  const summary = understanding.summary?.trim();
-  const goal = understanding.goal?.trim();
+function buildDiagramSummary(
+  state: Layer1GraphState,
+): string {
+  const summary =
+    state.understanding.summary
+      ?.trim();
+
+  const goal =
+    state.understanding.goal
+      ?.trim();
 
   if (summary) {
     return summary;
   }
 
   if (goal) {
-    return `Initial system diagram for: ${goal}`;
+    return `Professional initial system diagram for: ${goal}`;
   }
 
-  return 'Initial system diagram generated from the Layer 1 clarification.';
+  return 'Professional initial system diagram generated from the cumulative Layer 1 understanding.';
+}
+
+function normalizedSearchText(
+  understanding:
+    SystemUnderstanding,
+): string {
+  return [
+    understanding.summary,
+    understanding.goal,
+
+    ...understanding.primaryUsers,
+
+    ...understanding.secondaryUsers,
+
+    ...understanding.roles,
+
+    ...understanding.workflows.map(
+      (workflow) =>
+        [
+          workflow.title,
+          ...workflow.steps,
+        ].join(' '),
+    ),
+
+    ...understanding.integrations.map(
+      (integration) =>
+        JSON.stringify(
+          integration,
+        ),
+    ),
+  ]
+    .join(' ')
+    .toLowerCase();
+}
+
+function selectInitialDiagramType(
+  understanding:
+    SystemUnderstanding,
+): DiagramType {
+  const searchText =
+    normalizedSearchText(
+      understanding,
+    );
+
+  if (
+    /\brag\b|retrieval augmented|vector database|embedding/.test(
+      searchText,
+    )
+  ) {
+    return 'rag_architecture';
+  }
+
+  if (
+    /\bagent\b|multi-agent|agentic|orchestrator agent/.test(
+      searchText,
+    )
+  ) {
+    return 'agent_architecture';
+  }
+
+  if (
+    /\bmachine learning\b|\bmodel training\b|\binference\b|\bprediction\b/.test(
+      searchText,
+    )
+  ) {
+    return 'ai_ml_pipeline';
+  }
+
+  if (
+    /\bevent-driven\b|message broker|\bqueue\b|\bstream\b|pubsub|publish subscribe/.test(
+      searchText,
+    )
+  ) {
+    return 'event_driven_topology';
+  }
+
+  if (
+    understanding.integrations.length >=
+    4
+  ) {
+    return 'integration_architecture';
+  }
+
+  if (
+    understanding.roles.length >=
+      3 &&
+    understanding.workflows.length >=
+      3
+  ) {
+    return 'swimlane';
+  }
+
+  return 'software_architecture';
 }
 
 /**
- * Task 5 — Draw.io diagram generation node.
+ * Task 5 — Professional initial diagram generation.
  *
- * Generates the first editable diagram strictly from the Task 4
- * diagramGenerationContext. The AI output is extracted, sanitized, repaired,
- * and validated before it is returned. Invalid XML is rejected (returned as an
- * error) so it is never loaded into the embed.
+ * LangGraph remains the orchestrator.
+ *
+ * The AI returns only a tiny compact semantic
+ * diagram specification.
+ *
+ * TypeScript deterministically converts that
+ * specification into SemanticDiagramModel,
+ * performs layout, compiles Draw.io XML,
+ * repairs it, and validates it.
  */
 export async function generateDiagramNode(
-  state: Layer1GraphState,
+  state:
+    Layer1GraphState,
 ): Promise<GenerateDiagramNodeResult> {
-  const context = state.diagramGenerationContext;
-
-  if (!context) {
+  if (
+    !state.diagramGenerationContext
+  ) {
     return {
-      xml: null,
-      summary: '',
-      warnings: [],
+      xml:
+        null,
+
+      summary:
+        '',
+
+      warnings:
+        [],
+
       error:
         'Diagram generation requires a prepared diagramGenerationContext. Complete or skip clarification first.',
     };
   }
 
   try {
-    const raw = await callAiProvider(
-      [
-        { role: 'system', content: DIAGRAM_GENERATION_SYSTEM_PROMPT },
-        { role: 'user', content: getDiagramGenerationPrompt(context) },
-      ],
-      {
-        temperature: 0,
-        maxTokens: 1800,
-        modelRole: 'diagram',
-        responseFormat: 'text',
-      },
-    );
+    const targetDiagramType =
+      selectInitialDiagramType(
+        state.understanding,
+      );
 
-    const { xml, warnings, valid } = extractAndRepairDrawioXml(raw);
+    const compactResult =
+      await buildCompactSemanticDiagram({
+        understanding:
+          state.understanding,
 
-    if (!valid) {
+        targetDiagramType,
+
+        audience:
+          'mixed_technical',
+      });
+
+    if (
+      compactResult.error ||
+      !compactResult.semanticDiagram
+    ) {
       return {
-        xml: null,
-        summary: '',
-        warnings,
+        xml:
+          null,
+
+        summary:
+          '',
+
+        warnings:
+          compactResult.warnings,
+
         error:
-          'The AI did not return valid Draw.io XML. Please try generating the diagram again.',
+          compactResult.error
+            ? `Compact diagram generation failed: ${compactResult.error}`
+            : 'Compact diagram generation failed.',
+      };
+    }
+
+    const compiled =
+      compileSemanticDiagramToDrawio(
+        compactResult.semanticDiagram,
+      );
+
+    const repaired =
+      extractAndRepairDrawioXml(
+        compiled.xml,
+      );
+
+    const warnings = [
+      ...compactResult.warnings,
+      ...compiled.warnings,
+      ...repaired.warnings,
+    ];
+
+    if (
+      !repaired.valid
+    ) {
+      return {
+        xml:
+          null,
+
+        summary:
+          '',
+
+        warnings,
+
+        error:
+          'The compact semantic diagram compiled to invalid Draw.io XML.',
       };
     }
 
     return {
-      xml,
-      summary: buildDiagramSummary(state),
+      xml:
+        repaired.xml,
+
+      summary:
+        buildDiagramSummary(
+          state,
+        ),
+
       warnings,
     };
-  } catch (err) {
+  } catch (error) {
     const message =
-      err instanceof Error ? err.message : 'Diagram generation failed.';
+      error instanceof Error
+        ? error.message
+        : 'Diagram generation failed.';
 
     return {
-      xml: null,
-      summary: '',
-      warnings: [],
-      error: message,
+      xml:
+        null,
+
+      summary:
+        '',
+
+      warnings:
+        [],
+
+      error:
+        message,
     };
   }
 }
