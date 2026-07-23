@@ -38,7 +38,8 @@ function shouldRetry(error: AxiosError): boolean {
  * Next.js will proxy /api/* requests to the backend
  * In test environment, use localhost for MSW interception
  */
-const API_BASE_URL = process.env.NODE_ENV === 'test'
+const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+const API_BASE_URL = isTestEnv
   ? 'http://localhost:3000/api'
   : '/api';
 

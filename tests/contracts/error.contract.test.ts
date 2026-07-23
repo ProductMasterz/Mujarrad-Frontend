@@ -203,7 +203,7 @@ describe('Error Response Contract Tests - RFC 7807', () => {
       jest.spyOn(console, 'error').mockImplementation(() => {});
 
       server.use(
-        http.delete('http://localhost:3000/api/nodes/:nodeId/attributes/:attrId', () => {
+        http.delete('http://localhost:3000/api/attributes/:attrId', () => {
           return HttpResponse.json(
             {
               type: 'https://api.mujarrad.com/errors/forbidden',

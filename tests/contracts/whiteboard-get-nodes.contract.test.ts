@@ -97,8 +97,8 @@ describe('API Contract: GET /api/spaces/{slug}/nodes (Whiteboard)', () => {
         element_subtype: 'shape_rectangle',
       });
 
-      expect(response.content).toHaveLength(1);
-      expect(response.content[0]).toMatchObject({
+      expect(response).toHaveLength(1);
+      expect(response[0]).toMatchObject({
         id: expect.any(String),
         title: expect.any(String),
         node_type: expect.stringMatching(/^(REGULAR|CONTEXT|TEMPLATE|ATTRIBUTE)$/),
@@ -139,8 +139,7 @@ describe('API Contract: GET /api/spaces/{slug}/nodes (Whiteboard)', () => {
       const { whiteboardService } = await import('@/services/api/whiteboard.service');
       const response = await whiteboardService.getWhiteboardNodes('empty-space');
 
-      expect(response.content).toHaveLength(0);
-      expect(response.totalElements).toBe(0);
+      expect(response).toHaveLength(0);
     });
 
     it('should return multiple element subtypes when filtering', async () => {
@@ -219,9 +218,9 @@ describe('API Contract: GET /api/spaces/{slug}/nodes (Whiteboard)', () => {
       const { whiteboardService } = await import('@/services/api/whiteboard.service');
       const response = await whiteboardService.getWhiteboardNodes(testSpaceSlug);
 
-      expect(response.content).toHaveLength(2);
-      expect(response.content[0].node_details.element_subtype).toBe('shape_rectangle');
-      expect(response.content[1].node_details.element_subtype).toBe('text');
+      expect(response).toHaveLength(2);
+      expect(response[0].node_details.element_subtype).toBe('shape_rectangle');
+      expect(response[1].node_details.element_subtype).toBe('text');
     });
 
     it('should handle 404 for non-existent space', async () => {

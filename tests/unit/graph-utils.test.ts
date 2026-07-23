@@ -29,6 +29,10 @@ const fullViewMode: GraphViewMode = {
   showTemplate: true,
   showBlocks: true,
 
+  // AI / Manual filter
+  showAiCreated: true,
+  showManualCreated: true,
+
   // Other
   showReferences: true,
 };

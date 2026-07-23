@@ -210,19 +210,18 @@ describe('Space API Contract Tests', () => {
       expect(space.name).toBe('Test Space');
     });
 
-    it('should get space by slug by reading spaces list and filtering locally', async () => {
+    it('should get space by slug via the dedicated slug endpoint', async () => {
       server.use(
-        http.get('http://localhost:3000/api/spaces', () => {
-          return HttpResponse.json([
-            {
-              id: 'space-uuid-found',
-              name: 'Test Space',
-              slug: 'test-space',
-              ownerId: 'user-uuid-456',
-              createdAt: '2025-10-07T10:00:00Z',
-              updatedAt: '2025-10-07T15:30:00Z',
-            },
-          ]);
+        http.get('http://localhost:3000/api/spaces/slug/:slug', ({ params }) => {
+          const { slug } = params;
+          return HttpResponse.json({
+            id: 'space-uuid-found',
+            name: 'Test Space',
+            slug,
+            ownerId: 'user-uuid-456',
+            createdAt: '2025-10-07T10:00:00Z',
+            updatedAt: '2025-10-07T15:30:00Z',
+          });
         })
       );
 
@@ -247,8 +246,8 @@ describe('Space API Contract Tests', () => {
         http.get('http://localhost:3000/api/spaces/:id', () => {
           return HttpResponse.json(mockSpace);
         }),
-        http.get('http://localhost:3000/api/spaces', () => {
-          return HttpResponse.json([mockSpace]);
+        http.get('http://localhost:3000/api/spaces/slug/:slug', () => {
+          return HttpResponse.json(mockSpace);
         })
       );
 
@@ -276,32 +275,29 @@ describe('Space API Contract Tests', () => {
       await expect(spaceService.getSpace('nonexistent')).rejects.toThrow();
     });
 
-    it('should throw when slug is missing from fetched spaces list', async () => {
+    it('should throw when the slug endpoint returns 404 Not Found', async () => {
       server.use(
-        http.get('http://localhost:3000/api/spaces', () => {
-          return HttpResponse.json([
+        http.get('http://localhost:3000/api/spaces/slug/:slug', () => {
+          return HttpResponse.json(
             {
-              id: 'space-uuid-111',
-              name: 'Another Space',
-              slug: 'another-space',
-              ownerId: 'user-uuid-456',
-              createdAt: '2025-10-07T10:00:00Z',
-              updatedAt: '2025-10-07T15:30:00Z',
+              type: 'https://api.mujarrad.com/errors/not-found',
+              title: 'Space Not Found',
+              status: 404,
+              detail: 'Space with slug "nonexistent-slug" does not exist',
             },
-          ]);
+            { status: 404 }
+          );
         })
       );
 
-      await expect(spaceService.getSpaceBySlug('nonexistent-slug')).rejects.toThrow(
-        'Space with slug "nonexistent-slug" not found'
-      );
+      await expect(spaceService.getSpaceBySlug('nonexistent-slug')).rejects.toThrow();
     });
   });
 
-  describe('T004 Extended: PUT /api/spaces/{id} and DELETE /api/spaces/{id}', () => {
+  describe('T004 Extended: PATCH /api/spaces/{id} and DELETE /api/spaces/{id}', () => {
     it('should update space name and return updated space', async () => {
       server.use(
-        http.put('http://localhost:3000/api/spaces/:id', async ({ params, request }) => {
+        http.patch('http://localhost:3000/api/spaces/:id', async ({ params, request }) => {
           const { id } = params;
           const body = (await request.json()) as any;
           return HttpResponse.json({
@@ -325,7 +321,7 @@ describe('Space API Contract Tests', () => {
 
     it('should update space slug and return updated space', async () => {
       server.use(
-        http.put('http://localhost:3000/api/spaces/:id', async ({ params, request }) => {
+        http.patch('http://localhost:3000/api/spaces/:id', async ({ params, request }) => {
           const { id } = params;
           const body = (await request.json()) as any;
           return HttpResponse.json({

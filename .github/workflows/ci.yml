@@ -30,7 +30,4 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Unit & integration tests
-        # NOTE: this repo has pre-existing failing tests (unrelated to CI setup),
-        # tracked in a follow-up issue. Soft-fail until that debt is paid down.
         run: npm test -- --ci
-        continue-on-error: true

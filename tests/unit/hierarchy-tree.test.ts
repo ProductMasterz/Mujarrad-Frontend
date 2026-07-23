@@ -56,7 +56,7 @@ describe('Hierarchy Tree Utility Tests', () => {
       expect(tree.rootNodes[0].node.id).toBe('parent-1');
       expect(tree.rootNodes[0].children).toHaveLength(1);
       expect(tree.rootNodes[0].children[0].node.id).toBe('child-1');
-      expect(tree.rootNodes[0].children[0].parentId).toBe('parent-1');
+      expect(tree.rootNodes[0].children[0].parentIds).toEqual(['parent-1']);
     });
 
     it('should build multi-level tree (3 levels deep)', () => {
@@ -412,8 +412,8 @@ describe('Hierarchy Tree Utility Tests', () => {
       expect(tree.rootNodes).toHaveLength(2);
       expect(tree.rootNodes[0].level).toBe(0);
       expect(tree.rootNodes[1].level).toBe(0);
-      expect(tree.rootNodes[0].parentId).toBeNull();
-      expect(tree.rootNodes[1].parentId).toBeNull();
+      expect(tree.rootNodes[0].parentIds).toEqual([]);
+      expect(tree.rootNodes[1].parentIds).toEqual([]);
     });
 
     it('should handle mixed root and child nodes', () => {
