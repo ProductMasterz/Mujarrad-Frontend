@@ -1,5 +1,8 @@
-## ADDED Requirements
+# whiteboard-persistence Specification
 
+## Purpose
+TBD - created by archiving change rewrite-whiteboard-persistence. Update Purpose after archive.
+## Requirements
 ### Requirement: Context-Only Persistence
 The system SHALL persist all whiteboard data exclusively in a single CONTEXT node's content field as a JSON blob containing elements, app state, and files.
 
@@ -123,8 +126,6 @@ The system SHALL debounce canvas changes with a 3-second window before triggerin
 - **THEN** the pending save is cancelled
 - **AND** no stale data is written to the backend
 
-## MODIFIED Requirements
-
 ### Requirement: Sync Status Indication
 The system SHALL provide visual feedback about sync status.
 
@@ -140,3 +141,4 @@ The system SHALL provide visual feedback about sync status.
 - **WHEN** the save PUT request fails
 - **THEN** the sync indicator shows an error state
 - **AND** provides a "Retry" option that triggers an immediate save
+
