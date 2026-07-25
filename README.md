@@ -67,3 +67,4 @@ This an early version of MindStone, which mean there are bugs and issues. Below 
 - [QUD & Abstract Logic Experience Frontend](https://github.com/pixlcore/xyops)
 - [Abstract Logic Frontend](https://github.com/DayuanJiang/next-ai-draw-io)
 - [Beautifuk Mermaid](https://github.com/lukilabs/beautiful-mermaid)
+- [MainTool For Experience Expansion](https://github.com/BuilderIO/agent-native)
