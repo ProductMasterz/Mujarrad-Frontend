@@ -5,31 +5,49 @@ import type {
 import {
   compactJson,
 } from '../utils/llmContextFormat';
+import {
+  buildSlimQuestionContext,
+} from '../utils/systemDesignAiContext';
 
 import {
   suggestedQuestionCategoryExamples,
 } from '../utils/questionCategories';
 
+function getQuestionAntiRepetitionContext(
+  state: Layer1GraphState,
+): string {
+  return compactJson(
+    buildSlimQuestionContext({
+      understanding: state.understanding,
+      completeness: state.completeness,
+      currentQuestion: state.currentQuestion,
+      questions: state.questions,
+      qaHistory: state.qaHistory,
+    }),
+  );
+}
+
 export function getConstructiveQuestionPrompt(
   state: Layer1GraphState,
 ): string {
+  const antiRepetitionContext =
+    getQuestionAntiRepetitionContext(state);
+
   return `You are a senior system architect conducting an adaptive architecture clarification interview.
 
 Generate exactly ONE highest-value constructive question.
 
-The current cumulative understanding is the canonical source of truth.
+The compact clarification context is the canonical source of truth.
 
 Do NOT request the original system description.
 
 Do NOT reconstruct previous conversation history.
 
-Do NOT re-analyze previous questions and answers.
+Use the provided recent question history ONLY to avoid repetition.
+Do not ask for information already present in the compact context.
 
-CURRENT_UNDERSTANDING
-${compactJson(state.understanding)}
-
-CURRENT_READINESS
-${state.completeness ? compactJson(state.completeness) : 'none'}
+COMPACT_CLARIFICATION_CONTEXT
+${antiRepetitionContext}
 
 OBJECTIVE
 
@@ -65,6 +83,17 @@ Prefer, when relevant:
 12. scale and operational constraints
 13. reporting, notifications, and observability
 14. secondary workflows and edge cases
+
+ANTI-REPETITION RULES
+
+1. Never ask the same question as the currentPendingQuestion.
+2. Never ask a question that is semantically similar to any answeredQuestionHistory question.
+3. Never ask for information that is already answered in CURRENT_UNDERSTANDING.
+4. Do not repeat the same topic using different wording.
+5. If a category was already asked and answered, move to a different missing category.
+6. If the pending question is still unanswered, do not generate another version of it.
+7. Prefer gaps that are weak, empty, vague, assumed, or missing in CURRENT_UNDERSTANDING.
+8. If the most obvious question was already asked, choose the next most valuable different architectural gap.
 
 QUESTION RULES
 
@@ -116,6 +145,9 @@ Rules:
 - no code fences
 - no commentary
 - no trailing text
+- do not repeat currentPendingQuestion
+- do not repeat answeredQuestionHistory
+- choose a new architectural gap
 
 Return JSON only.
 

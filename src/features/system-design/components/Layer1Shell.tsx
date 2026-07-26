@@ -3,11 +3,13 @@
 import { useEffect } from 'react';
 
 import { FinalArtifactsStep } from './FinalArtifactsStep';
+import { PreviewFinalArtifactsStep } from './PreviewFinalArtifactsStep';
 import { Layer1AssistantPanel } from './Layer1AssistantPanel';
 import { Layer1DiagramStep } from './Layer1DiagramStep';
 import { Layer1InputPanel } from './Layer1InputPanel';
 import { Layer1QuestionLoop } from './Layer1QuestionLoop';
 import { Layer1StepNavigation } from './Layer1StepNavigation';
+import { SaveLayer1ToMujarradStep } from './SaveLayer1ToMujarradStep';
 import { useLayer1Store } from '../stores/useLayer1Store';
 import type { Layer1StepId } from '../types/layer1.types';
 
@@ -59,7 +61,7 @@ export function Layer1Shell() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-[98vw] max-w-[98vw] space-y-6">
       <Layer1StepNavigation
         activeStep={activeStep}
         completedSteps={completedSteps}
@@ -70,19 +72,23 @@ export function Layer1Shell() {
       <div
         className={
           showAssistant
-            ? 'grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_390px]'
+            ? 'grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]'
             : ''
         }
       >
-        <main className="min-w-0">
+        <main className="min-w-0 w-full">
           {activeStep === 'input' ? (
             <Layer1InputPanel />
           ) : activeStep === 'clarification' ? (
             <Layer1QuestionLoop />
           ) : activeStep === 'diagram' ? (
             <Layer1DiagramStep />
+          ) : activeStep === 'save_to_mujarrad' ? (
+            <SaveLayer1ToMujarradStep />
           ) : activeStep === 'final_artifacts' ? (
             <FinalArtifactsStep />
+          ) : activeStep === 'preview_artifacts' ? (
+            <PreviewFinalArtifactsStep />
           ) : null}
         </main>
 

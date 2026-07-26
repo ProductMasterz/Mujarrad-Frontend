@@ -4,6 +4,7 @@ import type {
   Layer1Run,
   Layer1Stage,
   Layer1StepId,
+  MujarradSaveDestination,
 } from './layer1.types';
 
 export type Layer1GraphNextAction =
@@ -15,6 +16,8 @@ export type Layer1GraphNextAction =
   | 'generate_diagram'
   | 'wait_for_diagram_approval'
   | 'refine_diagram'
+  | 'save_layer1_to_mujarrad'
+  | 'skip_mujarrad_save'
   | 'generate_final_docs'
   | 'wait_for_final_docs_review'
   | 'create_artifact_bundle'
@@ -33,6 +36,8 @@ export type Layer1GraphEventType =
   | 'undo_diagram_revision'
   | 'reset_diagram_revision'
   | 'approve_diagram'
+  | 'save_layer1_to_mujarrad'
+  | 'skip_mujarrad_save'
   | 'generate_final_docs'
   | 'complete_step'
   | 'sync_state'
@@ -45,7 +50,10 @@ export interface Layer1GraphEvent {
   stepId?: Layer1StepId;
   refinementInstruction?: string;
   xml?: string;
+  mermaidSource?: string;
+  diagramRenderer?: 'drawio' | 'mermaid';
   diagramImages?: Layer1DiagramImages;
+  mujarradDestination?: MujarradSaveDestination;
 }
 
 export interface Layer1GraphState extends Layer1Run {

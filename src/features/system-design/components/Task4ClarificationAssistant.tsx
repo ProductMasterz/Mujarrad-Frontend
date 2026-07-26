@@ -276,40 +276,45 @@ export function Task4ClarificationAssistant() {
             );
           })}
 
-          {canRequestNextQuestion &&
-          questions.length > 0 ? (
+          {questions.length > 0 ? (
             <AssistantMessage>
               <p>
-                {readyForDiagram
-                  ? 'Got it. We now have enough information to generate a useful system diagram.'
-                  : 'Got it. I updated the system understanding with your answer.'}
+                {hasUnansweredQuestion
+                  ? 'You can answer the current question, or continue to the diagram with the understanding collected so far.'
+                  : readyForDiagram
+                    ? 'Got it. We now have enough information to generate a useful system diagram.'
+                    : 'Got it. I updated the system understanding with your answer.'}
               </p>
 
               <p className="mt-2 text-slate-600">
-                {readyForDiagram
-                  ? 'You can keep refining the design or continue to the diagram.'
-                  : 'Would you like me to ask another focused question, or continue to the diagram?'}
+                {hasUnansweredQuestion
+                  ? 'Skipping does not delete the pending question. You can return to clarification later if needed.'
+                  : readyForDiagram
+                    ? 'You can keep refining the design or continue to the diagram.'
+                    : 'Would you like me to ask another focused question, or continue to the diagram?'}
               </p>
 
               <MessageActions>
-                <ActionButton
-                  onClick={() =>
-                    void handleGenerateQuestion()
-                  }
-                  disabled={isLoading}
-                  primary={!readyForDiagram}
-                >
-                  {isLoading
-                    ? 'Thinking...'
-                    : 'Ask another question'}
-                </ActionButton>
+                {!hasUnansweredQuestion && (
+                  <ActionButton
+                    onClick={() =>
+                      void handleGenerateQuestion()
+                    }
+                    disabled={isLoading}
+                    primary={!readyForDiagram}
+                  >
+                    {isLoading
+                      ? 'Thinking...'
+                      : 'Ask another question'}
+                  </ActionButton>
+                )}
 
                 <ActionButton
                   onClick={() =>
                     void handleSkipToDiagram()
                   }
                   disabled={isLoading}
-                  primary={readyForDiagram}
+                  primary={readyForDiagram || hasUnansweredQuestion}
                 >
                   {readyForDiagram
                     ? 'Generate Diagram'
@@ -361,24 +366,38 @@ export function Task4ClarificationAssistant() {
                 Shift + Enter for new line
               </span>
 
-              <button
-                type="button"
-                onClick={() =>
-                  void handleSubmitAnswer()
-                }
-                disabled={
-                  isLoading ||
-                  !answer.trim()
-                }
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-                title="Send answer"
-              >
-                {isLoading ? (
-                  <LoadingIcon />
-                ) : (
-                  <SendIcon />
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    void handleSkipToDiagram()
+                  }
+                  disabled={isLoading}
+                  className="rounded-full border border-blue-200 px-3 py-2 text-xs font-black text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
+                  title="Continue to diagram without answering this question"
+                >
+                  Go to Diagram
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    void handleSubmitAnswer()
+                  }
+                  disabled={
+                    isLoading ||
+                    !answer.trim()
+                  }
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                  title="Send answer"
+                >
+                  {isLoading ? (
+                    <LoadingIcon />
+                  ) : (
+                    <SendIcon />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </footer>

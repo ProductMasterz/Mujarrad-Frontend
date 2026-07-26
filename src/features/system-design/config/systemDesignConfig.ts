@@ -14,7 +14,7 @@ export const SYSTEM_DESIGN_CONFIG = {
       title: 'System Design',
       status: 'active',
       description:
-        'Collect requirements, clarify the system, create and review a Draw.io diagram, then generate final Markdown documentation and export the approved Layer 1 artifact bundle.',
+        'Collect requirements, clarify the system, create and review Draw.io or Mermaid diagrams, then generate final Markdown documentation and export the approved Layer 1 artifact bundle.',
     },
     layer2: {
       id: 'layer-2',
@@ -22,7 +22,7 @@ export const SYSTEM_DESIGN_CONFIG = {
       title: 'Abstract Logic',
       status: 'locked',
       description:
-        'Coming soon. Requires the approved Layer 1 artifact bundle: final Markdown documentation, Draw.io XML, and diagram image.',
+        'Coming soon. Requires the approved Layer 1 artifact bundle: final Markdown documentation, selected diagram source, and diagram image.',
     },
     layer3: {
       id: 'layer-3',
@@ -43,6 +43,7 @@ export const SYSTEM_DESIGN_CONFIG = {
   exportFiles: {
     markdownSpec: 'final-system-spec.md',
     drawioXml: 'system-diagram.drawio.xml',
+    mermaidSource: 'system-diagram.mmd',
     diagramPng: 'system-diagram.png',
     diagramSvg: 'system-diagram.svg',
     diagramSummary: 'system-diagram-summary.md',

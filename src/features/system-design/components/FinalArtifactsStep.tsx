@@ -1,329 +1,240 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
-import { FinalArtifactTokenReport } from './FinalArtifactTokenReport';
 import { useLayer1Store } from '../stores/useLayer1Store';
+import type {
+  Layer1GraphEvent,
+  Layer1GraphResult,
+  Layer1GraphState,
+} from '../types/graph.types';
+
 import {
-  downloadFinalArtifact,
-  downloadLayer1ArtifactBundle,
-} from '../utils/artifactDownload';
-import {
-  buildFinalArtifactExplorerItems,
-  type FinalArtifactId,
-} from '../utils/finalArtifactExplorer';
+  AnimatePresence,
+  MotionInteractive,
+  MotionPanel,
+  MotionStatus,
+} from './SystemDesignMotion';
 
-export function FinalArtifactsStep() {
-  const [selectedId, setSelectedId] =
-    useState<FinalArtifactId>('markdown');
+async function postLayer1Event(args: {
+  event: Layer1GraphEvent;
+  graphState: Layer1GraphState;
+}): Promise<Layer1GraphResult & { error?: string }> {
+  const response = await fetch('/api/system-builder/layer1', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      event: args.event,
+      state: args.graphState,
+    }),
+  });
 
-  const [isDownloadingBundle, setIsDownloadingBundle] =
-    useState(false);
+  const result =
+    (await response.json()) as Layer1GraphResult & {
+      error?: string;
+    };
 
-  const [uiError, setUiError] =
-    useState<string | null>(null);
-
-  const bundle = useLayer1Store(
-    (state) =>
-      state.graphState.approvedLayer1Artifacts,
-  );
-
-  const items = useMemo(
-    () =>
-      bundle
-        ? buildFinalArtifactExplorerItems(bundle)
-        : [],
-    [bundle],
-  );
-
-  const selected =
-    items.find((item) => item.id === selectedId) ??
-    items[0];
-
-  if (!bundle) {
-    return (
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/70">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
-          Tasks 7 and 8
-        </p>
-
-        <h2 className="mt-2 text-2xl font-black text-slate-950">
-          Final Artifacts
-        </h2>
-
-        <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-medium text-slate-600">
-          Final Layer 1 artifacts are not available yet.
-          Approve the diagram first so Task 7 can
-          generate them.
-        </div>
-      </section>
-    );
+  if (!response.ok) {
+    return {
+      ...result,
+      ok: false,
+      error:
+        result.error ??
+        result.message ??
+        'Layer 1 request failed.',
+    };
   }
 
-  const handleBundleDownload = async () => {
-    setIsDownloadingBundle(true);
+  return result;
+}
+
+export function FinalArtifactsStep() {
+  const graphState = useLayer1Store(
+    (state) => state.graphState,
+  );
+
+  const syncFromGraphState = useLayer1Store(
+    (state) => state.syncFromGraphState,
+  );
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [uiError, setUiError] = useState<string | null>(null);
+
+  const hasApprovedDiagram =
+    graphState.diagramApproved &&
+    Boolean(
+      graphState.selectedDiagramRenderer,
+    );
+
+  const hasGeneratedArtifacts = Boolean(
+    graphState.approvedLayer1Artifacts,
+  );
+
+  const handleGenerateFiles = async () => {
+    setIsLoading(true);
     setUiError(null);
 
     try {
-      await downloadLayer1ArtifactBundle(bundle);
+      const result = await postLayer1Event({
+        event: {
+          type: 'generate_final_docs',
+        },
+        graphState,
+      });
+
+      if (result.state) {
+        syncFromGraphState(result.state);
+      }
+
+      if (!result.ok) {
+        setUiError(
+          result.error ??
+            result.message ??
+            'Final artifact generation failed.',
+        );
+      }
     } catch (error) {
       setUiError(
         error instanceof Error
           ? error.message
-          : 'Failed to download the artifact bundle.',
+          : 'Final artifact generation failed.',
       );
     } finally {
-      setIsDownloadingBundle(false);
+      setIsLoading(false);
     }
   };
 
-  const handleCopy = async () => {
-    if (!selected?.content) {
-      return;
-    }
-
-    setUiError(null);
-
-    try {
-      await navigator.clipboard.writeText(
-        selected.content,
-      );
-    } catch (error) {
-      setUiError(
-        error instanceof Error
-          ? error.message
-          : 'Failed to copy artifact content.',
-      );
-    }
+  const handleGoToPreview = () => {
+    syncFromGraphState({
+      ...graphState,
+      activeStep: 'preview_artifacts',
+      availableSteps: Array.from(
+        new Set([
+          ...graphState.availableSteps,
+          'preview_artifacts',
+        ]),
+      ),
+      updatedAt: new Date().toISOString(),
+    });
   };
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
-              Tasks 7 and 8
-            </p>
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/70">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
+        Task 7
+      </p>
 
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-              Final Artifacts
-            </h2>
+      <h2 className="mt-2 text-2xl font-black text-slate-950">
+        Generate Layer 1 files
+      </h2>
 
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Inspect every generated representation,
-              compare token cost, download artifacts,
-              and prepare the Layer 2 handoff.
-            </p>
-          </div>
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+        Generate the deterministic Layer 1 artifact package from the approved
+        diagram and cumulative system understanding. This creates the Markdown
+        specification, Draw.io XML, diagram exports, token report, and handoff
+        bundle. The next step lets you preview and download each file.
+      </p>
 
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() =>
-                void handleBundleDownload()
-              }
-              disabled={isDownloadingBundle}
-              className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
-            >
-              {isDownloadingBundle
-                ? 'Preparing ZIP...'
-                : 'Download Full Bundle'}
-            </button>
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <StatusCard
+          label="Approved diagram"
+          value={hasApprovedDiagram ? 'Ready' : 'Missing'}
+          good={hasApprovedDiagram}
+        />
 
-            <button
-              type="button"
-              disabled
-              title="Layer 2 handoff will be wired next."
-              className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
-            >
-              Prepare Layer 2 Handoff
-            </button>
-          </div>
-        </div>
+        <StatusCard
+          label="Generated files"
+          value={hasGeneratedArtifacts ? 'Ready' : 'Not generated'}
+          good={hasGeneratedArtifacts}
+        />
 
-        {uiError && (
-          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
-            {uiError}
-          </div>
-        )}
+        <StatusCard
+          label="Next step"
+          value="Preview files"
+          good={hasGeneratedArtifacts}
+        />
+      </div>
 
-        <div className="mt-6 grid min-h-[68vh] grid-cols-1 gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-2">
-            {items.map((item) => {
-              const isSelected =
-                selected?.id === item.id;
+      <AnimatePresence>
+        {uiError ? (
+          <MotionPanel
+            motionKey={uiError}
+            className="mt-5"
+          >
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+              {uiError}
+            </div>
+          </MotionPanel>
+        ) : null}
+      </AnimatePresence>
 
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  disabled={!item.available}
-                  onClick={() =>
-                    setSelectedId(item.id)
-                  }
-                  className={`mb-1 w-full rounded-xl px-3 py-3 text-left transition ${
-                    isSelected
-                      ? 'bg-blue-600 text-white'
-                      : item.available
-                        ? 'bg-white text-slate-800 hover:bg-slate-100'
-                        : 'bg-transparent text-slate-400'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-bold">
-                      {item.label}
-                    </span>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <MotionInteractive
+          disabled={
+            isLoading ||
+            !hasApprovedDiagram
+          }
+        >
+          <button
+            type="button"
+            onClick={() =>
+              void handleGenerateFiles()
+            }
+            disabled={isLoading || !hasApprovedDiagram}
+            className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          >
+            {isLoading
+              ? 'Generating files...'
+              : hasGeneratedArtifacts
+                ? 'Regenerate Files'
+                : 'Generate Files'}
+          </button>
+        </MotionInteractive>
 
-                    <span className="text-xs font-bold">
-                      {item.available
-                        ? 'Ready'
-                        : 'Missing'}
-                    </span>
-                  </div>
-
-                  {item.tokenEntry && (
-                    <div
-                      className={`mt-1 text-xs ${
-                        isSelected
-                          ? 'text-blue-100'
-                          : 'text-slate-500'
-                      }`}
-                    >
-                      #{item.tokenEntry.rank}
-                      {' · '}
-                      {item.tokenEntry.estimatedTokens.toLocaleString()}
-                      {' est. tokens'}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </aside>
-
-          {selected && (
-            <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-lg font-black text-slate-950">
-                      {selected.label}
-                    </h3>
-
-                    <p className="mt-1 text-sm text-slate-600">
-                      {selected.description}
-                    </p>
-
-                    <div className="mt-2 font-mono text-xs text-slate-500">
-                      {selected.fileName}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {selected.content && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void handleCopy()
-                        }
-                        className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                      >
-                        Copy
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        try {
-                          setUiError(null);
-                          downloadFinalArtifact(
-                            selected,
-                          );
-                        } catch (error) {
-                          setUiError(
-                            error instanceof Error
-                              ? error.message
-                              : 'Download failed.',
-                          );
-                        }
-                      }}
-                      className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"
-                    >
-                      Download
-                    </button>
-                  </div>
-                </div>
-
-                {selected.tokenEntry && (
-                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <Metric
-                      label="Rank"
-                      value={`#${selected.tokenEntry.rank}`}
-                    />
-
-                    <Metric
-                      label="Est. tokens"
-                      value={selected.tokenEntry.estimatedTokens.toLocaleString()}
-                    />
-
-                    <Metric
-                      label="Characters"
-                      value={selected.tokenEntry.characterCount.toLocaleString()}
-                    />
-
-                    <Metric
-                      label="UTF-8 bytes"
-                      value={selected.tokenEntry.utf8Bytes.toLocaleString()}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-auto bg-slate-950 p-4">
-                {selected.previewKind === 'image' &&
-                selected.dataUrl ? (
-                  <div className="flex min-h-full items-center justify-center rounded-xl bg-white p-4">
-                    <img
-                      src={selected.dataUrl}
-                      alt={selected.label}
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </div>
-                ) : (
-                  <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-slate-100">
-                    {selected.content}
-                  </pre>
-                )}
-              </div>
-            </section>
-          )}
-        </div>
-      </section>
-
-      <FinalArtifactTokenReport
-        report={bundle.tokenEfficiencyReport}
-      />
-    </div>
+        <MotionInteractive
+          disabled={!hasGeneratedArtifacts}
+        >
+          <button
+            type="button"
+            onClick={handleGoToPreview}
+            disabled={!hasGeneratedArtifacts}
+            className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          >
+            Preview Generated Files
+          </button>
+        </MotionInteractive>
+      </div>
+    </section>
   );
 }
 
-function Metric({
+function StatusCard({
   label,
   value,
+  good,
 }: {
   label: string;
   value: string;
+  good: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-3">
+    <MotionStatus
+      motionKey={`${label}-${value}`}
+      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+    >
       <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
         {label}
       </div>
 
-      <div className="mt-1 text-sm font-black text-slate-950">
+      <div
+        className={`mt-2 text-lg font-black ${
+          good ? 'text-emerald-700' : 'text-slate-500'
+        }`}
+      >
         {value}
       </div>
-    </div>
+    </MotionStatus>
   );
 }

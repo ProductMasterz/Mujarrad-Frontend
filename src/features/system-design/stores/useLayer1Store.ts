@@ -41,6 +41,10 @@ interface Layer1StoreState {
   approveMarkdownSpec: () => void;
 
   setDrawioXml: (drawioXml: string) => void;
+  setMermaidSource: (mermaidSource: string) => void;
+  setActiveDiagramRenderer: (
+    renderer: 'drawio' | 'mermaid',
+  ) => void;
   setDiagramImages: (diagramImages: Layer1GraphState['diagramImages']) => void;
   addDiagramRevision: (revision: DiagramRevision) => void;
   approveDiagram: () => void;
@@ -265,6 +269,24 @@ export const useLayer1Store = create<Layer1StoreState>()(
           graphState: {
             ...state.graphState,
             drawioXml,
+          },
+        })),
+
+      setMermaidSource: (mermaidSource) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            mermaidSource,
+          },
+        })),
+
+      setActiveDiagramRenderer: (
+        activeDiagramRenderer,
+      ) =>
+        set((state) => ({
+          graphState: {
+            ...state.graphState,
+            activeDiagramRenderer,
           },
         })),
 

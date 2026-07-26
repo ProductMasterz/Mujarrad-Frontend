@@ -10,6 +10,39 @@ import {
   type AiTokenUsage,
 } from '../tools/aiProviderTool';
 
+function isAiCompletenessEnabled(): boolean {
+  return (
+    process.env.SYSTEM_BUILDER_ENABLE_AI_COMPLETENESS
+      ?.trim()
+      .toLowerCase() === 'true'
+  );
+}
+
+function buildFallbackCompletenessReport(
+  state: Layer1GraphState,
+): CompletenessReport {
+  return {
+    overallScore: state.completeness?.overallScore ?? 0,
+    readyForDiagram: state.completeness?.readyForDiagram ?? false,
+    categories: state.completeness?.categories ?? [],
+    missingCriticalItems:
+      state.completeness?.missingCriticalItems ?? [],
+    weakItems: state.completeness?.weakItems ?? [],
+    suggestedNextQuestionCategory:
+      state.completeness?.suggestedNextQuestionCategory,
+  };
+}
+
+function buildDeterministicCompleteness(
+  state: Layer1GraphState,
+): CompletenessReport {
+  return applyDeterministicReadiness(
+    state.understanding,
+    buildFallbackCompletenessReport(state),
+    state.qaHistory.length,
+  );
+}
+
 export async function checkCompletenessNode(
   state: Layer1GraphState,
 ): Promise<{
@@ -17,6 +50,13 @@ export async function checkCompletenessNode(
   usage: AiTokenUsage | null;
   error?: string;
 }> {
+  if (!isAiCompletenessEnabled()) {
+    return {
+      completeness: buildDeterministicCompleteness(state),
+      usage: null,
+    };
+  }
+
   let usage: AiTokenUsage | null = null;
 
   try {
@@ -28,7 +68,6 @@ export async function checkCompletenessNode(
         modelRole: 'clarification',
         responseFormat: 'json_object',
         temperature: 0.2,
-
       },
     );
 
@@ -36,9 +75,7 @@ export async function checkCompletenessNode(
 
     const parsedJson = JSON.parse(result.content) as unknown;
     const aiCompleteness =
-      completenessReportSchema.parse(
-        parsedJson,
-      );
+      completenessReportSchema.parse(parsedJson);
 
     const completeness =
       applyDeterministicReadiness(
@@ -57,47 +94,10 @@ export async function checkCompletenessNode(
         ? err.message
         : 'Unknown completeness check error.';
 
-    const fallbackReport:
-      CompletenessReport = {
-        overallScore: 0,
-
-        readyForDiagram:
-          false,
-
-        categories:
-          state.completeness
-            ?.categories ??
-          [],
-
-        missingCriticalItems:
-          state.completeness
-            ?.missingCriticalItems ??
-          [],
-
-        weakItems:
-          state.completeness
-            ?.weakItems ??
-          [],
-
-        suggestedNextQuestionCategory:
-          state.completeness
-            ?.suggestedNextQuestionCategory,
-      };
-
-    const completeness =
-      applyDeterministicReadiness(
-        state.understanding,
-        fallbackReport,
-        state.qaHistory.length,
-      );
-
     return {
-      completeness,
-
+      completeness: buildDeterministicCompleteness(state),
       usage,
-
-      error:
-        errorMessage,
+      error: errorMessage,
     };
   }
 }

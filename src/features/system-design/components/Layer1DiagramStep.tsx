@@ -73,7 +73,7 @@ export function Layer1DiagramStep() {
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={isLoading || !diagramGenerationContext}
+              disabled={isLoading}
               className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50"
             >
               {isLoading ? 'Generating...' : 'Generate Diagram'}
@@ -83,10 +83,11 @@ export function Layer1DiagramStep() {
         </div>
       </div>
 
-      {!diagramGenerationContext && (
-        <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-medium text-slate-600">
-          Diagram generation is not ready yet. Complete or skip clarification so
-          the Layer 1 context can be prepared.
+      {!diagramGenerationContext && !hasDiagram && (
+        <div className="mt-5 rounded-2xl border border-dashed border-blue-200 bg-blue-50 p-5 text-sm font-medium text-blue-800">
+          You can generate a diagram now. If a clarification question is still
+          unanswered, the graph will build the diagram from the current
+          understanding and keep the pending question available.
         </div>
       )}
 

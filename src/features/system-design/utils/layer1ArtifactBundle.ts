@@ -108,6 +108,21 @@ export function buildLayer1ArtifactBundle(
         utf8Bytes: utf8Bytes(state.drawioXml),
       },
       {
+        id: 'mermaid',
+        format: 'mermaid',
+        mediaType: 'text/plain',
+        fileName: 'final-system-diagram.mmd',
+        available: Boolean(
+          state.mermaidSource,
+        ),
+        characterCount:
+          state.mermaidSource.length,
+        utf8Bytes:
+          utf8Bytes(
+            state.mermaidSource,
+          ),
+      },
+      {
         id: 'svg',
         format: 'svg',
         mediaType: 'image/svg+xml',
@@ -145,7 +160,15 @@ export function buildLayer1ArtifactBundle(
     yamlSpec,
     plainTextSpec,
 
-    drawioXml: state.drawioXml,
+    drawioXml:
+      state.drawioXml,
+
+    mermaidSource:
+      state.mermaidSource,
+
+    selectedDiagramRenderer:
+      state.selectedDiagramRenderer ??
+      state.activeDiagramRenderer,
 
     diagramImages: {
       svg: state.diagramImages?.svg,

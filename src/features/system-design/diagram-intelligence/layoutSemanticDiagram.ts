@@ -96,6 +96,13 @@ export function layoutSemanticDiagram(
   const config =
     getLayoutConfig(diagram);
 
+  if (shouldUseWideArchitectureLayout(diagram)) {
+    return layoutWideArchitectureDiagram(
+      diagram,
+      config,
+    );
+  }
+
   if (
     diagram.layoutIntent.direction ===
     'swimlane'
@@ -109,6 +116,354 @@ export function layoutSemanticDiagram(
   return layoutHierarchicalDiagram(
     diagram,
     config,
+  );
+}
+
+function shouldUseWideArchitectureLayout(
+  diagram: SemanticDiagramModel,
+): boolean {
+  const diagramType =
+    diagram.diagramType;
+
+  if (
+    diagramType === 'uml_sequence' ||
+    diagramType === 'uml_activity' ||
+    diagramType === 'swimlane' ||
+    diagram.layoutIntent.direction === 'swimlane'
+  ) {
+    return false;
+  }
+
+  const searchableText =
+    [
+      diagram.title,
+      diagram.purpose,
+      diagram.diagramType,
+      ...diagram.nodes.map((node) => `${node.type} ${node.label} ${node.description ?? ''}`),
+      ...diagram.groups.map((group) => `${group.type} ${group.label}`),
+    ]
+      .join(' ')
+      .toLowerCase();
+
+  const architectureTypes = new Set([
+    'system_architecture',
+    'software_architecture',
+    'solution_architecture',
+    'cloud_architecture',
+    'integration_architecture',
+    'data_flow',
+    'data_pipeline',
+    'ai_ml_pipeline',
+    'rag_architecture',
+    'agent_architecture',
+    'c4_context',
+    'c4_container',
+    'c4_component',
+    'uml_component',
+  ]);
+
+  if (architectureTypes.has(diagramType)) {
+    return true;
+  }
+
+  return [
+    'saas',
+    'platform',
+    'software',
+    'service',
+    'api',
+    'matching',
+    'scoring',
+    'ranking',
+    'recommendation',
+    'company profile',
+    'crm',
+    'admin',
+    'repository',
+    'database',
+    'integration',
+    'authentication',
+  ].some((keyword) => searchableText.includes(keyword));
+}
+
+function layoutWideArchitectureDiagram(
+  diagram: SemanticDiagramModel,
+  config: LayoutConfig,
+): SemanticLayoutPlan {
+  const warnings: string[] = [];
+
+  const architectureConfig: LayoutConfig = {
+    ...config,
+    margin: Math.max(config.margin, 90),
+    nodeWidth: Math.max(config.nodeWidth, 230),
+    nodeHeight: Math.max(config.nodeHeight, 86),
+    horizontalGap: Math.max(config.horizontalGap, 135),
+    verticalGap: Math.max(config.verticalGap, 42),
+    groupPadding: Math.max(config.groupPadding, 45),
+  };
+
+  const columns = [
+    {
+      id: 'actors',
+      label: 'Actors / Channels',
+      match: (node: SemanticDiagramModel['nodes'][number]) =>
+        matchesAny(node, [
+          'actor',
+          'user',
+          'portal',
+          'web app',
+          'dashboard',
+          'admin console',
+          'reviewer',
+          'customer',
+          'company user',
+        ]),
+    },
+    {
+      id: 'application',
+      label: 'Application Services',
+      match: (node: SemanticDiagramModel['nodes'][number]) =>
+        matchesAny(node, [
+          'application',
+          'service',
+          'api',
+          'gateway',
+          'auth',
+          'authentication',
+          'authorization',
+          'rbac',
+          'intake',
+          'upload',
+          'parser',
+          'validator',
+          'frontend',
+          'backend',
+        ]),
+    },
+    {
+      id: 'processing',
+      label: 'AI / Matching / Processing',
+      match: (node: SemanticDiagramModel['nodes'][number]) =>
+        matchesAny(node, [
+          'ai',
+          'ml',
+          'matching',
+          'scoring',
+          'ranking',
+          'explanation',
+          'extraction',
+          'retrieval',
+          'search',
+          'engine',
+          'orchestrator',
+          'workflow',
+          'process',
+          'decision',
+        ]),
+    },
+    {
+      id: 'data',
+      label: 'Data Stores',
+      match: (node: SemanticDiagramModel['nodes'][number]) =>
+        matchesAny(node, [
+          'database',
+          'data_store',
+          'repository',
+          'storage',
+          'file',
+          'audit log',
+          'log',
+          'profile',
+          'matching run',
+          'company profile',
+          'object store',
+        ]),
+    },
+    {
+      id: 'integrations',
+      label: 'External Integrations',
+      match: (node: SemanticDiagramModel['nodes'][number]) =>
+        matchesAny(node, [
+          'external',
+          'integration',
+          'crm',
+          'email',
+          'notification',
+          'provider',
+          'third party',
+          'adapter',
+          'webhook',
+        ]),
+    },
+    {
+      id: 'operations',
+      label: 'Governance / Operations',
+      match: (node: SemanticDiagramModel['nodes'][number]) =>
+        matchesAny(node, [
+          'monitoring',
+          'observability',
+          'error',
+          'failure',
+          'security',
+          'audit',
+          'compliance',
+          'review',
+          'governance',
+          'admin',
+          'risk',
+        ]),
+    },
+  ];
+
+  const columnBuckets =
+    columns.map((column) => ({
+      ...column,
+      nodes: [] as SemanticDiagramModel['nodes'],
+    }));
+
+  diagram.nodes.forEach((node) => {
+    const targetColumn =
+      columnBuckets.find((column) => column.match(node)) ??
+      columnBuckets[1];
+
+    targetColumn.nodes.push(node);
+  });
+
+  // Keep empty columns out of the canvas, but preserve architecture ordering.
+  const nonEmptyColumns =
+    columnBuckets.filter((column) => column.nodes.length > 0);
+
+  if (nonEmptyColumns.length < 3) {
+    warnings.push(
+      'Architecture layout had fewer than three populated columns. Consider enriching the diagram with services, data stores, and integrations.',
+    );
+  }
+
+  const positionedNodes:
+    PositionedSemanticNode[] = [];
+
+  nonEmptyColumns.forEach((column, columnIndex) => {
+    column.nodes.forEach((node, nodeIndex) => {
+      positionedNodes.push({
+        nodeId: node.id,
+        x:
+          architectureConfig.margin +
+          columnIndex *
+            (
+              architectureConfig.nodeWidth +
+              architectureConfig.horizontalGap
+            ),
+        y:
+          architectureConfig.margin +
+          70 +
+          nodeIndex *
+            (
+              architectureConfig.nodeHeight +
+              architectureConfig.verticalGap
+            ),
+        width:
+          architectureConfig.nodeWidth,
+        height:
+          architectureConfig.nodeHeight,
+        order:
+          positionedNodes.length,
+      });
+    });
+  });
+
+  const syntheticGroups:
+    PositionedSemanticGroup[] =
+    nonEmptyColumns.map((column, columnIndex) => {
+      const columnNodes =
+        positionedNodes.filter((position) =>
+          column.nodes.some((node) => node.id === position.nodeId),
+        );
+
+      const maxBottom =
+        Math.max(
+          ...columnNodes.map((node) => node.y + node.height),
+          architectureConfig.margin + 220,
+        );
+
+      return {
+        groupId: `architecture-column-${column.id}`,
+        x:
+          architectureConfig.margin +
+          columnIndex *
+            (
+              architectureConfig.nodeWidth +
+              architectureConfig.horizontalGap
+            ) -
+          28,
+        y:
+          architectureConfig.margin,
+        width:
+          architectureConfig.nodeWidth + 56,
+        height:
+          maxBottom - architectureConfig.margin + 42,
+        order:
+          columnIndex,
+      };
+    });
+
+  const semanticGroups =
+    positionGroupsAroundNodes(
+      diagram,
+      positionedNodes,
+      architectureConfig,
+    );
+
+  const maxRight =
+    Math.max(
+      architectureConfig.margin,
+      ...positionedNodes.map((node) => node.x + node.width),
+      ...syntheticGroups.map((group) => group.x + group.width),
+      ...semanticGroups.map((group) => group.x + group.width),
+    );
+
+  const maxBottom =
+    Math.max(
+      architectureConfig.margin,
+      ...positionedNodes.map((node) => node.y + node.height),
+      ...syntheticGroups.map((group) => group.y + group.height),
+      ...semanticGroups.map((group) => group.y + group.height),
+    );
+
+  return {
+    canvasWidth:
+      maxRight + architectureConfig.margin,
+    canvasHeight:
+      maxBottom + architectureConfig.margin,
+    nodes:
+      positionedNodes,
+    groups:
+      [
+        ...syntheticGroups,
+        ...semanticGroups,
+      ],
+    lanes:
+      [],
+    warnings,
+  };
+}
+
+function matchesAny(
+  node: SemanticDiagramModel['nodes'][number],
+  keywords: string[],
+): boolean {
+  const searchable =
+    [
+      node.type,
+      node.label,
+      node.description ?? '',
+      node.groupId ?? '',
+      node.laneId ?? '',
+    ]
+      .join(' ')
+      .toLowerCase();
+
+  return keywords.some((keyword) =>
+    searchable.includes(keyword.toLowerCase()),
   );
 }
 

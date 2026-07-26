@@ -13,9 +13,23 @@ export function buildLayer1CanonicalArtifact(
     );
   }
 
+  if (
+    !state.selectedDiagramRenderer
+  ) {
+    throw new Error(
+      'Task 7 requires selecting either Draw.io or Mermaid as the approved final renderer.',
+    );
+  }
+
   if (!state.drawioXml.trim()) {
     throw new Error(
-      'Task 7 requires final approved Draw.io XML.',
+      'Task 7 requires the Draw.io diagram source.',
+    );
+  }
+
+  if (!state.mermaidSource.trim()) {
+    throw new Error(
+      'Task 7 requires the Mermaid diagram source.',
     );
   }
 

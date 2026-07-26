@@ -17,6 +17,9 @@ import {
 import {
   compileSemanticDiagramToDrawio,
 } from '../diagram-intelligence/compileSemanticDiagramToDrawio';
+import {
+  compileSemanticDiagramToMermaid,
+} from '../diagram-intelligence/compileSemanticDiagramToMermaid';
 
 import {
   extractAndRepairDrawioXml,
@@ -26,7 +29,10 @@ export interface GenerateDiagramNodeResult {
   xml:
     string | null;
 
-  summary:
+  
+  mermaidSource: string;
+
+summary:
     string;
 
   warnings:
@@ -172,8 +178,11 @@ export async function generateDiagramNode(
     !state.diagramGenerationContext
   ) {
     return {
-      xml:
-        null,
+        xml:
+          null,
+
+        mermaidSource:
+          '',
 
       summary:
         '',
@@ -211,6 +220,9 @@ export async function generateDiagramNode(
         xml:
           null,
 
+        mermaidSource:
+          '',
+
         summary:
           '',
 
@@ -229,6 +241,11 @@ export async function generateDiagramNode(
         compactResult.semanticDiagram,
       );
 
+    const compiledMermaid =
+      compileSemanticDiagramToMermaid(
+        compactResult.semanticDiagram,
+      );
+
     const repaired =
       extractAndRepairDrawioXml(
         compiled.xml,
@@ -237,6 +254,7 @@ export async function generateDiagramNode(
     const warnings = [
       ...compactResult.warnings,
       ...compiled.warnings,
+      ...compiledMermaid.warnings,
       ...repaired.warnings,
     ];
 
@@ -246,6 +264,9 @@ export async function generateDiagramNode(
       return {
         xml:
           null,
+
+        mermaidSource:
+          '',
 
         summary:
           '',
@@ -261,6 +282,9 @@ export async function generateDiagramNode(
       xml:
         repaired.xml,
 
+      mermaidSource:
+        compiledMermaid.source,
+
       summary:
         buildDiagramSummary(
           state,
@@ -275,8 +299,11 @@ export async function generateDiagramNode(
         : 'Diagram generation failed.';
 
     return {
-      xml:
-        null,
+        xml:
+          null,
+
+        mermaidSource:
+          '',
 
       summary:
         '',

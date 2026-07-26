@@ -16,6 +16,8 @@ export const layer1GraphEventSchema = z.object({
     'undo_diagram_revision',
     'reset_diagram_revision',
     'approve_diagram',
+    'save_layer1_to_mujarrad',
+    'skip_mujarrad_save',
     'generate_final_docs',
     'complete_step',
     'sync_state',
@@ -26,6 +28,18 @@ export const layer1GraphEventSchema = z.object({
   stepId: layer1StepIdSchema.optional(),
   refinementInstruction: z.string().trim().min(1).optional(),
   xml: z.string().trim().min(1).optional(),
+
+  mermaidSource:
+    z.string().trim().min(1).optional(),
+
+  diagramRenderer:
+    z
+      .enum([
+        'drawio',
+        'mermaid',
+      ])
+      .optional(),
+
   diagramImages: z
     .object({
       svg: z
@@ -42,6 +56,15 @@ export const layer1GraphEventSchema = z.object({
         .optional(),
     })
     .optional(),
+  mujarradDestination: z
+    .object({
+      mode: z.enum(['existing', 'new']),
+      spaceSlug: z.string().trim().min(1).optional(),
+      contextId: z.string().trim().min(1).optional(),
+      newSpaceName: z.string().trim().min(1).optional(),
+      newContextName: z.string().trim().min(1).optional(),
+    })
+    .optional(),
 });
 
 export const layer1GraphNextActionSchema = z.enum([
@@ -53,6 +76,8 @@ export const layer1GraphNextActionSchema = z.enum([
   'generate_diagram',
   'wait_for_diagram_approval',
   'refine_diagram',
+  'save_layer1_to_mujarrad',
+  'skip_mujarrad_save',
   'generate_final_docs',
   'wait_for_final_docs_review',
   'create_artifact_bundle',

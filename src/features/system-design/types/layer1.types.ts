@@ -8,7 +8,9 @@ export type Layer1StepId =
   | 'input'
   | 'clarification'
   | 'diagram'
-  | 'final_artifacts';
+  | 'save_to_mujarrad'
+  | 'final_artifacts'
+  | 'preview_artifacts';
 
 export type Layer1Stage =
   | 'input'
@@ -16,6 +18,7 @@ export type Layer1Stage =
   | 'clarification'
   | 'understanding'
   | 'diagram'
+  | 'mujarrad_save'
   | 'final_docs'
   | 'export'
   | 'approved_layer1_artifact_bundle';
@@ -181,9 +184,15 @@ export interface CompletenessReport {
   suggestedNextQuestionCategory?: QuestionCategory;
 }
 
+export type DiagramRenderer =
+  | 'drawio'
+  | 'mermaid';
+
 export interface DiagramRevision {
   id: string;
   xml: string;
+  mermaidSource?: string;
+  activeRenderer?: DiagramRenderer;
   instruction?: string;
   createdAt: string;
 }
@@ -244,6 +253,7 @@ export interface Layer1ArtifactManifestEntry {
   format:
     | Layer1TextArtifactFormat
     | 'drawio_xml'
+    | 'mermaid'
     | 'svg'
     | 'png'
     | 'token_report';
@@ -281,6 +291,8 @@ export interface Layer1ArtifactBundle {
   plainTextSpec: string;
 
   drawioXml: string;
+  mermaidSource: string;
+  selectedDiagramRenderer: DiagramRenderer;
 
   diagramImages: {
     svg?: {
@@ -362,7 +374,7 @@ export interface AiUsageRecord {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
-  provider: 'groq' | 'openrouter';
+  provider: string;
   model: string;
   createdAt: string;
 }
@@ -393,13 +405,42 @@ export interface Task6AiUsageRecord {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
-  provider: 'groq' | 'openrouter';
+  provider: string;
   model: string;
   createdAt: string;
 }
 
 export interface Task6AiUsage {
   calls: Task6AiUsageRecord[];
+}
+
+
+export type MujarradSaveDestinationMode =
+  | 'existing'
+  | 'new';
+
+export type MujarradSaveStatus =
+  | 'idle'
+  | 'saving'
+  | 'saved'
+  | 'error'
+  | 'skipped';
+
+export interface MujarradSaveDestination {
+  mode: MujarradSaveDestinationMode;
+  spaceSlug?: string;
+  contextId?: string;
+  newSpaceName?: string;
+  newContextName?: string;
+}
+
+export interface MujarradSaveState {
+  status: MujarradSaveStatus;
+  destination?: MujarradSaveDestination;
+  backendNodeId?: string;
+  error?: string;
+  savedAt?: string;
+  skippedAt?: string;
 }
 
 export interface Layer1Run {
@@ -432,12 +473,19 @@ export interface Layer1Run {
   markdownApproved: boolean;
 
   drawioXml: string;
+  mermaidSource: string;
+
+  activeDiagramRenderer: DiagramRenderer;
+  selectedDiagramRenderer: DiagramRenderer | null;
+
   diagramImages?: Layer1DiagramImages;
   diagramSummary: string;
   diagramApproved: boolean;
   diagramRevisions: DiagramRevision[];
 
   approvedLayer1Artifacts?: Layer1ArtifactBundle;
+
+  mujarradSave: MujarradSaveState;
 
   errors: Layer1Error[];
 }

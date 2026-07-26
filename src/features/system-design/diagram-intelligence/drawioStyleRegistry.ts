@@ -27,10 +27,10 @@ const TYPE_STYLES: Record<
   string
 > = {
   actor:
-    'shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top',
+    'rounded=1;fillColor=#eff6ff;strokeColor=#2563eb;fontColor=#1e3a8a;fontStyle=1',
 
   user:
-    'shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top',
+    'rounded=1;fillColor=#eff6ff;strokeColor=#2563eb;fontColor=#1e3a8a;fontStyle=1',
 
   service:
     'rounded=1',
@@ -99,7 +99,7 @@ const TYPE_STYLES: Record<
     'shape=mxgraph.basic.shield',
 
   cloud:
-    'shape=cloud',
+    'rounded=1;dashed=1;fillColor=#f8fafc;strokeColor=#64748b',
 };
 
 export function getDrawioNodeStyle(

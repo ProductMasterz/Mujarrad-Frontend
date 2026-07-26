@@ -10,7 +10,9 @@ export const layer1StepOrder: Layer1StepId[] = [
   'input',
   'clarification',
   'diagram',
+  'save_to_mujarrad',
   'final_artifacts',
+  'preview_artifacts',
 ];
 
 export function getNextLayer1Step(
@@ -25,7 +27,9 @@ export function getStageForStep(stepId: Layer1StepId): Layer1Stage {
     input: 'input',
     clarification: 'clarification',
     diagram: 'diagram',
+    save_to_mujarrad: 'mujarrad_save',
     final_artifacts: 'final_docs',
+    preview_artifacts: 'export',
   };
 
   return stageByStep[stepId];
@@ -87,10 +91,17 @@ export function createInitialLayer1GraphState(): Layer1GraphState {
     markdownApproved: false,
 
     drawioXml: '',
+    mermaidSource: '',
+    activeDiagramRenderer: 'drawio',
+    selectedDiagramRenderer: null,
     diagramImages: undefined,
     diagramSummary: '',
     diagramApproved: false,
     diagramRevisions: [],
+
+    mujarradSave: {
+      status: 'idle',
+    },
 
     errors: [],
     nextAction: 'process_input',

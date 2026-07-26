@@ -5,6 +5,9 @@ import type {
 import {
   compactJson,
 } from '../utils/llmContextFormat';
+import {
+  buildSlimUnderstandingContext,
+} from '../utils/systemDesignAiContext';
 
 function getLatestClarification(
   state: Layer1GraphState,
@@ -113,13 +116,12 @@ This is an INCREMENTAL update.
 The existing understanding already contains all previously accepted evidence.
 
 Do NOT re-analyze the original description.
-
 Do NOT request or reconstruct older question-and-answer history.
-
-Update the existing cumulative understanding using only the latest clarification.
+Do NOT expand unsupported details.
+Use the compact current understanding and latest clarification only.
 
 CURRENT_UNDERSTANDING
-${compactJson(state.understanding)}
+${compactJson(buildSlimUnderstandingContext(state.understanding))}
 
 LATEST_QUESTION
 ${clarification.question}
@@ -153,12 +155,13 @@ UPDATE RULES
 11. Do not invent technologies or product behavior.
 12. Recalculate confidence from the updated cumulative understanding.
 13. confidence must be between 0 and 1.
-14. Return the COMPLETE new SystemUnderstanding object.
+14. Return the complete updated SystemUnderstanding object, but keep text concise.
 15. Do not return only the latest change.
-16. Return valid JSON only.
-17. No markdown.
-18. No code fences.
-19. No commentary.
+16. Prefer short labels and compact descriptions.
+17. Return valid JSON only.
+18. No markdown.
+19. No code fences.
+20. No commentary.
 
 Return exactly one complete updated SystemUnderstanding JSON object.`;
 }

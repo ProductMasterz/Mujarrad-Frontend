@@ -1,11 +1,20 @@
+import type {
+  DiagramRenderer,
+} from '../types/layer1.types';
+
 export interface CapturedFinalDiagram {
-  xml: string;
+  renderer: DiagramRenderer;
+
+  xml?: string;
+  mermaidSource?: string;
+
   diagramImages: {
     svg: {
       dataUrl: string;
       fileName: string;
     };
-    png: {
+
+    png?: {
       dataUrl: string;
       fileName: string;
     };
@@ -15,28 +24,44 @@ export interface CapturedFinalDiagram {
 type FinalDiagramCapture =
   () => Promise<CapturedFinalDiagram>;
 
-let registeredCapture:
-  | FinalDiagramCapture
-  | null = null;
+const registeredCaptures =
+  new Map<
+    DiagramRenderer,
+    FinalDiagramCapture
+  >();
 
 export function registerFinalDiagramCapture(
+  renderer: DiagramRenderer,
   capture: FinalDiagramCapture,
 ) {
-  registeredCapture = capture;
+  registeredCaptures.set(
+    renderer,
+    capture,
+  );
 
   return () => {
-    if (registeredCapture === capture) {
-      registeredCapture = null;
+    if (
+      registeredCaptures.get(renderer) ===
+      capture
+    ) {
+      registeredCaptures.delete(
+        renderer,
+      );
     }
   };
 }
 
-export async function captureRegisteredFinalDiagram() {
-  if (!registeredCapture) {
+export async function captureRegisteredFinalDiagram(
+  renderer: DiagramRenderer,
+) {
+  const capture =
+    registeredCaptures.get(renderer);
+
+  if (!capture) {
     throw new Error(
-      'Draw.io editor is not available.',
+      `${renderer === 'drawio' ? 'Draw.io' : 'Mermaid'} diagram preview is not available.`,
     );
   }
 
-  return registeredCapture();
+  return capture();
 }

@@ -21,6 +21,9 @@ import {
 import {
   compactJson,
 } from '../utils/llmContextFormat';
+import {
+  buildSlimDiagramContext,
+} from '../utils/systemDesignAiContext';
 
 const compactGroupSchema =
   z.tuple([
@@ -69,7 +72,7 @@ const compactDiagramSpecSchema =
       z.array(
         compactGroupSchema,
       )
-        .max(4)
+        .max(6)
         .default([]),
 
     n:
@@ -77,13 +80,13 @@ const compactDiagramSpecSchema =
         compactNodeSchema,
       )
         .min(2)
-        .max(18),
+        .max(34),
 
     e:
       z.array(
         compactEdgeSchema,
       )
-        .max(24)
+        .max(56)
         .default([]),
   });
 
@@ -131,32 +134,100 @@ function buildCompactPrompt(
     retry
       ? `RETRY LIMITS
 
-- maximum 9 nodes
-- maximum 12 edges
-- maximum 3 groups`
+- target 12 to 18 nodes
+- maximum 20 nodes
+- maximum 28 edges
+- maximum 4 groups`
       : `LIMITS
 
-- normally 7 to 12 nodes
-- maximum 16 nodes
-- maximum 20 edges
-- maximum 4 groups`;
+- target 18 to 28 nodes for software architecture diagrams
+- target 12 to 20 nodes for activity, sequence, data-flow, or refinement diagrams
+- maximum 32 nodes
+- maximum 50 edges
+- maximum 6 groups`;
 
-  return `You are a senior system architect creating the semantic content of one professional system diagram.
+  const diagramTypeGuidance =
+    input.targetDiagramType === 'uml_activity'
+      ? `ACTIVITY DIAGRAM REQUIREMENTS
 
-The cumulative SystemUnderstanding below is the canonical source of truth.
+Include:
+- start node
+- user/system actions
+- decisions with yes/no or success/failure branches
+- main success path
+- important failure or validation path
+- end node`
+      : input.targetDiagramType === 'uml_sequence'
+        ? `SEQUENCE DIAGRAM REQUIREMENTS
 
-Do not re-analyze any conversation history.
+Include:
+- actors or clients
+- frontend/API participants
+- backend/domain services
+- data stores
+- external systems
+- ordered request/response interactions`
+        : input.targetDiagramType === 'data_flow'
+          ? `DATA FLOW REQUIREMENTS
 
+Include:
+- data sources
+- ingestion or input boundary
+- transformation/processing stages
+- storage
+- retrieval/query paths
+- outputs and consumers
+- audit or trace data when relevant`
+          : input.targetDiagramType === 'agent_architecture'
+            ? `AGENT ARCHITECTURE REQUIREMENTS
+
+Include:
+- user/request source
+- orchestrator
+- specialist agents/tools
+- memory/context store
+- retrieval or backend APIs
+- validation/guardrail stage
+- final response/output`
+            : input.targetDiagramType === 'rag_architecture'
+              ? `RAG ARCHITECTURE REQUIREMENTS
+
+Include:
+- user query
+- query understanding
+- retriever
+- vector/index store
+- document/source store
+- reranking or filtering if relevant
+- generation/model step
+- answer with citations/output`
+              : `SOFTWARE ARCHITECTURE REQUIREMENTS
+
+Include relevant layers:
+- user or external actor layer
+- frontend / client entry layer
+- API / gateway layer
+- application services layer
+- domain or AI/business logic layer
+- data/storage layer
+- external integration layer
+- security/auth boundary when relevant
+- audit/logging/observability when relevant
+- error/failure path when relevant`;
+
+  return `You are a principal software architect creating the semantic content of one professional system diagram.
+
+The compact diagram brief below is the only source of truth.
+
+Do not re-analyze conversation history.
 Do not generate Draw.io XML.
-
+Do not generate Mermaid.
 Do not generate coordinates.
-
 Do not generate styling.
+Do not generate prose outside JSON.
 
-Do not generate descriptions or metadata.
-
-CURRENT_UNDERSTANDING
-${compactJson(input.understanding)}
+COMPACT_DIAGRAM_BRIEF
+${compactJson(buildSlimDiagramContext(input.understanding))}
 
 TARGET_DIAGRAM_TYPE
 ${input.targetDiagramType}
@@ -169,36 +240,104 @@ ${input.currentDiagramSummary?.trim() || 'none'}
 
 OBJECTIVE
 
-Represent the real system professionally and concisely.
+Create a detailed, professional, architecture-significant diagram specification from the compact brief only.
 
-When a REFINEMENT_INSTRUCTION exists:
+The output must be useful for a technical review, not a toy diagram.
 
-- satisfy it as the primary transformation goal
-- use TARGET_DIAGRAM_TYPE as the required representation
-- rebuild the semantic structure when conversion is requested
-- preserve supported business meaning
-- remove dummy, decorative, placeholder, or unsupported concepts when requested
-- do not preserve bad structure merely because it existed in the previous diagram
+${diagramTypeGuidance}
 
-Include only architecture-significant concepts such as:
+PROFESSIONAL VISUAL STYLE RULES
 
-- important human or external actors
-- system entry points
-- core responsibilities or services
-- major workflow stages
-- important decisions
-- important data stores
-- important integrations
+The diagram must look like a serious software/system architecture diagram.
 
-Do not collapse the system into one generic platform box.
+Allowed visual language:
+- rectangular blocks for services, modules, components, screens, APIs, and processing steps
+- database/storage symbols for repositories, logs, files, and persistent stores
+- actor/user nodes for people and external parties, represented as professional labeled blocks, not stick figures
+- external system blocks for third-party systems and integrations
+- decision diamonds only for real branching logic
+- arrows showing direction of control flow, data flow, dependency, or message flow
+- labeled connections that explain the interaction
+- bounded containers/groups for layers, subsystems, domains, or swimlanes
 
-Do not invent unsupported technologies.
+Forbidden visual language:
+- cartoon drawings
+- childish illustrations
+- playful icons
+- emojis
+- mascots
+- clipart
+- decorative pictures
+- 3D scenes
+- random shapes
+- colorful poster/infographic style
+- vague bubbles with generic labels
+- unlabeled spaghetti arrows
+- one big generic platform box
+- decorative clouds unless they represent a real external boundary
+- drawings of people, stick figures, laptops, buildings, rockets, robots, magic, or abstract art
+
+Diagram quality requirements:
+- Every node must represent a real system actor, responsibility, service, data store, integration, decision, or workflow step.
+- Every edge must have a clear direction and a meaningful label.
+- Group nodes by professional boundaries such as User Layer, Application Layer, AI/Processing Layer, Data Layer, Integration Layer, Governance/Operations.
+- Prefer readable left-to-right or top-to-bottom flow.
+- Make the main path obvious.
+- Show secondary paths such as validation, audit logging, notification, and error handling without clutter.
+- Use concise technical labels.
+- Keep labels professional and domain-specific.
+
+
+- Do not collapse the system into one generic "platform" box.
+- Do not create vague nodes like "System", "Process", "Data", or "Service" unless they are specific and qualified.
+- Prefer specific business/technical responsibilities from the understanding.
+- Show the main end-to-end flow from user input to final output.
+- Include important supporting flows such as authentication, audit logging, matching/scoring, storage, retrieval, and integrations when supported.
+- Include data stores as database nodes, not generic services.
+- Include external systems separately from internal services.
+- Include decision nodes only for real branching logic.
+- Include security/auth when the system has users, roles, private data, company data, files, or admin operations.
+- Include validation and failure handling when the system accepts user input, files, external records, or scoring decisions.
+- Use groups as architectural layers, bounded subsystems, or swimlanes.
+- Use edge labels that explain the interaction, not generic labels like "uses".
+- Preserve the user's domain language.
+- Do not invent specific vendors, frameworks, or cloud products.
+- Do not produce visual concepts that look like a poster, cartoon, story map, mind map, or marketing graphic.
+- The result must be suitable for a technical design review with engineers and architects.
+
+SPARSE INPUT REFERENCE ARCHITECTURE MODE
+
+If the brief is sparse or vague, still produce a professional WIDE reference architecture for the stated domain.
+
+Use common generic architecture components without naming vendors or frameworks.
+
+For a company matching, recommendation, scoring, search, AI, marketplace, SaaS, or workflow system, include relevant generic components such as:
+
+- User Portal
+- Admin Console
+- Authentication
+- Requirement Intake
+- File Upload / Records Intake when input files or records are mentioned
+- Requirement Extraction
+- Profile Repository
+- Search / Retrieval Service
+- Matching / Scoring Engine
+- Ranking Service
+- Explanation Service
+- Decision Trace / Audit Log
+- Notification Service
+- External Integration Adapter when integrations are mentioned
+- Operational Monitoring
+
+These are allowed as architecture assumptions when the user provided a vague system idea.
+
+Do not invent specific products, vendors, frameworks, cloud names, databases, or paid services.
 
 ${limits}
 
 OUTPUT FORMAT
 
-Return exactly one tiny JSON object:
+Return exactly one JSON object:
 
 {
   "h": "short diagram title",
@@ -217,9 +356,10 @@ Return exactly one tiny JSON object:
 
 NODE TYPES
 
-Use concise semantic types such as:
+Use only concise semantic types such as:
 
 actor
+frontend
 process
 service
 api
@@ -230,25 +370,36 @@ queue
 component
 security
 artifact
+observability
 
 RULES
 
 1. Node ids must be short stable kebab-case ids.
 2. Every edge source and target must reference an existing node id.
 3. Every node group id must reference an existing group id.
-4. Node labels: maximum 5 words.
-5. Edge labels: maximum 4 words.
-6. Prefer meaningful subsystem groups.
-7. Prioritize the main end-to-end flow.
-8. Include important supporting data stores and integrations.
-9. No duplicate concepts.
-10. No markdown.
-11. No code fences.
-12. No commentary.
-13. Return JSON only.
-14. Close every string, array, and object.
+4. Node labels: maximum 7 words.
+5. Edge labels: maximum 5 words.
+6. Prefer 4 to 6 meaningful subsystem groups for software architecture.
+7. Every group should contain at least 2 nodes when possible.
+8. Prefer a complete flow over isolated boxes.
+9. Avoid duplicate concepts.
+10. Avoid dummy, decorative, placeholder, and unsupported concepts.
+11. No markdown.
+12. No code fences.
+13. No commentary.
+14. Return JSON only.
 
-Return the smallest complete professional diagram specification possible.`;
+Before returning, verify:
+- the diagram is professional and technical
+- all nodes are blocks/components/actor blocks/stores/decisions
+- no actor is represented as a stick figure
+- SaaS/software systems are not represented as skinny vertical sequence/activity diagrams unless explicitly requested
+- all edges have meaningful direction and labels
+- no childish, decorative, cartoon, icon, emoji, clipart, or infographic-style elements are implied
+- the diagram is comprehensive enough for architecture review
+15. Close every string, array, and object.
+
+Return the richest accurate compact diagram specification possible.`;
 }
 
 function parseJsonObject(

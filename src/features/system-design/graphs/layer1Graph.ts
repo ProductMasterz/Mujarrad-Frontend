@@ -19,6 +19,7 @@ import { generateDiagramNode } from '../nodes/generateDiagramNode';
 import { generateFinalDocsNode } from '../nodes/generateFinalDocsNode';
 import { generateQuestionNode } from '../nodes/generateQuestionNode';
 import { refineDiagramNode } from '../nodes/refineDiagramNode';
+import { saveLayer1ToMujarrad } from '../services/saveLayer1ToMujarrad';
 import { updateUnderstandingNode } from '../nodes/updateUnderstandingNode';
 import { processSystemDesignInput } from '../tools/inputProcessingTool';
 import type { AiTokenUsage } from '../tools/aiProviderTool';
@@ -240,6 +241,10 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
           calls: [],
         },
 
+        mujarradSave: {
+          status: 'idle',
+        },
+
         diagramGenerationContext: null,
         drawioXml: '',
         diagramImages: undefined,
@@ -333,26 +338,36 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
   }
 
   if (event.type === 'generate_diagram') {
-    if (!state.diagramGenerationContext) {
-      return {
-        ok: false,
-        graphState: addGraphError(
-          state,
-          'Diagram generation requires a prepared diagramGenerationContext. Complete or skip clarification first.',
-          'generate_diagram',
-        ),
-        message: 'Diagram generation context is not ready.',
-      };
-    }
+    const diagramReadyState =
+      state.diagramGenerationContext
+        ? state
+        : completeLayer1Step(
+            {
+              ...state,
+              diagramGenerationContext:
+                buildDiagramGenerationContext(
+                  state,
+                  'skipped_to_diagram',
+                ),
+              nextAction: 'generate_diagram',
+              updatedAt: createIsoTimestamp(),
+            },
+            'clarification',
+          );
 
     return {
       ok: true,
       graphState: {
-        ...state,
+        ...diagramReadyState,
+        stage: 'diagram',
+        activeStep: 'diagram',
         nextAction: 'generate_diagram',
         updatedAt: createIsoTimestamp(),
       },
-      message: 'Generating diagram from Layer 1 context.',
+      message:
+        state.diagramGenerationContext
+          ? 'Generating diagram from Layer 1 context.'
+          : 'Generating diagram from current understanding. Pending clarification questions were kept available.',
     };
   }
 
@@ -408,6 +423,10 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
     const revision: DiagramRevision = {
       id: createSystemDesignId('diagram-revision'),
       xml: event.xml,
+      mermaidSource:
+        state.mermaidSource,
+      activeRenderer:
+        'drawio',
       instruction: 'Manual Draw.io edit.',
       createdAt: createIsoTimestamp(),
     };
@@ -443,6 +462,12 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
     const undoRevision: DiagramRevision = {
       id: createSystemDesignId('diagram-revision'),
       xml: previousRevision.xml,
+      mermaidSource:
+        previousRevision.mermaidSource ??
+        state.mermaidSource,
+      activeRenderer:
+        previousRevision.activeRenderer ??
+        state.activeDiagramRenderer,
       instruction: 'Undo to previous diagram revision.',
       createdAt: createIsoTimestamp(),
     };
@@ -451,8 +476,22 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
       ok: true,
       graphState: {
         ...state,
-        drawioXml: previousRevision.xml,
-        diagramRevisions: [...state.diagramRevisions, undoRevision],
+        drawioXml:
+          previousRevision.xml,
+        mermaidSource:
+          previousRevision.mermaidSource ??
+          state.mermaidSource,
+        activeDiagramRenderer:
+          previousRevision.activeRenderer ??
+          state.activeDiagramRenderer,
+        selectedDiagramRenderer:
+          null,
+        diagramApproved:
+          false,
+        diagramRevisions: [
+          ...state.diagramRevisions,
+          undoRevision,
+        ],
         nextAction: 'wait_for_diagram_approval',
         updatedAt: createIsoTimestamp(),
       },
@@ -478,6 +517,12 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
     const resetRevision: DiagramRevision = {
       id: createSystemDesignId('diagram-revision'),
       xml: originalRevision.xml,
+      mermaidSource:
+        originalRevision.mermaidSource ??
+        state.mermaidSource,
+      activeRenderer:
+        originalRevision.activeRenderer ??
+        'drawio',
       instruction: 'Reset to original generated diagram.',
       createdAt: createIsoTimestamp(),
     };
@@ -486,8 +531,22 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
       ok: true,
       graphState: {
         ...state,
-        drawioXml: originalRevision.xml,
-        diagramRevisions: [...state.diagramRevisions, resetRevision],
+        drawioXml:
+          originalRevision.xml,
+        mermaidSource:
+          originalRevision.mermaidSource ??
+          state.mermaidSource,
+        activeDiagramRenderer:
+          originalRevision.activeRenderer ??
+          'drawio',
+        selectedDiagramRenderer:
+          null,
+        diagramApproved:
+          false,
+        diagramRevisions: [
+          ...state.diagramRevisions,
+          resetRevision,
+        ],
         nextAction: 'wait_for_diagram_approval',
         updatedAt: createIsoTimestamp(),
       },
@@ -499,11 +558,32 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
     const completedState = completeLayer1Step(
       {
         ...state,
-        drawioXml: event.xml ?? state.drawioXml,
+        drawioXml:
+          event.xml ??
+          state.drawioXml,
+
+        mermaidSource:
+          event.mermaidSource ??
+          state.mermaidSource,
+
+        activeDiagramRenderer:
+          event.diagramRenderer ??
+          state.activeDiagramRenderer,
+
+        selectedDiagramRenderer:
+          event.diagramRenderer ??
+          state.activeDiagramRenderer,
+
         diagramImages:
-          event.diagramImages ?? state.diagramImages,
-        diagramApproved: true,
-        nextAction: 'generate_final_docs',
+          event.diagramImages ??
+          state.diagramImages,
+
+        diagramApproved:
+          true,
+        mujarradSave: {
+          status: 'idle',
+        },
+        nextAction: 'save_layer1_to_mujarrad',
         updatedAt: createIsoTimestamp(),
       },
       'diagram',
@@ -514,11 +594,107 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
       graphState: {
         ...completedState,
         diagramApproved: true,
+        activeStep: 'save_to_mujarrad',
+        nextAction: 'save_layer1_to_mujarrad',
+        updatedAt: createIsoTimestamp(),
+      },
+      message:
+        `${event.diagramRenderer === 'mermaid' ? 'Mermaid' : 'Draw.io'} diagram approved. Save Layer 1 to Mujarrad or skip to final artifact generation.`,
+    };
+  }
+
+  if (event.type === 'save_layer1_to_mujarrad') {
+    if (!event.mujarradDestination) {
+      return {
+        ok: false,
+        graphState: addGraphWarning(
+          {
+            ...state,
+            mujarradSave: {
+              status: 'error',
+              error: 'Missing Mujarrad save destination.',
+            },
+          },
+          'Missing Mujarrad save destination.',
+          'save_layer1_to_mujarrad',
+          'save_layer1_to_mujarrad',
+        ),
+        message: 'Missing Mujarrad save destination.',
+      };
+    }
+
+    const result = await saveLayer1ToMujarrad(
+      state,
+      event.mujarradDestination,
+    );
+
+    if (!result.ok) {
+      return {
+        ok: false,
+        graphState: addGraphWarning(
+          {
+            ...state,
+            mujarradSave: {
+              status: 'error',
+              destination: event.mujarradDestination,
+              error:
+                result.error ??
+                'Mujarrad backend save failed.',
+            },
+          },
+          result.error ??
+            'Mujarrad backend save failed.',
+          'save_layer1_to_mujarrad',
+          'save_layer1_to_mujarrad',
+        ),
+        message:
+          result.error ??
+          'Mujarrad backend save failed.',
+      };
+    }
+
+    return {
+      ok: true,
+      graphState: {
+        ...state,
+        mujarradSave: {
+          status: 'saved',
+          destination: event.mujarradDestination,
+          backendNodeId: result.backendNodeId,
+          savedAt: createIsoTimestamp(),
+        },
+        nextAction: 'generate_final_docs',
+        updatedAt: createIsoTimestamp(),
+      },
+      message: 'Layer 1 saved to Mujarrad.',
+    };
+  }
+
+  if (event.type === 'skip_mujarrad_save') {
+    const completedState = completeLayer1Step(
+      {
+        ...state,
+        mujarradSave: {
+          ...state.mujarradSave,
+          status: 'skipped',
+          skippedAt: createIsoTimestamp(),
+        },
+        nextAction: 'generate_final_docs',
+        updatedAt: createIsoTimestamp(),
+      },
+      'save_to_mujarrad',
+    );
+
+    return {
+      ok: true,
+      graphState: {
+        ...completedState,
         activeStep: 'final_artifacts',
         nextAction: 'generate_final_docs',
         updatedAt: createIsoTimestamp(),
       },
-      message: 'Diagram approved. Final documentation is available.',
+      message:
+        'Mujarrad save skipped. Final artifact generation is available.',
     };
   }
 
@@ -767,7 +943,13 @@ async function generateDiagramGraphNode(
     return {};
   }
 
-  const { xml, summary, warnings, error } = await generateDiagramNode(
+  const {
+    xml,
+    mermaidSource,
+    summary,
+    warnings,
+    error,
+  } = await generateDiagramNode(
     runtime.graphState,
   );
 
@@ -787,6 +969,9 @@ async function generateDiagramGraphNode(
   const revision: DiagramRevision = {
     id: createSystemDesignId('diagram-revision'),
     xml,
+    mermaidSource,
+    activeRenderer:
+      runtime.graphState.activeDiagramRenderer,
     instruction: 'Initial AI-generated diagram from Layer 1 context.',
     createdAt: createIsoTimestamp(),
   };
@@ -796,8 +981,18 @@ async function generateDiagramGraphNode(
     graphState: {
       ...runtime.graphState,
       drawioXml: xml,
+      mermaidSource,
+      activeDiagramRenderer:
+        runtime.graphState.activeDiagramRenderer ??
+        'drawio',
+      selectedDiagramRenderer:
+        null,
+      diagramApproved:
+        false,
       diagramSummary: summary,
       diagramRevisions: [...runtime.graphState.diagramRevisions, revision],
+      stage: 'diagram',
+      activeStep: 'diagram',
       nextAction: 'wait_for_diagram_approval',
       updatedAt: createIsoTimestamp(),
     },
@@ -820,6 +1015,7 @@ async function refineDiagramGraphNode(
 
   const {
     xml,
+    mermaidSource,
     summary,
     warnings,
     usageRecords,
@@ -856,6 +1052,9 @@ async function refineDiagramGraphNode(
   const revision: DiagramRevision = {
     id: createSystemDesignId('diagram-revision'),
     xml,
+    mermaidSource,
+    activeRenderer:
+      stateWithUsage.activeDiagramRenderer,
     instruction,
     createdAt: createIsoTimestamp(),
   };
@@ -864,8 +1063,29 @@ async function refineDiagramGraphNode(
     ok: true,
     graphState: {
       ...stateWithUsage,
-      drawioXml: xml,
-      diagramSummary: summary || stateWithUsage.diagramSummary,
+      drawioXml:
+        stateWithUsage.activeDiagramRenderer ===
+        'drawio'
+          ? xml
+          : stateWithUsage.drawioXml,
+
+      mermaidSource:
+        stateWithUsage.activeDiagramRenderer ===
+        'mermaid'
+          ? (
+              mermaidSource ||
+              stateWithUsage.mermaidSource
+            )
+          : stateWithUsage.mermaidSource,
+
+      selectedDiagramRenderer:
+        null,
+
+      diagramApproved:
+        false,
+      diagramSummary:
+        summary ||
+        stateWithUsage.diagramSummary,
       diagramRevisions: [
         ...stateWithUsage.diagramRevisions,
         revision,
@@ -885,9 +1105,7 @@ async function generateFinalDocsGraphNode(
 ): Promise<Partial<RuntimeState>> {
   if (
     !runtime.ok ||
-    !['approve_diagram', 'generate_final_docs'].includes(
-      runtime.event.type,
-    )
+    runtime.event.type !== 'generate_final_docs'
   ) {
     return {};
   }
@@ -915,7 +1133,19 @@ async function generateFinalDocsGraphNode(
     graphState: {
       ...runtime.graphState,
       stage: 'export',
-      activeStep: 'final_artifacts',
+      activeStep: 'preview_artifacts',
+      completedSteps: Array.from(
+        new Set([
+          ...runtime.graphState.completedSteps,
+          'final_artifacts',
+        ]),
+      ),
+      availableSteps: Array.from(
+        new Set([
+          ...runtime.graphState.availableSteps,
+          'preview_artifacts',
+        ]),
+      ),
       markdownSpec: bundle.markdownSpec,
       markdownApproved: true,
       approvedLayer1Artifacts: bundle,
@@ -948,10 +1178,7 @@ function routeAfterDispatch(runtime: RuntimeState): string {
     return 'refine_diagram';
   }
 
-  if (
-    runtime.event.type === 'approve_diagram' ||
-    runtime.event.type === 'generate_final_docs'
-  ) {
+  if (runtime.event.type === 'generate_final_docs') {
     return 'generate_final_docs';
   }
 

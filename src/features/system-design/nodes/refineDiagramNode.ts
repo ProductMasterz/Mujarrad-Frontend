@@ -9,6 +9,9 @@ import {
 import {
   compileSemanticDiagramToDrawio,
 } from '../diagram-intelligence/compileSemanticDiagramToDrawio';
+import {
+  compileSemanticDiagramToMermaid,
+} from '../diagram-intelligence/compileSemanticDiagramToMermaid';
 
 import type {
   Layer1GraphState,
@@ -115,7 +118,10 @@ function resolveRefinementTargetDiagramType(
 export interface RefineDiagramNodeResult {
   xml: string | null;
 
-  summary: string;
+  
+  mermaidSource: string;
+
+summary: string;
 
   warnings: string[];
 
@@ -148,7 +154,11 @@ export async function refineDiagramNode(
 
   if (!instruction) {
     return {
-      xml: null,
+        xml:
+          null,
+
+        mermaidSource:
+          '',
 
       summary: '',
 
@@ -163,7 +173,11 @@ export async function refineDiagramNode(
 
   if (!state.diagramGenerationContext) {
     return {
-      xml: null,
+        xml:
+          null,
+
+        mermaidSource:
+          '',
 
       summary: '',
 
@@ -178,7 +192,11 @@ export async function refineDiagramNode(
 
   if (!state.drawioXml.trim()) {
     return {
-      xml: null,
+        xml:
+          null,
+
+        mermaidSource:
+          '',
 
       summary: '',
 
@@ -213,7 +231,9 @@ export async function refineDiagramNode(
 
     if (
       intentResult.intent.pipelineDepth !==
-      'fast_edit'
+        'fast_edit' ||
+      state.activeDiagramRenderer ===
+        'mermaid'
     ) {
       const targetDiagramType =
         resolveRefinementTargetDiagramType(
@@ -257,8 +277,11 @@ export async function refineDiagramNode(
         !compactResult.semanticDiagram
       ) {
         return {
-          xml:
-            null,
+        xml:
+          null,
+
+        mermaidSource:
+          '',
 
           summary:
             '',
@@ -285,8 +308,14 @@ export async function refineDiagramNode(
           semanticDiagram,
         );
 
+      const compiledMermaid =
+        compileSemanticDiagramToMermaid(
+          semanticDiagram,
+        );
+
       warnings.push(
         ...compiled.warnings,
+        ...compiledMermaid.warnings,
       );
 
       const repaired =
@@ -300,8 +329,11 @@ export async function refineDiagramNode(
 
       if (!repaired.valid) {
         return {
-          xml:
-            null,
+        xml:
+          null,
+
+        mermaidSource:
+          '',
 
           summary:
             '',
@@ -323,6 +355,9 @@ export async function refineDiagramNode(
       return {
         xml:
           repaired.xml,
+
+        mermaidSource:
+          compiledMermaid.source,
 
         summary:
           `Compact ${intentResult.intent.pipelineDepth.replaceAll('_', ' ')} refinement applied: ${instruction}`,
@@ -397,7 +432,11 @@ export async function refineDiagramNode(
 
     if (!repaired.valid) {
       return {
-        xml: null,
+        xml:
+          null,
+
+        mermaidSource:
+          '',
 
         summary: '',
 
@@ -415,10 +454,12 @@ export async function refineDiagramNode(
     }
 
     return {
-      xml:
-        repaired.xml,
+        xml: repaired.xml,
 
-      summary:
+        mermaidSource:
+          state.mermaidSource,
+
+        summary:
         `AI fast edit applied: ${instruction}`,
 
       warnings,
@@ -435,7 +476,11 @@ export async function refineDiagramNode(
         : 'Diagram refinement failed.';
 
     return {
-      xml: null,
+        xml:
+          null,
+
+        mermaidSource:
+          '',
 
       summary: '',
 

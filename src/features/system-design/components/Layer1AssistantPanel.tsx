@@ -63,8 +63,8 @@ function AssistantContainer({
       className={[
         'flex flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/70',
         tall
-          ? 'h-[620px] min-h-[560px]'
-          : 'h-[680px] min-h-[520px]',
+          ? 'h-[520px] min-h-[460px]'
+          : 'h-[600px] min-h-[460px]',
       ].join(' ')}
     >
       {children}

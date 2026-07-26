@@ -12,6 +12,7 @@ export type FinalArtifactId =
   | 'yaml'
   | 'plain_text'
   | 'drawio_xml'
+  | 'mermaid'
   | 'svg'
   | 'png'
   | 'manifest'
@@ -124,12 +125,37 @@ export function buildFinalArtifactExplorerItems(
     {
       id: 'drawio_xml',
       label: 'Draw.io XML',
-      description: 'Final approved editable diagram source.',
+      description:
+        bundle.selectedDiagramRenderer ===
+        'drawio'
+          ? 'Official approved editable Draw.io diagram source.'
+          : 'Alternative Draw.io source generated from the same semantic model.',
       fileName: 'final-system-diagram.drawio',
       mediaType: 'application/xml',
       previewKind: 'text',
       content: bundle.drawioXml,
       available: Boolean(bundle.drawioXml),
+    },
+    {
+      id: 'mermaid',
+      label: 'Mermaid Source',
+      description:
+        bundle.selectedDiagramRenderer ===
+        'mermaid'
+          ? 'Official approved Mermaid diagram source.'
+          : 'Alternative Mermaid representation generated from the same semantic model.',
+      fileName:
+        'final-system-diagram.mmd',
+      mediaType:
+        'text/plain',
+      previewKind:
+        'text',
+      content:
+        bundle.mermaidSource,
+      available:
+        Boolean(
+          bundle.mermaidSource,
+        ),
     },
     {
       id: 'svg',
