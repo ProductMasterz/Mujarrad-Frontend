@@ -189,15 +189,18 @@ export async function generateDiagramNode(
   }
 
   try {
+    const diagramUnderstanding =
+      state.diagramGenerationContext.understanding;
+
     const targetDiagramType =
       selectInitialDiagramType(
-        state.understanding,
+        diagramUnderstanding,
       );
 
     const compactResult =
       await buildCompactSemanticDiagram({
         understanding:
-          state.understanding,
+          diagramUnderstanding,
 
         targetDiagramType,
 

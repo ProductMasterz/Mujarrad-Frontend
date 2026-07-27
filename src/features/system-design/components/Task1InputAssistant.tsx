@@ -188,41 +188,6 @@ export function Task1InputAssistant() {
 
       syncFromGraphState(result.state);
 
-      if (
-        result.processingResult.status === 'ready' &&
-        result.state.nextAction === 'ask_question'
-      ) {
-        const questionResponse = await fetch('/api/system-builder/layer1', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            event: {
-              type: 'generate_question',
-            },
-            state: result.state,
-          }),
-        });
-
-        const questionResult = (await questionResponse.json()) as {
-          ok: boolean;
-          state?: typeof graphState;
-          message?: string;
-          error?: string;
-        };
-
-        if (!questionResult.ok || !questionResult.state) {
-          throw new Error(
-            questionResult.error ??
-              questionResult.message ??
-              'Failed to generate the first clarification question.'
-          );
-        }
-
-        syncFromGraphState(questionResult.state);
-      }
-
       setStatus(result.processingResult.status === 'ready' ? 'ready' : 'failed');
     } catch {
       setStatus('failed');

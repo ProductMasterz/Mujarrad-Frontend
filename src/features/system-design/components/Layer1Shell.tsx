@@ -6,7 +6,6 @@ import { FinalArtifactsStep } from './FinalArtifactsStep';
 import { PreviewFinalArtifactsStep } from './PreviewFinalArtifactsStep';
 import { Layer1AssistantPanel } from './Layer1AssistantPanel';
 import { Layer1DiagramStep } from './Layer1DiagramStep';
-import { Layer1InputPanel } from './Layer1InputPanel';
 import { Layer1QuestionLoop } from './Layer1QuestionLoop';
 import { Layer1StepNavigation } from './Layer1StepNavigation';
 import { SaveLayer1ToMujarradStep } from './SaveLayer1ToMujarradStep';
@@ -63,12 +62,16 @@ export function Layer1Shell() {
       />
 
       <div
-        className={showAssistant ? 'grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_520px]' : ''}
+        className={
+          showAssistant
+            ? activeStep === 'diagram'
+              ? 'grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,4fr)_minmax(260px,1fr)]'
+              : 'grid grid-cols-1 gap-6 xl:grid-cols-2'
+            : ''
+        }
       >
         <main className="min-w-0 w-full">
-          {activeStep === 'input' ? (
-            <Layer1InputPanel />
-          ) : activeStep === 'clarification' ? (
+          {activeStep === 'input' || activeStep === 'clarification' ? (
             <Layer1QuestionLoop />
           ) : activeStep === 'diagram' ? (
             <Layer1DiagramStep />

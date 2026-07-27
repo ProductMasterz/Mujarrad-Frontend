@@ -91,7 +91,13 @@ export function buildSlimUnderstandingContext(understanding: unknown): unknown {
     goal: asText(understanding.goal),
     confidence: understanding.confidence,
 
-    actors: compactItems(understanding.actors, ['id', 'name', 'role', 'description'], 8),
+    primaryUsers: compactItems(understanding.primaryUsers, [], 8),
+
+    secondaryUsers: compactItems(understanding.secondaryUsers, [], 8),
+
+    roles: compactItems(understanding.roles, [], 8),
+
+    permissions: compactItems(understanding.permissions, [], 10),
 
     workflows: compactItems(understanding.workflows, ['id', 'title', 'steps'], 8),
 
@@ -109,11 +115,7 @@ export function buildSlimUnderstandingContext(understanding: unknown): unknown {
 
     integrations: compactItems(understanding.integrations, ['id', 'name', 'purpose'], 8),
 
-    securityRequirements: compactItems(
-      understanding.securityRequirements,
-      ['id', 'requirement'],
-      8
-    ),
+    security: compactItems(understanding.security, ['id', 'requirement'], 8),
 
     edgeCases: compactItems(understanding.edgeCases, ['id', 'case'], 8),
 
@@ -193,7 +195,12 @@ export function buildSlimDiagramContext(understanding: unknown): unknown {
   return {
     goal: slim.goal,
     summary: slim.summary,
-    actors: slim.actors,
+    actors: {
+      primaryUsers: slim.primaryUsers,
+      secondaryUsers: slim.secondaryUsers,
+      roles: slim.roles,
+      permissions: slim.permissions,
+    },
     workflows: slim.workflows,
     decisions: slim.decisionLogic,
     data: {
@@ -204,7 +211,7 @@ export function buildSlimDiagramContext(understanding: unknown): unknown {
     rules: slim.businessRules,
     validation: slim.validationRules,
     integrations: slim.integrations,
-    security: slim.securityRequirements,
+    security: slim.security,
     failures: {
       edgeCases: slim.edgeCases,
       errorCases: slim.errorCases,

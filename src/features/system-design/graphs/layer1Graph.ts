@@ -220,18 +220,34 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         ...state,
         rawInputs: [...state.rawInputs, event.rawInput],
         processedInput: processingResult.processedInput,
-        conversation: [
-          {
-            id: createSystemDesignId('conversation-message'),
-            role: 'user',
-            kind: 'user_input',
-            content: processingResult.processedInput.normalizedText,
-            createdAt: createIsoTimestamp(),
-            metadata: {
-              source: 'initial_description',
+        conversation: (() => {
+          const userMessageTimestamp = createIsoTimestamp();
+          const assistantMessageTimestamp = createIsoTimestamp();
+
+          return [
+            {
+              id: createSystemDesignId('conversation-message'),
+              role: 'user' as const,
+              kind: 'user_input' as const,
+              content: processingResult.processedInput.normalizedText,
+              createdAt: userMessageTimestamp,
+              metadata: {
+                source: 'initial_description',
+              },
             },
-          },
-        ],
+            {
+              id: createSystemDesignId('conversation-message'),
+              role: 'assistant' as const,
+              kind: 'assistant_message' as const,
+              content:
+                'I have analysed your system description. You can ask me to clarify the current understanding, add more requirements, ask a clarification question, or generate the diagram.',
+              createdAt: assistantMessageTimestamp,
+              metadata: {
+                source: 'input_analysis',
+              },
+            },
+          ];
+        })(),
 
         currentQuestion: null,
         questions: [],
@@ -338,7 +354,61 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
       };
     }
 
-    const { interpretation, error } = await interpretClarificationMessageNode(state, userMessage);
+    const { interpretation: rawInterpretation, error } =
+      await interpretClarificationMessageNode(state, userMessage);
+
+    const normalizedUserMessage = userMessage.trim();
+
+    const looksLikeDirectQuestion =
+      normalizedUserMessage.endsWith('?') ||
+      /^(what|why|how|when|where|who|which|can|could|would|should|do|does|is|are|tell me|show me|explain)\b/i.test(
+        normalizedUserMessage
+      );
+
+    const asksAboutWorkflowState =
+      /\b(completeness|complete|readiness|understanding|what you understand|missing information|missing details|current question|history|progress|score)\b/i.test(
+        normalizedUserMessage
+      ) &&
+      /\b(ask|tell|show|explain|know|about|what|why|how|status)\b/i.test(
+        normalizedUserMessage
+      );
+
+    const explicitlyAddsRequirement =
+      /^(add|also add|new requirement|another requirement|requirement:)\b/i.test(
+        normalizedUserMessage
+      );
+
+    const explicitlyCorrectsInformation =
+      /^(correction|correct|change|replace|instead|actually|no,|not )\b/i.test(
+        normalizedUserMessage
+      );
+
+    const currentQuestionAlreadyAnswered =
+      Boolean(state.currentQuestion) &&
+      deriveQuestionAnswersFromConversation(state.conversation).some(
+        (item) => item.questionId === state.currentQuestion?.id
+      );
+
+    const shouldForcePendingAnswer =
+      Boolean(state.currentQuestion) &&
+      !currentQuestionAlreadyAnswered &&
+      !looksLikeDirectQuestion &&
+      !asksAboutWorkflowState &&
+      !explicitlyAddsRequirement &&
+      !explicitlyCorrectsInformation &&
+      rawInterpretation?.intent !== 'assume_current_answer';
+
+    const interpretation =
+      shouldForcePendingAnswer && rawInterpretation
+        ? {
+            ...rawInterpretation,
+            intent: 'answer_current_question' as const,
+            assistantMessage: `Recorded as the answer to the current question: ${normalizedUserMessage}`,
+            concreteAnswer: normalizedUserMessage,
+            changesCanonicalEvidence: true,
+            assumedByAi: false,
+          }
+        : rawInterpretation;
 
     if (error || !interpretation) {
       return {
@@ -762,17 +832,20 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
   }
 
   if (event.type === 'generate_diagram') {
-    const diagramReadyState = state.diagramGenerationContext
-      ? state
-      : completeLayer1Step(
-          {
-            ...state,
-            diagramGenerationContext: buildDiagramGenerationContext(state, 'skipped_to_diagram'),
-            nextAction: 'generate_diagram',
-            updatedAt: createIsoTimestamp(),
-          },
-          'clarification'
-        );
+    const diagramReadyState = completeLayer1Step(
+      {
+        ...state,
+        diagramGenerationContext: buildDiagramGenerationContext(
+          state,
+          state.completeness?.readyForDiagram
+            ? 'ready_for_diagram'
+            : 'skipped_to_diagram'
+        ),
+        nextAction: 'generate_diagram',
+        updatedAt: createIsoTimestamp(),
+      },
+      'clarification'
+    );
 
     return {
       ok: true,
@@ -783,9 +856,8 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         nextAction: 'generate_diagram',
         updatedAt: createIsoTimestamp(),
       },
-      message: state.diagramGenerationContext
-        ? 'Generating diagram from Layer 1 context.'
-        : 'Generating diagram from current understanding. Pending clarification questions were kept available.',
+      message:
+        'Generating diagram from the latest cumulative understanding and clarification evidence.',
     };
   }
 
@@ -1157,6 +1229,7 @@ async function updateUnderstandingGraphNode(runtime: RuntimeState): Promise<Part
     graphState: {
       ...appendTask4AiUsage(runtime.graphState, 'understanding_update', usage),
       understanding,
+      diagramGenerationContext: null,
       nextAction: 'check_completeness',
       updatedAt: createIsoTimestamp(),
     },

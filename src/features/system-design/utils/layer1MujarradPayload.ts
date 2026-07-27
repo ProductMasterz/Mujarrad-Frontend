@@ -76,7 +76,27 @@ export function buildLayer1MujarradPayload(state: Layer1GraphState) {
       approved: state.diagramApproved,
       summary: state.diagramSummary,
       revisionCount: state.diagramRevisions.length,
+      revisions: state.diagramRevisions.map((revision) => ({
+        id: revision.id,
+        instruction: revision.instruction ?? null,
+        activeRenderer: revision.activeRenderer ?? null,
+        createdAt: revision.createdAt,
+      })),
     },
+
+    approvedArtifacts: state.approvedLayer1Artifacts
+      ? {
+          approvedAt: state.approvedLayer1Artifacts.approvedAt,
+          selectedDiagramRenderer:
+            state.approvedLayer1Artifacts.selectedDiagramRenderer,
+          diagramSummary:
+            state.approvedLayer1Artifacts.diagramSummary,
+          manifest:
+            state.approvedLayer1Artifacts.manifest,
+          tokenEfficiencyReport:
+            state.approvedLayer1Artifacts.tokenEfficiencyReport,
+        }
+      : null,
 
     metadata: {
       completedSteps: state.completedSteps,

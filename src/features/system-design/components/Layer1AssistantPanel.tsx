@@ -10,23 +10,26 @@ import { useLayer1Store } from '../stores/useLayer1Store';
 export function Layer1AssistantPanel() {
   const graphState = useLayer1Store((state) => state.graphState);
 
-  if (graphState.activeStep === 'input') {
+  const isSystemDefinitionStep =
+    graphState.activeStep === 'input' ||
+    graphState.activeStep === 'clarification';
+
+  if (isSystemDefinitionStep) {
     return (
       <AssistantContainer>
-        <Task1InputAssistant />
+        {graphState.processedInput ? (
+          <Task4ClarificationAssistant />
+        ) : (
+          <Task1InputAssistant />
+        )}
       </AssistantContainer>
     );
   }
 
-  if (graphState.activeStep === 'clarification') {
-    return (
-      <AssistantContainer>
-        <Task4ClarificationAssistant />
-      </AssistantContainer>
-    );
-  }
-
-  if (graphState.activeStep === 'diagram' && Boolean(graphState.mermaidSource)) {
+  if (
+    graphState.activeStep === 'diagram' &&
+    Boolean(graphState.mermaidSource)
+  ) {
     return (
       <div className="max-h-[calc(100vh-3rem)] min-h-0 space-y-4 overflow-y-auto overscroll-contain pr-1">
         <AssistantContainer tall>
@@ -54,7 +57,9 @@ function AssistantContainer({
     <aside
       className={[
         'flex flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/70',
-        tall ? 'h-[680px] min-h-[560px]' : 'h-[760px] min-h-[560px]',
+        tall
+          ? 'h-[680px] min-h-[560px]'
+          : 'h-[820px] min-h-[620px]',
       ].join(' ')}
     >
       {children}
