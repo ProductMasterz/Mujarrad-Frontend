@@ -1,11 +1,7 @@
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
 
 import { layer1GraphEventSchema } from '../schemas/graph.schema';
-import type {
-  Layer1GraphEvent,
-  Layer1GraphResult,
-  Layer1GraphState,
-} from '../types/graph.types';
+import type { Layer1GraphEvent, Layer1GraphResult, Layer1GraphState } from '../types/graph.types';
 import type { InputProcessingResult } from '../types/input.types';
 import {
   createEmptySystemUnderstanding,
@@ -18,18 +14,20 @@ import { checkCompletenessNode } from '../nodes/checkCompletenessNode';
 import { generateDiagramNode } from '../nodes/generateDiagramNode';
 import { generateFinalDocsNode } from '../nodes/generateFinalDocsNode';
 import { generateQuestionNode } from '../nodes/generateQuestionNode';
+import { interpretClarificationMessageNode } from '../nodes/interpretClarificationMessageNode';
 import { refineDiagramNode } from '../nodes/refineDiagramNode';
 import { saveLayer1ToMujarrad } from '../services/saveLayer1ToMujarrad';
 import { updateUnderstandingNode } from '../nodes/updateUnderstandingNode';
 import { processSystemDesignInput } from '../tools/inputProcessingTool';
 import type { AiTokenUsage } from '../tools/aiProviderTool';
 import { createIsoTimestamp, createSystemDesignId } from '../utils/id';
-import { isReadyForDiagram } from '../utils/completeness';
 import { buildDiagramGenerationContext } from '../utils/diagramGenerationContext';
 import {
-  completeLayer1Step,
-  createInitialLayer1GraphState,
-} from './layer1GraphState';
+  deriveAdditionalRequirementsFromConversation,
+  deriveClarificationMessagesFromConversation,
+  deriveQuestionAnswersFromConversation,
+} from '../utils/conversationDerivations';
+import { completeLayer1Step, createInitialLayer1GraphState } from './layer1GraphState';
 
 type RuntimeState = {
   event: Layer1GraphEvent;
@@ -38,6 +36,7 @@ type RuntimeState = {
   message?: string;
   processingResult?: InputProcessingResult;
   skipCompleteness?: boolean;
+  canonicalEvidenceChanged?: boolean;
 };
 
 const RuntimeAnnotation = Annotation.Root({
@@ -47,13 +46,10 @@ const RuntimeAnnotation = Annotation.Root({
   message: Annotation<string | undefined>(),
   processingResult: Annotation<InputProcessingResult | undefined>(),
   skipCompleteness: Annotation<boolean | undefined>(),
+  canonicalEvidenceChanged: Annotation<boolean | undefined>(),
 });
 
-function addGraphError(
-  state: Layer1GraphState,
-  message: string,
-  source: string,
-): Layer1GraphState {
+function addGraphError(state: Layer1GraphState, message: string, source: string): Layer1GraphState {
   return {
     ...state,
     errors: [
@@ -73,7 +69,7 @@ function addGraphError(
 function appendTask4AiUsage(
   state: Layer1GraphState,
   operation: Task4AiOperation,
-  usage: AiTokenUsage | null,
+  usage: AiTokenUsage | null
 ): Layer1GraphState {
   if (!usage) {
     return state;
@@ -100,11 +96,10 @@ function appendTask4AiUsage(
   };
 }
 
-
 function appendTask6AiUsage(
   state: Layer1GraphState,
   operation: Task6AiOperation,
-  usage: AiTokenUsage | null,
+  usage: AiTokenUsage | null
 ): Layer1GraphState {
   if (!usage) {
     return state;
@@ -131,12 +126,11 @@ function appendTask6AiUsage(
   };
 }
 
-
 function addGraphWarning(
   state: Layer1GraphState,
   message: string,
   source: string,
-  nextAction: Layer1GraphState['nextAction'] = state.nextAction,
+  nextAction: Layer1GraphState['nextAction'] = state.nextAction
 ): Layer1GraphState {
   return {
     ...state,
@@ -163,7 +157,7 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
       graphState: addGraphError(
         runtime.graphState,
         'Invalid Layer 1 graph event.',
-        'dispatch_event',
+        'dispatch_event'
       ),
       message: 'Invalid Layer 1 graph event.',
     };
@@ -226,10 +220,21 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         ...state,
         rawInputs: [...state.rawInputs, event.rawInput],
         processedInput: processingResult.processedInput,
+        conversation: [
+          {
+            id: createSystemDesignId('conversation-message'),
+            role: 'user',
+            kind: 'user_input',
+            content: processingResult.processedInput.normalizedText,
+            createdAt: createIsoTimestamp(),
+            metadata: {
+              source: 'initial_description',
+            },
+          },
+        ],
 
         currentQuestion: null,
         questions: [],
-        qaHistory: [],
         understanding: createEmptySystemUnderstanding(),
         completeness: null,
 
@@ -260,7 +265,7 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         nextAction: 'ask_question',
         updatedAt: createIsoTimestamp(),
       },
-      'input',
+      'input'
     );
 
     return {
@@ -270,6 +275,7 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         nextAction: 'ask_question',
       },
       processingResult,
+      canonicalEvidenceChanged: true,
       message: 'Input processed. Clarification is available.',
     };
   }
@@ -281,13 +287,9 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
       return {
         ok: false,
         graphState: addGraphError(
-          appendTask4AiUsage(
-            state,
-            'question_generation',
-            usage,
-          ),
+          appendTask4AiUsage(state, 'question_generation', usage),
           error ?? 'Failed to generate question.',
-          'generate_question',
+          'generate_question'
         ),
         message: error ?? 'Failed to generate question.',
       };
@@ -296,17 +298,441 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
     return {
       ok: true,
       graphState: {
-        ...appendTask4AiUsage(
-          state,
-          'question_generation',
-          usage,
-        ),
+        ...appendTask4AiUsage(state, 'question_generation', usage),
         currentQuestion: question,
         questions: [...state.questions, question],
+        conversation: [
+          ...state.conversation,
+          {
+            id: question.id,
+            role: 'assistant',
+            kind: 'assistant_question',
+            content: question.question,
+            createdAt: createIsoTimestamp(),
+            questionId: question.id,
+            metadata: {
+              category: question.category,
+              reasonForAsking: question.reasonForAsking,
+            },
+          },
+        ],
         nextAction: 'wait_for_answer',
         updatedAt: createIsoTimestamp(),
       },
       message: 'Generated next clarification question.',
+    };
+  }
+
+  if (event.type === 'send_clarification_message') {
+    const userMessage = event.message?.trim();
+
+    if (!userMessage) {
+      return {
+        ok: false,
+        graphState: addGraphError(
+          state,
+          'Missing clarification message.',
+          'send_clarification_message'
+        ),
+        message: 'Missing clarification message.',
+      };
+    }
+
+    const { interpretation, error } = await interpretClarificationMessageNode(state, userMessage);
+
+    if (error || !interpretation) {
+      return {
+        ok: false,
+        graphState: addGraphWarning(
+          state,
+          error ?? 'Could not interpret clarification message.',
+          'send_clarification_message',
+          state.currentQuestion ? 'wait_for_answer' : 'ask_question'
+        ),
+        message: error ?? 'Could not interpret clarification message.',
+      };
+    }
+
+    const timestamp = createIsoTimestamp();
+
+    const userChatMessage = {
+      id: createSystemDesignId('clarification-message'),
+      role: 'user' as const,
+      content: userMessage,
+      intent: interpretation.intent,
+      createdAt: timestamp,
+    };
+
+    const assistantChatMessage = {
+      id: createSystemDesignId('clarification-message'),
+      role: 'assistant' as const,
+      content: interpretation.assistantMessage,
+      intent: interpretation.intent,
+      createdAt: timestamp,
+    };
+
+    let nextState: Layer1GraphState = {
+      ...state,
+      conversation: [
+        ...state.conversation,
+        {
+          id: userChatMessage.id,
+          role: 'user',
+          kind: 'user_input',
+          content: userMessage,
+          createdAt: timestamp,
+          metadata: {
+            intent: interpretation.intent,
+          },
+        },
+        {
+          id: assistantChatMessage.id,
+          role: 'assistant',
+          kind: 'assistant_message',
+          content: interpretation.assistantMessage,
+          createdAt: timestamp,
+          metadata: {
+            intent: interpretation.intent,
+          },
+        },
+      ],
+      updatedAt: timestamp,
+    };
+
+    const resolvesCurrentQuestion =
+      Boolean(state.currentQuestion) &&
+      Boolean(interpretation.concreteAnswer) &&
+      (interpretation.intent === 'answer_current_question' ||
+        interpretation.intent === 'assume_current_answer');
+
+    if (resolvesCurrentQuestion && state.currentQuestion && interpretation.concreteAnswer) {
+      const questionAnswers = deriveQuestionAnswersFromConversation(state.conversation);
+      const existingAnswer = questionAnswers.find(
+        (item) => item.questionId === state.currentQuestion?.id
+      );
+
+      const answerRecord: QuestionAnswer = {
+        id: existingAnswer?.id ?? createSystemDesignId('answer'),
+        questionId: state.currentQuestion.id,
+        answer: interpretation.concreteAnswer,
+        createdAt: existingAnswer?.createdAt ?? timestamp,
+        updatedAt: existingAnswer ? timestamp : undefined,
+        assumedByAi: interpretation.assumedByAi,
+      };
+
+      nextState = {
+        ...nextState,
+        conversation: nextState.conversation.map((message) => {
+          const answerMessageId = interpretation.assumedByAi
+            ? assistantChatMessage.id
+            : userChatMessage.id;
+
+          return message.id === answerMessageId
+            ? {
+                ...message,
+                content: interpretation.concreteAnswer!,
+                questionId: state.currentQuestion!.id,
+                answerId: answerRecord.id,
+                metadata: {
+                  ...message.metadata,
+                  source: 'question_answer',
+                  assumedByAi: interpretation.assumedByAi,
+                },
+              }
+            : message;
+        }),
+        currentQuestion: {
+          ...state.currentQuestion,
+          answer: interpretation.concreteAnswer,
+          answeredAt: timestamp,
+        },
+      };
+    }
+
+    if (interpretation.changesCanonicalEvidence && interpretation.additionalRequirement) {
+      const requirement = {
+        id: createSystemDesignId('additional-requirement'),
+        text: interpretation.additionalRequirement,
+        createdAt: timestamp,
+      };
+
+      nextState = {
+        ...nextState,
+        conversation: nextState.conversation.map((message) =>
+          message.id === userChatMessage.id
+            ? {
+                ...message,
+                requirementId: requirement.id,
+                metadata: {
+                  ...message.metadata,
+                  source: message.answerId
+                    ? 'question_answer_and_requirement'
+                    : 'additional_requirement',
+                },
+              }
+            : message
+        ),
+      };
+    }
+
+    const currentQuestionAnswered =
+      Boolean(nextState.currentQuestion) &&
+      deriveQuestionAnswersFromConversation(nextState.conversation).some(
+        (item) => item.questionId === nextState.currentQuestion?.id
+      );
+
+    return {
+      ok: true,
+      graphState: {
+        ...nextState,
+        nextAction:
+          nextState.currentQuestion && !currentQuestionAnswered
+            ? 'wait_for_answer'
+            : 'ask_question',
+        updatedAt: timestamp,
+      },
+      canonicalEvidenceChanged:
+        interpretation.changesCanonicalEvidence &&
+        (resolvesCurrentQuestion || Boolean(interpretation.additionalRequirement)),
+      message: interpretation.assistantMessage,
+    };
+  }
+
+  if (event.type === 'edit_question_answer') {
+    const replacementAnswer = event.answer?.trim();
+
+    if (!event.answerId || !replacementAnswer) {
+      return {
+        ok: false,
+        graphState: addGraphError(
+          state,
+          'Missing answer id or replacement answer.',
+          'edit_question_answer'
+        ),
+        message: 'Missing answer id or replacement answer.',
+      };
+    }
+
+    const questionAnswers = deriveQuestionAnswersFromConversation(state.conversation);
+    const existingAnswer = questionAnswers.find((item) => item.id === event.answerId);
+
+    if (!existingAnswer) {
+      return {
+        ok: false,
+        graphState: addGraphError(state, 'Answer was not found.', 'edit_question_answer'),
+        message: 'Answer was not found.',
+      };
+    }
+
+    const timestamp = createIsoTimestamp();
+
+    return {
+      ok: true,
+      graphState: {
+        ...state,
+        conversation: state.conversation.map((message) =>
+          message.answerId === event.answerId
+            ? {
+                ...message,
+                content: replacementAnswer,
+                metadata: {
+                  ...message.metadata,
+                  assumedByAi: false,
+                  editedAt: timestamp,
+                },
+              }
+            : message
+        ),
+        currentQuestion:
+          state.currentQuestion?.id === existingAnswer.questionId
+            ? {
+                ...state.currentQuestion,
+                answer: replacementAnswer,
+                answeredAt: timestamp,
+              }
+            : state.currentQuestion,
+        nextAction: 'ask_question',
+        updatedAt: timestamp,
+      },
+      canonicalEvidenceChanged: true,
+      message: 'Answer updated.',
+    };
+  }
+
+  if (event.type === 'delete_question_answer') {
+    if (!event.answerId) {
+      return {
+        ok: false,
+        graphState: addGraphError(state, 'Missing answer id.', 'delete_question_answer'),
+        message: 'Missing answer id.',
+      };
+    }
+
+    const questionAnswers = deriveQuestionAnswersFromConversation(state.conversation);
+    const existingAnswer = questionAnswers.find((item) => item.id === event.answerId);
+
+    if (!existingAnswer) {
+      return {
+        ok: false,
+        graphState: addGraphError(state, 'Answer was not found.', 'delete_question_answer'),
+        message: 'Answer was not found.',
+      };
+    }
+
+    const question = state.questions.find((item) => item.id === existingAnswer.questionId);
+
+    return {
+      ok: true,
+      graphState: {
+        ...state,
+        conversation: state.conversation.filter((message) => message.answerId !== event.answerId),
+        currentQuestion:
+          state.currentQuestion?.id === existingAnswer.questionId
+            ? {
+                ...state.currentQuestion,
+                answer: undefined,
+                answeredAt: undefined,
+              }
+            : question
+              ? {
+                  ...question,
+                  answer: undefined,
+                  answeredAt: undefined,
+                }
+              : state.currentQuestion,
+        nextAction: question ? 'wait_for_answer' : 'ask_question',
+        updatedAt: createIsoTimestamp(),
+      },
+      canonicalEvidenceChanged: true,
+      message: 'Answer deleted.',
+    };
+  }
+
+  if (event.type === 'delete_question') {
+    if (!event.questionId) {
+      return {
+        ok: false,
+        graphState: addGraphError(state, 'Missing question id.', 'delete_question'),
+        message: 'Missing question id.',
+      };
+    }
+
+    return {
+      ok: true,
+      graphState: {
+        ...state,
+        questions: state.questions.filter((item) => item.id !== event.questionId),
+        conversation: state.conversation.filter(
+          (message) => message.questionId !== event.questionId
+        ),
+        currentQuestion:
+          state.currentQuestion?.id === event.questionId ? null : state.currentQuestion,
+        nextAction: 'ask_question',
+        updatedAt: createIsoTimestamp(),
+      },
+      canonicalEvidenceChanged: true,
+      message: 'Question deleted.',
+    };
+  }
+
+  if (event.type === 'edit_additional_requirement') {
+    const replacementText = event.requirementText?.trim();
+
+    if (!event.requirementId || !replacementText) {
+      return {
+        ok: false,
+        graphState: addGraphError(
+          state,
+          'Missing requirement id or replacement text.',
+          'edit_additional_requirement'
+        ),
+        message: 'Missing requirement id or replacement text.',
+      };
+    }
+
+    const additionalRequirements = deriveAdditionalRequirementsFromConversation(state.conversation);
+    const requirementExists = additionalRequirements.some(
+      (item) => item.id === event.requirementId
+    );
+
+    if (!requirementExists) {
+      return {
+        ok: false,
+        graphState: addGraphError(
+          state,
+          'Requirement was not found.',
+          'edit_additional_requirement'
+        ),
+        message: 'Requirement was not found.',
+      };
+    }
+
+    const timestamp = createIsoTimestamp();
+
+    return {
+      ok: true,
+      graphState: {
+        ...state,
+        conversation: state.conversation.map((message) =>
+          message.requirementId === event.requirementId
+            ? {
+                ...message,
+                content: replacementText,
+                metadata: {
+                  ...message.metadata,
+                  editedAt: timestamp,
+                },
+              }
+            : message
+        ),
+        updatedAt: timestamp,
+      },
+      canonicalEvidenceChanged: true,
+      message: 'Requirement updated.',
+    };
+  }
+
+  if (event.type === 'delete_additional_requirement') {
+    if (!event.requirementId) {
+      return {
+        ok: false,
+        graphState: addGraphError(
+          state,
+          'Missing requirement id.',
+          'delete_additional_requirement'
+        ),
+        message: 'Missing requirement id.',
+      };
+    }
+
+    const additionalRequirements = deriveAdditionalRequirementsFromConversation(state.conversation);
+    const requirementExists = additionalRequirements.some(
+      (item) => item.id === event.requirementId
+    );
+
+    if (!requirementExists) {
+      return {
+        ok: false,
+        graphState: addGraphError(
+          state,
+          'Requirement was not found.',
+          'delete_additional_requirement'
+        ),
+        message: 'Requirement was not found.',
+      };
+    }
+
+    return {
+      ok: true,
+      graphState: {
+        ...state,
+        conversation: state.conversation.filter(
+          (message) => message.requirementId !== event.requirementId
+        ),
+        updatedAt: createIsoTimestamp(),
+      },
+      canonicalEvidenceChanged: true,
+      message: 'Requirement deleted.',
     };
   }
 
@@ -317,7 +743,7 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         nextAction: 'generate_diagram',
         updatedAt: createIsoTimestamp(),
       },
-      'clarification',
+      'clarification'
     );
 
     return {
@@ -326,9 +752,7 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         ...completedState,
         diagramGenerationContext: buildDiagramGenerationContext(
           completedState,
-          runtime.event.type === 'skip_to_diagram'
-            ? 'skipped_to_diagram'
-            : 'ready_for_diagram',
+          runtime.event.type === 'skip_to_diagram' ? 'skipped_to_diagram' : 'ready_for_diagram'
         ),
         nextAction: 'generate_diagram',
         updatedAt: createIsoTimestamp(),
@@ -338,22 +762,17 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
   }
 
   if (event.type === 'generate_diagram') {
-    const diagramReadyState =
-      state.diagramGenerationContext
-        ? state
-        : completeLayer1Step(
-            {
-              ...state,
-              diagramGenerationContext:
-                buildDiagramGenerationContext(
-                  state,
-                  'skipped_to_diagram',
-                ),
-              nextAction: 'generate_diagram',
-              updatedAt: createIsoTimestamp(),
-            },
-            'clarification',
-          );
+    const diagramReadyState = state.diagramGenerationContext
+      ? state
+      : completeLayer1Step(
+          {
+            ...state,
+            diagramGenerationContext: buildDiagramGenerationContext(state, 'skipped_to_diagram'),
+            nextAction: 'generate_diagram',
+            updatedAt: createIsoTimestamp(),
+          },
+          'clarification'
+        );
 
     return {
       ok: true,
@@ -364,10 +783,9 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         nextAction: 'generate_diagram',
         updatedAt: createIsoTimestamp(),
       },
-      message:
-        state.diagramGenerationContext
-          ? 'Generating diagram from Layer 1 context.'
-          : 'Generating diagram from current understanding. Pending clarification questions were kept available.',
+      message: state.diagramGenerationContext
+        ? 'Generating diagram from Layer 1 context.'
+        : 'Generating diagram from current understanding. Pending clarification questions were kept available.',
     };
   }
 
@@ -378,21 +796,17 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         graphState: addGraphError(
           state,
           'Missing diagram refinement instruction.',
-          'refine_diagram',
+          'refine_diagram'
         ),
         message: 'Missing diagram refinement instruction.',
       };
     }
 
-    if (!state.drawioXml) {
+    if (!state.mermaidSource.trim()) {
       return {
         ok: false,
-        graphState: addGraphError(
-          state,
-          'No Draw.io XML exists to refine.',
-          'refine_diagram',
-        ),
-        message: 'No Draw.io XML exists to refine.',
+        graphState: addGraphError(state, 'No Mermaid diagram exists to refine.', 'refine_diagram'),
+        message: 'No Mermaid diagram exists to refine.',
       };
     }
 
@@ -411,11 +825,7 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
     if (!event.xml) {
       return {
         ok: false,
-        graphState: addGraphError(
-          state,
-          'Missing Draw.io XML to sync.',
-          'sync_diagram_xml',
-        ),
+        graphState: addGraphError(state, 'Missing Draw.io XML to sync.', 'sync_diagram_xml'),
         message: 'Missing Draw.io XML to sync.',
       };
     }
@@ -423,10 +833,8 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
     const revision: DiagramRevision = {
       id: createSystemDesignId('diagram-revision'),
       xml: event.xml,
-      mermaidSource:
-        state.mermaidSource,
-      activeRenderer:
-        'drawio',
+      mermaidSource: state.mermaidSource,
+      activeRenderer: 'drawio',
       instruction: 'Manual Draw.io edit.',
       createdAt: createIsoTimestamp(),
     };
@@ -461,14 +869,10 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
 
     const undoRevision: DiagramRevision = {
       id: createSystemDesignId('diagram-revision'),
-      xml: previousRevision.xml,
-      mermaidSource:
-        previousRevision.mermaidSource ??
-        state.mermaidSource,
-      activeRenderer:
-        previousRevision.activeRenderer ??
-        state.activeDiagramRenderer,
-      instruction: 'Undo to previous diagram revision.',
+      xml: '',
+      mermaidSource: previousRevision.mermaidSource ?? state.mermaidSource,
+      activeRenderer: 'mermaid',
+      instruction: 'Undo to previous Mermaid diagram revision.',
       createdAt: createIsoTimestamp(),
     };
 
@@ -476,22 +880,12 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
       ok: true,
       graphState: {
         ...state,
-        drawioXml:
-          previousRevision.xml,
-        mermaidSource:
-          previousRevision.mermaidSource ??
-          state.mermaidSource,
-        activeDiagramRenderer:
-          previousRevision.activeRenderer ??
-          state.activeDiagramRenderer,
-        selectedDiagramRenderer:
-          null,
-        diagramApproved:
-          false,
-        diagramRevisions: [
-          ...state.diagramRevisions,
-          undoRevision,
-        ],
+        drawioXml: '',
+        mermaidSource: previousRevision.mermaidSource ?? state.mermaidSource,
+        activeDiagramRenderer: 'mermaid',
+        selectedDiagramRenderer: null,
+        diagramApproved: false,
+        diagramRevisions: [...state.diagramRevisions, undoRevision],
         nextAction: 'wait_for_diagram_approval',
         updatedAt: createIsoTimestamp(),
       },
@@ -508,7 +902,7 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         graphState: addGraphError(
           state,
           'No original generated diagram revision exists.',
-          'reset_diagram_revision',
+          'reset_diagram_revision'
         ),
         message: 'No original generated diagram revision exists.',
       };
@@ -516,14 +910,10 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
 
     const resetRevision: DiagramRevision = {
       id: createSystemDesignId('diagram-revision'),
-      xml: originalRevision.xml,
-      mermaidSource:
-        originalRevision.mermaidSource ??
-        state.mermaidSource,
-      activeRenderer:
-        originalRevision.activeRenderer ??
-        'drawio',
-      instruction: 'Reset to original generated diagram.',
+      xml: '',
+      mermaidSource: originalRevision.mermaidSource ?? state.mermaidSource,
+      activeRenderer: 'mermaid',
+      instruction: 'Reset to original generated Mermaid diagram.',
       createdAt: createIsoTimestamp(),
     };
 
@@ -531,22 +921,12 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
       ok: true,
       graphState: {
         ...state,
-        drawioXml:
-          originalRevision.xml,
-        mermaidSource:
-          originalRevision.mermaidSource ??
-          state.mermaidSource,
-        activeDiagramRenderer:
-          originalRevision.activeRenderer ??
-          'drawio',
-        selectedDiagramRenderer:
-          null,
-        diagramApproved:
-          false,
-        diagramRevisions: [
-          ...state.diagramRevisions,
-          resetRevision,
-        ],
+        drawioXml: '',
+        mermaidSource: originalRevision.mermaidSource ?? state.mermaidSource,
+        activeDiagramRenderer: 'mermaid',
+        selectedDiagramRenderer: null,
+        diagramApproved: false,
+        diagramRevisions: [...state.diagramRevisions, resetRevision],
         nextAction: 'wait_for_diagram_approval',
         updatedAt: createIsoTimestamp(),
       },
@@ -558,35 +938,24 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
     const completedState = completeLayer1Step(
       {
         ...state,
-        drawioXml:
-          event.xml ??
-          state.drawioXml,
+        drawioXml: '',
 
-        mermaidSource:
-          event.mermaidSource ??
-          state.mermaidSource,
+        mermaidSource: event.mermaidSource ?? state.mermaidSource,
 
-        activeDiagramRenderer:
-          event.diagramRenderer ??
-          state.activeDiagramRenderer,
+        activeDiagramRenderer: 'mermaid',
 
-        selectedDiagramRenderer:
-          event.diagramRenderer ??
-          state.activeDiagramRenderer,
+        selectedDiagramRenderer: 'mermaid',
 
-        diagramImages:
-          event.diagramImages ??
-          state.diagramImages,
+        diagramImages: event.diagramImages ?? state.diagramImages,
 
-        diagramApproved:
-          true,
+        diagramApproved: true,
         mujarradSave: {
           status: 'idle',
         },
         nextAction: 'save_layer1_to_mujarrad',
         updatedAt: createIsoTimestamp(),
       },
-      'diagram',
+      'diagram'
     );
 
     return {
@@ -599,7 +968,7 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         updatedAt: createIsoTimestamp(),
       },
       message:
-        `${event.diagramRenderer === 'mermaid' ? 'Mermaid' : 'Draw.io'} diagram approved. Save Layer 1 to Mujarrad or skip to final artifact generation.`,
+        'Mermaid diagram approved. Save Layer 1 to Mujarrad or skip to final artifact generation.',
     };
   }
 
@@ -617,16 +986,13 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
           },
           'Missing Mujarrad save destination.',
           'save_layer1_to_mujarrad',
-          'save_layer1_to_mujarrad',
+          'save_layer1_to_mujarrad'
         ),
         message: 'Missing Mujarrad save destination.',
       };
     }
 
-    const result = await saveLayer1ToMujarrad(
-      state,
-      event.mujarradDestination,
-    );
+    const result = await saveLayer1ToMujarrad(state, event.mujarradDestination);
 
     if (!result.ok) {
       return {
@@ -637,19 +1003,14 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
             mujarradSave: {
               status: 'error',
               destination: event.mujarradDestination,
-              error:
-                result.error ??
-                'Mujarrad backend save failed.',
+              error: result.error ?? 'Mujarrad backend save failed.',
             },
           },
-          result.error ??
-            'Mujarrad backend save failed.',
+          result.error ?? 'Mujarrad backend save failed.',
           'save_layer1_to_mujarrad',
-          'save_layer1_to_mujarrad',
+          'save_layer1_to_mujarrad'
         ),
-        message:
-          result.error ??
-          'Mujarrad backend save failed.',
+        message: result.error ?? 'Mujarrad backend save failed.',
       };
     }
 
@@ -682,7 +1043,7 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         nextAction: 'generate_final_docs',
         updatedAt: createIsoTimestamp(),
       },
-      'save_to_mujarrad',
+      'save_to_mujarrad'
     );
 
     return {
@@ -693,8 +1054,7 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
         nextAction: 'generate_final_docs',
         updatedAt: createIsoTimestamp(),
       },
-      message:
-        'Mujarrad save skipped. Final artifact generation is available.',
+      message: 'Mujarrad save skipped. Final artifact generation is available.',
     };
   }
 
@@ -718,35 +1078,48 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
     if (!event.answer || !state.currentQuestion) {
       return {
         ok: false,
-        graphState: addGraphError(
-          state,
-          'Missing answer or current question.',
-          'submit_answer',
-        ),
+        graphState: addGraphError(state, 'Missing answer or current question.', 'submit_answer'),
         message: 'Missing answer or current question.',
       };
     }
+
+    const timestamp = createIsoTimestamp();
 
     const answer: QuestionAnswer = {
       id: createSystemDesignId('answer'),
       questionId: state.currentQuestion.id,
       answer: event.answer,
-      createdAt: createIsoTimestamp(),
+      createdAt: timestamp,
     };
 
     return {
       ok: true,
       graphState: {
         ...state,
-        qaHistory: [...state.qaHistory, answer],
+        conversation: [
+          ...state.conversation,
+          {
+            id: answer.id,
+            role: 'user',
+            kind: 'user_input',
+            content: event.answer,
+            createdAt: timestamp,
+            questionId: state.currentQuestion.id,
+            answerId: answer.id,
+            metadata: {
+              source: 'question_answer',
+            },
+          },
+        ],
         currentQuestion: {
           ...state.currentQuestion,
           answer: event.answer,
-          answeredAt: createIsoTimestamp(),
+          answeredAt: timestamp,
         },
         nextAction: 'update_understanding',
-        updatedAt: createIsoTimestamp(),
+        updatedAt: timestamp,
       },
+      canonicalEvidenceChanged: true,
       message: 'Answer recorded.',
     };
   }
@@ -758,54 +1131,31 @@ async function dispatchEventNode(runtime: RuntimeState): Promise<Partial<Runtime
   };
 }
 
-async function updateUnderstandingGraphNode(
-  runtime: RuntimeState,
-): Promise<Partial<RuntimeState>> {
-  if (
-    !runtime.ok ||
-    (
-      runtime.event.type !== 'submit_input' &&
-      runtime.event.type !== 'submit_answer'
-    )
-  ) {
+async function updateUnderstandingGraphNode(runtime: RuntimeState): Promise<Partial<RuntimeState>> {
+  if (!runtime.ok || !runtime.canonicalEvidenceChanged) {
     return {};
   }
 
-  const { understanding, usage, error } =
-    await updateUnderstandingNode(runtime.graphState);
+  const { understanding, usage, error } = await updateUnderstandingNode(runtime.graphState);
 
   if (error) {
     return {
       ok: false,
-
-      graphState:
-        addGraphWarning(
-          appendTask4AiUsage(
-            runtime.graphState,
-            'understanding_update',
-            usage,
-          ),
-          error,
-          'update_understanding',
-          'update_understanding',
-        ),
-
-      skipCompleteness:
-        true,
-
-      message:
-        `System understanding update failed: ${error}`,
+      graphState: addGraphWarning(
+        appendTask4AiUsage(runtime.graphState, 'understanding_update', usage),
+        error,
+        'update_understanding',
+        runtime.graphState.currentQuestion ? 'wait_for_answer' : 'ask_question'
+      ),
+      skipCompleteness: true,
+      message: `System understanding update failed: ${error}`,
     };
   }
 
   return {
     ok: true,
     graphState: {
-      ...appendTask4AiUsage(
-        runtime.graphState,
-        'understanding_update',
-        usage,
-      ),
+      ...appendTask4AiUsage(runtime.graphState, 'understanding_update', usage),
       understanding,
       nextAction: 'check_completeness',
       updatedAt: createIsoTimestamp(),
@@ -814,70 +1164,42 @@ async function updateUnderstandingGraphNode(
   };
 }
 
-async function checkCompletenessGraphNode(
-  runtime: RuntimeState,
-): Promise<Partial<RuntimeState>> {
-  if (
-    !runtime.ok ||
-    (
-      runtime.event.type !== 'submit_input' &&
-      runtime.event.type !== 'submit_answer'
-    ) ||
-    runtime.skipCompleteness
-  ) {
+async function checkCompletenessGraphNode(runtime: RuntimeState): Promise<Partial<RuntimeState>> {
+  if (!runtime.ok || !runtime.canonicalEvidenceChanged || runtime.skipCompleteness) {
     return {};
   }
 
-  const { completeness, usage, error } =
-    await checkCompletenessNode(runtime.graphState);
+  const { completeness, usage, error } = await checkCompletenessNode(runtime.graphState);
 
   if (!completeness) {
     return {
       ok: true,
       graphState: addGraphWarning(
-        appendTask4AiUsage(
-          runtime.graphState,
-          'completeness_check',
-          usage,
-        ),
+        appendTask4AiUsage(runtime.graphState, 'completeness_check', usage),
         error ?? 'Completeness check failed.',
         'check_completeness',
-        'ask_question',
+        runtime.graphState.currentQuestion ? 'wait_for_answer' : 'ask_question'
       ),
-      message:
-        'Answer saved. Completeness check failed, but the user can continue or skip to diagram.',
+      message: 'Understanding was saved, but completeness analysis was unavailable.',
     };
   }
 
   return {
     ok: true,
     graphState: {
-      ...appendTask4AiUsage(
-        runtime.graphState,
-        'completeness_check',
-        usage,
-      ),
+      ...appendTask4AiUsage(runtime.graphState, 'completeness_check', usage),
       completeness,
       nextAction: 'check_completeness',
       updatedAt: createIsoTimestamp(),
     },
-    message:
-      error
-        ? `Readiness calculated deterministically. Advisory completeness analysis was unavailable: ${error}`
-        : 'Completeness checked.',
+    message: error
+      ? `Readiness calculated deterministically. Advisory analysis was unavailable: ${error}`
+      : 'Completeness checked.',
   };
 }
 
-async function decideNextActionGraphNode(
-  runtime: RuntimeState,
-): Promise<Partial<RuntimeState>> {
-  if (
-    !runtime.ok ||
-    (
-      runtime.event.type !== 'submit_input' &&
-      runtime.event.type !== 'submit_answer'
-    )
-  ) {
+async function decideNextActionGraphNode(runtime: RuntimeState): Promise<Partial<RuntimeState>> {
+  if (!runtime.ok || !runtime.canonicalEvidenceChanged) {
     return {};
   }
 
@@ -889,78 +1211,46 @@ async function decideNextActionGraphNode(
         nextAction: 'ask_question',
         updatedAt: createIsoTimestamp(),
       },
-      message:
-        'Initial system understanding and clarification readiness calculated.',
+      message: 'Initial system understanding and clarification readiness calculated.',
     };
   }
 
-  if (runtime.skipCompleteness) {
-    return {
-      ok: true,
-      graphState: {
-        ...runtime.graphState,
-        nextAction: 'ask_question',
-        updatedAt: createIsoTimestamp(),
-      },
-      message:
-        'Answer saved. More clarification can continue, or the user can skip to diagram.',
-    };
-  }
-
-  if (isReadyForDiagram(runtime.graphState.completeness)) {
-    const completedState = completeLayer1Step(runtime.graphState, 'clarification');
-
-    return {
-      ok: true,
-      graphState: {
-        ...completedState,
-        diagramGenerationContext: buildDiagramGenerationContext(
-          completedState,
-          'ready_for_diagram',
-        ),
-        nextAction: 'generate_diagram',
-        updatedAt: createIsoTimestamp(),
-      },
-      message: 'Clarification complete. Ready for diagram generation.',
-    };
-  }
+  const hasPendingQuestion =
+    Boolean(runtime.graphState.currentQuestion) &&
+    !deriveQuestionAnswersFromConversation(runtime.graphState.conversation).some(
+      (item) => item.questionId === runtime.graphState.currentQuestion?.id
+    );
 
   return {
     ok: true,
     graphState: {
       ...runtime.graphState,
-      nextAction: 'ask_question',
+      nextAction: hasPendingQuestion ? 'wait_for_answer' : 'ask_question',
       updatedAt: createIsoTimestamp(),
     },
-    message: 'More clarification needed.',
+    message: runtime.graphState.completeness?.readyForDiagram
+      ? 'Understanding updated. The diagram is ready when the user chooses to continue.'
+      : 'Understanding updated. Clarification can continue.',
   };
 }
 
-async function generateDiagramGraphNode(
-  runtime: RuntimeState,
-): Promise<Partial<RuntimeState>> {
+async function generateDiagramGraphNode(runtime: RuntimeState): Promise<Partial<RuntimeState>> {
   if (!runtime.ok || runtime.event.type !== 'generate_diagram') {
     return {};
   }
 
-  const {
-    xml,
-    mermaidSource,
-    summary,
-    warnings,
-    error,
-  } = await generateDiagramNode(
-    runtime.graphState,
+  const { xml, mermaidSource, summary, warnings, error } = await generateDiagramNode(
+    runtime.graphState
   );
 
-  if (error || !xml) {
+  if (error || !mermaidSource.trim()) {
     return {
       ok: false,
       graphState: addGraphWarning(
         runtime.graphState,
         error ?? 'Diagram generation failed.',
         'generate_diagram',
-        'generate_diagram',
+        'generate_diagram'
       ),
       message: error ?? 'Diagram generation failed.',
     };
@@ -968,10 +1258,9 @@ async function generateDiagramGraphNode(
 
   const revision: DiagramRevision = {
     id: createSystemDesignId('diagram-revision'),
-    xml,
+    xml: '',
     mermaidSource,
-    activeRenderer:
-      runtime.graphState.activeDiagramRenderer,
+    activeRenderer: 'mermaid',
     instruction: 'Initial AI-generated diagram from Layer 1 context.',
     createdAt: createIsoTimestamp(),
   };
@@ -980,15 +1269,11 @@ async function generateDiagramGraphNode(
     ok: true,
     graphState: {
       ...runtime.graphState,
-      drawioXml: xml,
+      drawioXml: '',
       mermaidSource,
-      activeDiagramRenderer:
-        runtime.graphState.activeDiagramRenderer ??
-        'drawio',
-      selectedDiagramRenderer:
-        null,
-      diagramApproved:
-        false,
+      activeDiagramRenderer: 'mermaid',
+      selectedDiagramRenderer: null,
+      diagramApproved: false,
       diagramSummary: summary,
       diagramRevisions: [...runtime.graphState.diagramRevisions, revision],
       stage: 'diagram',
@@ -1003,47 +1288,31 @@ async function generateDiagramGraphNode(
   };
 }
 
-
-async function refineDiagramGraphNode(
-  runtime: RuntimeState,
-): Promise<Partial<RuntimeState>> {
+async function refineDiagramGraphNode(runtime: RuntimeState): Promise<Partial<RuntimeState>> {
   if (!runtime.ok || runtime.event.type !== 'refine_diagram') {
     return {};
   }
 
   const instruction = runtime.event.refinementInstruction ?? '';
 
-  const {
-    xml,
-    mermaidSource,
-    summary,
-    warnings,
-    usageRecords,
-    error,
-  } = await refineDiagramNode(
+  const { xml, mermaidSource, summary, warnings, usageRecords, error } = await refineDiagramNode(
     runtime.graphState,
-    instruction,
+    instruction
   );
 
-  const stateWithUsage =
-    usageRecords.reduce(
-      (currentState, record) =>
-        appendTask6AiUsage(
-          currentState,
-          record.operation,
-          record.usage,
-        ),
-      runtime.graphState,
-    );
+  const stateWithUsage = usageRecords.reduce(
+    (currentState, record) => appendTask6AiUsage(currentState, record.operation, record.usage),
+    runtime.graphState
+  );
 
-  if (error || !xml) {
+  if (error || !mermaidSource.trim()) {
     return {
       ok: false,
       graphState: addGraphWarning(
         stateWithUsage,
         error ?? 'Diagram refinement failed.',
         'refine_diagram',
-        'wait_for_diagram_approval',
+        'wait_for_diagram_approval'
       ),
       message: error ?? 'Diagram refinement failed.',
     };
@@ -1051,10 +1320,9 @@ async function refineDiagramGraphNode(
 
   const revision: DiagramRevision = {
     id: createSystemDesignId('diagram-revision'),
-    xml,
+    xml: '',
     mermaidSource,
-    activeRenderer:
-      stateWithUsage.activeDiagramRenderer,
+    activeRenderer: 'mermaid',
     instruction,
     createdAt: createIsoTimestamp(),
   };
@@ -1063,33 +1331,17 @@ async function refineDiagramGraphNode(
     ok: true,
     graphState: {
       ...stateWithUsage,
-      drawioXml:
-        stateWithUsage.activeDiagramRenderer ===
-        'drawio'
-          ? xml
-          : stateWithUsage.drawioXml,
+      drawioXml: '',
 
-      mermaidSource:
-        stateWithUsage.activeDiagramRenderer ===
-        'mermaid'
-          ? (
-              mermaidSource ||
-              stateWithUsage.mermaidSource
-            )
-          : stateWithUsage.mermaidSource,
+      mermaidSource: mermaidSource || stateWithUsage.mermaidSource,
 
-      selectedDiagramRenderer:
-        null,
+      activeDiagramRenderer: 'mermaid',
 
-      diagramApproved:
-        false,
-      diagramSummary:
-        summary ||
-        stateWithUsage.diagramSummary,
-      diagramRevisions: [
-        ...stateWithUsage.diagramRevisions,
-        revision,
-      ],
+      selectedDiagramRenderer: null,
+
+      diagramApproved: false,
+      diagramSummary: summary || stateWithUsage.diagramSummary,
+      diagramRevisions: [...stateWithUsage.diagramRevisions, revision],
       nextAction: 'wait_for_diagram_approval',
       updatedAt: createIsoTimestamp(),
     },
@@ -1100,19 +1352,12 @@ async function refineDiagramGraphNode(
   };
 }
 
-async function generateFinalDocsGraphNode(
-  runtime: RuntimeState,
-): Promise<Partial<RuntimeState>> {
-  if (
-    !runtime.ok ||
-    runtime.event.type !== 'generate_final_docs'
-  ) {
+async function generateFinalDocsGraphNode(runtime: RuntimeState): Promise<Partial<RuntimeState>> {
+  if (!runtime.ok || runtime.event.type !== 'generate_final_docs') {
     return {};
   }
 
-  const { bundle, error } = await generateFinalDocsNode(
-    runtime.graphState,
-  );
+  const { bundle, error } = await generateFinalDocsNode(runtime.graphState);
 
   if (error || !bundle) {
     return {
@@ -1121,10 +1366,9 @@ async function generateFinalDocsGraphNode(
         runtime.graphState,
         error ?? 'Final documentation generation failed.',
         'generate_final_docs',
-        'generate_final_docs',
+        'generate_final_docs'
       ),
-      message:
-        error ?? 'Final documentation generation failed.',
+      message: error ?? 'Final documentation generation failed.',
     };
   }
 
@@ -1135,16 +1379,10 @@ async function generateFinalDocsGraphNode(
       stage: 'export',
       activeStep: 'preview_artifacts',
       completedSteps: Array.from(
-        new Set([
-          ...runtime.graphState.completedSteps,
-          'final_artifacts',
-        ]),
+        new Set([...runtime.graphState.completedSteps, 'final_artifacts'])
       ),
       availableSteps: Array.from(
-        new Set([
-          ...runtime.graphState.availableSteps,
-          'preview_artifacts',
-        ]),
+        new Set([...runtime.graphState.availableSteps, 'preview_artifacts'])
       ),
       markdownSpec: bundle.markdownSpec,
       markdownApproved: true,
@@ -1157,16 +1395,12 @@ async function generateFinalDocsGraphNode(
   };
 }
 
-
 function routeAfterDispatch(runtime: RuntimeState): string {
   if (!runtime.ok) {
     return END;
   }
 
-  if (
-    runtime.event.type === 'submit_input' ||
-    runtime.event.type === 'submit_answer'
-  ) {
+  if (runtime.canonicalEvidenceChanged) {
     return 'update_understanding';
   }
 
@@ -1206,7 +1440,7 @@ const compiledLayer1Graph = workflow.compile();
 
 export async function invokeLayer1Graph(
   event: Layer1GraphEvent,
-  existingState?: Layer1GraphState,
+  existingState?: Layer1GraphState
 ): Promise<Layer1GraphResult> {
   const initialState: RuntimeState = {
     event,

@@ -1,36 +1,18 @@
 import type { Layer1GraphState } from '../types/graph.types';
-import {
-  compactJson,
-  compactQaHistory,
-} from '../utils/llmContextFormat';
-import {
-  suggestedQuestionCategoryExamples,
-} from '../utils/questionCategories';
+import { deriveAnsweredQuestionsFromConversation } from '../utils/conversationDerivations';
+import { compactJson, compactQaHistory } from '../utils/llmContextFormat';
+import { suggestedQuestionCategoryExamples } from '../utils/questionCategories';
 
-function buildHistoryText(
-  state: Layer1GraphState,
-): string {
+function buildHistoryText(state: Layer1GraphState): string {
   return compactQaHistory(
-    state.qaHistory.map((qa) => {
-      const question =
-        state.questions.find(
-          (item) =>
-            item.id === qa.questionId,
-        );
-
-      return {
-        question:
-          question?.question ??
-          qa.questionId,
-        answer: qa.answer,
-      };
-    }),
+    deriveAnsweredQuestionsFromConversation(state.conversation, state.questions).map((entry) => ({
+      question: entry.question,
+      answer: entry.answer,
+    }))
   );
 }
 
-export function getCompletenessPrompt(
-  state: Layer1GraphState,
-): string {
+export function getCompletenessPrompt(state: Layer1GraphState): string {
   return `You are a senior system architect evaluating whether enough information exists to create a useful professional system diagram.
 
 You are evaluating DIAGRAM READINESS, not final documentation completeness.

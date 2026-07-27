@@ -3,6 +3,7 @@ import type {
   DiagramGenerationQuestionAnswer,
   Layer1DiagramGenerationContext,
 } from '../types/layer1.types';
+import { deriveQuestionAnswersFromConversation } from './conversationDerivations';
 import { createIsoTimestamp, createSystemDesignId } from './id';
 
 function buildOriginalUserText(state: Layer1GraphState): string {
@@ -12,10 +13,8 @@ function buildOriginalUserText(state: Layer1GraphState): string {
     .join('\n\n---\n\n');
 }
 
-function buildAnsweredQuestions(
-  state: Layer1GraphState,
-): DiagramGenerationQuestionAnswer[] {
-  return state.qaHistory.map((answer) => {
+function buildAnsweredQuestions(state: Layer1GraphState): DiagramGenerationQuestionAnswer[] {
+  return deriveQuestionAnswersFromConversation(state.conversation).map((answer) => {
     const question = state.questions.find((item) => item.id === answer.questionId);
 
     return {
@@ -47,10 +46,7 @@ function buildCumulativeUnderstandingText(state: Layer1GraphState): string {
     '## Clarification Q&A',
     answeredQuestions.length
       ? answeredQuestions
-          .map(
-            (item, index) =>
-              `### Q${index + 1}: ${item.question}\nAnswer: ${item.answer}`,
-          )
+          .map((item, index) => `### Q${index + 1}: ${item.question}\nAnswer: ${item.answer}`)
           .join('\n\n')
       : '(no answered clarification questions)',
     '',
@@ -61,10 +57,10 @@ function buildCumulativeUnderstandingText(state: Layer1GraphState): string {
 
 export function buildDiagramGenerationContext(
   state: Layer1GraphState,
-  status: Layer1DiagramGenerationContext['status'],
+  status: Layer1DiagramGenerationContext['status']
 ): Layer1DiagramGenerationContext {
   const answeredQuestionIds = new Set(
-    state.qaHistory.map((answer) => answer.questionId),
+    deriveQuestionAnswersFromConversation(state.conversation).map((answer) => answer.questionId)
   );
 
   return {
@@ -81,14 +77,18 @@ export function buildDiagramGenerationContext(
     understanding: state.understanding,
     answeredQuestions: buildAnsweredQuestions(state),
     unansweredQuestions: state.questions.filter(
-      (question) => !answeredQuestionIds.has(question.id),
+      (question) => !answeredQuestionIds.has(question.id)
     ),
     completeness: state.completeness,
 
     task5Instructions: {
       mustUseOnlyThisContext: true,
       mustNotUseRawInputAlone: true,
-      mustGenerateDrawioXml: true,
+      // Legacy field retained for backward-compatible
+      // serialized Layer 1 context types. In the active
+      // workflow it means a diagram artifact must be
+      // generated, and that artifact is Mermaid.
+      mustGenerateDrawioXml: false,
       mustNotGenerateFinalMarkdownYet: true,
     },
 

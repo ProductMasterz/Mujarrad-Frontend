@@ -69,7 +69,7 @@ export function buildTokenEfficiencyReport(
       'Token counts are estimates, not exact model-tokenizer measurements.',
       'The ranking compares TOON, compact JSON, pretty JSON, and YAML generated from the same canonical object.',
       'Markdown and plain text are generated as human-readable artifacts but excluded from the structured Layer 2 transport ranking.',
-      'Draw.io XML, SVG, and PNG are separate diagram artifacts and excluded from the text transport ranking.',
+      'Mermaid source, SVG, and PNG are separate diagram artifacts and excluded from the text transport ranking.',
       'Exact tokenizer-specific measurements should be added when the Layer 2 model is selected.',
     ],
   };

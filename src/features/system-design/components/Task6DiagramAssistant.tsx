@@ -92,7 +92,7 @@ export function Task6DiagramAssistant() {
         </h2>
 
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          Describe a diagram change. The current Draw.io XML
+          Describe a change to the current Mermaid diagram
           will be refined through LangGraph.
         </p>
       </header>
@@ -125,7 +125,7 @@ export function Task6DiagramAssistant() {
           disabled={
             isLoading ||
             !instruction.trim() ||
-            !graphState.drawioXml
+            !graphState.mermaidSource
           }
           className="mt-3 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50"
         >

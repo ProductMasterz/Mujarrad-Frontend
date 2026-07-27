@@ -8,9 +8,7 @@ import { Task6DiagramAssistant } from './Task6DiagramAssistant';
 import { useLayer1Store } from '../stores/useLayer1Store';
 
 export function Layer1AssistantPanel() {
-  const graphState = useLayer1Store(
-    (state) => state.graphState,
-  );
+  const graphState = useLayer1Store((state) => state.graphState);
 
   if (graphState.activeStep === 'input') {
     return (
@@ -20,10 +18,7 @@ export function Layer1AssistantPanel() {
     );
   }
 
-  if (
-    graphState.activeStep ===
-    'clarification'
-  ) {
+  if (graphState.activeStep === 'clarification') {
     return (
       <AssistantContainer>
         <Task4ClarificationAssistant />
@@ -31,10 +26,7 @@ export function Layer1AssistantPanel() {
     );
   }
 
-  if (
-    graphState.activeStep === 'diagram' &&
-    Boolean(graphState.drawioXml)
-  ) {
+  if (graphState.activeStep === 'diagram' && Boolean(graphState.mermaidSource)) {
     return (
       <div className="max-h-[calc(100vh-3rem)] min-h-0 space-y-4 overflow-y-auto overscroll-contain pr-1">
         <AssistantContainer tall>
@@ -62,9 +54,7 @@ function AssistantContainer({
     <aside
       className={[
         'flex flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/70',
-        tall
-          ? 'h-[520px] min-h-[460px]'
-          : 'h-[600px] min-h-[460px]',
+        tall ? 'h-[680px] min-h-[560px]' : 'h-[760px] min-h-[560px]',
       ].join(' ')}
     >
       {children}

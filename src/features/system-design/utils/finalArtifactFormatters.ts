@@ -209,7 +209,7 @@ ${answeredQuestions}
 - Revisions: ${artifact.diagram.revisionCount}
 - Summary: ${artifact.diagram.summary || 'No summary available.'}
 
-The complete approved Draw.io XML is included as a separate artifact.
+The complete approved Mermaid source is included as a separate artifact.
 `;
 }
 

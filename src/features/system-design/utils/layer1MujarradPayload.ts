@@ -1,6 +1,9 @@
-import type {
-  Layer1GraphState,
-} from '../types/graph.types';
+import type { Layer1GraphState } from '../types/graph.types';
+import {
+  deriveAdditionalRequirementsFromConversation,
+  deriveClarificationMessagesFromConversation,
+  deriveQuestionAnswersFromConversation,
+} from './conversationDerivations';
 
 function getRawInputText(state: Layer1GraphState): string[] {
   return state.rawInputs
@@ -8,9 +11,11 @@ function getRawInputText(state: Layer1GraphState): string[] {
     .filter((text): text is string => Boolean(text?.trim()));
 }
 
-export function buildLayer1MujarradPayload(
-  state: Layer1GraphState,
-) {
+export function buildLayer1MujarradPayload(state: Layer1GraphState) {
+  const answers = deriveQuestionAnswersFromConversation(state.conversation);
+  const clarificationMessages = deriveClarificationMessagesFromConversation(state.conversation);
+  const additionalRequirements = deriveAdditionalRequirementsFromConversation(state.conversation);
+
   return {
     packageType: 'mujarrad_layer1_system_design_text_node',
     version: 1,
@@ -23,23 +28,20 @@ export function buildLayer1MujarradPayload(
       storesFiles: false,
       storesDiagramImages: false,
       storesDrawioXml: false,
-      note:
-        'This backend node stores the Layer 1 text knowledge package only. Downloadable files remain in Task 7 final artifacts.',
+      note: 'This backend node stores the Layer 1 text knowledge package only. Downloadable files remain in Task 7 final artifacts.',
     },
 
     sourceText: {
       rawInputText: getRawInputText(state),
-      processedInput:
-        state.processedInput
-          ? {
-              id: state.processedInput.id,
-              sourceInputIds: state.processedInput.sourceInputIds,
-              normalizedText:
-                state.processedInput.normalizedText,
-              inputSize: state.processedInput.inputSize,
-              chunkCount: state.processedInput.chunks.length,
-            }
-          : null,
+      processedInput: state.processedInput
+        ? {
+            id: state.processedInput.id,
+            sourceInputIds: state.processedInput.sourceInputIds,
+            normalizedText: state.processedInput.normalizedText,
+            inputSize: state.processedInput.inputSize,
+            chunkCount: state.processedInput.chunks.length,
+          }
+        : null,
     },
 
     clarification: {
@@ -53,7 +55,9 @@ export function buildLayer1MujarradPayload(
         answeredAt: question.answeredAt,
         createdAt: question.createdAt,
       })),
-      answers: state.qaHistory,
+      answers,
+      messages: clarificationMessages,
+      additionalRequirements,
       currentPendingQuestion: state.currentQuestion
         ? {
             id: state.currentQuestion.id,

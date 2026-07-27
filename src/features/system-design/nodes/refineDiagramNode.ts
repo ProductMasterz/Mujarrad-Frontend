@@ -7,9 +7,6 @@ import {
 } from '../diagram-intelligence/buildCompactSemanticDiagram';
 
 import {
-  compileSemanticDiagramToDrawio,
-} from '../diagram-intelligence/compileSemanticDiagramToDrawio';
-import {
   compileSemanticDiagramToMermaid,
 } from '../diagram-intelligence/compileSemanticDiagramToMermaid';
 
@@ -30,19 +27,12 @@ import type {
   Task6AiOperation,
 } from '../types/layer1.types';
 
-import {
-  DIAGRAM_REFINEMENT_SYSTEM_PROMPT,
-  getDiagramRefinementPrompt,
-} from '../prompts/diagramRefinementPrompt';
 
-import {
-  callAiProviderWithUsage,
-  type AiTokenUsage,
+import type {
+  AiTokenUsage,
 } from '../tools/aiProviderTool';
 
-import {
-  extractAndRepairDrawioXml,
-} from '../utils/drawioXml';
+
 
 export interface Task6NodeUsageRecord {
   operation: Task6AiOperation;
@@ -190,22 +180,15 @@ export async function refineDiagramNode(
     };
   }
 
-  if (!state.drawioXml.trim()) {
+  if (!state.mermaidSource.trim()) {
     return {
-        xml:
-          null,
-
-        mermaidSource:
-          '',
-
+      xml: null,
+      mermaidSource: '',
       summary: '',
-
       warnings,
-
       usageRecords,
-
       error:
-        'No current Draw.io XML exists to refine.',
+        'No current Mermaid diagram exists to refine.',
     };
   }
 
@@ -229,245 +212,105 @@ export async function refineDiagramNode(
       });
     }
 
-    if (
-      intentResult.intent.pipelineDepth !==
-        'fast_edit' ||
-      state.activeDiagramRenderer ===
-        'mermaid'
-    ) {
-      const targetDiagramType =
-        resolveRefinementTargetDiagramType(
+    const targetDiagramType =
+      resolveRefinementTargetDiagramType(
+        instruction,
+        intentResult.intent,
+      );
+
+    const compactResult =
+      await buildCompactSemanticDiagram({
+        understanding:
+          state.understanding,
+
+        targetDiagramType,
+
+        audience:
+          intentResult.intent.audience,
+
+        refinementInstruction:
           instruction,
-          intentResult.intent,
-        );
 
-      const compactResult =
-        await buildCompactSemanticDiagram({
-          understanding:
-            state.understanding,
+        currentDiagramSummary:
+          state.diagramSummary,
+      });
 
-          targetDiagramType,
+    warnings.push(
+      ...compactResult.warnings,
+    );
 
-          audience:
-            intentResult.intent.audience,
-
-          refinementInstruction:
-            instruction,
-
-          currentDiagramSummary:
-            state.diagramSummary,
-        });
-
-      warnings.push(
-        ...compactResult.warnings,
-      );
-
-      if (compactResult.usage) {
-        usageRecords.push({
-          operation:
-            'semantic_diagram_synthesis',
-
-          usage:
-            compactResult.usage,
-        });
-      }
-
-      if (
-        compactResult.error ||
-        !compactResult.semanticDiagram
-      ) {
-        return {
-        xml:
-          null,
-
-        mermaidSource:
-          '',
-
-          summary:
-            '',
-
-          warnings,
-
-          usageRecords,
-
-          intent:
-            intentResult.intent,
-
-          error:
-            compactResult.error
-              ? `Compact diagram reconstruction failed: ${compactResult.error}`
-              : 'Compact diagram reconstruction did not produce a valid semantic target.',
-        };
-      }
-
-      const semanticDiagram =
-        compactResult.semanticDiagram;
-
-      const compiled =
-        compileSemanticDiagramToDrawio(
-          semanticDiagram,
-        );
-
-      const compiledMermaid =
-        compileSemanticDiagramToMermaid(
-          semanticDiagram,
-        );
-
-      warnings.push(
-        ...compiled.warnings,
-        ...compiledMermaid.warnings,
-      );
-
-      const repaired =
-        extractAndRepairDrawioXml(
-          compiled.xml,
-        );
-
-      warnings.push(
-        ...repaired.warnings,
-      );
-
-      if (!repaired.valid) {
-        return {
-        xml:
-          null,
-
-        mermaidSource:
-          '',
-
-          summary:
-            '',
-
-          warnings,
-
-          usageRecords,
-
-          intent:
-            intentResult.intent,
-
-          semanticDiagram,
-
-          error:
-            'Compact Task 6 reconstruction compiled to invalid Draw.io XML.',
-        };
-      }
-
-      return {
-        xml:
-          repaired.xml,
-
-        mermaidSource:
-          compiledMermaid.source,
-
-        summary:
-          `Compact ${intentResult.intent.pipelineDepth.replaceAll('_', ' ')} refinement applied: ${instruction}`,
-
-        warnings,
-
-        usageRecords,
-
-        intent:
-          intentResult.intent,
-
-        semanticDiagram,
-      };
-    }
-
-    const refinementResult =
-      await callAiProviderWithUsage(
-        [
-          {
-            role: 'system',
-
-            content:
-              DIAGRAM_REFINEMENT_SYSTEM_PROMPT,
-          },
-          {
-            role: 'user',
-
-            content:
-              getDiagramRefinementPrompt({
-                state,
-
-                currentXml:
-                  state.drawioXml,
-
-                refinementInstruction:
-                  instruction,
-
-                refinementIntent:
-                  intentResult.intent,
-              }),
-          },
-        ],
-        {
-          modelRole: 'diagram',
-
-          temperature: 0,
-
-
-
-          responseFormat: 'text',
-        },
-      );
-
-    if (refinementResult.usage) {
+    if (compactResult.usage) {
       usageRecords.push({
         operation:
-          'diagram_refinement',
+          'semantic_diagram_synthesis',
 
         usage:
-          refinementResult.usage,
+          compactResult.usage,
       });
     }
 
-    const repaired =
-      extractAndRepairDrawioXml(
-        refinementResult.content,
+    if (
+      compactResult.error ||
+      !compactResult.semanticDiagram
+    ) {
+      return {
+        xml: null,
+        mermaidSource: '',
+        summary: '',
+        warnings,
+        usageRecords,
+        intent:
+          intentResult.intent,
+        error:
+          compactResult.error
+            ? `Compact diagram reconstruction failed: ${compactResult.error}`
+            : 'Compact diagram reconstruction did not produce a valid semantic target.',
+      };
+    }
+
+    const semanticDiagram =
+      compactResult.semanticDiagram;
+
+    const compiledMermaid =
+      compileSemanticDiagramToMermaid(
+        semanticDiagram,
       );
 
     warnings.push(
-      ...repaired.warnings,
+      ...compiledMermaid.warnings,
     );
 
-    if (!repaired.valid) {
+    if (!compiledMermaid.source.trim()) {
       return {
-        xml:
-          null,
-
-        mermaidSource:
-          '',
-
+        xml: null,
+        mermaidSource: '',
         summary: '',
-
         warnings,
-
         usageRecords,
-
         intent:
           intentResult.intent,
-
-
+        semanticDiagram,
         error:
-          'The AI did not return valid Draw.io XML. Please try a clearer refinement instruction.',
+          'Task 6 refinement did not compile to valid Mermaid source.',
       };
     }
 
     return {
-        xml: repaired.xml,
+      // Compatibility field retained until legacy
+      // Draw.io state types are removed.
+      xml: '',
 
-        mermaidSource:
-          state.mermaidSource,
+      mermaidSource:
+        compiledMermaid.source,
 
-        summary:
-        `AI fast edit applied: ${instruction}`,
+      summary:
+        `Mermaid ${intentResult.intent.pipelineDepth.replaceAll('_', ' ')} refinement applied: ${instruction}`,
 
       warnings,
-
       usageRecords,
-
       intent:
         intentResult.intent,
+      semanticDiagram,
     };
   } catch (err) {
     const message =

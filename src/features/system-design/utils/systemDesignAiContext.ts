@@ -24,11 +24,7 @@ function pickText(record: AnyRecord, keys: string[]): string {
   return '';
 }
 
-function compactItems(
-  value: unknown,
-  keys: string[],
-  maxItems = 8,
-): unknown[] {
+function compactItems(value: unknown, keys: string[], maxItems = 8): unknown[] {
   return asArray(value)
     .slice(0, maxItems)
     .map((item) => {
@@ -61,7 +57,7 @@ function compactItems(
                       'error',
                       'handling',
                     ])
-                  : '',
+                  : ''
             )
             .filter(Boolean)
             .slice(0, 8);
@@ -85,9 +81,7 @@ function compactItems(
     .filter(Boolean);
 }
 
-export function buildSlimUnderstandingContext(
-  understanding: unknown,
-): unknown {
+export function buildSlimUnderstandingContext(understanding: unknown): unknown {
   if (!isRecord(understanding)) {
     return {};
   }
@@ -97,89 +91,41 @@ export function buildSlimUnderstandingContext(
     goal: asText(understanding.goal),
     confidence: understanding.confidence,
 
-    actors: compactItems(
-      understanding.actors,
-      ['id', 'name', 'role', 'description'],
-      8,
-    ),
+    actors: compactItems(understanding.actors, ['id', 'name', 'role', 'description'], 8),
 
-    workflows: compactItems(
-      understanding.workflows,
-      ['id', 'title', 'steps'],
-      8,
-    ),
+    workflows: compactItems(understanding.workflows, ['id', 'title', 'steps'], 8),
 
-    inputs: compactItems(
-      understanding.inputs,
-      ['id', 'name', 'description'],
-      8,
-    ),
+    inputs: compactItems(understanding.inputs, ['id', 'name', 'description'], 8),
 
-    outputs: compactItems(
-      understanding.outputs,
-      ['id', 'name', 'description'],
-      8,
-    ),
+    outputs: compactItems(understanding.outputs, ['id', 'name', 'description'], 8),
 
-    entities: compactItems(
-      understanding.entities,
-      ['id', 'name', 'attributes'],
-      10,
-    ),
+    entities: compactItems(understanding.entities, ['id', 'name', 'attributes'], 10),
 
-    businessRules: compactItems(
-      understanding.businessRules,
-      ['id', 'rule'],
-      10,
-    ),
+    businessRules: compactItems(understanding.businessRules, ['id', 'rule'], 10),
 
-    decisionLogic: compactItems(
-      understanding.decisionLogic,
-      ['id', 'condition', 'outcome'],
-      10,
-    ),
+    decisionLogic: compactItems(understanding.decisionLogic, ['id', 'condition', 'outcome'], 10),
 
-    validationRules: compactItems(
-      understanding.validationRules,
-      ['id', 'field', 'rule'],
-      8,
-    ),
+    validationRules: compactItems(understanding.validationRules, ['id', 'field', 'rule'], 8),
 
-    integrations: compactItems(
-      understanding.integrations,
-      ['id', 'name', 'purpose'],
-      8,
-    ),
+    integrations: compactItems(understanding.integrations, ['id', 'name', 'purpose'], 8),
 
     securityRequirements: compactItems(
       understanding.securityRequirements,
       ['id', 'requirement'],
-      8,
+      8
     ),
 
-    edgeCases: compactItems(
-      understanding.edgeCases,
-      ['id', 'case'],
-      8,
-    ),
+    edgeCases: compactItems(understanding.edgeCases, ['id', 'case'], 8),
 
-    errorCases: compactItems(
-      understanding.errorCases,
-      ['id', 'error', 'handling'],
-      8,
-    ),
+    errorCases: compactItems(understanding.errorCases, ['id', 'error', 'handling'], 8),
 
     assumptions: compactItems(
       understanding.assumptions,
       ['id', 'assumption', 'text', 'description'],
-      8,
+      8
     ),
 
-    openQuestions: compactItems(
-      understanding.openQuestions,
-      ['id', 'question', 'category'],
-      8,
-    ),
+    openQuestions: compactItems(understanding.openQuestions, ['id', 'question', 'category'], 8),
   };
 }
 
@@ -187,10 +133,11 @@ export function buildSlimQuestionContext(state: {
   understanding: unknown;
   completeness?: unknown;
   currentQuestion?: unknown;
-  qaHistory?: Array<{
-    question?: string;
-    answer?: string;
+  conversation?: Array<{
+    kind?: string;
     questionId?: string;
+    answerId?: string;
+    content?: string;
   }>;
   questions?: Array<{
     id: string;
@@ -199,9 +146,11 @@ export function buildSlimQuestionContext(state: {
     answer?: string;
   }>;
 }): unknown {
-  const answeredQuestionIds = new Set(
-    (state.qaHistory ?? []).map((entry) => entry.questionId),
-  );
+  const conversationAnswerQuestionIds = (state.conversation ?? [])
+    .filter((message) => Boolean(message.answerId && message.questionId))
+    .map((message) => message.questionId);
+
+  const answeredQuestionIds = new Set(conversationAnswerQuestionIds);
 
   const lastAnsweredQuestions = (state.questions ?? [])
     .filter((question) => answeredQuestionIds.has(question.id))
@@ -215,18 +164,14 @@ export function buildSlimQuestionContext(state: {
     understanding: buildSlimUnderstandingContext(state.understanding),
     readiness: state.completeness
       ? {
-          overallScore: isRecord(state.completeness)
-            ? state.completeness.overallScore
-            : undefined,
+          overallScore: isRecord(state.completeness) ? state.completeness.overallScore : undefined,
           readyForDiagram: isRecord(state.completeness)
             ? state.completeness.readyForDiagram
             : undefined,
           missingCriticalItems: isRecord(state.completeness)
             ? state.completeness.missingCriticalItems
             : undefined,
-          weakItems: isRecord(state.completeness)
-            ? state.completeness.weakItems
-            : undefined,
+          weakItems: isRecord(state.completeness) ? state.completeness.weakItems : undefined,
           suggestedNextQuestionCategory: isRecord(state.completeness)
             ? state.completeness.suggestedNextQuestionCategory
             : undefined,
@@ -242,9 +187,7 @@ export function buildSlimQuestionContext(state: {
   };
 }
 
-export function buildSlimDiagramContext(
-  understanding: unknown,
-): unknown {
+export function buildSlimDiagramContext(understanding: unknown): unknown {
   const slim = buildSlimUnderstandingContext(understanding) as AnyRecord;
 
   return {

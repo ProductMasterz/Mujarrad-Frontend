@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+const optionalNonEmptyString = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().min(1).optional()
+);
+
 import { rawInputPayloadSchema } from './input.schema';
 import { layer1StepIdSchema } from './layer1.schema';
 
@@ -8,6 +13,12 @@ export const layer1GraphEventSchema = z.object({
     'start_run',
     'submit_input',
     'submit_answer',
+    'send_clarification_message',
+    'edit_question_answer',
+    'delete_question_answer',
+    'delete_question',
+    'edit_additional_requirement',
+    'delete_additional_requirement',
     'generate_question',
     'skip_to_diagram',
     'generate_diagram',
@@ -25,20 +36,18 @@ export const layer1GraphEventSchema = z.object({
   ]),
   rawInput: rawInputPayloadSchema.optional(),
   answer: z.string().trim().min(1).optional(),
+  message: z.string().trim().min(1).max(12000).optional(),
+  answerId: z.string().trim().min(1).optional(),
+  questionId: z.string().trim().min(1).optional(),
+  requirementId: z.string().trim().min(1).optional(),
+  requirementText: z.string().trim().min(1).max(12000).optional(),
   stepId: layer1StepIdSchema.optional(),
   refinementInstruction: z.string().trim().min(1).optional(),
   xml: z.string().trim().min(1).optional(),
 
-  mermaidSource:
-    z.string().trim().min(1).optional(),
+  mermaidSource: z.string().trim().min(1).optional(),
 
-  diagramRenderer:
-    z
-      .enum([
-        'drawio',
-        'mermaid',
-      ])
-      .optional(),
+  diagramRenderer: z.enum(['drawio', 'mermaid']).optional(),
 
   diagramImages: z
     .object({

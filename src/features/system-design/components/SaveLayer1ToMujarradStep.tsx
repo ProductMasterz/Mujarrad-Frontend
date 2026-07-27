@@ -3,20 +3,11 @@
 import { useMemo, useState } from 'react';
 
 import { useLayer1Store } from '../stores/useLayer1Store';
-import type {
-  Layer1GraphEvent,
-  Layer1GraphState,
-  Layer1GraphResult,
-} from '../types/graph.types';
-import type {
-  MujarradSaveDestinationMode,
-} from '../types/layer1.types';
+import { deriveQuestionAnswersFromConversation } from '../utils/conversationDerivations';
+import type { Layer1GraphEvent, Layer1GraphState, Layer1GraphResult } from '../types/graph.types';
+import type { MujarradSaveDestinationMode } from '../types/layer1.types';
 
-import {
-  AnimatePresence,
-  MotionInteractive,
-  MotionPanel,
-} from './SystemDesignMotion';
+import { AnimatePresence, MotionInteractive, MotionPanel } from './SystemDesignMotion';
 
 async function postLayer1Event(args: {
   event: Layer1GraphEvent;
@@ -33,19 +24,15 @@ async function postLayer1Event(args: {
     }),
   });
 
-  const result =
-    (await response.json()) as Layer1GraphResult & {
-      error?: string;
-    };
+  const result = (await response.json()) as Layer1GraphResult & {
+    error?: string;
+  };
 
   if (!response.ok) {
     return {
       ...result,
       ok: false,
-      error:
-        result.error ??
-        result.message ??
-        'Layer 1 request failed.',
+      error: result.error ?? result.message ?? 'Layer 1 request failed.',
     };
   }
 
@@ -53,15 +40,10 @@ async function postLayer1Event(args: {
 }
 
 export function SaveLayer1ToMujarradStep() {
-  const graphState = useLayer1Store(
-    (state) => state.graphState,
-  );
-  const syncFromGraphState = useLayer1Store(
-    (state) => state.syncFromGraphState,
-  );
+  const graphState = useLayer1Store((state) => state.graphState);
+  const syncFromGraphState = useLayer1Store((state) => state.syncFromGraphState);
 
-  const [mode, setMode] =
-    useState<MujarradSaveDestinationMode>('existing');
+  const [mode, setMode] = useState<MujarradSaveDestinationMode>('existing');
   const [spaceSlug, setSpaceSlug] = useState('');
   const [contextId, setContextId] = useState('');
   const [newSpaceName, setNewSpaceName] = useState('');
@@ -69,25 +51,18 @@ export function SaveLayer1ToMujarradStep() {
   const [isLoading, setIsLoading] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
 
-  const payloadSummary = useMemo(
-    () => ({
+  const payloadSummary = useMemo(() => {
+    const answers = deriveQuestionAnswersFromConversation(graphState.conversation);
+
+    return {
       rawInputs: graphState.rawInputs.length,
       questions: graphState.questions.length,
-      answers: graphState.qaHistory.length,
-      hasUnderstanding: Boolean(
-        graphState.understanding.goal ||
-          graphState.understanding.summary,
-      ),
-      hasDiagram:
-        graphState.diagramApproved &&
-        Boolean(
-          graphState.selectedDiagramRenderer,
-        ),
-      diagramRenderer:
-        graphState.selectedDiagramRenderer,
-    }),
-    [graphState],
-  );
+      answers: answers.length,
+      hasUnderstanding: Boolean(graphState.understanding.goal || graphState.understanding.summary),
+      hasDiagram: graphState.diagramApproved && Boolean(graphState.selectedDiagramRenderer),
+      diagramRenderer: graphState.selectedDiagramRenderer,
+    };
+  }, [graphState]);
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -103,8 +78,7 @@ export function SaveLayer1ToMujarradStep() {
         : {
             mode,
             newSpaceName: newSpaceName.trim(),
-            newContextName:
-              newContextName.trim() || undefined,
+            newContextName: newContextName.trim() || undefined,
           };
 
     try {
@@ -121,18 +95,10 @@ export function SaveLayer1ToMujarradStep() {
       }
 
       if (!result.ok) {
-        setUiError(
-          result.error ??
-            result.message ??
-            'Mujarrad save failed.',
-        );
+        setUiError(result.error ?? result.message ?? 'Mujarrad save failed.');
       }
     } catch (error) {
-      setUiError(
-        error instanceof Error
-          ? error.message
-          : 'Mujarrad save failed.',
-      );
+      setUiError(error instanceof Error ? error.message : 'Mujarrad save failed.');
     } finally {
       setIsLoading(false);
     }
@@ -155,18 +121,10 @@ export function SaveLayer1ToMujarradStep() {
       }
 
       if (!result.ok) {
-        setUiError(
-          result.error ??
-            result.message ??
-            'Failed to continue to final artifacts.',
-        );
+        setUiError(result.error ?? result.message ?? 'Failed to continue to final artifacts.');
       }
     } catch (error) {
-      setUiError(
-        error instanceof Error
-          ? error.message
-          : 'Failed to continue to final artifacts.',
-      );
+      setUiError(error instanceof Error ? error.message : 'Failed to continue to final artifacts.');
     } finally {
       setIsLoading(false);
     }
@@ -179,46 +137,34 @@ export function SaveLayer1ToMujarradStep() {
           Save to Mujarrad
         </p>
 
-        <h1 className="mt-2 text-2xl font-black text-slate-950">
-          Save Layer 1 knowledge package
-        </h1>
+        <h1 className="mt-2 text-2xl font-black text-slate-950">Save Layer 1 knowledge package</h1>
 
         <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-          This step will save a text-only Layer 1 knowledge node:
-          original input text, clarification questions, answers,
-          final understanding, readiness report, and approved
-          diagram summary. It will not save files, images, ZIPs,
-          PNG/SVG exports, Draw.io XML, or Mermaid source. Those remain
+          This step will save a text-only Layer 1 knowledge node: original input text, clarification
+          questions, answers, final understanding, readiness report, and approved diagram summary.
+          It will not save files, images, ZIPs, PNG/SVG exports or Mermaid source. Those remain
           handled by Final Artifacts.
         </p>
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <h2 className="text-sm font-black text-slate-950">
-            Package contents
-          </h2>
+          <h2 className="text-sm font-black text-slate-950">Package contents</h2>
 
           <dl className="mt-3 space-y-2 text-sm text-slate-600">
             <div className="flex justify-between gap-4">
               <dt>Raw inputs</dt>
-              <dd className="font-bold text-slate-900">
-                {payloadSummary.rawInputs}
-              </dd>
+              <dd className="font-bold text-slate-900">{payloadSummary.rawInputs}</dd>
             </div>
 
             <div className="flex justify-between gap-4">
               <dt>Questions</dt>
-              <dd className="font-bold text-slate-900">
-                {payloadSummary.questions}
-              </dd>
+              <dd className="font-bold text-slate-900">{payloadSummary.questions}</dd>
             </div>
 
             <div className="flex justify-between gap-4">
               <dt>Answers</dt>
-              <dd className="font-bold text-slate-900">
-                {payloadSummary.answers}
-              </dd>
+              <dd className="font-bold text-slate-900">{payloadSummary.answers}</dd>
             </div>
 
             <div className="flex justify-between gap-4">
@@ -238,47 +184,34 @@ export function SaveLayer1ToMujarradStep() {
             <div className="flex justify-between gap-4">
               <dt>Selected renderer</dt>
               <dd className="font-bold capitalize text-slate-900">
-                {payloadSummary.diagramRenderer ??
-                  'Not selected'}
+                {payloadSummary.diagramRenderer ?? 'Not selected'}
               </dd>
             </div>
           </dl>
         </div>
 
         <div className="rounded-2xl border border-slate-200 p-4">
-          <h2 className="text-sm font-black text-slate-950">
-            Destination
-          </h2>
+          <h2 className="text-sm font-black text-slate-950">Destination</h2>
 
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <MotionInteractive
-              selected={mode === 'existing'}
-              className="w-full"
-            >
+            <MotionInteractive selected={mode === 'existing'} className="w-full">
               <button
                 type="button"
                 onClick={() => setMode('existing')}
                 className={`w-full rounded-xl px-4 py-3 text-sm font-bold transition ${
-                  mode === 'existing'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 text-slate-700'
+                  mode === 'existing' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'
                 }`}
               >
                 Existing
               </button>
             </MotionInteractive>
 
-            <MotionInteractive
-              selected={mode === 'new'}
-              className="w-full"
-            >
+            <MotionInteractive selected={mode === 'new'} className="w-full">
               <button
                 type="button"
                 onClick={() => setMode('new')}
                 className={`w-full rounded-xl px-4 py-3 text-sm font-bold transition ${
-                  mode === 'new'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 text-slate-700'
+                  mode === 'new' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'
                 }`}
               >
                 Create new
@@ -288,50 +221,36 @@ export function SaveLayer1ToMujarradStep() {
 
           <AnimatePresence mode="wait">
             {mode === 'existing' ? (
-              <MotionPanel
-                motionKey="existing-destination"
-                className="mt-4 space-y-3"
-              >
-              <input
-                value={spaceSlug}
-                onChange={(event) =>
-                  setSpaceSlug(event.target.value)
-                }
-                placeholder="Existing space slug"
-                className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
+              <MotionPanel motionKey="existing-destination" className="mt-4 space-y-3">
+                <input
+                  value={spaceSlug}
+                  onChange={(event) => setSpaceSlug(event.target.value)}
+                  placeholder="Existing space slug"
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
 
-              <input
-                value={contextId}
-                onChange={(event) =>
-                  setContextId(event.target.value)
-                }
-                placeholder="Existing context ID or name optional"
-                className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
+                <input
+                  value={contextId}
+                  onChange={(event) => setContextId(event.target.value)}
+                  placeholder="Existing context ID or name optional"
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
               </MotionPanel>
             ) : (
-              <MotionPanel
-                motionKey="new-destination"
-                className="mt-4 space-y-3"
-              >
-              <input
-                value={newSpaceName}
-                onChange={(event) =>
-                  setNewSpaceName(event.target.value)
-                }
-                placeholder="New space name"
-                className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
+              <MotionPanel motionKey="new-destination" className="mt-4 space-y-3">
+                <input
+                  value={newSpaceName}
+                  onChange={(event) => setNewSpaceName(event.target.value)}
+                  placeholder="New space name"
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
 
-              <input
-                value={newContextName}
-                onChange={(event) =>
-                  setNewContextName(event.target.value)
-                }
-                placeholder="New context name optional"
-                className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
+                <input
+                  value={newContextName}
+                  onChange={(event) => setNewContextName(event.target.value)}
+                  placeholder="New context name optional"
+                  className="w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
               </MotionPanel>
             )}
           </AnimatePresence>
@@ -340,10 +259,7 @@ export function SaveLayer1ToMujarradStep() {
 
       <AnimatePresence>
         {uiError ? (
-          <MotionPanel
-            motionKey={uiError}
-            className="mt-5"
-          >
+          <MotionPanel motionKey={uiError} className="mt-5">
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-800">
               {uiError}
             </div>

@@ -1,8 +1,4 @@
-import type {
-  ProcessedInputContext,
-  RawInputPayload,
-  TextChunk,
-} from './input.types';
+import type { ProcessedInputContext, RawInputPayload, TextChunk } from './input.types';
 
 export type Layer1StepId =
   | 'input'
@@ -58,6 +54,66 @@ export interface QuestionAnswer {
   questionId: string;
   answer: string;
   createdAt: string;
+  updatedAt?: string;
+  assumedByAi?: boolean;
+}
+
+export type ClarificationMessageIntent =
+  | 'answer_current_question'
+  | 'assume_current_answer'
+  | 'add_requirement'
+  | 'correct_existing_information'
+  | 'ask_about_understanding'
+  | 'ask_about_missing_information'
+  | 'ask_about_current_question'
+  | 'general_inquiry';
+
+export type ConversationMessageKind =
+  | 'user_input'
+  | 'assistant_question'
+  | 'assistant_message'
+  | 'assistant_status'
+  | 'assistant_confidence'
+  | 'assistant_completion'
+  | 'assistant_artifact'
+  | 'system';
+
+export interface ConversationMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  kind: ConversationMessageKind;
+  content: string;
+  createdAt: string;
+
+  questionId?: string;
+  answerId?: string;
+  requirementId?: string;
+
+  metadata?: Record<string, unknown>;
+}
+
+export interface ClarificationChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  intent?: ClarificationMessageIntent;
+  createdAt: string;
+}
+
+export interface AdditionalRequirement {
+  id: string;
+  text: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ClarificationMessageInterpretation {
+  intent: ClarificationMessageIntent;
+  assistantMessage: string;
+  concreteAnswer?: string;
+  assumedByAi: boolean;
+  additionalRequirement?: string;
+  changesCanonicalEvidence: boolean;
 }
 
 export interface WorkflowDescription {
@@ -161,11 +217,7 @@ export interface SystemUnderstanding {
   confidence: number;
 }
 
-export type CompletenessStatus =
-  | 'complete'
-  | 'weak'
-  | 'missing'
-  | 'not_applicable';
+export type CompletenessStatus = 'complete' | 'weak' | 'missing' | 'not_applicable';
 
 export interface CompletenessCategoryStatus {
   category: QuestionCategory;
@@ -184,9 +236,7 @@ export interface CompletenessReport {
   suggestedNextQuestionCategory?: QuestionCategory;
 }
 
-export type DiagramRenderer =
-  | 'drawio'
-  | 'mermaid';
+export type DiagramRenderer = 'drawio' | 'mermaid';
 
 export interface DiagramRevision {
   id: string;
@@ -250,13 +300,7 @@ export interface Layer1CanonicalArtifact {
 
 export interface Layer1ArtifactManifestEntry {
   id: string;
-  format:
-    | Layer1TextArtifactFormat
-    | 'drawio_xml'
-    | 'mermaid'
-    | 'svg'
-    | 'png'
-    | 'token_report';
+  format: Layer1TextArtifactFormat | 'drawio_xml' | 'mermaid' | 'svg' | 'png' | 'token_report';
   mediaType: string;
   fileName: string;
   available: boolean;
@@ -414,17 +458,9 @@ export interface Task6AiUsage {
   calls: Task6AiUsageRecord[];
 }
 
+export type MujarradSaveDestinationMode = 'existing' | 'new';
 
-export type MujarradSaveDestinationMode =
-  | 'existing'
-  | 'new';
-
-export type MujarradSaveStatus =
-  | 'idle'
-  | 'saving'
-  | 'saved'
-  | 'error'
-  | 'skipped';
+export type MujarradSaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'skipped';
 
 export interface MujarradSaveDestination {
   mode: MujarradSaveDestinationMode;
@@ -457,9 +493,10 @@ export interface Layer1Run {
   rawInputs: RawInputPayload[];
   processedInput: ProcessedInputContext | null;
 
+  conversation: ConversationMessage[];
+
   currentQuestion: ConstructiveQuestion | null;
   questions: ConstructiveQuestion[];
-  qaHistory: QuestionAnswer[];
 
   understanding: SystemUnderstanding;
   completeness: CompletenessReport | null;
@@ -488,23 +525,6 @@ export interface Layer1Run {
   mujarradSave: MujarradSaveState;
 
   errors: Layer1Error[];
-}
-
-export interface Layer1InternalStateForFutureUse {
-  runId: string;
-  rawInputs: RawInputPayload[];
-  processedInput: ProcessedInputContext;
-  qaHistory: QuestionAnswer[];
-  systemUnderstanding: SystemUnderstanding;
-  completenessReport: CompletenessReport;
-  approvedArtifacts: Layer1ArtifactBundle;
-  traceability: {
-    questions: ConstructiveQuestion[];
-    textChunks: TextChunk[];
-    diagramRevisions: DiagramRevision[];
-  };
-  readyForLayer2: boolean;
-  createdAt: string;
 }
 
 export function createEmptySystemUnderstanding(): SystemUnderstanding {

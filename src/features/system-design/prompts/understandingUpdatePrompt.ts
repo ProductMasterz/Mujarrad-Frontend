@@ -1,63 +1,42 @@
-import type {
-  Layer1GraphState,
-} from '../types/graph.types';
-
+import type { Layer1GraphState } from '../types/graph.types';
 import {
-  compactJson,
-} from '../utils/llmContextFormat';
-import {
-  buildSlimUnderstandingContext,
-} from '../utils/systemDesignAiContext';
+  deriveAdditionalRequirementsFromConversation,
+  deriveAnsweredQuestionsFromConversation,
+} from '../utils/conversationDerivations';
+import { compactJson } from '../utils/llmContextFormat';
 
-function getLatestClarification(
-  state: Layer1GraphState,
-): {
-  question: string;
-  answer: string;
-} | null {
-  const latestAnswer =
-    state.qaHistory[
-      state.qaHistory.length - 1
-    ];
+export function getUnderstandingUpdatePrompt(state: Layer1GraphState): string {
+  const clarificationEvidence = deriveAnsweredQuestionsFromConversation(
+    state.conversation,
+    state.questions
+  ).map((entry) => ({
+    question: entry.question,
+    answer: entry.answer,
+    assumedByAi: entry.assumedByAi,
+  }));
 
-  if (!latestAnswer) {
-    return null;
-  }
+  const additionalRequirements = deriveAdditionalRequirementsFromConversation(state.conversation);
 
-  const question =
-    state.questions.find(
-      (item) =>
-        item.id ===
-        latestAnswer.questionId,
-    );
+  return `You are a senior system architect rebuilding the complete cumulative SystemUnderstanding.
 
-  return {
-    question:
-      question?.question ??
-      latestAnswer.questionId,
+Rebuild the understanding only from the current canonical evidence below.
 
-    answer:
-      latestAnswer.answer,
-  };
-}
+Do not preserve facts merely because they existed in a previous generated understanding.
 
-function buildInitialPrompt(
-  state: Layer1GraphState,
-): string {
-  return `You are a senior system architect creating the first cumulative structured understanding of a system.
-
-This is the INITIAL understanding pass.
-
-Analyze the initial processed system description once.
+This rebuild behavior is required because users may edit or delete earlier answers and requirements.
 
 INITIAL_PROCESSED_INPUT
 ${state.processedInput ? compactJson(state.processedInput) : 'none'}
 
+CURRENT_CLARIFICATION_EVIDENCE
+${compactJson(clarificationEvidence)}
+
+CURRENT_ADDITIONAL_REQUIREMENTS
+${compactJson(additionalRequirements)}
+
 OBJECTIVE
 
-Create a complete architecture-ready SystemUnderstanding.
-
-Extract only information supported by the input.
+Produce one complete architecture-ready SystemUnderstanding.
 
 Identify when supported:
 
@@ -66,11 +45,10 @@ Identify when supported:
 - secondary users
 - roles
 - permissions
-- major workflows and ordered workflow steps
+- workflows and ordered workflow steps
 - alternative workflows
-- inputs
-- outputs
-- important entities
+- inputs and outputs
+- entities and data movement
 - business rules
 - decision logic
 - validation rules
@@ -78,110 +56,38 @@ Identify when supported:
 - notifications
 - reporting
 - security requirements
-- error cases
+- failures and recovery
 - edge cases
 - assumptions
 - unresolved architectural questions
 
 RULES
 
-1. This is the first understanding version.
-2. Do not invent technologies or behavior.
-3. Capture architecture-significant facts immediately.
-4. Keep equivalent concepts merged.
-5. Use concise but meaningful descriptions.
-6. Capture workflow steps in execution order.
-7. Put genuinely unresolved architectural gaps in openQuestions.
-8. confidence must be between 0 and 1.
-9. Return the COMPLETE SystemUnderstanding object.
-10. Return valid JSON only.
-11. No markdown.
-12. No code fences.
-13. No commentary.
+1. Use only the current evidence above.
+2. Edited evidence replaces older evidence.
+3. Deleted evidence must not survive.
+4. AI-assumed answers are valid assumptions and must be represented carefully.
+5. Merge equivalent concepts.
+6. Do not invent unsupported technology or behavior.
+7. Keep descriptions concise but architecture-significant.
+8. Put unresolved gaps in openQuestions.
+9. confidence must be a decimal between 0 and 1 representing how complete the current understanding is.
 
-Return exactly one complete SystemUnderstanding JSON object.`;
-}
+Confidence guidelines:
+- 0.00–0.20 = almost nothing is known.
+- 0.21–0.40 = only basic idea is known.
+- 0.41–0.60 = core workflow is understood but major gaps remain.
+- 0.61–0.80 = most architecture is understood with only a few missing details.
+- 0.81–0.95 = nearly complete.
+- 0.96–1.00 = complete and implementation-ready.
 
-function buildIncrementalPrompt(
-  state: Layer1GraphState,
-  clarification: {
-    question: string;
-    answer: string;
-  },
-): string {
-  return `You are a senior system architect maintaining one cumulative SystemUnderstanding.
+Never always return 0.
+Never always return 1.
+Choose the confidence based on the available evidence.
 
-This is an INCREMENTAL update.
-
-The existing understanding already contains all previously accepted evidence.
-
-Do NOT re-analyze the original description.
-Do NOT request or reconstruct older question-and-answer history.
-Do NOT expand unsupported details.
-Use the compact current understanding and latest clarification only.
-
-CURRENT_UNDERSTANDING
-${compactJson(buildSlimUnderstandingContext(state.understanding))}
-
-LATEST_QUESTION
-${clarification.question}
-
-LATEST_ANSWER
-${clarification.answer}
-
-OBJECTIVE
-
-Produce the next complete cumulative understanding version.
-
-Conceptually:
-
-Understanding N
-+ latest Question
-+ latest Answer
-→ Understanding N+1
-
-UPDATE RULES
-
-1. Start from CURRENT_UNDERSTANDING.
-2. Preserve correct established facts.
-3. Apply the latest answer immediately.
-4. The latest answer may add, refine, correct, or replace previous information.
-5. Merge equivalent concepts instead of duplicating them.
-6. Preserve stable existing ids for concepts that remain.
-7. Add newly supported actors, workflows, entities, rules, integrations, failures, or security facts.
-8. Update workflow steps when the latest answer adds meaningful sequence detail.
-9. Remove resolved items from openQuestions.
-10. Remove assumptions that the latest answer confirms or contradicts.
-11. Do not invent technologies or product behavior.
-12. Recalculate confidence from the updated cumulative understanding.
-13. confidence must be between 0 and 1.
-14. Return the complete updated SystemUnderstanding object, but keep text concise.
-15. Do not return only the latest change.
-16. Prefer short labels and compact descriptions.
-17. Return valid JSON only.
-18. No markdown.
-19. No code fences.
-20. No commentary.
-
-Return exactly one complete updated SystemUnderstanding JSON object.`;
-}
-
-export function getUnderstandingUpdatePrompt(
-  state: Layer1GraphState,
-): string {
-  const latestClarification =
-    getLatestClarification(
-      state,
-    );
-
-  if (!latestClarification) {
-    return buildInitialPrompt(
-      state,
-    );
-  }
-
-  return buildIncrementalPrompt(
-    state,
-    latestClarification,
-  );
+10. Return the complete SystemUnderstanding object.
+11. Return valid JSON only.
+12. No markdown.
+13. No code fences.
+14. No commentary.`;
 }

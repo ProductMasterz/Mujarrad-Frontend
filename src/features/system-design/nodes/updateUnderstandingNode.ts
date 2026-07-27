@@ -1,11 +1,8 @@
 import type { Layer1GraphState } from '../types/graph.types';
-import type { SystemUnderstanding } from '../types/layer1.types';
+import { createEmptySystemUnderstanding, type SystemUnderstanding } from '../types/layer1.types';
 import { systemUnderstandingSchema } from '../schemas/layer1.schema';
 import { getUnderstandingUpdatePrompt } from '../prompts/understandingUpdatePrompt';
-import {
-  callAiProviderWithUsage,
-  type AiTokenUsage,
-} from '../tools/aiProviderTool';
+import { callAiProviderWithUsage, type AiTokenUsage } from '../tools/aiProviderTool';
 import { createSystemDesignId } from '../utils/id';
 
 type UnknownRecord = Record<string, unknown>;
@@ -29,33 +26,25 @@ function asStringArray(value: unknown, fallback: string[] = []): string[] {
     .map((item) => {
       if (typeof item === 'string') return item;
       if (isRecord(item)) {
-        return asString(item.name) || asString(item.title) || asString(item.description) || asString(item.value);
+        return (
+          asString(item.name) ||
+          asString(item.title) ||
+          asString(item.description) ||
+          asString(item.value)
+        );
       }
       return '';
     })
     .filter(Boolean);
 }
 
-function mergeUniqueStrings(
-  previous: string[],
-  incoming: string[],
-): string[] {
-  const seen =
-    new Set<string>();
+function mergeUniqueStrings(previous: string[], incoming: string[]): string[] {
+  const seen = new Set<string>();
 
-  return [
-    ...previous,
-    ...incoming,
-  ].filter((item) => {
-    const key =
-      item
-        .trim()
-        .toLowerCase();
+  return [...previous, ...incoming].filter((item) => {
+    const key = item.trim().toLowerCase();
 
-    if (
-      !key ||
-      seen.has(key)
-    ) {
+    if (!key || seen.has(key)) {
       return false;
     }
 
@@ -65,16 +54,11 @@ function mergeUniqueStrings(
   });
 }
 
-function normalizeIdentity(
-  value: string,
-): string {
+function normalizeIdentity(value: string): string {
   return value
     .trim()
     .toLowerCase()
-    .replace(
-      /[^a-z0-9]+/g,
-      ' ',
-    )
+    .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 }
 
@@ -85,75 +69,47 @@ function mergeStructuredItems<
 >(
   previous: T[],
   incoming: T[],
-  getIdentity: (
-    item: T,
-  ) => string,
-  mergeItem?: (
-    previousItem: T,
-    incomingItem: T,
-  ) => T,
+  getIdentity: (item: T) => string,
+  mergeItem?: (previousItem: T, incomingItem: T) => T
 ): T[] {
-  const merged =
-    new Map<string, T>();
+  const merged = new Map<string, T>();
 
-  previous.forEach(
-    (item) => {
-      const key =
-        normalizeIdentity(
-          getIdentity(item),
-        );
+  previous.forEach((item) => {
+    const key = normalizeIdentity(getIdentity(item));
 
-      if (key) {
-        merged.set(
-          key,
-          item,
-        );
-      }
-    },
-  );
+    if (key) {
+      merged.set(key, item);
+    }
+  });
 
-  incoming.forEach(
-    (item) => {
-      const key =
-        normalizeIdentity(
-          getIdentity(item),
-        );
+  incoming.forEach((item) => {
+    const key = normalizeIdentity(getIdentity(item));
 
-      if (!key) {
-        return;
-      }
+    if (!key) {
+      return;
+    }
 
-      const existing =
-        merged.get(key);
+    const existing = merged.get(key);
 
-      if (!existing) {
-        merged.set(
-          key,
-          item,
-        );
+    if (!existing) {
+      merged.set(key, item);
 
-        return;
-      }
+      return;
+    }
 
-      merged.set(
-        key,
-        mergeItem
-          ? mergeItem(
-              existing,
-              item,
-            )
-          : {
-              ...existing,
-              ...item,
-              id: existing.id,
-            },
-      );
-    },
-  );
+    merged.set(
+      key,
+      mergeItem
+        ? mergeItem(existing, item)
+        : {
+            ...existing,
+            ...item,
+            id: existing.id,
+          }
+    );
+  });
 
-  return Array.from(
-    merged.values(),
-  );
+  return Array.from(merged.values());
 }
 
 function asRecordArray(value: unknown): UnknownRecord[] {
@@ -178,13 +134,16 @@ function normalizeWorkflows(value: unknown, fallback: SystemUnderstanding['workf
       asString(item.name) ||
       asString(item.workflow) ||
       asString(item.description, `Workflow ${index + 1}`),
-    steps: asStringArray(item.steps, asString(item.description) ? [asString(item.description)] : []),
+    steps: asStringArray(
+      item.steps,
+      asString(item.description) ? [asString(item.description)] : []
+    ),
   }));
 }
 
 function normalizeNamedDescriptions<T extends { id: string; name: string; description?: string }>(
   value: unknown,
-  fallback: T[],
+  fallback: T[]
 ): T[] {
   if (!Array.isArray(value)) return fallback;
 
@@ -200,7 +159,8 @@ function normalizeEntities(value: unknown, fallback: SystemUnderstanding['entiti
 
   return asRecordArray(value).map((item, index) => ({
     id: asString(item.id, createSystemDesignId(`entity-${index}`)),
-    name: asString(item.name) || asString(item.title) || asString(item.value, `Entity ${index + 1}`),
+    name:
+      asString(item.name) || asString(item.title) || asString(item.value, `Entity ${index + 1}`),
     attributes: asStringArray(item.attributes, []),
   }));
 }
@@ -210,7 +170,11 @@ function normalizeBusinessRules(value: unknown, fallback: SystemUnderstanding['b
 
   return asRecordArray(value).map((item, index) => ({
     id: asString(item.id, createSystemDesignId(`business-rule-${index}`)),
-    rule: asString(item.rule) || asString(item.description) || asString(item.name) || asString(item.value, `Business rule ${index + 1}`),
+    rule:
+      asString(item.rule) ||
+      asString(item.description) ||
+      asString(item.name) ||
+      asString(item.value, `Business rule ${index + 1}`),
   }));
 }
 
@@ -219,18 +183,31 @@ function normalizeDecisionLogic(value: unknown, fallback: SystemUnderstanding['d
 
   return asRecordArray(value).map((item, index) => ({
     id: asString(item.id, createSystemDesignId(`decision-${index}`)),
-    condition: asString(item.condition) || asString(item.when) || asString(item.name, `Condition ${index + 1}`),
-    outcome: asString(item.outcome) || asString(item.then) || asString(item.result) || asString(item.description, 'Outcome to be clarified'),
+    condition:
+      asString(item.condition) ||
+      asString(item.when) ||
+      asString(item.name, `Condition ${index + 1}`),
+    outcome:
+      asString(item.outcome) ||
+      asString(item.then) ||
+      asString(item.result) ||
+      asString(item.description, 'Outcome to be clarified'),
   }));
 }
 
-function normalizeValidationRules(value: unknown, fallback: SystemUnderstanding['validationRules']) {
+function normalizeValidationRules(
+  value: unknown,
+  fallback: SystemUnderstanding['validationRules']
+) {
   if (!Array.isArray(value)) return fallback;
 
   return asRecordArray(value).map((item, index) => ({
     id: asString(item.id, createSystemDesignId(`validation-${index}`)),
     field: asString(item.field) || asString(item.name, `Field ${index + 1}`),
-    rule: asString(item.rule) || asString(item.description) || asString(item.value, 'Validation rule to be clarified'),
+    rule:
+      asString(item.rule) ||
+      asString(item.description) ||
+      asString(item.value, 'Validation rule to be clarified'),
   }));
 }
 
@@ -239,7 +216,11 @@ function normalizeEdgeCases(value: unknown, fallback: SystemUnderstanding['edgeC
 
   return asRecordArray(value).map((item, index) => ({
     id: asString(item.id, createSystemDesignId(`edge-case-${index}`)),
-    case: asString(item.case) || asString(item.description) || asString(item.name) || asString(item.value, `Edge case ${index + 1}`),
+    case:
+      asString(item.case) ||
+      asString(item.description) ||
+      asString(item.name) ||
+      asString(item.value, `Edge case ${index + 1}`),
   }));
 }
 
@@ -248,8 +229,14 @@ function normalizeErrorCases(value: unknown, fallback: SystemUnderstanding['erro
 
   return asRecordArray(value).map((item, index) => ({
     id: asString(item.id, createSystemDesignId(`error-case-${index}`)),
-    error: asString(item.error) || asString(item.name) || asString(item.description, `Error case ${index + 1}`),
-    handling: asString(item.handling) || asString(item.recovery) || asString(item.solution, 'Handling to be clarified'),
+    error:
+      asString(item.error) ||
+      asString(item.name) ||
+      asString(item.description, `Error case ${index + 1}`),
+    handling:
+      asString(item.handling) ||
+      asString(item.recovery) ||
+      asString(item.solution, 'Handling to be clarified'),
   }));
 }
 
@@ -258,7 +245,10 @@ function normalizeIntegrations(value: unknown, fallback: SystemUnderstanding['in
 
   return asRecordArray(value).map((item, index) => ({
     id: asString(item.id, createSystemDesignId(`integration-${index}`)),
-    name: asString(item.name) || asString(item.title) || asString(item.value, `Integration ${index + 1}`),
+    name:
+      asString(item.name) ||
+      asString(item.title) ||
+      asString(item.value, `Integration ${index + 1}`),
     purpose: asString(item.purpose) || asString(item.description, 'Purpose to be clarified'),
   }));
 }
@@ -268,7 +258,8 @@ function normalizeNotifications(value: unknown, fallback: SystemUnderstanding['n
 
   return asRecordArray(value).map((item, index) => ({
     id: asString(item.id, createSystemDesignId(`notification-${index}`)),
-    trigger: asString(item.trigger) || asString(item.when) || asString(item.name, `Trigger ${index + 1}`),
+    trigger:
+      asString(item.trigger) || asString(item.when) || asString(item.name, `Trigger ${index + 1}`),
     message: asString(item.message) || asString(item.description, 'Message to be clarified'),
   }));
 }
@@ -278,7 +269,8 @@ function normalizeReporting(value: unknown, fallback: SystemUnderstanding['repor
 
   return asRecordArray(value).map((item, index) => ({
     id: asString(item.id, createSystemDesignId(`report-${index}`)),
-    report: asString(item.report) || asString(item.name) || asString(item.title, `Report ${index + 1}`),
+    report:
+      asString(item.report) || asString(item.name) || asString(item.title, `Report ${index + 1}`),
     audience: asString(item.audience) || undefined,
   }));
 }
@@ -298,209 +290,120 @@ function normalizeSecurity(value: unknown, fallback: SystemUnderstanding['securi
 
 function normalizeSystemUnderstanding(
   parsed: unknown,
-  previous: SystemUnderstanding,
+  previous: SystemUnderstanding
 ): SystemUnderstanding {
   const input = isRecord(parsed) ? parsed : {};
 
   const normalized: SystemUnderstanding = {
     summary: asString(input.summary, previous.summary),
     goal: asString(input.goal, previous.goal),
-    primaryUsers: mergeUniqueStrings(
-      previous.primaryUsers,
-      asStringArray(input.primaryUsers, []),
-    ),
+    primaryUsers: mergeUniqueStrings(previous.primaryUsers, asStringArray(input.primaryUsers, [])),
     secondaryUsers: mergeUniqueStrings(
       previous.secondaryUsers,
-      asStringArray(input.secondaryUsers, []),
+      asStringArray(input.secondaryUsers, [])
     ),
-    roles: mergeUniqueStrings(
-      previous.roles,
-      asStringArray(input.roles, []),
-    ),
-    permissions: mergeUniqueStrings(
-      previous.permissions,
-      asStringArray(input.permissions, []),
-    ),
+    roles: mergeUniqueStrings(previous.roles, asStringArray(input.roles, [])),
+    permissions: mergeUniqueStrings(previous.permissions, asStringArray(input.permissions, [])),
     workflows: mergeStructuredItems(
       previous.workflows,
-      normalizeWorkflows(
-        input.workflows,
-        [],
-      ),
-      (item) =>
-        item.title,
-      (
-        previousItem,
-        incomingItem,
-      ) => ({
+      normalizeWorkflows(input.workflows, []),
+      (item) => item.title,
+      (previousItem, incomingItem) => ({
         ...previousItem,
         ...incomingItem,
         id: previousItem.id,
-        steps: mergeUniqueStrings(
-          previousItem.steps,
-          incomingItem.steps,
-        ),
-      }),
+        steps: mergeUniqueStrings(previousItem.steps, incomingItem.steps),
+      })
     ),
 
-    alternativeWorkflows:
-      mergeStructuredItems(
-        previous.alternativeWorkflows,
-        normalizeWorkflows(
-          input.alternativeWorkflows,
-          [],
-        ),
-        (item) =>
-          item.title,
-        (
-          previousItem,
-          incomingItem,
-        ) => ({
-          ...previousItem,
-          ...incomingItem,
-          id: previousItem.id,
-          steps: mergeUniqueStrings(
-            previousItem.steps,
-            incomingItem.steps,
-          ),
-        }),
-      ),
+    alternativeWorkflows: mergeStructuredItems(
+      previous.alternativeWorkflows,
+      normalizeWorkflows(input.alternativeWorkflows, []),
+      (item) => item.title,
+      (previousItem, incomingItem) => ({
+        ...previousItem,
+        ...incomingItem,
+        id: previousItem.id,
+        steps: mergeUniqueStrings(previousItem.steps, incomingItem.steps),
+      })
+    ),
 
     inputs: mergeStructuredItems(
       previous.inputs,
-      normalizeNamedDescriptions(
-        input.inputs,
-        [],
-      ),
-      (item) =>
-        item.name,
+      normalizeNamedDescriptions(input.inputs, []),
+      (item) => item.name
     ),
 
     outputs: mergeStructuredItems(
       previous.outputs,
-      normalizeNamedDescriptions(
-        input.outputs,
-        [],
-      ),
-      (item) =>
-        item.name,
+      normalizeNamedDescriptions(input.outputs, []),
+      (item) => item.name
     ),
 
     entities: mergeStructuredItems(
       previous.entities,
-      normalizeEntities(
-        input.entities,
-        [],
-      ),
-      (item) =>
-        item.name,
-      (
-        previousItem,
-        incomingItem,
-      ) => ({
+      normalizeEntities(input.entities, []),
+      (item) => item.name,
+      (previousItem, incomingItem) => ({
         ...previousItem,
         ...incomingItem,
         id: previousItem.id,
-        attributes: mergeUniqueStrings(
-          previousItem.attributes,
-          incomingItem.attributes,
-        ),
-      }),
+        attributes: mergeUniqueStrings(previousItem.attributes, incomingItem.attributes),
+      })
     ),
 
-    businessRules:
-      mergeStructuredItems(
-        previous.businessRules,
-        normalizeBusinessRules(
-          input.businessRules,
-          [],
-        ),
-        (item) =>
-          item.rule,
-      ),
+    businessRules: mergeStructuredItems(
+      previous.businessRules,
+      normalizeBusinessRules(input.businessRules, []),
+      (item) => item.rule
+    ),
 
-    decisionLogic:
-      mergeStructuredItems(
-        previous.decisionLogic,
-        normalizeDecisionLogic(
-          input.decisionLogic,
-          [],
-        ),
-        (item) =>
-          item.condition,
-      ),
+    decisionLogic: mergeStructuredItems(
+      previous.decisionLogic,
+      normalizeDecisionLogic(input.decisionLogic, []),
+      (item) => item.condition
+    ),
 
-    validationRules:
-      mergeStructuredItems(
-        previous.validationRules,
-        normalizeValidationRules(
-          input.validationRules,
-          [],
-        ),
-        (item) =>
-          `${item.field}:${item.rule}`,
-      ),
+    validationRules: mergeStructuredItems(
+      previous.validationRules,
+      normalizeValidationRules(input.validationRules, []),
+      (item) => `${item.field}:${item.rule}`
+    ),
 
     edgeCases: mergeStructuredItems(
       previous.edgeCases,
-      normalizeEdgeCases(
-        input.edgeCases,
-        [],
-      ),
-      (item) =>
-        item.case,
+      normalizeEdgeCases(input.edgeCases, []),
+      (item) => item.case
     ),
 
     errorCases: mergeStructuredItems(
       previous.errorCases,
-      normalizeErrorCases(
-        input.errorCases,
-        [],
-      ),
-      (item) =>
-        item.error,
+      normalizeErrorCases(input.errorCases, []),
+      (item) => item.error
     ),
 
-    integrations:
-      mergeStructuredItems(
-        previous.integrations,
-        normalizeIntegrations(
-          input.integrations,
-          [],
-        ),
-        (item) =>
-          item.name,
-      ),
+    integrations: mergeStructuredItems(
+      previous.integrations,
+      normalizeIntegrations(input.integrations, []),
+      (item) => item.name
+    ),
 
-    notifications:
-      mergeStructuredItems(
-        previous.notifications,
-        normalizeNotifications(
-          input.notifications,
-          [],
-        ),
-        (item) =>
-          item.trigger,
-      ),
+    notifications: mergeStructuredItems(
+      previous.notifications,
+      normalizeNotifications(input.notifications, []),
+      (item) => item.trigger
+    ),
 
     reporting: mergeStructuredItems(
       previous.reporting,
-      normalizeReporting(
-        input.reporting,
-        [],
-      ),
-      (item) =>
-        item.report,
+      normalizeReporting(input.reporting, []),
+      (item) => item.report
     ),
 
     security: mergeStructuredItems(
       previous.security,
-      normalizeSecurity(
-        input.security,
-        [],
-      ),
-      (item) =>
-        item.requirement,
+      normalizeSecurity(input.security, []),
+      (item) => item.requirement
     ),
     openQuestions: asStringArray(input.openQuestions, previous.openQuestions),
     assumptions: asStringArray(input.assumptions, previous.assumptions),
@@ -510,9 +413,7 @@ function normalizeSystemUnderstanding(
   return systemUnderstandingSchema.parse(normalized);
 }
 
-export async function updateUnderstandingNode(
-  state: Layer1GraphState,
-): Promise<{
+export async function updateUnderstandingNode(state: Layer1GraphState): Promise<{
   understanding: SystemUnderstanding;
   usage: AiTokenUsage | null;
   error?: string;
@@ -520,12 +421,9 @@ export async function updateUnderstandingNode(
   let usage: AiTokenUsage | null = null;
 
   try {
-    const prompt =
-      getUnderstandingUpdatePrompt(state);
+    const prompt = getUnderstandingUpdatePrompt(state);
 
-    const requestUnderstanding = async (
-      retry = false,
-    ) =>
+    const requestUnderstanding = async (retry = false) =>
       callAiProviderWithUsage(
         [
           {
@@ -551,71 +449,50 @@ Requirements:
         {
           modelRole: 'clarification',
           responseFormat: 'json_object',
-          temperature: retry
-            ? 0.05
-            : 0.2,
-
-        },
+          temperature: retry ? 0.05 : 0.2,
+        }
       );
 
     const requestAndParse = async (
-      retry = false,
+      retry = false
     ): Promise<{
       understanding: SystemUnderstanding;
       usage: AiTokenUsage | null;
     }> => {
-      const result =
-        await requestUnderstanding(
-          retry,
-        );
+      const result = await requestUnderstanding(retry);
 
-      const parsedJson =
-        JSON.parse(
-          result.content,
-        ) as unknown;
+      console.log('\n================ RAW UNDERSTANDING RESPONSE ================\n');
+      console.log(result.content);
+      console.log('\n===========================================================\n');
+
+      const parsedJson = JSON.parse(result.content) as unknown;
 
       return {
-        understanding:
-          normalizeSystemUnderstanding(
-            parsedJson,
-            state.understanding,
-          ),
+        understanding: normalizeSystemUnderstanding(parsedJson, state.understanding),
 
-        usage:
-          result.usage,
+        usage: result.usage,
       };
     };
 
     try {
-      const firstAttempt =
-        await requestAndParse();
+      const firstAttempt = await requestAndParse();
 
       return {
-        understanding:
-          firstAttempt.understanding,
+        understanding: firstAttempt.understanding,
 
-        usage:
-          firstAttempt.usage,
+        usage: firstAttempt.usage,
       };
     } catch {
-      const retryAttempt =
-        await requestAndParse(
-          true,
-        );
+      const retryAttempt = await requestAndParse(true);
 
       return {
-        understanding:
-          retryAttempt.understanding,
+        understanding: retryAttempt.understanding,
 
-        usage:
-          retryAttempt.usage,
+        usage: retryAttempt.usage,
       };
     }
   } catch (err) {
-    const errorMessage =
-      err instanceof Error
-        ? err.message
-        : 'Unknown understanding update error.';
+    const errorMessage = err instanceof Error ? err.message : 'Unknown understanding update error.';
 
     return {
       understanding: state.understanding,

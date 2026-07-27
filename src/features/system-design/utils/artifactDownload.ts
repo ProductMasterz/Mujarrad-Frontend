@@ -155,25 +155,8 @@ export async function downloadLayer1ArtifactBundle(
   );
 
   diagram.file(
-    'final-system-diagram.drawio',
-    bundle.drawioXml,
-  );
-
-  diagram.file(
     'final-system-diagram.mmd',
     bundle.mermaidSource,
-  );
-
-  diagram.file(
-    'selected-renderer.json',
-    JSON.stringify(
-      {
-        selectedDiagramRenderer:
-          bundle.selectedDiagramRenderer,
-      },
-      null,
-      2,
-    ),
   );
 
   if (bundle.diagramImages.svg?.dataUrl) {
@@ -229,8 +212,8 @@ export async function downloadLayer1ArtifactBundle(
       {
         runId: bundle.canonical.runId,
         generatedAt: bundle.approvedAt,
-        selectedDiagramRenderer:
-          bundle.selectedDiagramRenderer,
+        diagramRenderer:
+          'mermaid',
         recommendedLayer2Format:
           bundle.tokenEfficiencyReport
             .recommendedLayer2Format,

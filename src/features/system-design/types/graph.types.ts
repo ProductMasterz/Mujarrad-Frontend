@@ -28,6 +28,12 @@ export type Layer1GraphEventType =
   | 'start_run'
   | 'submit_input'
   | 'submit_answer'
+  | 'send_clarification_message'
+  | 'edit_question_answer'
+  | 'delete_question_answer'
+  | 'delete_question'
+  | 'edit_additional_requirement'
+  | 'delete_additional_requirement'
   | 'generate_question'
   | 'skip_to_diagram'
   | 'generate_diagram'
@@ -47,6 +53,11 @@ export interface Layer1GraphEvent {
   type: Layer1GraphEventType;
   rawInput?: RawInputPayload;
   answer?: string;
+  message?: string;
+  answerId?: string;
+  questionId?: string;
+  requirementId?: string;
+  requirementText?: string;
   stepId?: Layer1StepId;
   refinementInstruction?: string;
   xml?: string;

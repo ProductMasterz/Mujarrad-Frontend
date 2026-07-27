@@ -100,22 +100,18 @@ export function Layer1DiagramRefinement() {
   const canReset = revisionCount >= 1;
 
   const activeRenderer =
-    graphState.activeDiagramRenderer;
+    'mermaid' as const;
 
   const activeRendererLabel =
-    activeRenderer === 'mermaid'
-      ? 'Mermaid'
-      : 'Draw.io';
+    'Mermaid';
 
   const canApprove =
-    activeRenderer === 'mermaid'
-      ? Boolean(graphState.mermaidSource)
-      : Boolean(graphState.drawioXml);
+    Boolean(graphState.mermaidSource);
 
   const isActiveRendererApproved =
     graphState.diagramApproved &&
     graphState.selectedDiagramRenderer ===
-      activeRenderer;
+      'mermaid';
 
   const handleSimpleEvent = async (
     type: Task6EventType,
@@ -164,12 +160,9 @@ export function Layer1DiagramRefinement() {
       const latestState =
         useLayer1Store.getState().graphState;
 
-      const latestRenderer =
-        latestState.activeDiagramRenderer;
-
       const captured =
         await captureRegisteredFinalDiagram(
-          latestRenderer,
+          'mermaid',
         );
 
       const result = await postLayer1Event({
@@ -219,12 +212,8 @@ export function Layer1DiagramRefinement() {
             </CardTitle>
 
             <CardDescription className="leading-relaxed">
-              AI refinement updates only the
-              currently selected{' '}
-              <span className="font-semibold text-slate-800">
-                {activeRendererLabel}
-              </span>{' '}
-              diagram.
+              AI refinement updates the Mermaid
+              system diagram.
             </CardDescription>
           </div>
 
@@ -280,8 +269,8 @@ export function Layer1DiagramRefinement() {
                 </AlertTitle>
 
                 <AlertDescription className="text-emerald-800">
-                  {activeRendererLabel} is currently
-                  the approved renderer.
+                  The Mermaid diagram is currently
+                  approved.
                 </AlertDescription>
               </Alert>
             </MotionPanel>
@@ -366,7 +355,7 @@ export function Layer1DiagramRefinement() {
           </p>
 
           <p className="mt-1 text-sm font-medium text-slate-800">
-            {activeRendererLabel} diagram
+            Mermaid diagram
           </p>
         </div>
       </CardContent>
@@ -403,8 +392,8 @@ export function Layer1DiagramRefinement() {
                 <Check className="h-4 w-4" />
 
                 {graphState.diagramApproved
-                  ? `Approve Updated ${activeRendererLabel} Diagram`
-                  : `Accept ${activeRendererLabel} Diagram`}
+                  ? 'Approve Updated Diagram'
+                  : 'Accept Diagram'}
               </>
             )}
           </Button>

@@ -1,37 +1,24 @@
-import type {
-  Layer1GraphState,
-} from '../types/graph.types';
+import type { Layer1GraphState } from '../types/graph.types';
 
-import {
-  compactJson,
-} from '../utils/llmContextFormat';
-import {
-  buildSlimQuestionContext,
-} from '../utils/systemDesignAiContext';
+import { compactJson } from '../utils/llmContextFormat';
+import { buildSlimQuestionContext } from '../utils/systemDesignAiContext';
 
-import {
-  suggestedQuestionCategoryExamples,
-} from '../utils/questionCategories';
+import { suggestedQuestionCategoryExamples } from '../utils/questionCategories';
 
-function getQuestionAntiRepetitionContext(
-  state: Layer1GraphState,
-): string {
+function getQuestionAntiRepetitionContext(state: Layer1GraphState): string {
   return compactJson(
     buildSlimQuestionContext({
       understanding: state.understanding,
       completeness: state.completeness,
       currentQuestion: state.currentQuestion,
       questions: state.questions,
-      qaHistory: state.qaHistory,
-    }),
+      conversation: state.conversation,
+    })
   );
 }
 
-export function getConstructiveQuestionPrompt(
-  state: Layer1GraphState,
-): string {
-  const antiRepetitionContext =
-    getQuestionAntiRepetitionContext(state);
+export function getConstructiveQuestionPrompt(state: Layer1GraphState): string {
+  const antiRepetitionContext = getQuestionAntiRepetitionContext(state);
 
   return `You are a senior system architect conducting an adaptive architecture clarification interview.
 
@@ -106,6 +93,12 @@ QUESTION RULES
 7. Keep the question concise.
 8. Keep the reason concise.
 9. The answer must materially improve the future diagram.
+10. Before asking, verify that the answer cannot already be inferred from workflows, business rules, actors, entities, integrations, decisions, constraints, or existing assumptions.
+11. When the description is already detailed, ask only about a genuinely unresolved architectural decision with high impact.
+12. Prefer questions about ownership, trust boundaries, failure recovery, consistency, concurrency, scaling, or operational behavior over asking the user to restate workflow steps.
+13. Never ask the user to enumerate decisions, actors, steps, entities, or integrations that are already represented in CURRENT_UNDERSTANDING.
+14. Avoid broad prompts such as "what are the decision points", "describe the workflow", or "what integrations are needed" when concrete examples already exist.
+15. If no critical factual gap remains, ask for the most consequential design preference or explicitly unresolved tradeoff instead.
 
 COMPACT OUTPUT
 

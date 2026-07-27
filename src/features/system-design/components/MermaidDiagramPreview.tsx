@@ -190,7 +190,7 @@ export function MermaidDiagramPreview({
           </div>
 
           <div className="text-xs text-slate-500">
-            Generated from the same semantic architecture model as Draw.io.
+            Generated from the approved semantic architecture model.
           </div>
         </div>
 

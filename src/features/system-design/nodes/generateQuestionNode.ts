@@ -1,147 +1,76 @@
 import { z } from 'zod';
 
-import type {
-  Layer1GraphState,
-} from '../types/graph.types';
+import type { Layer1GraphState } from '../types/graph.types';
 
-import type {
-  ConstructiveQuestion,
-} from '../types/layer1.types';
+import type { ConstructiveQuestion } from '../types/layer1.types';
 
-import {
-  getConstructiveQuestionPrompt,
-} from '../prompts/constructiveQuestionPrompt';
+import { getConstructiveQuestionPrompt } from '../prompts/constructiveQuestionPrompt';
 
-import {
-  callAiProviderWithUsage,
-  type AiTokenUsage,
-} from '../tools/aiProviderTool';
+import { callAiProviderWithUsage, type AiTokenUsage } from '../tools/aiProviderTool';
 
-import {
-  createIsoTimestamp,
-  createSystemDesignId,
-} from '../utils/id';
+import { deriveQuestionAnswersFromConversation } from '../utils/conversationDerivations';
+import { createIsoTimestamp, createSystemDesignId } from '../utils/id';
 
-const compactQuestionSchema =
-  z.object({
-    q:
-      z.string()
-        .min(1)
-        .max(500),
+const compactQuestionSchema = z.object({
+  q: z.string().min(1).max(500),
 
-    c:
-      z.string()
-        .min(1)
-        .max(80),
+  c: z.string().min(1).max(80),
 
-    r:
-      z.string()
-        .min(1)
-        .max(300),
+  r: z.string().min(1).max(300),
 
-    t:
-      z.enum([
-        'short_text',
-        'long_text',
-        'list',
-        'yes_no',
-        'choice',
-        'number',
-        'structured',
-      ]),
+  t: z.enum(['short_text', 'long_text', 'list', 'yes_no', 'choice', 'number', 'structured']),
 
-    f:
-      z.array(
-        z.string(),
-      )
-        .max(8)
-        .default([]),
-  });
+  f: z.array(z.string()).max(8).default([]),
+});
 
-type CompactQuestion =
-  z.infer<
-    typeof compactQuestionSchema
-  >;
+type CompactQuestion = z.infer<typeof compactQuestionSchema>;
 
-function parseJsonObject(
-  rawContent: string,
-): unknown {
-  const trimmed =
-    rawContent.trim();
+function parseJsonObject(rawContent: string): unknown {
+  const trimmed = rawContent.trim();
 
   try {
-    return JSON.parse(
-      trimmed,
-    );
+    return JSON.parse(trimmed);
   } catch {
-    const unfenced =
-      trimmed
-        .replace(
-          /^```json\s*/i,
-          '',
-        )
-        .replace(
-          /^```\s*/,
-          '',
-        )
-        .replace(
-          /```\s*$/,
-          '',
-        )
-        .trim();
+    const unfenced = trimmed
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/, '')
+      .replace(/```\s*$/, '')
+      .trim();
 
-    return JSON.parse(
-      unfenced,
-    );
+    return JSON.parse(unfenced);
   }
 }
 
-export async function generateQuestionNode(
-  state: Layer1GraphState,
-): Promise<{
-  question:
-    ConstructiveQuestion | null;
+export async function generateQuestionNode(state: Layer1GraphState): Promise<{
+  question: ConstructiveQuestion | null;
 
-  usage:
-    AiTokenUsage | null;
+  usage: AiTokenUsage | null;
 
-  error?:
-    string;
+  error?: string;
 }> {
-  let usage:
-    AiTokenUsage | null =
-    null;
+  let usage: AiTokenUsage | null = null;
 
   try {
     if (!state.processedInput) {
       return {
-        question:
-          null,
+        question: null,
 
         usage,
 
-        error:
-          'Processed input is required before generating clarification questions.',
+        error: 'Processed input is required before generating clarification questions.',
       };
     }
 
-    const prompt =
-      getConstructiveQuestionPrompt(
-        state,
-      );
+    const prompt = getConstructiveQuestionPrompt(state);
 
-    const requestQuestion = async (
-      retry = false,
-    ) =>
+    const requestQuestion = async (retry = false) =>
       callAiProviderWithUsage(
         [
           {
-            role:
-              'user' as const,
+            role: 'user' as const,
 
-            content:
-              retry
-                ? `${prompt}
+            content: retry
+              ? `${prompt}
 
 RETRY REQUIREMENT
 
@@ -164,151 +93,90 @@ Requirements:
 - no code fences
 - no commentary
 - close every string, array, and object`
-                : prompt,
+              : prompt,
           },
         ],
         {
-          modelRole:
-            'clarification',
+          modelRole: 'clarification',
 
-          responseFormat:
-            'json_object',
+          responseFormat: 'json_object',
 
-          temperature:
-            retry
-              ? 0.05
-              : 0.2,
-        },
+          temperature: retry ? 0.05 : 0.2,
+        }
       );
 
     const requestAndParse = async (
-      retry = false,
+      retry = false
     ): Promise<{
-      parsed:
-        CompactQuestion;
+      parsed: CompactQuestion;
 
-      usage:
-        AiTokenUsage | null;
+      usage: AiTokenUsage | null;
     }> => {
-      const result =
-        await requestQuestion(
-          retry,
-        );
+      const result = await requestQuestion(retry);
 
-      const parsed =
-        compactQuestionSchema.parse(
-          parseJsonObject(
-            result.content,
-          ),
-        );
+      const parsed = compactQuestionSchema.parse(parseJsonObject(result.content));
 
       return {
         parsed,
 
-        usage:
-          result.usage,
+        usage: result.usage,
       };
     };
 
-    let parsed:
-      CompactQuestion;
+    let parsed: CompactQuestion;
 
     try {
-      const firstAttempt =
-        await requestAndParse();
+      const firstAttempt = await requestAndParse();
 
-      parsed =
-        firstAttempt.parsed;
+      parsed = firstAttempt.parsed;
 
-      usage =
-        firstAttempt.usage;
+      usage = firstAttempt.usage;
     } catch {
-      const retryAttempt =
-        await requestAndParse(
-          true,
-        );
+      const retryAttempt = await requestAndParse(true);
 
-      parsed =
-        retryAttempt.parsed;
+      parsed = retryAttempt.parsed;
 
-      usage =
-        retryAttempt.usage;
+      usage = retryAttempt.usage;
     }
 
-    const question:
-      ConstructiveQuestion = {
-      id:
-        createSystemDesignId(
-          'question',
-        ),
+    const question: ConstructiveQuestion = {
+      id: createSystemDesignId('question'),
 
-      question:
-        parsed.q,
+      question: parsed.q,
 
-      category:
-        parsed.c,
+      category: parsed.c,
 
-      reasonForAsking:
-        parsed.r,
+      reasonForAsking: parsed.r,
 
-      expectedAnswerType:
-        parsed.t,
+      expectedAnswerType: parsed.t,
 
-      options:
-        [],
+      options: [],
 
       basedOn: {
-        processedInputId:
-          state.processedInput.id,
+        processedInputId: state.processedInput.id,
 
-        chunkIds:
-          state.processedInput.chunks.map(
-            (chunk) =>
-              chunk.id,
-          ),
+        chunkIds: state.processedInput.chunks.map((chunk) => chunk.id),
 
-        previousQuestionIds:
-          state.questions.map(
-            (question) =>
-              question.id,
-          ),
+        previousQuestionIds: state.questions.map((question) => question.id),
 
-        previousAnswerIds:
-          state.qaHistory.map(
-            (answer) =>
-              answer.id,
-          ),
+        previousAnswerIds: deriveQuestionAnswersFromConversation(state.conversation).map(
+          (answer) => answer.id
+        ),
 
-        understandingFields:
-          parsed.f,
+        understandingFields: parsed.f,
 
         missingCategories: [
-          ...(
-            state.completeness
-              ?.missingCriticalItems ??
-            []
-          ),
+          ...(state.completeness?.missingCriticalItems ?? []),
 
-          ...(
-            state.completeness
-              ?.weakItems ??
-            []
-          ),
+          ...(state.completeness?.weakItems ?? []),
 
-          ...(
-            state.completeness
-              ?.suggestedNextQuestionCategory
-              ? [
-                  state.completeness
-                    .suggestedNextQuestionCategory,
-                ]
-              : []
-          ),
+          ...(state.completeness?.suggestedNextQuestionCategory
+            ? [state.completeness.suggestedNextQuestionCategory]
+            : []),
         ],
       },
 
-      createdAt:
-        createIsoTimestamp(),
+      createdAt: createIsoTimestamp(),
     };
 
     return {
@@ -317,19 +185,14 @@ Requirements:
       usage,
     };
   } catch (err) {
-    const errorMessage =
-      err instanceof Error
-        ? err.message
-        : 'Unknown question generation error.';
+    const errorMessage = err instanceof Error ? err.message : 'Unknown question generation error.';
 
     return {
-      question:
-        null,
+      question: null,
 
       usage,
 
-      error:
-        errorMessage,
+      error: errorMessage,
     };
   }
 }

@@ -12,8 +12,8 @@ export function Layer1DiagramStep() {
   const graphState = useLayer1Store((state) => state.graphState);
   const syncFromGraphState = useLayer1Store((state) => state.syncFromGraphState);
 
-  const { diagramGenerationContext, drawioXml, diagramSummary } = graphState;
-  const hasDiagram = Boolean(drawioXml);
+  const { diagramGenerationContext, mermaidSource, diagramSummary } = graphState;
+  const hasDiagram = Boolean(mermaidSource);
 
   const handleGenerate = async () => {
     setIsLoading(true);

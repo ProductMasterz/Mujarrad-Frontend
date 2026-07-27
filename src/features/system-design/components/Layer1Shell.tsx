@@ -16,9 +16,7 @@ import type { Layer1StepId } from '../types/layer1.types';
 export function Layer1Shell() {
   const graphState = useLayer1Store((state) => state.graphState);
   const hasHydrated = useLayer1Store((state) => state.hasHydrated);
-  const syncFromGraphState = useLayer1Store(
-    (state) => state.syncFromGraphState,
-  );
+  const syncFromGraphState = useLayer1Store((state) => state.syncFromGraphState);
 
   useEffect(() => {
     void useLayer1Store.persist.rehydrate();
@@ -31,17 +29,12 @@ export function Layer1Shell() {
   const showAssistant =
     activeStep === 'input' ||
     activeStep === 'clarification' ||
-    (
-      activeStep === 'diagram' &&
-      Boolean(graphState.drawioXml)
-    );
+    (activeStep === 'diagram' && Boolean(graphState.mermaidSource));
 
   if (!hasHydrated) {
     return (
       <div className="rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200/70">
-        <div className="text-lg font-black text-slate-950">
-          Loading saved Layer 1 run...
-        </div>
+        <div className="text-lg font-black text-slate-950">Loading saved Layer 1 run...</div>
         <div className="mt-2 text-sm font-medium text-slate-500">
           Restoring local System Builder state.
         </div>
@@ -70,11 +63,7 @@ export function Layer1Shell() {
       />
 
       <div
-        className={
-          showAssistant
-            ? 'grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]'
-            : ''
-        }
+        className={showAssistant ? 'grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_520px]' : ''}
       >
         <main className="min-w-0 w-full">
           {activeStep === 'input' ? (

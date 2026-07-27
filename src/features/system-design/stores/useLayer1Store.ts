@@ -12,7 +12,6 @@ import type {
   Layer1ArtifactBundle,
   Layer1Stage,
   Layer1StepId,
-  QuestionAnswer,
   SystemUnderstanding,
 } from '../types/layer1.types';
 
@@ -33,7 +32,6 @@ interface Layer1StoreState {
   setAvailableSteps: (stepIds: Layer1StepId[]) => void;
 
   setCurrentQuestion: (question: ConstructiveQuestion | null) => void;
-  submitAnswer: (answer: QuestionAnswer) => void;
   updateUnderstanding: (understanding: SystemUnderstanding) => void;
   setCompleteness: (completeness: CompletenessReport | null) => void;
 
@@ -42,9 +40,7 @@ interface Layer1StoreState {
 
   setDrawioXml: (drawioXml: string) => void;
   setMermaidSource: (mermaidSource: string) => void;
-  setActiveDiagramRenderer: (
-    renderer: 'drawio' | 'mermaid',
-  ) => void;
+  setActiveDiagramRenderer: (renderer: 'drawio' | 'mermaid') => void;
   setDiagramImages: (diagramImages: Layer1GraphState['diagramImages']) => void;
   addDiagramRevision: (revision: DiagramRevision) => void;
   approveDiagram: () => void;
@@ -224,14 +220,6 @@ export const useLayer1Store = create<Layer1StoreState>()(
           },
         })),
 
-      submitAnswer: (answer) =>
-        set((state) => ({
-          graphState: {
-            ...state.graphState,
-            qaHistory: [...state.graphState.qaHistory, answer],
-          },
-        })),
-
       updateUnderstanding: (understanding) =>
         set((state) => ({
           graphState: {
@@ -280,9 +268,7 @@ export const useLayer1Store = create<Layer1StoreState>()(
           },
         })),
 
-      setActiveDiagramRenderer: (
-        activeDiagramRenderer,
-      ) =>
+      setActiveDiagramRenderer: (activeDiagramRenderer) =>
         set((state) => ({
           graphState: {
             ...state.graphState,
@@ -333,6 +319,6 @@ export const useLayer1Store = create<Layer1StoreState>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
-    },
-  ),
+    }
+  )
 );

@@ -15,9 +15,7 @@ export const layer1StepOrder: Layer1StepId[] = [
   'preview_artifacts',
 ];
 
-export function getNextLayer1Step(
-  stepId: Layer1StepId,
-): Layer1StepId | null {
+export function getNextLayer1Step(stepId: Layer1StepId): Layer1StepId | null {
   const currentIndex = layer1StepOrder.indexOf(stepId);
   return layer1StepOrder[currentIndex + 1] ?? null;
 }
@@ -35,9 +33,7 @@ export function getStageForStep(stepId: Layer1StepId): Layer1Stage {
   return stageByStep[stepId];
 }
 
-export function getAvailableSteps(
-  completedSteps: Layer1StepId[],
-): Layer1StepId[] {
+export function getAvailableSteps(completedSteps: Layer1StepId[]): Layer1StepId[] {
   const available = new Set<Layer1StepId>(['input']);
 
   completedSteps.forEach((stepId) => {
@@ -70,9 +66,10 @@ export function createInitialLayer1GraphState(): Layer1GraphState {
     rawInputs: [],
     processedInput: null,
 
+    conversation: [],
+
     currentQuestion: null,
     questions: [],
-    qaHistory: [],
 
     understanding: createEmptySystemUnderstanding(),
     completeness: null,
@@ -92,7 +89,7 @@ export function createInitialLayer1GraphState(): Layer1GraphState {
 
     drawioXml: '',
     mermaidSource: '',
-    activeDiagramRenderer: 'drawio',
+    activeDiagramRenderer: 'mermaid',
     selectedDiagramRenderer: null,
     diagramImages: undefined,
     diagramSummary: '',
@@ -110,7 +107,7 @@ export function createInitialLayer1GraphState(): Layer1GraphState {
 
 export function completeLayer1Step(
   state: Layer1GraphState,
-  stepId: Layer1StepId,
+  stepId: Layer1StepId
 ): Layer1GraphState {
   const completedSteps = state.completedSteps.includes(stepId)
     ? state.completedSteps

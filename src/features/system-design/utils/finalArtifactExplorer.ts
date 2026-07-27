@@ -11,7 +11,6 @@ export type FinalArtifactId =
   | 'toon'
   | 'yaml'
   | 'plain_text'
-  | 'drawio_xml'
   | 'mermaid'
   | 'svg'
   | 'png'
@@ -123,27 +122,10 @@ export function buildFinalArtifactExplorerItems(
       available: Boolean(bundle.plainTextSpec),
     },
     {
-      id: 'drawio_xml',
-      label: 'Draw.io XML',
-      description:
-        bundle.selectedDiagramRenderer ===
-        'drawio'
-          ? 'Official approved editable Draw.io diagram source.'
-          : 'Alternative Draw.io source generated from the same semantic model.',
-      fileName: 'final-system-diagram.drawio',
-      mediaType: 'application/xml',
-      previewKind: 'text',
-      content: bundle.drawioXml,
-      available: Boolean(bundle.drawioXml),
-    },
-    {
       id: 'mermaid',
       label: 'Mermaid Source',
       description:
-        bundle.selectedDiagramRenderer ===
-        'mermaid'
-          ? 'Official approved Mermaid diagram source.'
-          : 'Alternative Mermaid representation generated from the same semantic model.',
+        'Official approved Mermaid diagram source.',
       fileName:
         'final-system-diagram.mmd',
       mediaType:

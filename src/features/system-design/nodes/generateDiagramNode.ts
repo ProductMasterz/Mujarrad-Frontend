@@ -15,15 +15,9 @@ import {
 } from '../diagram-intelligence/buildCompactSemanticDiagram';
 
 import {
-  compileSemanticDiagramToDrawio,
-} from '../diagram-intelligence/compileSemanticDiagramToDrawio';
-import {
   compileSemanticDiagramToMermaid,
 } from '../diagram-intelligence/compileSemanticDiagramToMermaid';
 
-import {
-  extractAndRepairDrawioXml,
-} from '../utils/drawioXml';
 
 export interface GenerateDiagramNodeResult {
   xml:
@@ -167,8 +161,7 @@ function selectInitialDiagramType(
  *
  * TypeScript deterministically converts that
  * specification into SemanticDiagramModel,
- * performs layout, compiles Draw.io XML,
- * repairs it, and validates it.
+ * performs layout, and compiles Mermaid source.
  */
 export async function generateDiagramNode(
   state:
@@ -236,51 +229,31 @@ export async function generateDiagramNode(
       };
     }
 
-    const compiled =
-      compileSemanticDiagramToDrawio(
-        compactResult.semanticDiagram,
-      );
-
     const compiledMermaid =
       compileSemanticDiagramToMermaid(
         compactResult.semanticDiagram,
       );
 
-    const repaired =
-      extractAndRepairDrawioXml(
-        compiled.xml,
-      );
-
     const warnings = [
       ...compactResult.warnings,
-      ...compiled.warnings,
       ...compiledMermaid.warnings,
-      ...repaired.warnings,
     ];
 
-    if (
-      !repaired.valid
-    ) {
+    if (!compiledMermaid.source.trim()) {
       return {
-        xml:
-          null,
-
-        mermaidSource:
-          '',
-
-        summary:
-          '',
-
+        xml: null,
+        mermaidSource: '',
+        summary: '',
         warnings,
-
         error:
-          'The compact semantic diagram compiled to invalid Draw.io XML.',
+          'The compact semantic diagram did not compile to valid Mermaid source.',
       };
     }
 
     return {
-      xml:
-        repaired.xml,
+      // Compatibility field retained until legacy Draw.io
+      // state types are removed in a later cleanup.
+      xml: '',
 
       mermaidSource:
         compiledMermaid.source,

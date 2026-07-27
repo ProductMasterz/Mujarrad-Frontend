@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLayer1Store } from '../stores/useLayer1Store';
 import type {
@@ -14,149 +9,85 @@ import type {
   RawInputPayload,
   SystemDesignInputSourceType,
 } from '../types/input.types';
-import {
-  createIsoTimestamp,
-  createSystemDesignId,
-} from '../utils/id';
+import { createIsoTimestamp, createSystemDesignId } from '../utils/id';
 import {
   estimateTokenCount,
   getInputSizeLabel,
   normalizeSystemDesignInput,
 } from '../utils/inputNormalization';
-import {
-  transcribeAudioLocally,
-} from '../utils/localWhisperTranscription';
+import { transcribeAudioLocally } from '../utils/localWhisperTranscription';
 
 const minimumUsefulCharacters = 40;
 
-function getSupportedAudioMimeType():
-  | string
-  | undefined {
+function getSupportedAudioMimeType(): string | undefined {
   if (typeof MediaRecorder === 'undefined') {
     return undefined;
   }
 
-  const mimeTypes = [
-    'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/mp4',
-  ];
+  const mimeTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
 
-  return mimeTypes.find((mimeType) =>
-    MediaRecorder.isTypeSupported(mimeType),
-  );
+  return mimeTypes.find((mimeType) => MediaRecorder.isTypeSupported(mimeType));
 }
 
 export function Task1InputAssistant() {
-  const graphState = useLayer1Store(
-    (state) => state.graphState,
-  );
+  const graphState = useLayer1Store((state) => state.graphState);
 
-  const syncFromGraphState = useLayer1Store(
-    (state) => state.syncFromGraphState,
-  );
+  const syncFromGraphState = useLayer1Store((state) => state.syncFromGraphState);
 
-  const resetRun = useLayer1Store(
-    (state) => state.resetRun,
-  );
+  const resetRun = useLayer1Store((state) => state.resetRun);
 
-  const latestRawInput =
-    graphState.rawInputs.at(-1);
+  const latestRawInput = graphState.rawInputs.at(-1);
 
-  const [inputText, setInputText] =
-    useState('');
+  const [inputText, setInputText] = useState('');
 
-  const [status, setStatus] =
-    useState<InputProcessingStatusValue>(
-      'idle',
-    );
+  const [status, setStatus] = useState<InputProcessingStatusValue>('idle');
 
-  const [sourceType, setSourceType] =
-    useState<SystemDesignInputSourceType>(
-      'typed_text',
-    );
+  const [sourceType, setSourceType] = useState<SystemDesignInputSourceType>('typed_text');
 
-  const [
-    processingResult,
-    setProcessingResult,
-  ] = useState<InputProcessingResult | null>(
-    null,
-  );
+  const [processingResult, setProcessingResult] = useState<InputProcessingResult | null>(null);
 
-  const [isRecording, setIsRecording] =
-    useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
-  const [
-    isTranscribing,
-    setIsTranscribing,
-  ] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
-  const [fileName, setFileName] =
-    useState<string | undefined>();
+  const [fileName, setFileName] = useState<string | undefined>();
 
-  const [inputError, setInputError] =
-    useState<string | undefined>();
+  const [inputError, setInputError] = useState<string | undefined>();
 
-  const mediaRecorderRef =
-    useRef<MediaRecorder | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
-  const audioChunksRef =
-    useRef<Blob[]>([]);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  const fileInputRef =
-    useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const normalizedPreview = useMemo(
-    () =>
-      normalizeSystemDesignInput(inputText),
-    [inputText],
-  );
+  const normalizedPreview = useMemo(() => normalizeSystemDesignInput(inputText), [inputText]);
 
-  const characterCount =
-    normalizedPreview.length;
+  const characterCount = normalizedPreview.length;
 
-  const estimatedTokens =
-    estimateTokenCount(normalizedPreview);
+  const estimatedTokens = estimateTokenCount(normalizedPreview);
 
-  const inputSizeLabel =
-    getInputSizeLabel(characterCount);
+  const inputSizeLabel = getInputSizeLabel(characterCount);
 
   const isEmpty = characterCount === 0;
 
-  const isShort =
-    characterCount > 0 &&
-    characterCount < minimumUsefulCharacters;
+  const isShort = characterCount > 0 && characterCount < minimumUsefulCharacters;
 
-  const chunkCount =
-    processingResult?.processedInput?.inputSize
-      .chunkCount;
+  const chunkCount = processingResult?.processedInput?.inputSize.chunkCount;
 
-  const sourceLabel =
-    sourceType.replace('_', ' ');
+  const sourceLabel = sourceType.replace('_', ' ');
 
-  const hasProcessedInput = Boolean(
-    processingResult?.processedInput ??
-      graphState.processedInput,
-  );
+  const hasProcessedInput = Boolean(processingResult?.processedInput ?? graphState.processedInput);
 
   useEffect(() => {
     if (!latestRawInput?.rawText) {
       return;
     }
 
-    setInputText(
-      (currentText) =>
-        currentText ||
-        latestRawInput.rawText,
-    );
+    setInputText((currentText) => currentText || latestRawInput.rawText);
 
-    setSourceType(
-      latestRawInput.sourceType,
-    );
+    setSourceType(latestRawInput.sourceType);
 
-    setFileName(
-      latestRawInput.metadata?.fileName,
-    );
+    setFileName(latestRawInput.metadata?.fileName);
   }, [
     latestRawInput?.id,
     latestRawInput?.rawText,
@@ -165,36 +96,27 @@ export function Task1InputAssistant() {
   ]);
 
   useEffect(() => {
-    if (
-      graphState.processedInput &&
-      status === 'idle'
-    ) {
+    if (graphState.processedInput && status === 'idle') {
       setStatus('ready');
     }
   }, [graphState.processedInput, status]);
 
-  async function submitInputToLayer1Graph(
-    rawInput: RawInputPayload,
-  ) {
-    const latestState =
-      useLayer1Store.getState().graphState;
+  async function submitInputToLayer1Graph(rawInput: RawInputPayload) {
+    const latestState = useLayer1Store.getState().graphState;
 
-    const response = await fetch(
-      '/api/system-builder/layer1',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          event: {
-            type: 'submit_input',
-            rawInput,
-          },
-          state: latestState,
-        }),
+    const response = await fetch('/api/system-builder/layer1', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify({
+        event: {
+          type: 'submit_input',
+          rawInput,
+        },
+        state: latestState,
+      }),
+    });
 
     return (await response.json()) as {
       ok: boolean;
@@ -211,9 +133,7 @@ export function Task1InputAssistant() {
     setInputError(undefined);
   }
 
-  function handleTextChange(
-    nextText: string,
-  ) {
+  function handleTextChange(nextText: string) {
     setInputText(nextText);
     setSourceType('typed_text');
     setFileName(undefined);
@@ -254,73 +174,77 @@ export function Task1InputAssistant() {
     setInputError(undefined);
 
     try {
-      const result =
-        await submitInputToLayer1Graph(
-          rawInput,
-        );
+      const result = await submitInputToLayer1Graph(rawInput);
 
-      if (
-        !result.ok ||
-        !result.state ||
-        !result.processingResult
-      ) {
+      if (!result.ok || !result.state || !result.processingResult) {
         setStatus('failed');
 
-        setInputError(
-          result.message ??
-            result.error ??
-            'Input processing failed.',
-        );
+        setInputError(result.message ?? result.error ?? 'Input processing failed.');
 
         return;
       }
 
-      setProcessingResult(
-        result.processingResult,
-      );
+      setProcessingResult(result.processingResult);
 
       syncFromGraphState(result.state);
 
-      setStatus(
-        result.processingResult.status ===
-          'ready'
-          ? 'ready'
-          : 'failed',
-      );
+      if (
+        result.processingResult.status === 'ready' &&
+        result.state.nextAction === 'ask_question'
+      ) {
+        const questionResponse = await fetch('/api/system-builder/layer1', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            event: {
+              type: 'generate_question',
+            },
+            state: result.state,
+          }),
+        });
+
+        const questionResult = (await questionResponse.json()) as {
+          ok: boolean;
+          state?: typeof graphState;
+          message?: string;
+          error?: string;
+        };
+
+        if (!questionResult.ok || !questionResult.state) {
+          throw new Error(
+            questionResult.error ??
+              questionResult.message ??
+              'Failed to generate the first clarification question.'
+          );
+        }
+
+        syncFromGraphState(questionResult.state);
+      }
+
+      setStatus(result.processingResult.status === 'ready' ? 'ready' : 'failed');
     } catch {
       setStatus('failed');
 
-      setInputError(
-        'Layer 1 runtime request failed.',
-      );
+      setInputError('Layer 1 runtime request failed.');
     }
   }
 
-  async function transcribeRecordedAudio(
-    audioBlob: Blob,
-  ) {
+  async function transcribeRecordedAudio(audioBlob: Blob) {
     setIsTranscribing(true);
     setInputError(undefined);
 
     try {
-      const transcript =
-        await transcribeAudioLocally(
-          audioBlob,
-        );
+      const transcript = await transcribeAudioLocally(audioBlob);
 
       if (!transcript) {
-        setInputError(
-          'No speech detected.',
-        );
+        setInputError('No speech detected.');
 
         return;
       }
 
-      setInputText((currentText) =>
-        `${currentText}${
-          currentText ? ' ' : ''
-        }${transcript}`,
-      );
+      setInputText((currentText) => `${currentText}${currentText ? ' ' : ''}${transcript}`);
 
       setSourceType('voice_transcript');
       setFileName(undefined);
@@ -328,7 +252,7 @@ export function Task1InputAssistant() {
       setProcessingResult(null);
     } catch {
       setInputError(
-        'Local voice transcription failed. Try a shorter recording or type/paste the text manually.',
+        'Local voice transcription failed. Try a shorter recording or type/paste the text manually.'
       );
     } finally {
       setIsTranscribing(false);
@@ -341,122 +265,81 @@ export function Task1InputAssistant() {
       return;
     }
 
-    if (
-      !navigator.mediaDevices?.getUserMedia
-    ) {
-      setInputError(
-        'Microphone is not supported in this browser.',
-      );
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setInputError('Microphone is not supported in this browser.');
 
       return;
     }
 
-    if (
-      typeof MediaRecorder === 'undefined'
-    ) {
-      setInputError(
-        'Audio recording is not supported in this browser.',
-      );
+    if (typeof MediaRecorder === 'undefined') {
+      setInputError('Audio recording is not supported in this browser.');
 
       return;
     }
 
     try {
-      const stream =
-        await navigator.mediaDevices.getUserMedia(
-          {
-            audio: true,
-          },
-        );
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
 
-      const mimeType =
-        getSupportedAudioMimeType();
+      const mimeType = getSupportedAudioMimeType();
 
-      const mediaRecorder =
-        new MediaRecorder(
-          stream,
-          mimeType
-            ? {
-                mimeType,
-              }
-            : undefined,
-        );
+      const mediaRecorder = new MediaRecorder(
+        stream,
+        mimeType
+          ? {
+              mimeType,
+            }
+          : undefined
+      );
 
       audioChunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (
-        event,
-      ) => {
+      mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          audioChunksRef.current.push(
-            event.data,
-          );
+          audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
-        stream
-          .getTracks()
-          .forEach((track) =>
-            track.stop(),
-          );
+        stream.getTracks().forEach((track) => track.stop());
 
-        const audioBlob = new Blob(
-          audioChunksRef.current,
-          {
-            type:
-              mediaRecorder.mimeType ||
-              'audio/webm',
-          },
-        );
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: mediaRecorder.mimeType || 'audio/webm',
+        });
 
         audioChunksRef.current = [];
         setIsRecording(false);
 
         if (audioBlob.size === 0) {
-          setInputError(
-            'Recording was empty.',
-          );
+          setInputError('Recording was empty.');
 
           return;
         }
 
-        void transcribeRecordedAudio(
-          audioBlob,
-        );
+        void transcribeRecordedAudio(audioBlob);
       };
 
-      mediaRecorderRef.current =
-        mediaRecorder;
+      mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.start();
       setIsRecording(true);
       setInputError(undefined);
       resetProcessingState();
     } catch {
-      setInputError(
-        'Microphone permission is blocked.',
-      );
+      setInputError('Microphone permission is blocked.');
 
       setIsRecording(false);
     }
   }
 
-  async function handleFileSelected(
-    file: File,
-  ) {
+  async function handleFileSelected(file: File) {
     setInputError(undefined);
 
-    const isTxtFile =
-      file.name
-        .toLowerCase()
-        .endsWith('.txt') ||
-      file.type === 'text/plain';
+    const isTxtFile = file.name.toLowerCase().endsWith('.txt') || file.type === 'text/plain';
 
     if (!isTxtFile) {
-      setInputError(
-        'Only .txt files are accepted.',
-      );
+      setInputError('Only .txt files are accepted.');
 
       return;
     }
@@ -470,9 +353,7 @@ export function Task1InputAssistant() {
       setStatus('idle');
       setProcessingResult(null);
     } catch {
-      setInputError(
-        'Could not read text file.',
-      );
+      setInputError('Could not read text file.');
     }
   }
 
@@ -487,8 +368,7 @@ export function Task1InputAssistant() {
     if (isRecording) {
       return {
         tone: 'recording',
-        label:
-          'Recording… click mic to stop',
+        label: 'Recording… click mic to stop',
       };
     }
 
@@ -502,19 +382,14 @@ export function Task1InputAssistant() {
     if (hasProcessedInput) {
       return {
         tone: 'success',
-        label: `Ready · ${
-          chunkCount ?? 1
-        } chunk${
-          chunkCount === 1 ? '' : 's'
-        }`,
+        label: `Ready · ${chunkCount ?? 1} chunk${chunkCount === 1 ? '' : 's'}`,
       };
     }
 
     if (isShort) {
       return {
         tone: 'warning',
-        label:
-          'Short input · add more detail for better questions',
+        label: 'Short input · add more detail for better questions',
       };
     }
 
@@ -527,8 +402,7 @@ export function Task1InputAssistant() {
 
     return {
       tone: 'muted',
-      label:
-        'Add text, voice, or .txt file',
+      label: 'Add text, voice, or .txt file',
     };
   }
 
@@ -556,9 +430,7 @@ export function Task1InputAssistant() {
               </span>
 
               <div>
-                <h2 className="text-base font-black text-slate-950">
-                  System Builder Assistant
-                </h2>
+                <h2 className="text-base font-black text-slate-950">System Builder Assistant</h2>
 
                 <div className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -603,9 +475,8 @@ export function Task1InputAssistant() {
             </p>
 
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              You can type a description, upload a text file, or use your
-              microphone. I will process it through Layer 1 before we begin
-              clarification.
+              You can type a description, upload a text file, or use your microphone. I will process
+              it through Layer 1 before we begin clarification.
             </p>
           </div>
         </div>
@@ -631,9 +502,7 @@ export function Task1InputAssistant() {
                 Attached file
               </div>
 
-              <div className="truncate text-sm font-bold text-violet-950">
-                {fileName}
-              </div>
+              <div className="truncate text-sm font-bold text-violet-950">{fileName}</div>
             </div>
           </div>
         ) : null}
@@ -665,16 +534,10 @@ export function Task1InputAssistant() {
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50">
           <textarea
             value={inputText}
-            onChange={(event) =>
-              handleTextChange(event.target.value)
-            }
+            onChange={(event) => handleTextChange(event.target.value)}
             rows={4}
             placeholder="Describe the system you want to build..."
-            disabled={
-              isRecording ||
-              isTranscribing ||
-              status === 'normalizing'
-            }
+            disabled={isRecording || isTranscribing || status === 'normalizing'}
             className="min-h-[110px] w-full resize-none border-0 bg-transparent px-4 pt-4 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400 focus:ring-0 disabled:opacity-50"
           />
 
@@ -682,14 +545,8 @@ export function Task1InputAssistant() {
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() =>
-                  fileInputRef.current?.click()
-                }
-                disabled={
-                  isRecording ||
-                  isTranscribing ||
-                  status === 'normalizing'
-                }
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isRecording || isTranscribing || status === 'normalizing'}
                 className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-blue-700 disabled:opacity-40"
                 title="Upload .txt file"
               >
@@ -707,24 +564,15 @@ export function Task1InputAssistant() {
 
               <button
                 type="button"
-                onClick={() =>
-                  void handleToggleRecording()
-                }
-                disabled={
-                  isTranscribing ||
-                  status === 'normalizing'
-                }
+                onClick={() => void handleToggleRecording()}
+                disabled={isTranscribing || status === 'normalizing'}
                 className={[
                   'flex h-9 w-9 items-center justify-center rounded-full transition disabled:opacity-40',
                   isRecording
                     ? 'bg-red-500 text-white shadow-md shadow-red-200'
                     : 'text-slate-500 hover:bg-slate-100 hover:text-blue-700',
                 ].join(' ')}
-                title={
-                  isRecording
-                    ? 'Stop recording'
-                    : 'Start voice input'
-                }
+                title={isRecording ? 'Stop recording' : 'Start voice input'}
               >
                 {isRecording ? (
                   <svg
@@ -733,13 +581,7 @@ export function Task1InputAssistant() {
                     className="h-4 w-4"
                     fill="currentColor"
                   >
-                    <rect
-                      x="7"
-                      y="7"
-                      width="10"
-                      height="10"
-                      rx="1"
-                    />
+                    <rect x="7" y="7" width="10" height="10" rx="1" />
                   </svg>
                 ) : (
                   <svg
@@ -758,25 +600,14 @@ export function Task1InputAssistant() {
               </button>
 
               <span className="ml-1 text-xs font-semibold text-slate-400">
-                {isRecording
-                  ? 'Recording...'
-                  : isTranscribing
-                    ? 'Transcribing...'
-                    : sourceLabel}
+                {isRecording ? 'Recording...' : isTranscribing ? 'Transcribing...' : sourceLabel}
               </span>
             </div>
 
             <button
               type="button"
-              onClick={() =>
-                void handleProcessInput()
-              }
-              disabled={
-                isEmpty ||
-                isRecording ||
-                isTranscribing ||
-                status === 'normalizing'
-              }
+              onClick={() => void handleProcessInput()}
+              disabled={isEmpty || isRecording || isTranscribing || status === 'normalizing'}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
               title="Process system input"
             >
@@ -789,12 +620,7 @@ export function Task1InputAssistant() {
                   stroke="currentColor"
                   strokeWidth="2"
                 >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                    opacity="0.25"
-                  />
+                  <circle cx="12" cy="12" r="9" opacity="0.25" />
                   <path d="M21 12a9 9 0 0 0-9-9" />
                 </svg>
               ) : (
@@ -819,15 +645,11 @@ export function Task1InputAssistant() {
 
             <span>·</span>
 
-            <span>
-              {characterCount.toLocaleString()} chars
-            </span>
+            <span>{characterCount.toLocaleString()} chars</span>
 
             <span>·</span>
 
-            <span>
-              ~{estimatedTokens.toLocaleString()} tokens
-            </span>
+            <span>~{estimatedTokens.toLocaleString()} tokens</span>
           </div>
 
           <span

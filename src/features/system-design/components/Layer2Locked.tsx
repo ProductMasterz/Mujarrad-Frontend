@@ -18,7 +18,7 @@ export function Layer2Locked() {
 
           <ul className="mt-3 list-inside list-disc text-sm leading-6 text-slate-600">
             <li>final-system-spec.md</li>
-            <li>system-diagram.drawio.xml</li>
+            <li>system-diagram.mmd</li>
             <li>system-diagram.png or system-diagram.svg</li>
             <li>optional system-diagram-summary.md</li>
           </ul>

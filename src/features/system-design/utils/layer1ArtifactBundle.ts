@@ -99,15 +99,6 @@ export function buildLayer1ArtifactBundle(
         utf8Bytes: utf8Bytes(plainTextSpec),
       },
       {
-        id: 'drawio',
-        format: 'drawio_xml',
-        mediaType: 'application/xml',
-        fileName: 'final-system-diagram.drawio',
-        available: true,
-        characterCount: state.drawioXml.length,
-        utf8Bytes: utf8Bytes(state.drawioXml),
-      },
-      {
         id: 'mermaid',
         format: 'mermaid',
         mediaType: 'text/plain',
@@ -160,15 +151,13 @@ export function buildLayer1ArtifactBundle(
     yamlSpec,
     plainTextSpec,
 
-    drawioXml:
-      state.drawioXml,
+    drawioXml: '',
 
     mermaidSource:
       state.mermaidSource,
 
     selectedDiagramRenderer:
-      state.selectedDiagramRenderer ??
-      state.activeDiagramRenderer,
+      'mermaid',
 
     diagramImages: {
       svg: state.diagramImages?.svg,

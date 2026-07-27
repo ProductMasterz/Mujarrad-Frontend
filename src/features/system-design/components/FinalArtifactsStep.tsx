@@ -133,7 +133,7 @@ export function FinalArtifactsStep() {
       <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
         Generate the deterministic Layer 1 artifact package from the approved
         diagram and cumulative system understanding. This creates the Markdown
-        specification, Draw.io XML, diagram exports, token report, and handoff
+        specification, Mermaid source, diagram exports, token report, and handoff
         bundle. The next step lets you preview and download each file.
       </p>
 

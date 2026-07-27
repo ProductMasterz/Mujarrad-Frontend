@@ -1,9 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+
 import type { Layer1GraphState } from '../types/graph.types';
+import { deriveQuestionAnswersFromConversation } from '../utils/conversationDerivations';
 
 type NodeStatus = 'done' | 'active' | 'waiting' | 'pending' | 'error';
+
+function getAnswerCount(state: Layer1GraphState): number {
+  return deriveQuestionAnswersFromConversation(state.conversation).length;
+}
 
 interface GraphNode {
   id: string;
@@ -90,7 +96,7 @@ const graphNodes: GraphNode[] = [
   {
     id: 'task5',
     title: 'Task 5 Context',
-    subtitle: 'Draw.io handoff input',
+    subtitle: 'Mermaid handoff input',
     x: 60,
     y: 390,
     w: 190,
@@ -223,10 +229,7 @@ function getNodeStatus(nodeId: string, state: Layer1GraphState): NodeStatus {
   if (state.nextAction === 'error') {
     const latestErrorSource = state.errors.at(-1)?.source ?? '';
 
-    if (
-      ['update', 'check'].includes(nodeId) ||
-      latestErrorSource.includes(nodeId)
-    ) {
+    if (['update', 'check'].includes(nodeId) || latestErrorSource.includes(nodeId)) {
       return 'error';
     }
   }
@@ -249,26 +252,26 @@ function getNodeStatus(nodeId: string, state: Layer1GraphState): NodeStatus {
 
   if (nodeId === 'answer') {
     if (state.nextAction === 'wait_for_answer') return 'active';
-    if (state.qaHistory.length > 0) return 'done';
+    if (getAnswerCount(state) > 0) return 'done';
     return state.currentQuestion ? 'waiting' : 'pending';
   }
 
   if (nodeId === 'save') {
     if (state.nextAction === 'update_understanding') return 'active';
-    if (state.qaHistory.length > 0) return 'done';
+    if (getAnswerCount(state) > 0) return 'done';
     return 'pending';
   }
 
   if (nodeId === 'update') {
     if (state.nextAction === 'update_understanding') return 'active';
-    if (state.qaHistory.length > 0) return 'done';
+    if (getAnswerCount(state) > 0) return 'done';
     return 'pending';
   }
 
   if (nodeId === 'check') {
     if (state.nextAction === 'check_completeness') return 'active';
     if (state.completeness) return 'done';
-    return state.qaHistory.length > 0 ? 'waiting' : 'pending';
+    return getAnswerCount(state) > 0 ? 'waiting' : 'pending';
   }
 
   if (nodeId === 'task5') {
@@ -297,7 +300,7 @@ function getEdgeStatus(edge: GraphEdge, state: Layer1GraphState): NodeStatus {
   }
 
   if (edge.kind === 'loop') {
-    if (state.nextAction === 'ask_question' && state.qaHistory.length > 0) return 'active';
+    if (state.nextAction === 'ask_question' && getAnswerCount(state) > 0) return 'active';
     if (state.questions.length > 1) return 'done';
     return 'pending';
   }
@@ -397,11 +400,7 @@ function edgeClasses(status: NodeStatus, kind: GraphEdge['kind']) {
   };
 }
 
-export function Layer1GraphViewer({
-  graphState,
-}: {
-  graphState: Layer1GraphState;
-}) {
+export function Layer1GraphViewer({ graphState }: { graphState: Layer1GraphState }) {
   const [isOpen, setIsOpen] = useState(false);
   const context = graphState.diagramGenerationContext;
 
@@ -410,10 +409,10 @@ export function Layer1GraphViewer({
       activeStep: graphState.activeStep,
       nextAction: graphState.nextAction,
       questions: graphState.questions.length,
-      answers: graphState.qaHistory.length,
+      answers: getAnswerCount(graphState),
       task5: context ? 'Prepared' : 'Not ready',
     }),
-    [context, graphState],
+    [context, graphState]
   );
 
   return (
@@ -435,7 +434,7 @@ export function Layer1GraphViewer({
                   Layer 1 LangGraph Orchestration
                 </h2>
                 <p className="mt-1 text-sm font-medium text-slate-500">
-                  Live node-edge workflow for constructive clarification and Task 5 Draw.io handoff.
+                  Live node-edge workflow for constructive clarification and Task 5 Mermaid handoff.
                 </p>
               </div>
 
@@ -465,9 +464,7 @@ export function Layer1GraphViewer({
                       <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
                         {label}
                       </div>
-                      <div className="mt-1 truncate text-sm font-black text-slate-900">
-                        {value}
-                      </div>
+                      <div className="mt-1 truncate text-sm font-black text-slate-900">{value}</div>
                     </div>
                   ))}
                 </div>
@@ -589,12 +586,7 @@ export function Layer1GraphViewer({
                             strokeWidth={status === 'active' ? 3 : 2}
                           />
 
-                          <circle
-                            cx={node.x + 28}
-                            cy={node.y + 28}
-                            r="14"
-                            fill={stroke}
-                          />
+                          <circle cx={node.x + 28} cy={node.y + 28} r="14" fill={stroke} />
 
                           <text
                             x={node.x + 28}
@@ -675,9 +667,7 @@ export function Layer1GraphViewer({
 
               <aside className="border-l border-slate-200 bg-slate-50 p-6">
                 <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                  <h3 className="text-sm font-black text-emerald-950">
-                    Task 5 Handoff Contract
-                  </h3>
+                  <h3 className="text-sm font-black text-emerald-950">Task 5 Handoff Contract</h3>
 
                   <div className="mt-4 space-y-3 text-sm text-emerald-800">
                     <div className="flex justify-between gap-3">
@@ -686,9 +676,7 @@ export function Layer1GraphViewer({
                     </div>
                     <div className="flex justify-between gap-3">
                       <span>Status</span>
-                      <span className="font-black">
-                        {context?.status ?? 'waiting'}
-                      </span>
+                      <span className="font-black">{context?.status ?? 'waiting'}</span>
                     </div>
                     <div className="flex justify-between gap-3">
                       <span>Source</span>
@@ -705,20 +693,14 @@ export function Layer1GraphViewer({
                       </span>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <span>Draw.io XML next</span>
-                      <span className="font-black">
-                        {context?.task5Instructions.mustGenerateDrawioXml
-                          ? 'yes'
-                          : 'pending'}
-                      </span>
+                      <span>Mermaid diagram next</span>
+                      <span className="font-black">{context ? 'yes' : 'pending'}</span>
                     </div>
                   </div>
                 </section>
 
                 <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
-                  <h3 className="text-sm font-black text-slate-950">
-                    Cumulative Context
-                  </h3>
+                  <h3 className="text-sm font-black text-slate-950">Cumulative Context</h3>
 
                   <div className="mt-4 space-y-3 text-sm text-slate-600">
                     <div className="flex justify-between">
@@ -742,7 +724,7 @@ export function Layer1GraphViewer({
                     <div className="flex justify-between">
                       <span>Answers</span>
                       <span className="font-black text-slate-900">
-                        {graphState.qaHistory.length}
+                        {getAnswerCount(graphState)}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -764,9 +746,7 @@ export function Layer1GraphViewer({
 
                 {graphState.errors.length > 0 && (
                   <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                    <h3 className="text-sm font-black text-amber-950">
-                      Runtime Notes
-                    </h3>
+                    <h3 className="text-sm font-black text-amber-950">Runtime Notes</h3>
 
                     <div className="mt-3 space-y-3 text-xs text-amber-800">
                       {graphState.errors.slice(-4).map((error) => (
