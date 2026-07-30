@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect, useRef } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -16,6 +16,8 @@ import type { Node, Attribute } from '@/types/backend-dtos';
 import { buildGraphData } from '@/lib/graph-utils';
 import { useGraphStore } from '@/stores/graphStore';
 import { GraphControls } from './GraphControls';
+import { ActionLogFeed } from './ActionLogFeed';
+import { useActionLogStore } from '@/stores/actionLogStore';
 import { CustomNode } from './CustomNode';
 import { useTheme } from 'next-themes';
 interface GraphVisualizationProps {
@@ -148,6 +150,23 @@ export function GraphVisualization({
     }));
   }, []);
 
+  const addEntry = useActionLogStore((s) => s.addEntry);
+  const prevNodeCount = useRef(nodes.length);
+
+  useEffect(() => {
+    if (nodes.length > prevNodeCount.current) {
+      const newNodes = nodes.slice(prevNodeCount.current);
+      for (const node of newNodes) {
+        addEntry({
+          actionType: 'create_node',
+          entityName: node.title || 'Untitled',
+          entityType: node.nodeType,
+        });
+      }
+    }
+    prevNodeCount.current = nodes.length;
+  }, [nodes, addEntry]);
+
   if (nodes.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -194,6 +213,8 @@ export function GraphVisualization({
         />
         </ReactFlow>
       </div>
+
+      <ActionLogFeed />
     </div>
   );
 }

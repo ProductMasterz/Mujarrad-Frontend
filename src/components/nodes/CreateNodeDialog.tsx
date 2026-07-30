@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { isApiError } from '@/lib/errors';
+import { useActionLogStore } from '@/stores/actionLogStore';
 
 // Simplified schema - just title and type, no content
 const createPageSchema = z.object({
@@ -48,6 +49,7 @@ export function CreateNodeDialog({ spaceSlug }: CreateNodeDialogProps) {
 
   const { mutate: createNode, isPending } = useCreateNode();
   const { mutate: createAttribute } = useCreateAttribute();
+  const addLogEntry = useActionLogStore((s) => s.addEntry);
 
   // Fetch all space nodes for parent selection
   const { data: nodes = [] } = useSpaceNodes(spaceSlug, { type: NodeType.CONTEXT });
@@ -87,6 +89,11 @@ export function CreateNodeDialog({ spaceSlug }: CreateNodeDialogProps) {
         setOpen(false);
         reset();
         setSelectedParentId(null);
+        addLogEntry({
+          actionType: 'create_node',
+          entityName: data.title || 'Untitled',
+          entityType: data.nodeType,
+        });
         router.push(getNodeRoute(spaceSlug, newNode));
       },
       onError: (error) => {
