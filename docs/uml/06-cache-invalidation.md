@@ -33,7 +33,7 @@ flowchart LR
         M_DELETE["useDeleteNode\nDELETE /spaces/{slug}/nodes/{id}"]
         M_RENAME_NODE["useRenameNode (node)\nPATCH /spaces/{slug}/nodes/{id}"]
         M_MIGRATE["useMigrateNode\nPOST /spaces/{slug}/nodes/{id}/migrate"]
-        M_REORDER["useReorderChildren — BROKEN\nPATCH body sends nodeIds not orderedChildIds"]
+        M_REORDER["useReorderChildren\nPATCH body sends orderedChildIds"]
     end
 
     subgraph KEYS_NODE["Invalidated Keys"]
@@ -161,26 +161,6 @@ flowchart LR
 
 ---
 
-## Known Bugs in Cache Invalidation (per ADR-06)
-
-```mermaid
-flowchart TD
-    subgraph BUGS["Cache Invalidation Bugs — Must Fix"]
-        BUG1["BUG-08: Context page retry button\napp/spaces/[slug]/context/[contextSlug]/page.tsx line 235\ninvalidates inline key:\n['context-nodes', spaceSlug, contextSlug]\ninstead of: contextNodeKeys.nodes(spaceSlug, contextSlug)\nFix: F-11"]:::bug
-
-        BUG2["BUG (NewNodeModal inline mutation)\nsrc/shell/components/NewNodeModal.tsx lines 145-157\nonSuccess only invalidates nodeKeys.lists()\nMissing: contextNodeKeys.nodes(spaceSlug, contextSlug)\nMissing: blankKeys.count(spaceSlug)\nFix: F-01"]:::bug
-
-        BUG3["BUG (useSpaces mutations)\nsrc/hooks/api/useSpaces.ts lines 50, 62, 78, 105\ninvalidates inline string ['spaces']\ninstead of spaceKeys.all\nMinor — functionally equivalent today but violates ADR-06"]:::warn
-
-        BUG4["CACHE-BUG-01: useRestoreVersion\nWrong invalidation key — out of scope for this change set\nTracked separately"]:::info
-    end
-
-    classDef bug fill:#E74C3C,color:#fff,stroke:#B03A2E
-    classDef warn fill:#F39C12,color:#fff,stroke:#D68910
-    classDef info fill:#3498DB,color:#fff,stroke:#2471A3
-```
-
----
 
 ## Complete Mutation-to-Key Matrix
 
@@ -205,5 +185,3 @@ flowchart TD
 | `useUpdateVoidNode` | `PUT /void/nodes/{id}` | `voidKeys.all`, `voidKeys.detail(id)` |
 | `useDeleteVoidNode` | `DELETE /void/nodes/{id}` | `voidKeys.all` |
 | `useAssignVoidToSpace` | `POST /void/nodes/{id}/assign` | `voidKeys.all` |
-| `NewNodeModal inline mutation` (pre-fix) | `POST /spaces/{slug}/nodes` | `nodeKeys.lists()` only — **MISSING** `contextNodeKeys`, `blankKeys.count` |
-| Context page retry button (pre-fix) | N/A — just a re-fetch trigger | inline `['context-nodes', slug, ctx]` — **WRONG KEY** |

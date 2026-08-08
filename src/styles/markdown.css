@@ -96,3 +96,15 @@
 .docs-content hr {
   @apply border-gray-200 my-8;
 }
+
+/* Offset anchored headings so they aren't hidden under the sticky mobile header */
+.docs-content h2[id],
+.docs-content h3[id],
+.docs-content h4[id] {
+  scroll-margin-top: 5rem;
+}
+
+/* Mermaid diagrams render on a white surface regardless of the code theme */
+.docs-content .mermaid-diagram svg {
+  background: transparent;
+}
